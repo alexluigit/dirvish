@@ -393,6 +393,8 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (cl-defun lf-preview--entry (entry)
   "Create the preview buffer of `ENTRY'."
+  (unless (file-readable-p entry)
+    (cl-return-from lf-preview--entry (lf-get--preview-create "File Not Readable")))
   (when (file-directory-p entry)
     (cl-return-from lf-preview--entry
       (lf-get--preview-create nil nil "exa" (list "--color=always" "-al" entry))))
@@ -402,23 +404,17 @@ TRASH-DIR is path to trash-dir in that disk."
          (auto-save-default nil)
          (delay-mode-hooks t)
          (recentf-list nil)
-         (inhibit-message t) buf)
-    (cond
-     (match (setq buf (lf-get--preview-create entry (cdr match) (caar match) (cdar match))))
-     ((or (string-prefix-p "text" (mailcap-extension-to-mime ext))
-          (and (string-equal "ts" ext) (< (nth 7 (file-attributes entry)) (* 1024 1024 1))))
-      (setq buf (find-file-noselect entry t nil)))
-     (t
-      (setq buf (ignore-errors (find-file-noselect entry t nil)))
-      (if (null buf)
-          (setq buf (lf-get--preview-create "File Not Readable"))
-        (let ((binary (with-current-buffer buf
-                        (goto-char (point-min))
-                        (search-forward (string ?\x00) nil t 1))))
-          (when (and binary (not lf-preview-binary))
-            (add-to-list 'lf-preview-buffers buf)
-            (setq buf (lf-get--preview-create "Binary preview disabled")))))))
-    buf))
+         (inhibit-message t))
+    (when match
+      (cl-return-from lf-preview--entry
+        (lf-get--preview-create entry (cdr match) (caar match) (cdar match))))
+    (let* ((buf (find-file-noselect entry t nil))
+           (binary (with-current-buffer buf (goto-char (point-min))
+                     (search-forward (string ?\x00) nil t 1))))
+      (when (and binary (not lf-preview-binary))
+        (add-to-list 'lf-preview-buffers buf)
+        (cl-return-from lf-preview--entry (lf-get--preview-create "Binary preview disabled")))
+      buf)))
 
 (defun lf-update--preview (&optional preview-window)
   "Setup lf preview window."
