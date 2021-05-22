@@ -14,7 +14,6 @@
 ;;; Code:
 
 (declare-function format-spec "format-spec")
-(defalias 'lf-yank-filename 'dired-copy-filename-as-kill)
 (require 'transient)
 (require 'posframe)
 (require 'mailcap)
