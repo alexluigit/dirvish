@@ -278,7 +278,7 @@ TRASH-DIR is path to trash-dir in that disk."
   (let* ((buf (frame-parameter nil 'lf-header-buffer))
          (min-w (1+ (ceiling lf-width-header)))
          (f-props `(:min-height 2 :background-color "#565761"
-                    :position ,lf-header-position :min-width ,min-w))
+                                :position ,lf-header-position :min-width ,min-w))
          (h-frame (frame-parameter nil 'lf-header--frame)))
     (if h-frame
         (posframe--set-frame-size h-frame 1 2 1 min-w)
@@ -408,7 +408,8 @@ TRASH-DIR is path to trash-dir in that disk."
       (cl-return-from lf-preview--entry
         (lf-get--preview-create entry (cdr match) (caar match) (cdar match))))
     (let* ((buf (find-file-noselect entry t nil))
-           (binary (with-current-buffer buf (goto-char (point-min))
+           (binary (with-current-buffer buf
+                     (goto-char (point-min))
                      (search-forward (string ?\x00) nil t 1))))
       (when (and binary (not lf-preview-binary))
         (add-to-list 'lf-preview-buffers buf)
@@ -790,12 +791,8 @@ links."
   (interactive)
   (setq lf-show-hidden
         (cl-case lf-show-hidden
-          ('all 'dot)
-          ('dot 'lf)
-          ('lf 'all)))
-  (revert-buffer)
-  (lf-file--filter)
-  (lf-refresh))
+          ('all 'dot) ('dot 'lf) ('lf 'all)))
+  (revert-buffer) (lf-file--filter) (lf-refresh))
 
 (defun lf-file--filter ()
   (save-excursion
@@ -1034,7 +1031,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
                   (and (not (string-equal name ""))
                        (string-match lf-cleanup-regex name)
                        (not (get-buffer-process buf))))
-        (kill-buffer buf))))
+          (kill-buffer buf))))
     (cl-dolist (tm lf-repeat-timers) (cancel-timer (symbol-value tm))))
   (setq lf-frame-alist (delq (assoc (window-frame) lf-frame-alist) lf-frame-alist))
   (setq lf-window nil)
@@ -1089,6 +1086,14 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
         (lf-quit :keep-alive)
         (find-file entry)))))
 
+(defun lf-quit (&optional keep-alive)
+  "Revert lf settings and disable lf."
+  (interactive)
+  (lf-deinit)
+  (when (and (not keep-alive)
+             (string= (frame-parameter nil 'name) "lf-emacs"))
+    (delete-frame)))
+
 ;;;###autoload
 (define-minor-mode lf-override-dired-mode
   "Toggle lf to override dired whenever in lf-mode."
@@ -1102,14 +1107,6 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   "Major mode emulating the lf file manager in `dired'."
   :group 'lf
   :interactive nil)
-
-(defun lf-quit (&optional keep-alive)
-  "Revert lf settings and disable lf."
-  (interactive)
-  (lf-deinit)
-  (when (and (not keep-alive)
-             (string= (frame-parameter nil 'name) "lf-emacs"))
-    (delete-frame)))
 
 (provide 'lf)
 
