@@ -4,12 +4,12 @@
 ;; Author : Alex Lu <https://github.com/alexluigit>
 ;; Package-Version: 0.5
 ;; Keywords: files, convenience, dired
-;; Homepage: https://github.com/alexluigit/lf
+;; Homepage: https://github.com/alexluigit/lf.el
 ;; SPDX-License-Identifier: MIT
 ;; Package-Requires: ((emacs "27.1") (posframe "1.0.2"))
 
 ;;; Inspired by work from
-;; ranger - Author: Adam Sokolnicki
+;; ranger.el - Author: Rich Alesi
 
 ;;; Code:
 
