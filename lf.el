@@ -776,11 +776,12 @@ links."
                     (?q (setq abort t) (setq new-fileset ()))))
               (push (cons file paste-name) new-fileset))))))
     (lf-define--async lf-update--footer 0 0.01) (lf-update--footer-async)
-    (cl-dolist (file new-fileset)
-      (funcall paste-func (car file) (cdr file)))
+    ;; FIXME: make it compatable with non shell cmd
     (let ((size (lf-get--filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
       (add-to-list 'lf-i/o-queue (cons io-buffer (cons size leng))))
+    (cl-dolist (file new-fileset)
+      (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf lf-parent-buffers)
       (with-current-buffer buf (dired-unmark-all-marks)))))
 
