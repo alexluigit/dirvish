@@ -14,6 +14,7 @@
 ;;; Code:
 
 (declare-function format-spec "format-spec")
+(require 'ring)
 (require 'transient)
 (require 'posframe)
 (require 'mailcap)
@@ -145,6 +146,9 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Internal variables
 
+(defvar lf-yank-marker ?Y
+  "Character used to flag files for yank.")
+
 (defvar lf-width-img nil
   "Calculated preview window width. Used for image preview.")
 
@@ -246,6 +250,8 @@ TRASH-DIR is path to trash-dir in that disk."
         (message "Press %s to quit" (propertize "q" 'face 'help-key-binding))))
     map)
   "Lf mode map.")
+
+(defvar lf-override-dired-mode nil)
 
 ;;;; Buffer / Frame local variables
 
@@ -355,6 +361,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (cl-defun lf-get--preview-create (entry &optional cache cmd args)
   "Get corresponding preview buffer."
   (let ((buf (frame-parameter nil 'lf-preview-buffer))
+        (process-connection-type nil)
         (size (number-to-string lf-width-img)))
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
@@ -383,11 +390,9 @@ TRASH-DIR is path to trash-dir in that disk."
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
               (setq args (cl-substitute (car format) (cdr format) args :test 'string=)))
-            (let* ((process-connection-type nil)
-                   (task-buf (generate-new-buffer "*Lf I/O*"))
-                   (proc (apply #'start-process "" task-buf cmd args)))
-              (run-with-timer 0.5 nil (lambda () (lf-update--preview (get-buffer-window buf))))
-              (insert "[Cache] Generating thumbnail...")))))
+          (apply #'start-process "" (generate-new-buffer "*Lf I/O*") cmd args)
+          (run-with-timer 0.5 nil (lambda () (lf-update--preview (get-buffer-window buf))))
+          (insert "[Cache] Generating thumbnail..."))))
       buf)))
 
 (cl-defun lf-preview--entry (entry)
@@ -475,7 +480,6 @@ is less then `lf-width-header'."
 (defun lf--footer-spec ()
   "Echo file details."
   (let* ((entry (dired-get-filename nil t))
-         (filename (file-name-nondirectory entry))
          (fattr (file-attributes entry))
          (file-size (format "%6s" (file-size-human-readable (nth 7 fattr))))
          (user (nth 2 fattr))
@@ -493,7 +497,7 @@ is less then `lf-width-header'."
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)
       (?s . ,file-size) (?S . ,sort-by) (?w . ,space) (?t . ,i/o-task))))
 
-;;;; Line
+;;;; Overlays
 
 (defun lf-update--line ()
   (remove-overlays (point-min) (point-max) 'lf-line t)
@@ -772,7 +776,7 @@ links."
                       (setq idx (1+ idx))))
                   (cl-case choice
                     ((?y ?n) (push (cons file name~) new-fileset))
-                    (?a (setq overwrite t) (add-to-list 'new-fileset (cons file name~)))
+                    (?a (setq overwrite t) (push (cons file name~) new-fileset))
                     (?q (setq abort t) (setq new-fileset ()))))
               (push (cons file paste-name) new-fileset))))))
     (lf-define--async lf-update--footer 0 0.01) (lf-update--footer-async)
@@ -893,7 +897,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (when-let ((marked-files (dired-get-marked-files))
              (mac (lambda (f) (shell-command (format "open \"%s\"" f))))
              (linux (lambda (f) (start-process "" nil "xdg-open" f)))
-             (windows (lambda (f) (w32-shell-execute "open" (replace-regexp-in-string "/" "\\" f t t))))
+             (windows (lambda (f) (start-process "" nil "open" (replace-regexp-in-string "/" "\\" f t t))))
              (cmd (cl-case system-type ('darwin mac) ('gnu/linux linux) ('windows-nt windows))))
     (mapc `,cmd marked-files)))
 
@@ -1042,7 +1046,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 
 (defun lf-refresh (&optional rebuild)
   "Reset lf. With optional prefix ARG (\\[universal-argument])
-also `revert-buffer' and remove all marks."
+also rebuild lf layout."
   (interactive "P")
   (when rebuild
     (lf-build--parent-windows)
