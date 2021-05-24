@@ -57,10 +57,8 @@
     (t   ("rmvb" "f4v" "ts") ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
     (t   ("epub")            ("epub-thumbnailer" "%i" "%T" "1024"))
     (t   ("pdf")             ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
-  "doc")
-
-(defcustom lf-yank-marker ?Y
-  "Character used to flag files for yank.")
+  "doc"
+  :group 'lf :type '(alist :value-type (boolean (choice list string) list)))
 
 (defcustom lf-history-length 30
   "Length of history lf will track."
@@ -390,9 +388,9 @@ TRASH-DIR is path to trash-dir in that disk."
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
               (setq args (cl-substitute (car format) (cdr format) args :test 'string=)))
-          (apply #'start-process "" (generate-new-buffer "*Lf I/O*") cmd args)
-          (run-with-timer 0.5 nil (lambda () (lf-update--preview (get-buffer-window buf))))
-          (insert "[Cache] Generating thumbnail..."))))
+            (apply #'start-process "" (generate-new-buffer "*Lf I/O*") cmd args)
+            (run-with-timer 0.5 nil (lambda () (lf-update--preview (get-buffer-window buf))))
+            (insert "[Cache] Generating thumbnail..."))))
       buf)))
 
 (cl-defun lf-preview--entry (entry)
