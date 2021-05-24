@@ -412,8 +412,8 @@ TRASH-DIR is path to trash-dir in that disk."
         (lf-get--preview-create entry (cdr match) (caar match) (cdar match))))
     (let* ((buf (find-file-noselect entry t nil))
            (binary (with-current-buffer buf
-                     (goto-char (point-min))
-                     (search-forward (string ?\x00) nil t 1))))
+                     (save-excursion (goto-char (point-min))
+                                     (search-forward (string ?\x00) nil t 1)))))
       (when (and binary (not lf-preview-binary))
         (add-to-list 'lf-preview-buffers buf)
         (cl-return-from lf-preview--entry (lf-get--preview-create "Binary preview disabled")))
@@ -947,10 +947,6 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   "Refresh lf frame, added to `after-focus-change-functions'."
   (frame-focus-state)
   (when (eq major-mode 'lf-mode) (lf-refresh t)))
-
-(cl-dolist (fn '(lf-next-file lf-go-top lf-go-bottom lf-flag-file-yank))
-  (advice-add fn :around 'lf-update--line-refresh-advice))
-
 (defun lf-evil--cursor-advice (fn &rest args)
   (unless (and (not (eq major-mode 'wdired-mode)) (lf-live-p))
     (apply fn args)))
@@ -964,6 +960,9 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 (defun lf-file-open--advice (fn &rest args)
   "Advice for `find-file' and `find-file-other-window'"
   (when (lf-live-p) (lf-quit :keep-alive)) (apply fn args))
+
+(cl-dolist (fn '(lf-next-file lf-go-top lf-go-bottom lf-flag-file-yank))
+  (advice-add fn :around 'lf-update--line-refresh-advice))
 
 (defvar lf-advice-alist
   '((files         find-file                    lf-file-open--advice)
@@ -1040,6 +1039,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
                        (not (get-buffer-process buf))))
           (kill-buffer buf))))
     (cl-dolist (tm lf-repeat-timers) (cancel-timer (symbol-value tm))))
+  (set-frame-parameter nil 'lf-preview-window nil)
   (setq lf-frame-alist (delq (assoc (window-frame) lf-frame-alist) lf-frame-alist))
   (setq lf-window nil)
   (setq lf-parent-windows ())
