@@ -821,7 +821,7 @@ links."
      '(?q ?n ?N ?e ?E ?s ?S ?t ?T ?c ?C))))
   (unless (eq criteria ?q)
     (let* ((c (char-to-string criteria))
-           (uppercasep (string-equal c (upcase c)))
+           (revp (string-equal c (upcase c)))
            (cc (downcase c))
            (sort-flag
             (cond
@@ -829,9 +829,10 @@ links."
              ((string-equal cc "c") '("modified" . " -c"))
              ((string-equal cc "e") '("ext" . " -X"))
              ((string-equal cc "t") '("time" . " -t"))
-             ((string-equal cc "s") '("size" . " -S")))))
+             ((string-equal cc "s") '("size" . " -S"))))
+           (switch (concat dired-listing-switches (cdr sort-flag) (when revp " -r"))))
       (setq lf-sort-criteria (car sort-flag))
-      (dired-sort-other (concat dired-listing-switches (cdr sort-flag)))
+      (dired-sort-other switch)
       (lf-refresh))))
 
 (defun lf-toggle-preview ()
