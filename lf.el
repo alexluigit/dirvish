@@ -963,8 +963,14 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (unless (dired-get-filename nil t) (lf-next-file 1))
   (lf-refresh))
 
+(defun lf-file-open--advice (fn &rest args)
+  "Advice for `find-file' and `find-file-other-window'"
+  (when (lf-live-p) (lf-quit :keep-alive)) (apply fn args))
+
 (defvar lf-advice-alist
-  '((dired         dired-readin                 lf-setup--dired-buffer-advice)
+  '((files         find-file                    lf-file-open--advice)
+    (files         find-file-other-window       lf-file-open--advice)
+    (dired         dired-readin                 lf-setup--dired-buffer-advice)
     (dired         dired-mark                   lf-update--line-refresh-advice)
     (dired         dired-flag-file-deletion     lf-update--line-refresh-advice)
     (dired         dired-internal-do-deletions  lf-deletion--refresh-advice)
@@ -1086,7 +1092,6 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
             (setq lf-child-entry (or bname curr-dir))
             (set-frame-parameter nil 'lf-index-path (or (dired-get-filename nil t) entry))
             (lf-refresh t))
-        (lf-quit :keep-alive)
         (find-file entry)))))
 
 (defun lf-quit (&optional keep-alive)
