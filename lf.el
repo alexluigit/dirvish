@@ -953,10 +953,6 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (unless (and (not (eq major-mode 'wdired-mode)) (lf-live-p))
     (apply fn args)))
 
-(defun lf-lsp--deferred-advice (fn &rest args)
-  "doc"
-  (unless (lf-live-p) (apply fn args)))
-
 (defun lf-deletion--refresh-advice (fn &rest args)
   "Advice function for FN with ARGS."
   (let ((trash-directory (lf-get--trash-dir))) (apply fn args))
@@ -985,7 +981,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (dired-narrow  dired-narrow--internal       lf-general--refresh-advice)
     (find-dired    find-dired-sentinel          lf-general--refresh-advice)
     (evil          evil-refresh-cursor          lf-evil--cursor-advice)
-    (lsp-mode      lsp-deferred                 lf-lsp--deferred-advice))
+    (lsp-mode      lsp-deferred                 ignore))
   "A list of file, adviced function, and advice function.")
 
 (put 'dired-subdir-alist 'permanent-local t)
