@@ -575,10 +575,11 @@ window at the designated `side' of the frame."
               (size (cadr task))
               (finished
                (with-current-buffer io-buf
-                 (how-many "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*" (point-min) (point-max)))))
+                 (how-many "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"
+                           (point-min) (point-max)))))
     (when (eq finished length)
       (cancel-timer (symbol-value 'lf-update--footer-timer))
-      (revert-buffer)
+      (when (lf-live-p) (revert-buffer))
       (setq lf-i/o-queue (cdr lf-i/o-queue)))
     (format "%s: %s total size: %s"
             (if (eq finished length) "Success" "Progress")
