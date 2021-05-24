@@ -509,20 +509,6 @@ is less then `lf-width-header'."
     (overlay-put ol 'lf-line t)
     (overlay-put ol 'face 'lf-line-face)))
 
-;;;; Icons
-
-(defun lf-update--icons ()
-  (when lf-show-icons
-    (remove-overlays (point-min) (point-max) 'lf-icons t)
-    (save-excursion
-      (let* ((curr-line (line-number-at-pos))
-             (beg (forward-line (- 0 (frame-height))))
-             (end (+ curr-line (frame-height))))
-        (while (and (not (eobp)) (< (line-number-at-pos) end))
-          (when-let ((pos (dired-move-to-filename nil)))
-            (lf-render--icon pos))
-          (forward-line 1))))))
-
 (defun lf-render--icon (pos &optional face)
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,lf-icons-v-offset))
@@ -538,6 +524,28 @@ is less then `lf-width-header'."
     (overlay-put ov 'lf-icons t)
     (overlay-put ov 'after-string icon-str)))
 
+;;;; Viewport
+
+(defun lf-update--viewports (w _)
+  "Refresh attributes in viewport, added to `window-scroll-functions'."
+  (when (lf-live-p w)
+    (with-selected-window w
+      (lf-update--attribute lf-show-icons 'lf-icons 'lf-render--icon)
+      (lf-update--line))))
+
+(defun lf-update--attribute (enabled overlay render-func)
+  "doc"
+  (when enabled
+    (remove-overlays (point-min) (point-max) overlay t)
+    (save-excursion
+      (let* ((top (goto-char (window-start)))
+             (beg (line-number-at-pos top))
+             (end (+ beg (frame-height))))
+        (while (and (not (eobp)) (< (line-number-at-pos) end))
+          (when-let ((pos (dired-move-to-filename nil)))
+            (funcall render-func pos))
+          (forward-line 1))))))
+
 ;;; Helpers
 
 (defun lf-display--buffer (buffer alist)
@@ -550,6 +558,11 @@ window at the designated `side' of the frame."
          (split-width-threshold 0)
          (new-window (split-window-no-error lf-window size side)))
     (window--display-buffer buffer new-window 'window alist)))
+
+(defun lf-redisplay--frame ()
+  "Refresh lf frame, added to `after-focus-change-functions'."
+  (frame-focus-state)
+  (when (eq major-mode 'lf-mode) (lf-refresh t)))
 
 (defun lf-get--parent (path)
   "Get parent directory of `PATH'"
@@ -864,9 +877,9 @@ links."
   (setq lf-depth (1+ lf-depth)) (lf-refresh t))
 
 ;;;###autoload
-(defun lf-live-p ()
+(defun lf-live-p (&optional win)
   "Util function for detecting if in lf mode."
-  (memq (selected-window) lf-parent-windows))
+  (memq (or win (selected-window)) lf-parent-windows))
 
 (defun lf-new-frame ()
   "Make a new frame and launch lf."
@@ -916,13 +929,12 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 (defun lf-setup--dired-buffer-advice (fn &rest args)
   "Setup the dired buffer by removing the header and filter files."
   (apply fn args)
-  (remove-overlays)
-  (let ((ho (make-overlay (point-min) (line-end-position)))
-        (so (make-overlay (point-min) (point-max))))
-    (overlay-put so 'display `(height ,(1+ lf-file-line-padding)))
-    (overlay-put so 'line-spacing lf-file-line-padding)
-    (overlay-put ho 'after-string "\n"))
-  (lf-update--icons))
+  (save-excursion
+    (remove-overlays)
+    (let ((inhibit-read-only t)
+          (so (make-overlay (point-min) (point-max))))
+      (delete-region (point-min) (progn (forward-line 1) (point)))
+      (overlay-put so 'display `(height ,(1+ lf-file-line-padding))))))
 
 (defun lf-general--refresh-advice (fn &rest args)
   "Advice function for FN with ARGS."
@@ -939,14 +951,6 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (apply fn args)
   (lf-update--line))
 
-(defun lf-redisplay--icons (win pos)
-  "Redisplay icons incrementally, added to `window-scroll-functions'."
-  (when (and lf-show-icons (eq win lf-window)) (lf-update--icons)))
-
-(defun lf-redisplay--frame ()
-  "Refresh lf frame, added to `after-focus-change-functions'."
-  (frame-focus-state)
-  (when (eq major-mode 'lf-mode) (lf-refresh t)))
 (defun lf-evil--cursor-advice (fn &rest args)
   (unless (and (not (eq major-mode 'wdired-mode)) (lf-live-p))
     (apply fn args)))
@@ -991,7 +995,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 
 (defun lf-init ()
   "Save previous window config and initialize lf."
-  (add-hook 'window-scroll-functions #'lf-redisplay--icons)
+  (add-hook 'window-scroll-functions #'lf-update--viewports)
   (add-function :after after-focus-change-function #'lf-redisplay--frame)
   (pcase-dolist (`(,file ,sym ,fn) lf-advice-alist)
     (with-eval-after-load file (advice-add sym :around fn)))
@@ -1026,7 +1030,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (posframe-delete (frame-parameter nil 'lf-header-buffer))
   (set-frame-parameter nil 'lf-header--frame nil)
   (when-let ((singleton (< (length lf-frame-alist) 2)))
-    (remove-hook 'window-scroll-functions #'lf-redisplay--icons)
+    (remove-hook 'window-scroll-functions #'lf-update--viewports)
     (remove-function after-focus-change-function #'lf-redisplay--frame)
     (pcase-dolist (`(,file ,sym ,fn) lf-advice-alist)
       (with-eval-after-load file (advice-remove sym fn)))
@@ -1057,7 +1061,7 @@ also rebuild lf layout."
   (lf-update--preview)
   (lf-update--header)
   (lf-update--footer)
-  (lf-update--icons)
+  (lf-update--attribute lf-show-icons 'lf-icons 'lf-render--icon)
   (lf-update--line))
 
 ;;;; Core utilities
