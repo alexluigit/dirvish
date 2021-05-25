@@ -150,8 +150,8 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-width-img nil
   "Calculated preview window width. Used for image preview.")
 
-(defvar lf-width-header (frame-width)
-  "Calculated header frame width. Default to frame width when disable preview.")
+(defvar lf-width-header nil
+  "Calculated header frame width.")
 
 (defvar lf-header-scale 1.25
   "Height of header line.")
@@ -278,12 +278,17 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Header frame
 
+(defun lf-width-header ()
+  "Calculate header frame width. Default to frame width when disable preview."
+  (* (frame-width) (if lf-enable-preview (- 1 lf-width-preview) 1)))
+
 (defun lf-build--header-frame ()
   (let* ((buf (frame-parameter nil 'lf-header-buffer))
-         (min-w (1+ (ceiling lf-width-header)))
+         (min-w (1+ (ceiling (lf-width-header))))
          (f-props `(:min-height 2 :background-color "#565761"
                                 :position ,lf-header-position :min-width ,min-w))
          (h-frame (frame-parameter nil 'lf-header--frame)))
+    (setq lf-width-header min-w)
     (if h-frame
         (posframe--set-frame-size h-frame 1 2 1 min-w)
       (set-frame-parameter nil 'lf-header--frame (apply #'posframe-show buf f-props)))))
@@ -346,7 +351,6 @@ TRASH-DIR is path to trash-dir in that disk."
            (buf (frame-parameter nil 'lf-preview-buffer))
            (new-window (display-buffer buf `(lf-display--buffer . ,win-alist))))
       (setq lf-width-img (window-width new-window t))
-      (setq lf-width-header (* (frame-width) (- 1 lf-width-preview)))
       (set-frame-parameter nil 'lf-preview-window new-window))))
 
 (defun lf-default-preview-config ()
@@ -555,11 +559,6 @@ window at the designated `side' of the frame."
          (split-width-threshold 0)
          (new-window (split-window-no-error lf-window size side)))
     (window--display-buffer buffer new-window 'window alist)))
-
-(defun lf-redisplay--frame ()
-  "Refresh lf frame, added to `after-focus-change-functions'."
-  (frame-focus-state)
-  (when (eq major-mode 'lf-mode) (lf-refresh t)))
 
 (defun lf-get--parent (path)
   "Get parent directory of `PATH'"
@@ -922,6 +921,15 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (set-frame-parameter nil 'lf-header-buffer header-buf)))
 
 ;;;; Advices / Hooks
+
+(defun lf-redisplay--frame ()
+  "Refresh lf frame, added to `after-focus-change-functions'."
+  (if (eq major-mode 'lf-mode)
+      (lf-refresh t)
+    (when (memq (previous-frame) (mapcar 'car lf-frame-alist))
+      (with-selected-frame (previous-frame)
+        (lf-build--header-frame)
+        (lf-update--header)))))
 
 (defun lf-setup--dired-buffer-advice (fn &rest args)
   "Setup the dired buffer by removing the header and filter files."
