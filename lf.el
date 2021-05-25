@@ -495,7 +495,7 @@ is less then `lf-width-header'."
          (index (format "%3d/%-3d" cur-pos final-pos))
          (sorting (if (string= "" lf-sort-criteria) "name" lf-sort-criteria))
          (sort-by (concat "Sort by: " sorting))
-         (i/o-task (or (lf-i/o--status) ""))
+         (i/o-task (or (lf-get--i/o-status) ""))
          (filter (format "Filter: %s"  lf-show-hidden))
          (space "&&&"))
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)
@@ -577,7 +577,7 @@ window at the designated `side' of the frame."
     (when (string-prefix-p (car dir) (dired-current-directory))
       (cl-return (concat (car dir) (cdr dir))))))
 
-(defun lf-i/o--status ()
+(defun lf-get--i/o-status ()
   (when-let* ((task (car-safe lf-i/o-queue))
               (io-buf (car task))
               (length (cddr task))
@@ -1018,7 +1018,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (lf-init--buffer)
   (unless lf-pre-config-saved
     (unless (posframe-workable-p) (error "Lf requires GUI emacs."))
-    (when (lf-i/o--status)
+    (when (lf-get--i/o-status)
       (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async))
     (unless lf-override-dired-mode
       (cl-dolist (buf (buffer-list))
