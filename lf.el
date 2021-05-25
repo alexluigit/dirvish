@@ -992,6 +992,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (dired         wdired-abort-changes         lf-general--refresh-advice)
     (dired-aux     dired-do-kill-lines          lf-general--refresh-advice)
     (dired-aux     dired-create-directory       lf-general--refresh-advice)
+    (dired-aux     dired-create-empty-file      lf-general--refresh-advice)
     (dired-aux     dired-do-create-files        lf-general--refresh-advice)
     (dired-aux     dired-do-rename              lf-general--refresh-advice)
     (dired-aux     dired-insert-subdir          lf-general--refresh-advice)
