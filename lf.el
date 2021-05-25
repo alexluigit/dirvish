@@ -438,7 +438,7 @@ TRASH-DIR is path to trash-dir in that disk."
         (push preview-buffer lf-preview-buffers))
       (with-current-buffer preview-buffer (run-hooks 'lf-preview-win-hook)))))
 
-;;;; Header
+;;;; Header / Footer / Filter
 
 (defun lf-update--header ()
   "Update header string.  Make sure the length of header string
@@ -464,8 +464,6 @@ is less then `lf-width-header'."
     (format "   %s %s %s" (propertize (if path-prefix-home "~" ":"))
             (propertize path-tail 'face 'dired-mark)
             (propertize file-name 'face 'font-lock-constant-face))))
-
-;;;; Footer
 
 (defun lf-update--footer ()
   "Show file details in echo area."
@@ -501,7 +499,20 @@ is less then `lf-width-header'."
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)
       (?s . ,file-size) (?S . ,sort-by) (?w . ,space) (?t . ,i/o-task))))
 
-;;;; Overlays
+(defun lf-update--filter ()
+  (save-excursion
+    (let* ((all-re '("^\\.?#\\|^\\.$\\|^\\.\\.$"))
+           (dot-re '("^\\."))
+           (method (cl-case lf-show-hidden ('lf lf-hidden-regexp)
+                            ('dot dot-re)))
+           (omit-re (mapconcat 'concat (append all-re method) "\\|"))
+           buffer-read-only)
+      (dired-mark-unmarked-files omit-re nil nil 'no-dir)
+      (goto-char (point-min))
+      (let ((regexp (dired-marker-regexp)))
+        (while (and (not (eobp)) (re-search-forward regexp nil t))
+          (delete-region (line-beginning-position) (progn (forward-line 1) (point))))))))
+
 ;;;; Overlays / Viewport
 
 (defun lf-update--line ()
@@ -805,21 +816,7 @@ links."
   (setq lf-show-hidden
         (cl-case lf-show-hidden
           ('all 'dot) ('dot 'lf) ('lf 'all)))
-  (revert-buffer) (lf-file--filter) (lf-refresh))
-
-(defun lf-file--filter ()
-  (save-excursion
-    (let* ((all-re '("^\\.?#\\|^\\.$\\|^\\.\\.$"))
-           (dot-re '("^\\."))
-           (method (cl-case lf-show-hidden ('lf lf-hidden-regexp)
-                            ('dot dot-re)))
-           (omit-re (mapconcat 'concat (append all-re method) "\\|"))
-           buffer-read-only)
-      (dired-mark-unmarked-files omit-re nil nil 'no-dir)
-      (goto-char (point-min))
-      (let ((regexp (dired-marker-regexp)))
-        (while (and (not (eobp)) (re-search-forward regexp nil t))
-          (delete-region (line-beginning-position) (progn (forward-line 1) (point))))))))
+  (lf-refresh))
 
 (defun lf-sort-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
