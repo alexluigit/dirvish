@@ -315,17 +315,19 @@ TRASH-DIR is path to trash-dir in that disk."
                (buffer (dired-noselect parent))
                (window (display-buffer buffer `(lf-display--buffer . ,win-alist))))
           (with-current-buffer buffer
-            (when (and lf-show-icons lf-child-entry)
-              (remove-overlays (1- (point)) (point) 'lf-icons t)
-              (lf-render--icon (point)))
             (setq lf-child-entry current)
             (add-to-list 'lf-parent-buffers buffer)
             (add-to-list 'lf-parent-windows window))))
-      (cl-dolist (buf lf-parent-buffers)
-        (with-current-buffer buf
-          (when lf-child-entry (dired-goto-file lf-child-entry))
-          (when (dired-move-to-filename nil) (lf-update--line))
-          (run-hooks 'lf-parent-win-hook))))))
+      (walk-window-tree
+       (lambda (win)
+        (with-selected-window win
+          (when lf-child-entry (dired-goto-file lf-child-entry) (lf-update--line))
+          (setq header-line-format
+                (propertize " " 'display `((height ,(+ 2 lf-file-line-padding)))))
+          (setq line-spacing lf-file-line-padding)
+          (lf-update--icons)
+          (lf-update--line)
+          (run-hooks 'lf-parent-win-hook)))))))
 
 (defun lf-default-parent-config ()
   "Default parent windows settings."
@@ -496,6 +498,7 @@ is less then `lf-width-header'."
       (?s . ,file-size) (?S . ,sort-by) (?w . ,space) (?t . ,i/o-task))))
 
 ;;;; Overlays
+;;;; Overlays / Viewport
 
 (defun lf-update--line ()
   (remove-overlays (point-min) (point-max) 'lf-line t)
@@ -508,6 +511,11 @@ is less then `lf-width-header'."
       (lf-render--icon pos 'lf-line-face))
     (overlay-put ol 'lf-line t)
     (overlay-put ol 'face 'lf-line-face)))
+
+(defun lf-update--icons ()
+  (when lf-show-icons
+    (remove-overlays (point-min) (point-max) 'lf-icons t)
+    (lf-update--attribute 'lf-render--icon)))
 
 (defun lf-render--icon (pos &optional face)
   (let* ((entry (dired-get-filename 'relative 'noerror))
@@ -524,27 +532,16 @@ is less then `lf-width-header'."
     (overlay-put ov 'lf-icons t)
     (overlay-put ov 'after-string icon-str)))
 
-;;;; Viewport
-
-(defun lf-update--viewports (w _)
-  "Refresh attributes in viewport, added to `window-scroll-functions'."
-  (when (lf-live-p w)
-    (with-selected-window w
-      (lf-update--attribute lf-show-icons 'lf-icons 'lf-render--icon)
-      (lf-update--line))))
-
-(defun lf-update--attribute (enabled overlay render-func)
+(defun lf-update--attribute (render-func &optional range)
   "doc"
-  (when enabled
-    (remove-overlays (point-min) (point-max) overlay t)
-    (save-excursion
-      (let* ((top (goto-char (window-start)))
-             (beg (line-number-at-pos top))
-             (end (+ beg (frame-height))))
-        (while (and (not (eobp)) (< (line-number-at-pos) end))
-          (when-let ((pos (dired-move-to-filename nil)))
-            (funcall render-func pos))
-          (forward-line 1))))))
+  (save-excursion
+    (let ((beg (or (car range) (- 0 (frame-height))))
+          (end (or (cdr range) (+ (line-number-at-pos) (frame-height)))))
+      (forward-line beg)
+      (while (and (not (eobp)) (< (line-number-at-pos) end))
+        (when-let ((pos (dired-move-to-filename nil)))
+          (funcall render-func pos))
+        (forward-line 1)))))
 
 ;;; Helpers
 
@@ -938,7 +935,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 
 (defun lf-general--refresh-advice (fn &rest args)
   "Advice function for FN with ARGS."
-  (apply fn args) (revert-buffer)
+  (apply fn args)
   (lf-refresh (not (eq major-mode 'lf-mode))))
 
 (defun lf-update--line-refresh-advice (fn &rest args)
@@ -964,6 +961,13 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 (defun lf-file-open--advice (fn &rest args)
   "Advice for `find-file' and `find-file-other-window'"
   (when (lf-live-p) (lf-quit :keep-alive)) (apply fn args))
+
+(defun lf-update--viewports (win _)
+  "Refresh attributes in viewport, added to `window-scroll-functions'."
+  (when (eq win lf-window)
+    (with-selected-window win
+      (lf-update--icons)
+      (lf-update--line))))
 
 (cl-dolist (fn '(lf-next-file lf-go-top lf-go-bottom lf-flag-file-yank))
   (advice-add fn :around 'lf-update--line-refresh-advice))
@@ -1058,10 +1062,12 @@ also rebuild lf layout."
     (lf-build--parent-windows)
     (lf-build--preview-window)
     (lf-build--header-frame))
+  (revert-buffer)
   (lf-update--preview)
   (lf-update--header)
   (lf-update--footer)
-  (lf-update--attribute lf-show-icons 'lf-icons 'lf-render--icon)
+  (lf-update--filter)
+  (lf-update--icons)
   (lf-update--line))
 
 ;;;; Core utilities
