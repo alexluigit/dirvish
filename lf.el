@@ -198,6 +198,9 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-i/o-queue ()
   "doc")
 
+(defvar lf-additional-mime '((".ape" . "audio/ape") (".rmvb" . "video/rm") (".f4v" . "video/f4v"))
+  "doc")
+
 (defvar lf-mode-map
   (let ((map (make-sparse-keymap)))
     ;; file opening
@@ -1022,9 +1025,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
         (when (eq 'dired-mode (buffer-local-value 'major-mode buf))
           (kill-buffer buf))))
     (mailcap-parse-mailcaps)
-    (setq mailcap-mime-extensions
-          (delq (assoc ".ts" mailcap-mime-extensions) mailcap-mime-extensions))
-    (add-to-list 'mailcap-mime-extensions '(".ape" . "audio/monkey"))
+    (cl-dolist (mm lf-additional-mime) (add-to-list 'mailcap-mime-extensions mm))
     (setq lf-pre-arev-mode (bound-and-true-p auto-revert-mode))
     (setq lf-pre-config-saved t)))
 
