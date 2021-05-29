@@ -264,10 +264,12 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (transient-define-prefix lf-file ()
   "Get file information."
-  ["Select file info type:"
-   ("n" "NAME" (lambda () (interactive) (dired-copy-filename-as-kill)))
-   ("p" "PATH" (lambda () (interactive) (lf-yank-filepath)))
-   ("t" "TYPE" (lambda () (interactive) (dired-show-file-type (dired-get-filename nil t))))])
+  ["Select file operation:"
+   ("m" "mark file REGEX" dired-mark-files-regexp)
+   ("l" "goto file TRUEPATH" (lambda () (interactive) (lf-find-file (file-truename (dired-get-filename)))))
+   ("n" "copy file NAME" (lambda () (interactive) (dired-copy-filename-as-kill)))
+   ("p" "copy file PATH" (lambda () (interactive) (lf-yank-filepath)))
+   ("t" "show file TYPE" (lambda () (interactive) (dired-show-file-type (dired-get-filename))))])
 
 (transient-define-prefix lf-do-yank ()
   "Paste marked files to current directory."
