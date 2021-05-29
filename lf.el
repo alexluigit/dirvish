@@ -196,59 +196,6 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-override-dired-mode nil
   "doc")
 
-(defvar lf-mode-map
-  (let ((map (make-sparse-keymap)))
-    ;; file opening
-    (define-key map "ws"               (lambda () (interactive) (lf-open-file 'vertical)))
-    (define-key map "wv"               (lambda () (interactive) (lf-open-file 'horizontal)))
-    (define-key map "wo"               (lambda () (interactive) (lf-open-file 'other)))
-    (define-key map "we"               'lf-open-in-external-app)
-    (define-key map "e"                'lf-find-file)
-    (define-key map (kbd "<return>")   'lf-find-file)
-    (define-key map (kbd "<mouse-1>")  'lf-find-file)
-    ;; navigation
-    (define-key map "G"                'lf-go-bottom)
-    (define-key map "h"                'lf-up-directory)
-    (define-key map "n"                'lf-next-file)
-    (define-key map "p"                'lf-prev-file)
-    (define-key map (kbd "C-d")        'lf-page-down)
-    (define-key map (kbd "C-u")        'lf-page-up)
-    (define-key map "g"                'lf-go)
-    ;; copy and paste
-    (define-key map "y"                'lf-flag-file-yank)
-    (define-key map "kk"               'lf-paste)
-    (define-key map "km"               'lf-move)
-    (define-key map "kl"               'lf-paste-as-symlink)
-    (define-key map "ks"               'lf-show-yank-contents)
-    ;; settings
-    (define-key map "s"                'lf-sort-criteria)
-    (define-key map "z+"               'lf-more-parents)
-    (define-key map "z-"               'lf-less-parents)
-    (define-key map "zh"               'lf-toggle-dotfiles)
-    (define-key map "zp"               'lf-toggle-preview)
-    (define-key map "r"                'lf-refresh)
-    (define-key map "q"                'lf-quit)
-    ;; utils
-    (define-key map "fn"               'lf-yank-filename)
-    (define-key map "fp"               'lf-yank-filepath)
-    (define-key map "ft"               'dired-show-file-type)
-    (define-key map "v"                'set-mark-command)
-    (define-key map (kbd "<tab>")      'lf-show-history)
-    (define-key map "a"                'lf-rename-eol)
-    (define-key map "i"                'wdired-change-to-wdired-mode)
-    (define-key map "I"                'dired-insert-subdir)
-    (define-key map "E"                'dired-create-empty-file)
-    (define-key map "/"                'lf-search)
-    (define-key map (kbd "C-s")        'lf-search-next)
-    (define-key map (kbd "C-r")        'lf-search-previous)
-    (define-key map [remap delete-window]
-      (lambda () (interactive)
-        (message "Press %s to quit" (propertize "q" 'face 'help-key-binding))))
-    map)
-  "Lf mode map.")
-
-(defvar lf-override-dired-mode nil)
-
 ;;;; Buffer / Frame local variables
 
 (defvar-local lf-child-entry nil
@@ -271,6 +218,64 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (defvar lf-cleanup-regex "*Lf \\(I/O\\|Preview\\|Header\\)*"
   "doc")
+
+;;;; Keymap
+
+(defvar lf-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "f"                                  'lf-file)
+    (define-key map "y"                                  'lf-do-yank)
+    (define-key map (kbd "TAB")                          'lf-show-history)
+    (define-key map [remap dired-find-file-other-window] 'lf-open)
+    (define-key map [remap yank]                         'lf-do-flagged-yank)
+    (define-key map [remap dired-do-redisplay]           'lf-layout)
+    (define-key map [remap dired-omit-mode]              'lf-toggle-dotfiles)
+    (define-key map [remap dired-find-file]              'lf-find-file)
+    (define-key map [remap dired-up-directory]           'lf-up-directory)
+    (define-key map [remap dired-next-line]              'lf-next-file)
+    (define-key map [remap dired-previous-line]          'lf-prev-file)
+    (define-key map [remap end-of-buffer]                'lf-go-bottom)
+    (define-key map [remap beginning-of-buffer]          'lf-go-top)
+    (define-key map [remap dired-sort-toggle-or-edit]    'lf-sort-criteria)
+    (define-key map [remap revert-buffer]                'lf-refresh)
+    (define-key map [remap dired-view-file]              'lf-toggle-preview)
+    (define-key map [remap quit-window]                  'lf-quit)
+    (define-key map [remap delete-window]
+      (lambda ()
+        (interactive)
+        (message "%s" (substitute-command-keys "Press \\[quit-window] to quit lf"))))
+    map)
+  "Lf mode map.")
+
+(transient-define-prefix lf-open ()
+  "Open files in new split or other windows."
+  ["Open file in:"
+   ("s" "HORIZONTAL window" (lambda () (interactive) (lf-open-file 'horizontal)))
+   ("v" "VETICAL    window" (lambda () (interactive) (lf-open-file 'vertical)))
+   ("o" "OTHER      window" (lambda () (interactive) (lf-open-file 'other)))
+   ("e" "EXTERNAL   programs" (lambda () (interactive) (lf-open-in-external-app)))])
+
+(transient-define-prefix lf-file ()
+  "Get file information."
+  ["Select file info type:"
+   ("n" "NAME" (lambda () (interactive) (dired-copy-filename-as-kill)))
+   ("p" "PATH" (lambda () (interactive) (lf-yank-filepath)))
+   ("t" "TYPE" (lambda () (interactive) (dired-show-file-type (dired-get-filename nil t))))])
+
+(transient-define-prefix lf-do-yank ()
+  "Paste marked files to current directory."
+  ["Choose paste method:"
+   ("y" "PASTE (yank)" (lambda () (interactive) (lf-paste)))
+   ("m" "MOVE" (lambda () (interactive) (lf-paste 'move)))
+   ("l" "SYMLINK" (lambda () (interactive) (lf-paste 'symlink)))
+   ("L" "SYMLINK (relative)" (lambda () (interactive) (lf-paste 'relalink)))])
+
+(transient-define-prefix lf-layout ()
+  "Change lf layout."
+  ["Change layout:"
+   ("-" "DECREASE columns" (lambda () (interactive) (setq lf-depth (max 0 (- lf-depth 1))) (lf-refresh t)))
+   ("+" "INCREASE columns" (lambda () (interactive) (setq lf-depth (1+ lf-depth)) (lf-refresh t)))
+   ("p" "TOGGLE preview window" (lambda () (interactive) (setq lf-enable-preview (not lf-enable-preview)) (lf-refresh t)))])
 
 ;;; Layout
 
@@ -680,29 +685,6 @@ the idle timer fires are ignored."
   (interactive)
   (goto-char (point-max)) (lf-next-file 1))
 
-(defun lf-page-down ()
-  "Scroll down file list"
-  (interactive)
-  (lf-next-file (window-height)))
-
-(defun lf-page-up ()
-  "Scroll up file list"
-  (interactive)
-  (lf-next-file (- 0 (window-height))))
-
-(transient-define-prefix lf-go ()
-  "This is just an example of `lf-go' command. You can define your
-own with `transient-define-prefix'."
-  ["File"
-   ("l" "Follow file link" (lambda () (interactive) (lf-find-file (file-truename (dired-get-filename)))))
-   ("." "`lf.el' source code." (lambda () (interactive) (find-library "lf.el")))]
-  ["Directory"
-   ("h" "~/" (lambda () (interactive) (lf-find-file "~/")))
-   ("L" "Follow dir link" (lambda () (interactive) (lf-find-file (file-truename default-directory))))]
-  ["Navigation"
-   ("r" "Refresh buffer" revert-buffer)
-   ("g" "Go Top" lf-go-top)])
-
 (defun lf-next-file (arg)
   "Move lines in lf and initiate updates to preview window."
   (interactive "^p")
@@ -824,33 +806,12 @@ own with `transient-define-prefix'."
       (dired-sort-other switch)
       (lf-refresh))))
 
-(defun lf-toggle-preview ()
-  "Toggle preview of selected file."
-  (interactive)
-  (setq lf-enable-preview (not lf-enable-preview))
-  (lf-refresh t))
-
 (defun lf-yank-filepath (&optional dir-only)
   "Copy the current directory's (`default-directory''s) absolute path."
   (interactive "P")
   (if dir-only
       (message (kill-new (expand-file-name default-directory)))
     (message (kill-new (dired-get-filename nil t)))))
-
-(defun lf-rename-eol ()
-  (interactive)
-  (end-of-line)
-  (wdired-change-to-wdired-mode))
-
-(defun lf-less-parents ()
-  "Reduce number of lf parents."
-  (interactive)
-  (setq lf-depth (max 0 (- lf-depth 1))) (lf-refresh t))
-
-(defun lf-more-parents ()
-  "Increase number of lf parents."
-  (interactive)
-  (setq lf-depth (1+ lf-depth)) (lf-refresh t))
 
 ;;;###autoload
 (defun lf-live-p (&optional win)
