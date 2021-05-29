@@ -235,7 +235,6 @@ TRASH-DIR is path to trash-dir in that disk."
     (define-key map "y"                                  'lf-do-yank)
     (define-key map (kbd "TAB")                          'lf-show-history)
     (define-key map [remap dired-find-file-other-window] 'lf-open)
-    (define-key map [remap yank]                         'lf-do-flagged-yank)
     (define-key map [remap dired-do-redisplay]           'lf-layout)
     (define-key map [remap dired-omit-mode]              'lf-toggle-dotfiles)
     (define-key map [remap dired-find-file]              'lf-find-file)
