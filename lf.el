@@ -715,22 +715,6 @@ own with `transient-define-prefix'."
                                                 :test (lambda (x y) (or (null y) (equal x y)))))))
   (when history (lf-find-file history)))
 
-(defun lf-search (&optional evil-cmd isearch-cmd)
-  (interactive)
-  (if (featurep 'evil)
-      (progn (funcall (or evil-cmd 'evil-search-forward))
-             (set-frame-parameter nil 'lf-index-path (dired-get-filename nil t))
-             (lf-refresh))
-    (funcall (or isearch-cmd 'isearch-forward))))
-
-(defun lf-search-next ()
-  (interactive)
-  (lf-search 'evil-search-next 'isearch-repeat-forward))
-
-(defun lf-search-previous ()
-  (interactive)
-  (lf-search 'evil-search-previous 'isearch-repeat-backward))
-
 ;;;; Copy / Paste
 
 (defun lf-flag-file-yank (arg &optional interactive)
@@ -998,6 +982,9 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (dired-aux     dired-do-rename              lf-general--refresh-advice)
     (dired-aux     dired-insert-subdir          lf-general--refresh-advice)
     (dired-narrow  dired-narrow--internal       lf-general--refresh-advice)
+    (isearch       isearch-repeat-backward      lf-general--refresh-advice)
+    (isearch       isearch-repeat-forward       lf-general--refresh-advice)
+    (isearch       isearch-exit                 lf-general--refresh-advice)
     (find-dired    find-dired-sentinel          lf-general--refresh-advice)
     (evil          evil-refresh-cursor          lf-evil--cursor-advice)
     (lsp-mode      lsp-deferred                 ignore))
