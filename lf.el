@@ -154,8 +154,11 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-history-ring (make-ring lf-history-length)
   "History for `lf-find-file'.")
 
-(defvar lf-pre-config-saved nil
+(defvar lf-initialized nil
   "Indicate if previous window config saved.")
+
+(defvar lf-orig-recentf-list nil
+  "doc")
 
 (defvar lf-preview-delay 0.02
   "Time in seconds to delay running preview file functions.")
@@ -1019,24 +1022,26 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (push (cons frame (current-window-configuration)) lf-frame-alist))
   (when (window-parameter nil 'window-side) (delete-window))
   (lf-init--buffer)
-  (unless lf-pre-config-saved
+  (unless lf-initialized
     (add-hook 'window-scroll-functions #'lf-update--viewports)
     (add-function :after after-focus-change-function #'lf-redisplay--frame)
     (pcase-dolist (`(,file ,sym ,fn) lf-advice-alist)
       (with-eval-after-load file (advice-add sym :around fn)))
     (unless (posframe-workable-p) (error "Lf requires GUI emacs."))
     (when (lf-get--i/o-status)
-    (setq lf-pre-config-saved t)))
       (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async)
       (lf-define--async lf-set--i/o-status 0 0.1) (lf-set--i/o-status-async))
+    (with-eval-after-load 'recentf (setq lf-orig-recentf-list recentf-list))
+    (setq lf-initialized t)))
 
 (defun lf-deinit ()
   "Revert previous window config and deinit lf."
+  (setq lf-initialized nil)
+  (setq recentf-list lf-orig-recentf-list)
+  (with-eval-after-load 'recentf (setq recentf-list lf-orig-recentf-list))
   (when-let* ((config (cdr-safe (assoc (window-frame) lf-frame-alist)))
               (valid (window-configuration-p config)))
     (set-window-configuration config))
-  (unless lf-pre-arev-mode (auto-revert-mode -1))
-  (setq lf-pre-config-saved nil)
   (mapc #'kill-buffer lf-preview-buffers)
   (posframe-delete (frame-parameter nil 'lf-header-buffer))
   (set-frame-parameter nil 'lf-header--frame nil)
