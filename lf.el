@@ -100,7 +100,7 @@
   "Position of header line."
   :group 'lf :type '(choice (number cons function)))
 
-(defcustom lf-footer-format "%S  %f  %d  %p%w%t %i"
+(defcustom lf-footer-format "Sort: %S  Filter: %f  %d  %p%w%t %i"
   "Format for footer display. "
   :group 'lf :type 'string)
 
@@ -483,12 +483,11 @@ is less then `lf-width-header'."
          (final-pos (- (line-number-at-pos (point-max)) 3))
          (index (format "%3d/%-3d" cur-pos final-pos))
          (sorting (if (string= "" lf-sort-criteria) "name" lf-sort-criteria))
-         (sort-by (concat "Sort by: " sorting))
          (i/o-task (or (lf-get--i/o-status) ""))
-         (filter (format "Filter: %s"  lf-show-hidden))
+         (filter (format "%s" lf-show-hidden))
          (space "&&&"))
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)
-      (?s . ,file-size) (?S . ,sort-by) (?w . ,space) (?t . ,i/o-task))))
+      (?s . ,file-size) (?S . ,sorting) (?w . ,space) (?t . ,i/o-task))))
 
 (defun lf-update--filter ()
   (save-excursion
@@ -589,7 +588,22 @@ window at the designated `side' of the frame."
     (when (string-prefix-p (car dir) (dired-current-directory))
       (cl-return (concat (car dir) (cdr dir))))))
 
-(defun lf-get--i/o-status ()
+(defun lf-get--i/o-status (&optional brief)
+  (when-let* ((task (car-safe lf-i/o-queue)))
+    (let ((finished (car task))
+          (size (nth 2 task))
+          (index (car (nth 3 task)))
+          (length (cdr (nth 3 task))))
+      (when finished
+        (setq lf-i/o-queue (cdr lf-i/o-queue))
+        (unless lf-i/o-queue
+          (cancel-timer (symbol-value 'lf-update--footer-timer))))
+      (format "%s: %s total size: %s"
+              (if finished "Success" "Progress")
+              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
+              (propertize size 'face 'font-lock-builtin-face)))))
+
+(defun lf-set--i/o-status ()
   (when-let* ((task (car-safe lf-i/o-queue))
               (io-buf (nth 1 task))
               (buf-live-p (buffer-live-p io-buf))
@@ -632,6 +646,9 @@ the idle timer fires are ignored."
                (setq ,timer (run-with-timer ,delay ,interval ',func)))
            (unless (timerp ,timer)
              (setq ,timer (run-with-idle-timer ,delay nil ,once))))))))
+
+(defun lf-update--footer-async ()
+  "Update footer periodically when i/o task is running.")
 
 (lf-define--async lf-update--preview lf-preview-delay)
 
@@ -781,11 +798,12 @@ links."
                     (?a (setq overwrite t) (push (cons file name~) new-fileset))
                     (?q (setq abort t) (setq new-fileset ()))))
               (push (cons file paste-name) new-fileset))))))
-    (lf-define--async lf-update--footer 0 0.01) (lf-update--footer-async)
     ;; FIXME: make it compatable with non shell cmd
     (let ((size (lf-get--filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
-      (add-to-list 'lf-i/o-queue (cons io-buffer (cons size leng))))
+      (add-to-list 'lf-i/o-queue `(nil ,io-buffer ,size ,(cons 0 leng))))
+    (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async)
+    (lf-define--async lf-set--i/o-status 0 0.1) (lf-set--i/o-status-async)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf lf-parent-buffers)
@@ -1008,8 +1026,9 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
       (with-eval-after-load file (advice-add sym :around fn)))
     (unless (posframe-workable-p) (error "Lf requires GUI emacs."))
     (when (lf-get--i/o-status)
-      (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async))
     (setq lf-pre-config-saved t)))
+      (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async)
+      (lf-define--async lf-set--i/o-status 0 0.1) (lf-set--i/o-status-async))
 
 (defun lf-deinit ()
   "Revert previous window config and deinit lf."
