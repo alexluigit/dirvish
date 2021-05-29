@@ -803,7 +803,7 @@ links."
   (setq lf-show-hidden
         (cl-case lf-show-hidden
           ('all 'dot) ('dot 'lf) ('lf 'all)))
-  (lf-refresh))
+  (lf-refresh nil t))
 
 (defun lf-sort-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
@@ -1049,7 +1049,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (setq lf-preview-buffers ())
   (setq lf-parent-buffers ()))
 
-(defun lf-refresh (&optional rebuild)
+(defun lf-refresh (&optional rebuild filter)
   "Reset lf. With optional prefix ARG (\\[universal-argument])
 also rebuild lf layout."
   (interactive "P")
@@ -1058,10 +1058,10 @@ also rebuild lf layout."
     (lf-build--preview-window)
     (lf-build--header-frame))
   (revert-buffer)
+  (when filter (lf-update--filter))
   (lf-update--preview)
   (lf-update--header)
   (lf-update--footer)
-  (lf-update--filter)
   (lf-update--icons)
   (lf-update--line))
 
