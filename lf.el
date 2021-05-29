@@ -139,9 +139,6 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Internal variables
 
-(defvar lf-yank-marker ?Y
-  "Character used to flag files for yank.")
-
 (defvar lf-width-img nil
   "Calculated preview window width. Used for image preview.")
 
@@ -733,16 +730,10 @@ own with `transient-define-prefix'."
 
 ;;;; Copy / Paste
 
-(defun lf-flag-file-yank (arg &optional interactive)
-  (interactive (list current-prefix-arg t))
-  (let ((dired-marker-char lf-yank-marker))
-    (dired-mark arg interactive)))
-
 (defun lf-paste (&optional mode)
   "doc"
   (interactive)
-  (let* ((dired-marker-char lf-yank-marker)
-         (regexp (dired-marker-regexp))
+  (let* ((regexp (dired-marker-regexp))
          (yanked-files ())
          (mode (or mode 'copy))
          case-fold-search)
@@ -754,18 +745,6 @@ own with `transient-define-prefix'."
                 (append yanked-files (dired-map-over-marks (dired-get-filename) nil))))))
     (unless yanked-files (error "No files marked for paste."))
     (lf-internal-paste yanked-files mode)))
-
-(defun lf-move ()
-  "Move marked files to current directory."
-  (interactive)
-  (lf-paste 'move))
-
-(defun lf-paste-as-symlink (arg)
-  "Paste (yank marked) files as symlink. With
-optional (\\[universal-argument]) `RELATIVE' create relative
-links."
-  (interactive "P")
-  (if arg (lf-paste 'relalink) (lf-paste 'symlink)))
 
 (defun lf-internal-paste (fileset mode)
   "Helper for `lf-paste'."
