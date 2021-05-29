@@ -1,15 +1,23 @@
-;;; lf.el --- A better dired interface -*- lexical-binding: t -*-
+;;; lf.el --- A modern file manager based on dired -*- lexical-binding: t -*-
 ;; Copyright (C) 2021 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
 ;; Package-Version: 0.5
-;; Keywords: files, convenience, dired
+;; Keywords: lf, files, dired
 ;; Homepage: https://github.com/alexluigit/lf.el
-;; SPDX-License-Identifier: MIT
-;; Package-Requires: ((emacs "27.1") (posframe "1.0.2"))
+;; SPDX-License-Identifier: GPL-3.0-or-later
+;; Package-Requires: ((emacs "27.1") (transient "0.3.2") (posframe "1.0.2"))
 
-;;; Inspired by work from
-;; ranger.el - Author: Rich Alesi
+;;; Commentary
+
+;; lf stands for "list files", it is a minimalistic file manager based on
+;; `dired-mode'.  It is inspired by lf, see https://github.com/gokcehan/lf. A
+;; similar project is ranger.el, see https://github.com/ralesi/ranger.el.  It
+;; shows a stack of the parent directories and updates the parent buffers while
+;; navigating the file system with an optional preview window at side showing
+;; the content or meta information of the selected file. Unlike ranger or
+;; ranger.el, lf is more bare-bone and only focus on core functionalities
+;; involving file management.
 
 ;;; Code:
 
