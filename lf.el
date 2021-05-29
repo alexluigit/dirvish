@@ -17,7 +17,6 @@
 (require 'ring)
 (require 'transient)
 (require 'posframe)
-(require 'mailcap)
 (require 'dired-x)
 (require 'all-the-icons)
 (require 'ansi-color)
@@ -48,15 +47,15 @@
   :group 'lf :type 'list)
 
 (defcustom lf-preview-cmd-alist
-  '((nil ("iso" "bin" "exe") ("*Preview-Disable*"))
-    (nil ("zip")             ("zipinfo" "%i"))
-    (nil ("zst" "tar")       ("tar" "-tvf" "%i"))
-    (nil "audio"             ("mediainfo" "%i"))
-    (t   "image"             ("convert" "-resize" "%s" "%i" "%T"))
-    (t   "video"             ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
-    (t   ("rmvb" "f4v" "ts") ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
-    (t   ("epub")            ("epub-thumbnailer" "%i" "%T" "1024"))
-    (t   ("pdf")             ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
+  '(("image/"            ("convert" "-resize" "%s" "%i" "%T"))
+    ("audio/"            ("mediainfo" "%i"))
+    ("video/"            ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
+    (("iso" "bin" "exe") ("*Preview-Disable*"))
+    (("zip")             ("zipinfo" "%i"))
+    (("zst" "tar")       ("tar" "-tvf" "%i"))
+    (("ts" "rm" "rmvb")  ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
+    (("epub")            ("epub-thumbnailer" "%i" "%T" "1024"))
+    (("pdf")             ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
   "doc"
   :group 'lf :type '(alist :value-type (boolean (choice list string) list)))
 
@@ -75,10 +74,6 @@
 
 (defcustom lf-enable-preview t
   "When not-nil preview the selected file."
-  :group 'lf :type 'boolean)
-
-(defcustom lf-preview-binary nil
-  "When not-nil preview binary files."
   :group 'lf :type 'boolean)
 
 (defcustom lf-width-parents 0.12
@@ -198,7 +193,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-i/o-queue ()
   "doc")
 
-(defvar lf-additional-mime '((".ape" . "audio/ape") (".rmvb" . "video/rm") (".f4v" . "video/f4v"))
+(defvar lf-override-dired-mode nil
   "doc")
 
 (defvar lf-mode-map
@@ -361,19 +356,22 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Preview
 
-(cl-defun lf-get--preview-create (entry &optional cache cmd args)
+(cl-defun lf-get--preview-create (entry &optional cmd args)
   "Get corresponding preview buffer."
   (let ((buf (frame-parameter nil 'lf-preview-buffer))
         (process-connection-type nil)
-        (size (number-to-string lf-width-img)))
+        (size (number-to-string lf-width-img)) cache)
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
-      (unless cmd (insert entry)
-              (cl-return-from lf-get--preview-create buf))
+      (unless cmd (insert entry) (cl-return-from lf-get--preview-create buf))
+      (when (string= cmd "*Preview-Disable*")
+        (insert (format "Preview Disabled for %s." entry))
+        (cl-return-from lf-get--preview-create buf))
+      (unless (executable-find cmd)
+        (insert (format "Install `%s' to preview %s" cmd entry))
+        (cl-return-from lf-get--preview-create buf))
       (save-excursion
-        (when (string= cmd "*Preview-Disable*")
-          (insert (format "Preview Disabled for %s." entry))
-          (cl-return-from lf-get--preview-create buf))
+        (when (or (member "%T" args) (member "%t" args)) (setq cache t))
         (cl-dolist (fmt `((,entry . "%i") (,size . "%s")))
           (setq args (cl-substitute (car fmt) (cdr fmt) args :test 'string=)))
         (unless cache
@@ -401,28 +399,22 @@ TRASH-DIR is path to trash-dir in that disk."
 (cl-defun lf-preview--entry (entry)
   "Create the preview buffer of `ENTRY'."
   (unless (file-readable-p entry)
-    (cl-return-from lf-preview--entry (lf-get--preview-create "File Not Readable")))
+    (cl-return-from lf-preview--entry
+      (lf-get--preview-create "File Not Readable")))
   (when (file-directory-p entry)
     (cl-return-from lf-preview--entry
-      (lf-get--preview-create nil nil "exa" (list "--color=always" "-al" entry))))
+      (lf-get--preview-create nil "exa" (list "--color=always" "-al" entry))))
+  (unless (lf-get--mime-type entry :is-binary)
+    (cl-return-from lf-preview--entry (find-file-noselect entry t nil)))
   (let* ((ext (or (file-name-extension entry) ""))
-         (match (lf-match--preview-exts ext))
+         (match (lf-match--preview-exts entry ext))
          (inhibit-modification-hooks t)
          (auto-save-default nil)
          (delay-mode-hooks t)
-         (recentf-list nil)
          (inhibit-message t))
-    (when match
-      (cl-return-from lf-preview--entry
-        (lf-get--preview-create entry (cdr match) (caar match) (cdar match))))
-    (let* ((buf (find-file-noselect entry t nil))
-           (binary (with-current-buffer buf
-                     (save-excursion (goto-char (point-min))
-                                     (search-forward (string ?\x00) nil t 1)))))
-      (when (and binary (not lf-preview-binary))
-        (add-to-list 'lf-preview-buffers buf)
-        (cl-return-from lf-preview--entry (lf-get--preview-create "Binary preview disabled")))
-      buf)))
+    (if match
+        (lf-get--preview-create entry (car match) (cdr match))
+      (lf-get--preview-create "Binary File"))))
 
 (defun lf-update--preview (&optional preview-window)
   "Setup lf preview window."
@@ -574,9 +566,19 @@ window at the designated `side' of the frame."
   "Get parent directory of `PATH'"
   (file-name-directory (directory-file-name (expand-file-name path))))
 
+(defun lf-get--mime-type (file &optional binary)
+  "Return FILE mime type."
+  (with-temp-buffer
+    (let ((exit (call-process "file" nil t nil "-bi" file)))
+      (when (not (zerop exit))
+        (signal 'file-mime-type-error (list "Command failed" (buffer-string))))
+      (if binary
+          (string-match "charset=binary" (buffer-string))
+        (buffer-string)))))
+
 (defun lf-get--filesize (fileset)
   "Determine file size of provided list of files in `FILESET'."
-  (unless (executable-find "du") (error "`du' executable not found."))
+  (unless (executable-find "du") (user-error "`du' executable not found."))
   (with-temp-buffer (apply 'call-process "du" nil t nil "-sch" fileset)
                     (format "%s" (progn (re-search-backward "\\(^[0-9.,]+[a-zA-Z]+\\).*total$")
                                         (match-string 1)))))
@@ -589,29 +591,27 @@ window at the designated `side' of the frame."
 
 (defun lf-get--i/o-status ()
   (when-let* ((task (car-safe lf-i/o-queue))
-              (io-buf (car task))
-              (length (cddr task))
-              (size (cadr task))
-              (finished
-               (with-current-buffer io-buf
-                 (how-many "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"
-                           (point-min) (point-max)))))
-    (when (eq finished length)
-      (cancel-timer (symbol-value 'lf-update--footer-timer))
-      (when (lf-live-p) (revert-buffer))
-      (setq lf-i/o-queue (cdr lf-i/o-queue)))
-    (format "%s: %s total size: %s"
-            (if (eq finished length) "Success" "Progress")
-            (propertize (format "%s / %s" finished length) 'face 'font-lock-keyword-face)
-            (propertize size 'face 'font-lock-builtin-face))))
+              (io-buf (nth 1 task))
+              (buf-live-p (buffer-live-p io-buf))
+              (length (cdr (nth 3 task)))
+              (progress
+                (with-current-buffer io-buf
+                  (how-many "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"
+                            (point-min) (point-max)))))
+    (when (eq progress length)
+      (when (lf-live-p) (lf-refresh))
+      (setf (nth 0 (car-safe lf-i/o-queue)) t)
+      (when (eq (length lf-i/o-queue) 1)
+        (cancel-timer (symbol-value 'lf-set--i/o-status-timer))))
+    (setcar (nth 3 (car-safe lf-i/o-queue)) progress)))
 
-(cl-defun lf-match--preview-exts (ext)
+(cl-defun lf-match--preview-exts (file ext)
   "To determine if `EXT' can be matched by `lf-preview-cmd-alist'."
-  (pcase-dolist (`(,cache ,exts ,cmd) lf-preview-cmd-alist)
+  (pcase-dolist (`(,exts ,cmd) lf-preview-cmd-alist)
     (if (listp exts)
-        (when (member ext exts) (cl-return-from lf-match--preview-exts (cons cmd cache)))
-      (when (string-prefix-p exts (mailcap-extension-to-mime ext))
-        (cl-return-from lf-match--preview-exts (cons cmd cache))))))
+        (when (member ext exts) (cl-return-from lf-match--preview-exts cmd))
+      (when (string-match exts (lf-get--mime-type file))
+        (cl-return-from lf-match--preview-exts cmd)))))
 
 (defmacro lf-define--async (func delay &optional interval)
   "Define a delayed version of FUNC-SYM with delay time DELAY.
@@ -996,16 +996,16 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 
 (defun lf-init ()
   "Save previous window config and initialize lf."
-  (add-hook 'window-scroll-functions #'lf-update--viewports)
-  (add-function :after after-focus-change-function #'lf-redisplay--frame)
-  (pcase-dolist (`(,file ,sym ,fn) lf-advice-alist)
-    (with-eval-after-load file (advice-add sym :around fn)))
   (when-let* ((frame (window-frame))
               (new-lf-frame (not (assoc frame lf-frame-alist))))
     (push (cons frame (current-window-configuration)) lf-frame-alist))
   (when (window-parameter nil 'window-side) (delete-window))
   (lf-init--buffer)
   (unless lf-pre-config-saved
+    (add-hook 'window-scroll-functions #'lf-update--viewports)
+    (add-function :after after-focus-change-function #'lf-redisplay--frame)
+    (pcase-dolist (`(,file ,sym ,fn) lf-advice-alist)
+      (with-eval-after-load file (advice-add sym :around fn)))
     (unless (posframe-workable-p) (error "Lf requires GUI emacs."))
     (when (lf-get--i/o-status)
       (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async))
