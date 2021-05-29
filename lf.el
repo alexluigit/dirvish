@@ -972,7 +972,8 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 
 (defun lf-update--viewports (win _)
   "Refresh attributes in viewport, added to `window-scroll-functions'."
-  (when (eq win lf-window)
+  (when (and (eq win lf-window)
+             (eq (selected-frame) (window-frame lf-window)))
     (with-selected-window win
       (lf-update--icons)
       (lf-update--line))))
