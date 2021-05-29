@@ -328,14 +328,10 @@ TRASH-DIR is path to trash-dir in that disk."
             (add-to-list 'lf-parent-windows window))))
       (walk-window-tree
        (lambda (win)
-        (with-selected-window win
-          (when lf-child-entry (dired-goto-file lf-child-entry) (lf-update--line))
-          (setq header-line-format
-                (propertize " " 'display `((height ,(+ 2 lf-file-line-padding)))))
-          (setq line-spacing lf-file-line-padding)
-          (lf-update--icons)
-          (lf-update--line)
-          (run-hooks 'lf-parent-win-hook)))))))
+         (with-selected-window win
+           (when lf-child-entry (dired-goto-file lf-child-entry) (lf-update--line))
+           (lf-update--icons)
+           (lf-update--line)))))))
 
 (defun lf-default-parent-config ()
   "Default parent windows settings."
@@ -923,6 +919,10 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (let ((inhibit-read-only t)
           (so (make-overlay (point-min) (point-max))))
       (delete-region (point-min) (progn (forward-line 1) (point)))
+      (setq header-line-format
+            (propertize " " 'display `((height ,(+ 2 lf-file-line-padding)))))
+      (setq line-spacing lf-file-line-padding)
+      (run-hooks 'lf-parent-win-hook)
       (overlay-put so 'display `(height ,(1+ lf-file-line-padding))))))
 
 (defun lf-general--refresh-advice (fn &rest args)
@@ -1009,13 +1009,6 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (unless (posframe-workable-p) (error "Lf requires GUI emacs."))
     (when (lf-get--i/o-status)
       (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async))
-    (unless lf-override-dired-mode
-      (cl-dolist (buf (buffer-list))
-        (when (eq 'dired-mode (buffer-local-value 'major-mode buf))
-          (kill-buffer buf))))
-    (mailcap-parse-mailcaps)
-    (cl-dolist (mm lf-additional-mime) (add-to-list 'mailcap-mime-extensions mm))
-    (setq lf-pre-arev-mode (bound-and-true-p auto-revert-mode))
     (setq lf-pre-config-saved t)))
 
 (defun lf-deinit ()
@@ -1073,7 +1066,7 @@ also rebuild lf layout."
   (interactive)
   (lf-init)
   (let* ((file (or path buffer-file-name))
-         (dir (if file (file-name-directory file) default-directory)))
+         (dir (if file (file-name-directory file) (expand-file-name default-directory))))
     (lf-find-file dir)))
 
 (defun lf-find-file (&optional file ignore-history)
@@ -1111,13 +1104,14 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   :group 'lf :global t
   (let ((overrider '(lambda () (unless (lf-live-p) (lf)))))
     (if lf-override-dired-mode
-        (add-hook 'dired-mode-hook overrider)
-      (remove-hook 'dired-mode-hook overrider))))
+        (add-hook 'dired-after-readin-hook overrider)
+      (remove-hook 'dired-after-readin-hook overrider))))
 
 (define-derived-mode lf-mode dired-mode "Lf"
   "Major mode emulating the lf file manager in `dired'."
   :group 'lf
-  :interactive nil)
+  :interactive nil
+  (setq dired-clean-confirm-killing-deleted-buffers nil))
 
 (provide 'lf)
 
