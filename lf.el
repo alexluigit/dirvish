@@ -257,7 +257,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (transient-define-prefix lf-open ()
   "Open files in new split or other windows."
   ["Open file in:"
-   ("s" "HORIZONTAL window" (lambda () (interactive) (lf-open-file 'horizontal)))
+   ("h" "HORIZONTAL window" (lambda () (interactive) (lf-open-file 'horizontal)))
    ("v" "VETICAL    window" (lambda () (interactive) (lf-open-file 'vertical)))
    ("o" "OTHER      window" (lambda () (interactive) (lf-open-file 'other)))
    ("e" "EXTERNAL   programs" (lambda () (interactive) (lf-open-in-external-app)))])
