@@ -264,6 +264,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (define-key map [remap dired-find-file-other-window] 'lf-open)
     (define-key map [remap dired-do-redisplay]           'lf-layout)
     (define-key map [remap dired-omit-mode]              'lf-toggle-dotfiles)
+    (define-key map [remap dired-hide-details-mode]      'lf-toggle-preview)
     (define-key map [remap dired-find-file]              'lf-find-file)
     (define-key map [remap dired-up-directory]           'lf-up-directory)
     (define-key map [remap dired-next-line]              'lf-next-file)
@@ -311,7 +312,7 @@ TRASH-DIR is path to trash-dir in that disk."
   ["Change layout:"
    ("-" "DECREASE columns" (lambda () (interactive) (setq lf-depth (max 0 (- lf-depth 1))) (lf-refresh t)))
    ("+" "INCREASE columns" (lambda () (interactive) (setq lf-depth (1+ lf-depth)) (lf-refresh t)))
-   ("p" "TOGGLE preview window" (lambda () (interactive) (setq lf-enable-preview (not lf-enable-preview)) (lf-refresh t)))])
+   ("p" "TOGGLE preview window" (lambda () (interactive) (lf-toggle-preview)))])
 
 ;;; Layout
 
@@ -344,6 +345,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (add-to-list 'lf-parent-windows lf-window)
     (add-to-list 'lf-parent-buffers (current-buffer))
     (lf-mode)
+    (when lf-enable-preview (dired-hide-details-mode t))
     (while (and (< i lf-depth) (not (string= current parent)))
       (setq i (+ i 1))
       (push (cons current parent) parent-dirs)
@@ -365,6 +367,7 @@ TRASH-DIR is path to trash-dir in that disk."
       (walk-window-tree
        (lambda (win)
          (with-selected-window win
+           (unless (eq win lf-window) (dired-hide-details-mode t))
            (when lf-child-entry (dired-goto-file lf-child-entry) (lf-update--line))
            (lf-update--icons)
            (lf-update--line)))))))
@@ -374,7 +377,6 @@ TRASH-DIR is path to trash-dir in that disk."
   (setq mode-line-format nil)
   (setq truncate-lines t)
   (setq cursor-type nil)
-  (dired-hide-details-mode t)
   (display-line-numbers-mode -1))
 
 ;;;; Preview window
@@ -860,6 +862,12 @@ the idle timer fires are ignored."
         (cl-case lf-show-hidden
           ('all 'dot) ('dot 'lf) ('lf 'all)))
   (lf-refresh nil t))
+
+(defun lf-toggle-preview ()
+  "Show/hide preview window."
+  (interactive)
+  (setq lf-enable-preview (not lf-enable-preview))
+  (lf-refresh t))
 
 (defun lf-sort-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
