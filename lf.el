@@ -8,7 +8,7 @@
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 ;; Package-Requires: ((emacs "27.1") (transient "0.3.2") (posframe "1.0.2"))
 
-;;; Commentary
+;;; Commentary:
 
 ;; lf stands for "list files", it is a minimalistic file manager based on
 ;; `dired-mode'.  It is inspired by lf, see https://github.com/gokcehan/lf. A
