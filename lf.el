@@ -386,7 +386,9 @@ TRASH-DIR is path to trash-dir in that disk."
     (let* ((inhibit-modification-hooks t)
            (win-alist `((side . right) (window-width . ,lf-width-preview)))
            (buf (frame-parameter nil 'lf-preview-buffer))
+           (fringe 30)
            (new-window (display-buffer buf `(lf-display--buffer . ,win-alist))))
+      (set-window-fringes new-window fringe fringe nil t)
       (setq lf-width-img (window-width new-window t))
       (set-frame-parameter nil 'lf-preview-window new-window))))
 
