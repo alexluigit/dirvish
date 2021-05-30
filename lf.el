@@ -108,6 +108,9 @@
   "Position of header line."
   :group 'lf :type '(choice (number cons function)))
 
+(defcustom lf-completing-preview-position nil
+  "doc")
+
 (defcustom lf-footer-format "Sort: %S  Filter: %f  %d  %p%w%t %i"
   "Format for footer display. "
   :group 'lf :type 'string)
@@ -202,6 +205,30 @@ TRASH-DIR is path to trash-dir in that disk."
   "doc")
 
 (defvar lf-override-dired-mode nil
+  "doc")
+
+(defconst lf-completing-preview--height (- 1 max-mini-window-height)
+  "doc")
+
+(defvar lf-completing-preview-window nil
+  "doc")
+
+(defvar lf-completing-preview-categories '(file project-file)
+  "doc")
+
+(defvar lf-completing-preview--category nil
+  "doc")
+
+(defvar lf-completing-preview--width nil
+  "doc")
+
+(defvar lf-completing--get-candidate
+  (cond ((bound-and-true-p vertico-mode)
+         (lambda () (vertico--candidate)))
+        ((bound-and-true-p selectrum-mode)
+         (lambda ()
+           (selectrum--get-full
+            (selectrum--get-candidate selectrum--current-candidate-index)))))
   "doc")
 
 ;;;; Buffer / Frame local variables
@@ -365,6 +392,48 @@ TRASH-DIR is path to trash-dir in that disk."
   "Default lf preview window config."
   (setq cursor-type nil)
   (setq truncate-lines t))
+
+;;;; Completing preview frame
+
+(defun lf-completing-preview-create ()
+  "doc"
+  (when-let* ((meta (completion-metadata
+                     (buffer-substring-no-properties (field-beginning) (point))
+                     minibuffer-completion-table
+                     minibuffer-completion-predicate))
+              (category (completion-metadata-get meta 'category))
+              (show-preview (memq category lf-completing-preview-categories)))
+    (with-eval-after-load 'lsp-mode (advice-add 'lsp-deferred :around #'ignore))
+    (setq lf-completing-preview-category category)
+    (walk-window-tree (lambda (w)
+                        (with-current-buffer (window-buffer w)
+                          (let ((ov (make-overlay (point-min) (point-max))))
+                            (overlay-put ov 'temp-inactive-ov t)
+                            (overlay-put ov 'font-lock-face 'font-lock-doc-face)))))
+    (setq lf-completing-preview-window (frame-parameter nil 'lf-preview-window))
+    (unless lf-completing-preview-window
+      (let* ((min-w (ceiling (* (frame-width) lf-width-preview)))
+             (min-h (ceiling (* (frame-height) lf-completing-preview--height)))
+             (pos-f (or lf-completing-preview-position posframe-poshandler-frame-top-center))
+             (mini-buf `((minibuffer . ,(active-minibuffer-window))))
+             (f-props `(:min-width ,min-w :min-height ,min-h :poshandler ,pos-f
+                                  :override-parameters ,mini-buf :border-width 5
+                                  :border-color "#c55c34"))
+             (frame (apply #'posframe-show "*candidate preview*" f-props)))
+        (setq lf-completing-preview-window (frame-root-window frame))))
+    (lf-init--buffer)
+    (setq lf-completing-preview--width (window-width lf-completing-preview-window t))
+    (set-window-dedicated-p lf-completing-preview-window nil)))
+
+(defun lf-completing-preview-teardown ()
+  "doc"
+  (posframe-delete "*candidate preview*")
+  (with-eval-after-load 'lsp-mode (advice-remove 'lsp-deferred #'ignore))
+  (walk-window-tree (lambda (w)
+                      (with-current-buffer (window-buffer w)
+                        (remove-overlays (point-min) (point-max) 'temp-inactive-ov t))))
+  (setq lf-completing-preview-category nil)
+  (mapc 'kill-buffer lf-preview-buffers))
 
 ;;; Update
 
@@ -924,6 +993,19 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   "Advice for `find-file' and `find-file-other-window'"
   (when (lf-live-p) (lf-quit :keep-alive)) (apply fn args))
 
+(defun lf-completing--update-advice (fn &rest args)
+  "doc"
+  (apply fn args)
+  (when-let* ((category lf-completing-preview-category)
+              (cand (funcall lf-completing--get-candidate)))
+    (if (eq category 'project-file)
+        (setq cand (expand-file-name cand (or (cdr-safe (project-current))
+                                              (car (minibuffer-history-value)))))
+      (setq cand (expand-file-name cand)))
+    (set-frame-parameter nil 'lf-index-path cand)
+    (let ((lf-width-img lf-completing-preview--width))
+      (lf-update--preview lf-completing-preview-window))))
+
 (defun lf-update--viewports (win _)
   "Refresh attributes in viewport, added to `window-scroll-functions'."
   (when (and (eq win lf-window)
@@ -1039,7 +1121,8 @@ also rebuild lf layout."
   (interactive)
   (lf-init)
   (let* ((file (or path buffer-file-name))
-         (dir (if file (file-name-directory file) (expand-file-name default-directory))))
+         (dir (if file (file-name-directory file)
+                (expand-file-name default-directory))))
     (lf-find-file dir)))
 
 (defun lf-find-file (&optional file ignore-history)
@@ -1059,7 +1142,8 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
             (switch-to-buffer (or (car (dired-buffers-for-dir entry))
                                   (dired-noselect entry)))
             (setq lf-child-entry (or bname curr-dir))
-            (set-frame-parameter nil 'lf-index-path (or (dired-get-filename nil t) entry))
+            (set-frame-parameter nil 'lf-index-path
+                                 (or (dired-get-filename nil t) entry))
             (lf-refresh t))
         (find-file entry)))))
 
@@ -1079,6 +1163,22 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (if lf-override-dired-mode
         (add-hook 'dired-after-readin-hook overrider)
       (remove-hook 'dired-after-readin-hook overrider))))
+
+;;;###autoload
+(define-minor-mode lf-completing-preview-mode
+  "Show lf preview when completing."
+  :group 'lf :global t
+  (when lf-completing--get-candidate
+    (if lf-completing-preview-mode
+        (progn
+          (add-hook 'minibuffer-setup-hook #'lf-completing-preview-create)
+          (add-hook 'minibuffer-exit-hook #'lf-completing-preview-teardown)
+          (advice-add 'vertico--exhibit :around #'lf-completing--update-advice)
+          (advice-add 'selectrum--update :around #'lf-completing--update-advice))
+      (remove-hook 'minibuffer-setup-hook #'lf-completing-preview-create)
+      (remove-hook 'minibuffer-exit-hook #'lf-completing-preview-teardown)
+      (advice-remove 'vertico--exhibit #'lf-completing--update-advice)
+      (advice-remove 'selectrum--update #'lf-completing--update-advice))))
 
 (define-derived-mode lf-mode dired-mode "Lf"
   "Major mode emulating the lf file manager in `dired'."
