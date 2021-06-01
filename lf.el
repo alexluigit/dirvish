@@ -421,8 +421,8 @@ TRASH-DIR is path to trash-dir in that disk."
              (pos-f (or lf-completing-preview-position posframe-poshandler-frame-top-center))
              (mini-buf `((minibuffer . ,(active-minibuffer-window))))
              (f-props `(:min-width ,min-w :min-height ,min-h :poshandler ,pos-f
-                                  :override-parameters ,mini-buf :border-width 5
-                                  :border-color "#c55c34"))
+                                   :override-parameters ,mini-buf
+                                   :border-width 5 :border-color "#c55c34"))
              (frame (apply #'posframe-show "*candidate preview*" f-props)))
         (setq lf-completing-preview-window (frame-root-window frame))))
     (lf-init--buffer)
@@ -691,20 +691,22 @@ window at the designated `side' of the frame."
               (propertize size 'face 'font-lock-builtin-face)))))
 
 (defun lf-set--i/o-status ()
-  (when-let* ((task (car-safe lf-i/o-queue))
-              (io-buf (nth 1 task))
-              (buf-live-p (buffer-live-p io-buf))
-              (length (cdr (nth 3 task)))
-              (progress
-                (with-current-buffer io-buf
-                  (how-many "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"
-                            (point-min) (point-max)))))
-    (when (eq progress length)
-      (when (lf-live-p) (lf-refresh))
-      (setf (nth 0 (car-safe lf-i/o-queue)) t)
-      (when (eq (length lf-i/o-queue) 1)
-        (cancel-timer (symbol-value 'lf-set--i/o-status-timer))))
-    (setcar (nth 3 (car-safe lf-i/o-queue)) progress)))
+  (when-let* ((task (car-safe lf-i/o-queue)))
+    (let ((io-buf (nth 1 task))
+          (progress (car (nth 3 task)))
+          (length (cdr (nth 3 task)))
+          (mode (nth 4 task))
+          (proc-re "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"))
+      (if (or (eq mode 'copy) (eq mode 'move))
+          (setq progress (with-current-buffer io-buf
+                           (how-many proc-re (point-min) (point-max))))
+        (setq progress length))
+      (when (eq progress length)
+        (when (lf-live-p) (lf-refresh))
+        (setf (nth 0 (car-safe lf-i/o-queue)) t)
+        (when (eq (length lf-i/o-queue) 1)
+          (cancel-timer (symbol-value 'lf-set--i/o-status-timer))))
+      (setcar (nth 3 (car-safe lf-i/o-queue)) progress))))
 
 (cl-defun lf-match--preview-exts (file ext)
   "To determine if `EXT' can be matched by `lf-preview-cmd-alist'."
@@ -844,10 +846,9 @@ the idle timer fires are ignored."
                     (?a (setq overwrite t) (push (cons file name~) new-fileset))
                     (?q (setq abort t) (setq new-fileset ()))))
               (push (cons file paste-name) new-fileset))))))
-    ;; FIXME: make it compatable with non shell cmd
     (let ((size (lf-get--filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
-      (add-to-list 'lf-i/o-queue `(nil ,io-buffer ,size ,(cons 0 leng))))
+      (add-to-list 'lf-i/o-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
     (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async)
     (lf-define--async lf-set--i/o-status 0 0.1) (lf-set--i/o-status-async)
     (cl-dolist (file new-fileset)
