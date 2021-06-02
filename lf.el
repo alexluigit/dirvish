@@ -6,7 +6,7 @@
 ;; Keywords: lf, files, dired
 ;; Homepage: https://github.com/alexluigit/lf.el
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (transient "0.3.2") (posframe "1.0.2"))
+;; Package-Requires: ((emacs "27.1") (transient "0.3.2") (posframe "1.0.2") (async "1.9.5"))
 
 ;;; Commentary:
 
@@ -29,7 +29,7 @@
 (require 'all-the-icons)
 (require 'ansi-color)
 (require 'mailcap)
-
+(require 'async)
 (eval-when-compile (require 'subr-x))
 
 (defgroup lf nil
@@ -481,8 +481,8 @@ TRASH-DIR is path to trash-dir in that disk."
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
               (setq args (cl-substitute (car format) (cdr format) args :test 'string=)))
-            (apply #'start-process "" (generate-new-buffer "*Lf I/O*") cmd args)
-            (run-with-timer 0.5 nil (lambda () (lf-update--preview (get-buffer-window buf))))
+            (let ((callback (lambda (res) (lf-update--preview))))
+              (apply #'async-start-process (append (list "Lf I/O" cmd callback) args)))
             (insert "[Cache] Generating thumbnail..."))))
       buf)))
 
