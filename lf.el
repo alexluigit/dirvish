@@ -28,6 +28,8 @@
 (require 'dired-x)
 (require 'all-the-icons)
 (require 'ansi-color)
+(require 'mailcap)
+
 (eval-when-compile (require 'subr-x))
 
 (defgroup lf nil
@@ -55,7 +57,8 @@
   :group 'lf :type 'list)
 
 (defcustom lf-preview-cmd-alist
-  '(("image/"            ("convert" "-resize" "%s" "%i" "%T"))
+  '(("text/"             (find-file-noselect . ("%f" t nil)))
+    ("image/"            ("convert" "-resize" "%s" "%i" "%T"))
     ("audio/"            ("mediainfo" "%i"))
     ("video/"            ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
     (("iso" "bin" "exe") ("*Preview-Disable*"))
@@ -65,7 +68,7 @@
     (("epub")            ("epub-thumbnailer" "%i" "%T" "1024"))
     (("pdf")             ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
   "doc"
-  :group 'lf :type '(alist :value-type (boolean (choice list string) list)))
+  :group 'lf :type '(alist :value-type ((choice list string) list)))
 
 (defcustom lf-history-length 30
   "Length of history lf will track."
@@ -483,6 +486,16 @@ TRASH-DIR is path to trash-dir in that disk."
             (insert "[Cache] Generating thumbnail..."))))
       buf)))
 
+(cl-defun lf-match--preview-mime (file)
+  "To determine if `FILE' can be matched by `lf-preview-cmd-alist'."
+  (pcase-dolist (`(,re-or-exts ,cmd) lf-preview-cmd-alist)
+    (if (listp re-or-exts)
+        (let ((ext (file-name-extension file)))
+          (when (member ext re-or-exts)
+            (cl-return-from lf-match--preview-mime cmd)))
+      (when (string-match re-or-exts (or (mailcap-file-name-to-mime-type file) ""))
+        (cl-return-from lf-match--preview-mime cmd)))))
+
 (cl-defun lf-preview--entry (entry)
   "Create the preview buffer of `ENTRY'."
   (unless (file-readable-p entry)
@@ -491,16 +504,17 @@ TRASH-DIR is path to trash-dir in that disk."
   (when (file-directory-p entry)
     (cl-return-from lf-preview--entry
       (lf-get--preview-create nil "exa" (list "--color=always" "-al" entry))))
-  (unless (lf-get--mime-type entry :is-binary)
-    (cl-return-from lf-preview--entry (find-file-noselect entry t nil)))
-  (let* ((ext (or (file-name-extension entry) ""))
-         (match (lf-match--preview-exts entry ext))
-         (inhibit-modification-hooks t)
-         (auto-save-default nil)
-         (delay-mode-hooks t)
-         (inhibit-message t))
+  (let ((match (lf-match--preview-mime entry))
+        (inhibit-modification-hooks t)
+        (auto-save-default nil)
+        (delay-mode-hooks t)
+        (inhibit-message t))
     (if match
-        (lf-get--preview-create entry (car match) (cdr match))
+        (let ((cmd (car match)) (args (cdr match)))
+          (when (functionp cmd)
+            (setq args (cl-substitute entry "%f" args :test 'string=))
+            (cl-return-from lf-preview--entry (apply cmd args)))
+          (lf-get--preview-create entry cmd args))
       (lf-get--preview-create "Binary File"))))
 
 (defun lf-update--preview (&optional preview-window)
@@ -652,16 +666,6 @@ window at the designated `side' of the frame."
   "Get parent directory of `PATH'"
   (file-name-directory (directory-file-name (expand-file-name path))))
 
-(defun lf-get--mime-type (file &optional binary)
-  "Return FILE mime type."
-  (with-temp-buffer
-    (let ((exit (call-process "file" nil t nil "-bi" file)))
-      (when (not (zerop exit))
-        (signal 'file-mime-type-error (list "Command failed" (buffer-string))))
-      (if binary
-          (string-match "charset=binary" (buffer-string))
-        (buffer-string)))))
-
 (defun lf-get--filesize (fileset)
   "Determine file size of provided list of files in `FILESET'."
   (unless (executable-find "du") (user-error "`du' executable not found."))
@@ -696,10 +700,10 @@ window at the designated `side' of the frame."
           (progress (car (nth 3 task)))
           (length (cdr (nth 3 task)))
           (mode (nth 4 task))
-          (proc-re "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"))
+          (proc-exit "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"))
       (if (or (eq mode 'copy) (eq mode 'move))
           (setq progress (with-current-buffer io-buf
-                           (how-many proc-re (point-min) (point-max))))
+                           (how-many proc-exit (point-min) (point-max))))
         (setq progress length))
       (when (eq progress length)
         (when (lf-live-p) (lf-refresh))
@@ -707,14 +711,6 @@ window at the designated `side' of the frame."
         (when (eq (length lf-i/o-queue) 1)
           (cancel-timer (symbol-value 'lf-set--i/o-status-timer))))
       (setcar (nth 3 (car-safe lf-i/o-queue)) progress))))
-
-(cl-defun lf-match--preview-exts (file ext)
-  "To determine if `EXT' can be matched by `lf-preview-cmd-alist'."
-  (pcase-dolist (`(,exts ,cmd) lf-preview-cmd-alist)
-    (if (listp exts)
-        (when (member ext exts) (cl-return-from lf-match--preview-exts cmd))
-      (when (string-match exts (lf-get--mime-type file))
-        (cl-return-from lf-match--preview-exts cmd)))))
 
 (defmacro lf-define--async (func delay &optional interval)
   "Define a delayed version of FUNC-SYM with delay time DELAY.
@@ -1074,6 +1070,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
       (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async)
       (lf-define--async lf-set--i/o-status 0 0.1) (lf-set--i/o-status-async))
     (with-eval-after-load 'recentf (setq lf-orig-recentf-list recentf-list))
+    (mailcap-parse-mimetypes)
     (setq lf-initialized t)))
 
 (defun lf-deinit ()
