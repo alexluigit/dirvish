@@ -1103,7 +1103,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   (setq lf-preview-buffers ())
   (setq lf-parent-buffers ()))
 
-(defun lf-refresh (&optional rebuild filter)
+(defun lf-refresh (&optional rebuild filter no-revert)
   "Reset lf. With optional prefix ARG (\\[universal-argument])
 also rebuild lf layout."
   (interactive "P")
@@ -1111,7 +1111,7 @@ also rebuild lf layout."
     (lf-build--parent-windows)
     (lf-build--preview-window)
     (lf-build--header-frame))
-  (revert-buffer)
+  (unless no-revert (revert-buffer))
   (when filter (lf-update--filter))
   (lf-update--preview)
   (lf-update--header)
