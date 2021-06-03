@@ -107,7 +107,7 @@
   "Function used to output a string that will show up as header."
   :group 'lf :type 'function)
 
-(defcustom lf-header-position '(0 . 20)
+(defcustom lf-header-position '(0 . 0)
   "Position of header line."
   :group 'lf :type '(choice (number cons function)))
 
@@ -204,7 +204,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-parent-win-hook '(lf-default-parent-config)
   "Hooks for setting lf parent windows.")
 
-(defvar lf-preview-win-hook '(lf-default-preview-config)
+(defvar lf-preview-setup-hook nil
   "Hooks for setting lf preview windows.")
 
 (defvar lf-repeat-timers '()
@@ -396,11 +396,6 @@ TRASH-DIR is path to trash-dir in that disk."
       (setq lf-width-img (window-width new-window t))
       (set-frame-parameter nil 'lf-preview-window new-window))))
 
-(defun lf-default-preview-config ()
-  "Default lf preview window config."
-  (setq cursor-type nil)
-  (setq truncate-lines t))
-
 ;;;; Completing preview frame
 
 (defun lf-completing-preview-create ()
@@ -531,7 +526,7 @@ TRASH-DIR is path to trash-dir in that disk."
         (set-window-buffer preview-window preview-buffer))
       (unless (memq preview-buffer orig-buffer-list)
         (push preview-buffer lf-preview-buffers))
-      (with-current-buffer preview-buffer (run-hooks 'lf-preview-win-hook)))))
+      (with-current-buffer preview-buffer (run-hooks 'lf-preview-setup-hook)))))
 
 ;;;; Header / Footer / Filter
 
