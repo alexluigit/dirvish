@@ -99,7 +99,7 @@
   "Fraction of frame width taken by preview window."
   :group 'lf :type 'float)
 
-(defcustom lf-file-line-padding 0.08
+(defcustom lf-line-padding 0.08
   "doc"
   :group 'lf :type 'float)
 
@@ -201,7 +201,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-frame-alist ()
   "List of frames using lf.")
 
-(defvar lf-parent-win-hook '(lf-default-parent-config)
+(defvar lf-mode-hook nil
   "Hooks for setting lf parent windows.")
 
 (defvar lf-preview-setup-hook nil
@@ -340,48 +340,39 @@ TRASH-DIR is path to trash-dir in that disk."
 ;;;; Parent windows
 
 (defun lf-build--parent-windows ()
-  (let* ((current (expand-file-name default-directory))
-         (parent (lf-get--parent current))
-         (parent-dirs ()) (i 0))
-    (when lf-child-entry (dired-goto-file lf-child-entry))
-    (delete-other-windows)
-    (setq lf-window (frame-selected-window))
-    (add-to-list 'lf-parent-windows lf-window)
-    (add-to-list 'lf-parent-buffers (current-buffer))
-    (lf-mode)
-    (when lf-enable-preview (dired-hide-details-mode t))
-    (while (and (< i lf-depth) (not (string= current parent)))
-      (setq i (+ i 1))
-      (push (cons current parent) parent-dirs)
-      (setq current (lf-get--parent current))
-      (setq parent (lf-get--parent parent)))
-    (let ((width (min (/ lf-max-parent-width lf-depth) lf-width-parents)))
-      (cl-dolist (parent-dir parent-dirs)
-        (let* ((current (car parent-dir))
-               (parent (cdr parent-dir))
-               (win-alist `((side . left)
-                            (inhibit-same-window . t)
-                            (window-width . ,width)))
-               (buffer (dired-noselect parent))
-               (window (display-buffer buffer `(lf-display--buffer . ,win-alist))))
-          (with-current-buffer buffer
-            (setq lf-child-entry current)
-            (add-to-list 'lf-parent-buffers buffer)
-            (add-to-list 'lf-parent-windows window))))
-      (walk-window-tree
-       (lambda (win)
-         (with-selected-window win
-           (unless (eq win lf-window) (dired-hide-details-mode t))
-           (when lf-child-entry (dired-goto-file lf-child-entry) (lf-update--line))
-           (lf-update--icons)
-           (lf-update--line)))))))
-
-(defun lf-default-parent-config ()
-  "Default parent windows settings."
-  (setq mode-line-format nil)
-  (setq truncate-lines t)
-  (setq cursor-type nil)
-  (display-line-numbers-mode -1))
+  (cl-flet ((lf-setup (child win buf)
+                      (when child (dired-goto-file child))
+                      (add-to-list 'lf-parent-windows win)
+                      (add-to-list 'lf-parent-buffers buf)
+                      (lf-mode)))
+    (let* ((current (expand-file-name default-directory))
+           (parent (lf-get--parent current))
+           (parent-dirs ()) (i 0))
+      (delete-other-windows)
+      (setq lf-window (frame-selected-window))
+      (lf-setup lf-child-entry lf-window (current-buffer))
+      (when lf-enable-preview (dired-hide-details-mode t))
+      (while (and (< i lf-depth) (not (string= current parent)))
+        (setq i (+ i 1))
+        (push (cons current parent) parent-dirs)
+        (setq current (lf-get--parent current))
+        (setq parent (lf-get--parent parent)))
+      (let ((width (min (/ lf-max-parent-width lf-depth) lf-width-parents)))
+        (cl-dolist (parent-dir parent-dirs)
+          (let* ((current (car parent-dir))
+                 (parent (cdr parent-dir))
+                 (win-alist `((side . left)
+                              (inhibit-same-window . t)
+                              (window-width . ,width)))
+                 (buffer (dired-noselect parent))
+                 (window (display-buffer buffer `(lf-display--buffer . ,win-alist))))
+            (with-selected-window window
+              (lf-setup current window buffer)
+              (dired-hide-details-mode t)
+              (lf-update--padding)
+              (lf-update--icons)
+              (lf-update--line)
+              )))))))
 
 ;;;; Preview window
 
@@ -603,6 +594,13 @@ is less then `lf-width-header'."
           (delete-region (line-beginning-position) (progn (forward-line 1) (point))))))))
 
 ;;;; Overlays / Viewport
+
+(defun lf-update--padding ()
+  (save-excursion
+    (remove-overlays)
+    (let ((o (make-overlay (point-min) (point-max))))
+      (setq line-spacing lf-line-padding)
+      (overlay-put o 'display `(height ,(1+ lf-line-padding))))))
 
 (defun lf-update--line ()
   (remove-overlays (point-min) (point-max) 'lf-line t)
@@ -1113,11 +1111,12 @@ also rebuild lf layout."
     (lf-build--header-frame))
   (unless no-revert (revert-buffer))
   (when filter (lf-update--filter))
+  (lf-update--padding)
+  (lf-update--icons)
+  (lf-update--line)
   (lf-update--preview)
   (lf-update--header)
-  (lf-update--footer)
-  (lf-update--icons)
-  (lf-update--line))
+  (lf-update--footer))
 
 ;;;; Core utilities
 
@@ -1190,7 +1189,8 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   "Major mode emulating the lf file manager in `dired'."
   :group 'lf
   :interactive nil
-  (setq dired-clean-confirm-killing-deleted-buffers nil))
+  (setq dired-clean-confirm-killing-deleted-buffers nil)
+  (setq header-line-format (propertize " " 'display '(height 2.3))))
 
 (provide 'lf)
 
