@@ -61,7 +61,7 @@
     ("image/"            ("convert" "-resize" "%s" "%i" "%T"))
     ("audio/"            ("mediainfo" "%i"))
     ("video/"            ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
-    (("iso" "bin" "exe") ("*Preview-Disable*"))
+    (("iso" "bin" "exe") ("*Preview Disable*"))
     (("zip")             ("zipinfo" "%i"))
     (("zst" "tar")       ("tar" "-tvf" "%i"))
     (("ts" "rm" "rmvb")  ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
@@ -452,7 +452,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
       (unless cmd (insert entry) (cl-return-from lf-get--preview-create buf))
-      (when (string= cmd "*Preview-Disable*")
+      (when (string= cmd "*Preview Disable*")
         (insert (format "Preview Disabled for %s." entry))
         (cl-return-from lf-get--preview-create buf))
       (unless (executable-find cmd)
