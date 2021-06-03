@@ -153,6 +153,12 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Internal variables
 
+(defconst lf-completing-preview-categories '(file project-file)
+  "doc")
+
+(defconst lf-completing-preview--height (- 1 max-mini-window-height)
+  "doc")
+
 (defvar lf-width-img nil
   "Calculated preview window width. Used for image preview.")
 
@@ -210,13 +216,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-override-dired-mode nil
   "doc")
 
-(defconst lf-completing-preview--height (- 1 max-mini-window-height)
-  "doc")
-
 (defvar lf-completing-preview-window nil
-  "doc")
-
-(defvar lf-completing-preview-categories '(file project-file)
   "doc")
 
 (defvar lf-completing-preview--category nil
@@ -411,23 +411,25 @@ TRASH-DIR is path to trash-dir in that disk."
               (category (completion-metadata-get meta 'category))
               (show-preview (memq category lf-completing-preview-categories)))
     (with-eval-after-load 'lsp-mode (advice-add 'lsp-deferred :around #'ignore))
-    (setq lf-completing-preview-category category)
+    (setq lf-completing-preview--category category)
     (walk-window-tree (lambda (w)
-                        (with-current-buffer (window-buffer w)
-                          (let ((ov (make-overlay (point-min) (point-max))))
-                            (overlay-put ov 'temp-inactive-ov t)
-                            (overlay-put ov 'font-lock-face 'font-lock-doc-face)))))
+                        (when (window-live-p w)
+                          (with-current-buffer (window-buffer w)
+                            (let ((ov (make-overlay (point-min) (point-max))))
+                              (overlay-put ov 'temp-inactive-ov t)
+                              (overlay-put ov 'font-lock-face 'font-lock-doc-face))))))
     (setq lf-completing-preview-window (frame-parameter nil 'lf-preview-window))
     (unless lf-completing-preview-window
       (let* ((min-w (ceiling (* (frame-width) lf-width-preview)))
              (min-h (ceiling (* (frame-height) lf-completing-preview--height)))
              (pos-f (or lf-completing-preview-position posframe-poshandler-frame-top-center))
-             (mini-buf `((minibuffer . ,(active-minibuffer-window))))
+             (override `((minibuffer . ,(active-minibuffer-window))))
              (f-props `(:min-width ,min-w :min-height ,min-h :poshandler ,pos-f
-                                   :override-parameters ,mini-buf
+                                   :override-parameters ,override
                                    :border-width 5 :border-color "#c55c34"))
              (frame (apply #'posframe-show "*candidate preview*" f-props)))
-        (setq lf-completing-preview-window (frame-root-window frame))))
+        (setq lf-completing-preview-window (frame-root-window frame))
+        (set-window-fringes lf-completing-preview-window 30 30 nil t)))
     (lf-init--buffer)
     (setq lf-completing-preview--width (window-width lf-completing-preview-window t))
     (set-window-dedicated-p lf-completing-preview-window nil)))
@@ -439,7 +441,7 @@ TRASH-DIR is path to trash-dir in that disk."
   (walk-window-tree (lambda (w)
                       (with-current-buffer (window-buffer w)
                         (remove-overlays (point-min) (point-max) 'temp-inactive-ov t))))
-  (setq lf-completing-preview-category nil)
+  (setq lf-completing-preview--category nil)
   (mapc 'kill-buffer lf-preview-buffers))
 
 ;;; Update
@@ -961,20 +963,15 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   "Setup the dired buffer by removing the header and filter files."
   (apply fn args)
   (save-excursion
-    (remove-overlays)
-    (let ((inhibit-read-only t)
-          (so (make-overlay (point-min) (point-max))))
-      (delete-region (point-min) (progn (forward-line 1) (point)))
-      (setq header-line-format
-            (propertize " " 'display `((height ,(+ 2 lf-file-line-padding)))))
-      (setq line-spacing lf-file-line-padding)
-      (run-hooks 'lf-parent-win-hook)
-      (overlay-put so 'display `(height ,(1+ lf-file-line-padding))))))
+    (let ((inhibit-read-only t))
+      (delete-region (point-min) (progn (forward-line 1) (point))))))
 
 (defun lf-general--refresh-advice (fn &rest args)
   "Advice function for FN with ARGS."
   (apply fn args)
-  (lf-refresh (not (eq major-mode 'lf-mode))))
+  (let ((rebuild (not (eq major-mode 'lf-mode)))
+        (no-revert (eq fn dired-do-kill-lines)))
+    (lf-refresh rebuild nil no-revert)))
 
 (defun lf-update--line-refresh-advice (fn &rest args)
   "Advice function for FN with ARGS."
@@ -1003,7 +1000,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 (defun lf-completing--update-advice (fn &rest args)
   "doc"
   (apply fn args)
-  (when-let* ((category lf-completing-preview-category)
+  (when-let* ((category lf-completing-preview--category)
               (cand (funcall lf-completing--get-candidate)))
     (if (eq category 'project-file)
         (setq cand (expand-file-name cand (or (cdr-safe (project-current))
