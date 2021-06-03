@@ -265,6 +265,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (define-key map "y"                                  'lf-do-yank)
     (define-key map (kbd "TAB")                          'lf-show-history)
     (define-key map [remap dired-find-file-other-window] 'lf-open)
+    (define-key map [remap dired-jump]                   'lf-jump)
     (define-key map [remap dired-do-redisplay]           'lf-layout)
     (define-key map [remap dired-omit-mode]              'lf-toggle-dotfiles)
     (define-key map [remap dired-hide-details-mode]      'lf-toggle-preview)
@@ -743,6 +744,10 @@ the idle timer fires are ignored."
 
 ;;;; Navigation
 
+(defun lf-jump (file)
+  "Replacement for `dired-jump'"
+  (interactive (list (read-file-name "Jump to: "))) (lf file))
+
 (defun lf-up-directory ()
   "Move to parent directory."
   (interactive)
@@ -1027,6 +1032,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (dired         dired-readin                 lf-setup--dired-buffer-advice)
     (dired         dired-mark                   lf-update--line-refresh-advice)
     (dired         dired-flag-file-deletion     lf-update--line-refresh-advice)
+    (dired         dired-goto-file              lf-update--line-refresh-advice)
     (dired         dired-internal-do-deletions  lf-deletion--refresh-advice)
     (dired         wdired-exit                  lf-general--refresh-advice)
     (dired         wdired-finish-edit           lf-general--refresh-advice)
@@ -1124,10 +1130,10 @@ also rebuild lf layout."
 (defun lf (&optional path)
   "Launch dired in lf-mode."
   (interactive)
-  (lf-init)
   (let* ((file (or path buffer-file-name))
-         (dir (if file (file-name-directory file)
+         (dir (if file (expand-file-name (file-name-directory file))
                 (expand-file-name default-directory))))
+    (lf-init)
     (lf-find-file dir)))
 
 (defun lf-find-file (&optional file ignore-history)
