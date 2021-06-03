@@ -57,14 +57,14 @@
   :group 'lf :type 'list)
 
 (defcustom lf-preview-cmd-alist
-  '(("text/"             (find-file-noselect . ("%f" t nil)))
+  '(("text/"             (find-file-noselect . (t nil)))
     ("image/"            ("convert" "-resize" "%s" "%i" "%T"))
     ("audio/"            ("mediainfo" "%i"))
     ("video/"            ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
     (("iso" "bin" "exe") ("*Preview Disable*"))
     (("zip")             ("zipinfo" "%i"))
     (("zst" "tar")       ("tar" "-tvf" "%i"))
-    (("ts" "rm" "rmvb")  ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
+    (("rm" "rmvb")       ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
     (("epub")            ("epub-thumbnailer" "%i" "%T" "1024"))
     (("pdf")             ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
   "doc"
@@ -501,8 +501,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (if match
         (let ((cmd (car match)) (args (cdr match)))
           (when (functionp cmd)
-            (setq args (cl-substitute entry "%f" args :test 'string=))
-            (cl-return-from lf-preview--entry (apply cmd args)))
+            (cl-return-from lf-preview--entry (apply cmd entry args)))
           (lf-get--preview-create entry cmd args))
       (lf-get--preview-create "Binary File"))))
 
