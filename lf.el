@@ -667,9 +667,10 @@ window at the designated `side' of the frame."
 (defun lf-get--filesize (fileset)
   "Determine file size of provided list of files in `FILESET'."
   (unless (executable-find "du") (user-error "`du' executable not found."))
-  (with-temp-buffer (apply 'call-process "du" nil t nil "-sch" fileset)
-                    (format "%s" (progn (re-search-backward "\\(^[0-9.,]+[a-zA-Z]+\\).*total$")
-                                        (match-string 1)))))
+  (with-temp-buffer
+    (apply 'call-process "du" nil t nil "-sch" fileset)
+    (format "%s" (progn (re-search-backward "\\(^[0-9.,]+[a-zA-Z]*\\).*total$")
+                        (match-string 1)))))
 
 (defun lf-get--trash-dir ()
   "Get trash directory for current disk."
