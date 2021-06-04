@@ -2,7 +2,7 @@
 ;; Copyright (C) 2021 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Package-Version: 0.6
+;; Package-Version: 0.6.1
 ;; Keywords: lf, files, dired
 ;; Homepage: https://github.com/alexluigit/lf.el
 ;; SPDX-License-Identifier: GPL-3.0-or-later
