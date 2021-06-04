@@ -371,8 +371,7 @@ TRASH-DIR is path to trash-dir in that disk."
               (dired-hide-details-mode t)
               (lf-update--padding)
               (lf-update--icons)
-              (lf-update--line)
-              )))))))
+              (lf-update--line))))))))
 
 ;;;; Preview window
 
@@ -707,30 +706,26 @@ window at the designated `side' of the frame."
           (cancel-timer (symbol-value 'lf-set--i/o-status-timer))))
       (setcar (nth 3 (car-safe lf-i/o-queue)) progress))))
 
-(defmacro lf-define--async (func delay &optional interval)
-  "Define a delayed version of FUNC-SYM with delay time DELAY.
-When called, a delayed function only runs after the idle time
+(defmacro lf-delay--repeat (func delay interval &rest args)
+  "doc"
+  (let ((timer (intern (format "%s-timer" func))))
+    `(progn
+      (defvar ,timer nil)
+      (add-to-list 'lf-repeat-timers ',timer)
+      (when (timerp ,timer) (cancel-timer ,timer))
+      (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
+
+(defmacro lf-delay--once (func delay &rest args)
+  "Execute a delayed version of FUNC with delay time DELAY.
+When called, the FUNC only runs after the idle time
 specified by DELAY. Multiple calls to the same function before
 the idle timer fires are ignored."
-  (let* ((new-func (intern (format "%s-async" func)))
-         (timer (intern (format "%s-timer" func)))
-         (once `(lambda () (ignore-errors (,func)) (setq ,timer nil))))
+  (let* ((timer (intern (format "%s-timer" func)))
+         (do-once `(lambda (&rest args) (unwind-protect (apply #',func args) (setq ,timer nil)))))
     `(progn
-       (defvar ,timer nil)
-       (when ,interval (add-to-list 'lf-repeat-timers ',timer))
-       (defun ,new-func ()
-         ,(format "Delayed version of %s" func)
-         (if ,interval
-             (progn
-               (when (timerp ,timer) (cancel-timer ,timer))
-               (setq ,timer (run-with-timer ,delay ,interval ',func)))
-           (unless (timerp ,timer)
-             (setq ,timer (run-with-idle-timer ,delay nil ,once))))))))
-
-(defun lf-update--footer-async ()
-  "Update footer periodically when i/o task is running.")
-
-(lf-define--async lf-update--preview lf-preview-delay)
+       (unless (boundp ',timer) (defvar ,timer nil))
+       (unless (timerp ,timer)
+         (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
 
 ;;; Commands
 
@@ -775,7 +770,7 @@ the idle timer fires are ignored."
     (set-frame-parameter nil 'lf-index-path (dired-get-filename nil t))
     (lf-update--header)
     (lf-update--footer)
-    (lf-update--preview-async)))
+    (lf-delay--once lf-update--preview lf-preview-delay)))
 
 (defun lf-prev-file (arg)
   (interactive "^p")
@@ -844,8 +839,8 @@ the idle timer fires are ignored."
     (let ((size (lf-get--filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
       (add-to-list 'lf-i/o-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
-    (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async)
-    (lf-define--async lf-set--i/o-status 0 0.1) (lf-set--i/o-status-async)
+    (lf-delay--repeat lf-update--footer 0 0.1)
+    (lf-delay--repeat lf-set--i/o-status 0 0.1)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf lf-parent-buffers)
@@ -1005,7 +1000,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
       (setq cand (expand-file-name cand)))
     (set-frame-parameter nil 'lf-index-path cand)
     (let ((lf-width-img lf-completing-preview--width))
-      (lf-update--preview lf-completing-preview-window))))
+      (lf-delay--once lf-update--preview lf-preview-delay lf-completing-preview-window))))
 
 (defun lf-update--viewports (win _)
   "Refresh attributes in viewport, added to `window-scroll-functions'."
@@ -1062,8 +1057,8 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
       (with-eval-after-load file (advice-add sym :around fn)))
     (unless (posframe-workable-p) (error "Lf requires GUI emacs."))
     (when (lf-get--i/o-status)
-      (lf-define--async lf-update--footer 0 0.1) (lf-update--footer-async)
-      (lf-define--async lf-set--i/o-status 0 0.1) (lf-set--i/o-status-async))
+      (lf-delay--repeat lf-update--footer 0 0.1)
+      (lf-delay--repeat lf-set--i/o-status 0 0.1))
     (with-eval-after-load 'recentf (setq lf-orig-recentf-list recentf-list))
     (mailcap-parse-mimetypes)
     (setq lf-initialized t)))
