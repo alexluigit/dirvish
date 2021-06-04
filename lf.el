@@ -714,9 +714,9 @@ window at the designated `side' of the frame."
   "doc"
   (let ((timer (intern (format "%s-timer" func))))
     `(progn
-      (defvar ,timer nil)
-      (add-to-list 'lf-repeat-timers ',timer)
-      (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
+       (defvar ,timer nil)
+       (add-to-list 'lf-repeat-timers ',timer)
+       (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
 
 (defmacro lf-delay--once (func delay &rest args)
   "Execute a delayed version of FUNC with delay time DELAY.
@@ -724,7 +724,8 @@ When called, the FUNC only runs after the idle time
 specified by DELAY. Multiple calls to the same function before
 the idle timer fires are ignored."
   (let* ((timer (intern (format "%s-timer" func)))
-         (do-once `(lambda (&rest args) (unwind-protect (apply #',func args) (setq ,timer nil)))))
+         (do-once `(lambda (&rest args)
+                     (unwind-protect (apply #',func args) (setq ,timer nil)))))
     `(progn
        (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
