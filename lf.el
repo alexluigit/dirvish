@@ -502,7 +502,11 @@ TRASH-DIR is path to trash-dir in that disk."
           (when (functionp cmd)
             (cl-return-from lf-preview--entry (apply cmd entry args)))
           (lf-get--preview-create entry cmd args))
-      (lf-get--preview-create "Binary File"))))
+      (let ((threshold (or large-file-warning-threshold 10000000))
+            (filesize (file-attribute-size (file-attributes entry))))
+        (if (> filesize threshold)
+            (lf-get--preview-create (concat entry " too big for literal preview"))
+          (find-file-noselect entry t nil))))))
 
 (defun lf-update--preview (&optional preview-window)
   "Setup lf preview window."
