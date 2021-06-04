@@ -965,9 +965,8 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 (defun lf-general--refresh-advice (fn &rest args)
   "Advice function for FN with ARGS."
   (apply fn args)
-  (let ((rebuild (not (eq major-mode 'lf-mode)))
-        (no-revert (eq fn dired-do-kill-lines)))
-    (lf-refresh rebuild nil no-revert)))
+  (let ((rebuild (not (eq major-mode 'lf-mode))))
+    (lf-refresh rebuild nil t)))
 
 (defun lf-update--line-refresh-advice (fn &rest args)
   "Advice function for FN with ARGS."
