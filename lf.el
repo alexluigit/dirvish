@@ -491,7 +491,7 @@ TRASH-DIR is path to trash-dir in that disk."
       (lf-get--preview-create "File Not Readable")))
   (when (file-directory-p entry)
     (cl-return-from lf-preview--entry
-      (lf-get--preview-create nil "exa" (list "--color=always" "-al" entry))))
+      (lf-get--preview-create "directory" "exa" (list "--color=always" "-al" entry))))
   (let ((match (lf-match--preview-mime entry))
         (inhibit-modification-hooks t)
         (auto-save-default nil)
