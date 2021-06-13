@@ -458,6 +458,14 @@ TRASH-DIR is path to trash-dir in that disk."
             (ansi-color-apply-on-region
              (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))
           (cl-return-from lf-get--preview-create buf))
+        ;; FIXME: a better way to deal with gif?
+        (when (string= (mailcap-file-name-to-mime-type entry) "image/gif")
+          (let ((gif-buf (find-file-noselect entry t nil))
+                (callback (lambda (buf)
+                            (with-current-buffer buf
+                              (image-animate (image-get-display-property))))))
+            (run-with-idle-timer 1 nil callback gif-buf)
+            (cl-return-from lf-get--preview-create gif-buf)))
         (let* ((target-raw (concat lf-cache-dir size entry))
                (target-ext (concat target-raw ".jpg"))
                (target (if (and (string= cmd "convert")
