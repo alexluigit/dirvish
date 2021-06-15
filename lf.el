@@ -64,7 +64,6 @@
     (("iso" "bin" "exe") ("*Preview Disable*"))
     (("zip")             ("zipinfo" "%i"))
     (("zst" "tar")       ("tar" "-tvf" "%i"))
-    (("rm" "rmvb")       ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
     (("epub")            ("epub-thumbnailer" "%i" "%T" "1024"))
     (("pdf")             ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
   "doc"
