@@ -2,11 +2,11 @@
 ;; Copyright (C) 2021 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Package-Version: 0.6.1
+;; Package-Version: 0.6.3
 ;; Keywords: lf, files, dired
 ;; Homepage: https://github.com/alexluigit/lf.el
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (transient "0.3.2") (posframe "1.0.2") (async "1.9.5"))
+;; Package-Requires: ((emacs "27.1") (transient "0.3.5") (posframe "1.0.4") (async "1.9.5"))
 
 ;;; Commentary:
 
