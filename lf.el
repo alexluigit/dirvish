@@ -69,6 +69,10 @@
   "doc"
   :group 'lf :type '(alist :value-type ((choice list string) list)))
 
+(defcustom lf-routes '(("h" "home" "~") ("u" "media" "/media"))
+  "doc"
+  :group 'lf :type 'list)
+
 (defcustom lf-history-length 30
   "Length of history lf will track."
   :group 'lf :type 'integer)
@@ -111,7 +115,8 @@
   :group 'lf :type '(choice (number cons function)))
 
 (defcustom lf-completing-preview-position nil
-  "doc")
+  "doc"
+  :group 'lf :type '(choice (number cons function)))
 
 (defcustom lf-footer-format "Sort: %S  Filter: %f  %d  %p%w%t %i"
   "Format for footer display. "
@@ -258,32 +263,14 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Keymap
 
-(defvar lf-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "f"                                  'lf-file)
-    (define-key map "y"                                  'lf-do-yank)
-    (define-key map (kbd "TAB")                          'lf-show-history)
-    (define-key map [remap dired-find-file-other-window] 'lf-open)
-    (define-key map [remap dired-jump]                   'lf-jump)
-    (define-key map [remap dired-do-redisplay]           'lf-layout)
-    (define-key map [remap dired-omit-mode]              'lf-toggle-dotfiles)
-    (define-key map [remap dired-hide-details-mode]      'lf-toggle-preview)
-    (define-key map [remap dired-find-file]              'lf-find-file)
-    (define-key map [remap dired-up-directory]           'lf-up-directory)
-    (define-key map [remap dired-next-line]              'lf-next-file)
-    (define-key map [remap dired-previous-line]          'lf-prev-file)
-    (define-key map [remap end-of-buffer]                'lf-go-bottom)
-    (define-key map [remap beginning-of-buffer]          'lf-go-top)
-    (define-key map [remap dired-sort-toggle-or-edit]    'lf-sort-criteria)
-    (define-key map [remap revert-buffer]                'lf-refresh)
-    (define-key map [remap dired-view-file]              'lf-toggle-preview)
-    (define-key map [remap quit-window]                  'lf-quit)
-    (define-key map [remap delete-window]
-      (lambda ()
-        (interactive)
-        (message "%s" (substitute-command-keys "Press \\[quit-window] to quit lf"))))
-    map)
-  "Lf mode map.")
+(eval `(transient-define-prefix lf-routes ()
+         ["Directory"
+          ,@(cl-loop for (key desc path) in lf-routes
+                     collect (list key desc `(lambda () (interactive) (lf-find-file ,path))))]
+         ["Navigation"
+          ("N" "Next subdir" dired-next-subdir)
+          ("P" "Prev subdir" dired-prev-subdir)]))
+
 
 (transient-define-prefix lf-open ()
   "Open files in new split or other windows."
@@ -316,6 +303,34 @@ TRASH-DIR is path to trash-dir in that disk."
    ("-" "DECREASE columns" (lambda () (interactive) (setq lf-depth (max 0 (- lf-depth 1))) (lf-refresh t)))
    ("+" "INCREASE columns" (lambda () (interactive) (setq lf-depth (1+ lf-depth)) (lf-refresh t)))
    ("p" "TOGGLE preview window" (lambda () (interactive) (lf-toggle-preview)))])
+
+(defvar lf-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "f"                                  'lf-file)
+    (define-key map "y"                                  'lf-do-yank)
+    (define-key map "r"                                  'lf-routes)
+    (define-key map (kbd "TAB")                          'lf-show-history)
+    (define-key map [remap dired-find-file-other-window] 'lf-open)
+    (define-key map [remap dired-jump]                   'lf-jump)
+    (define-key map [remap dired-do-redisplay]           'lf-layout)
+    (define-key map [remap dired-omit-mode]              'lf-toggle-dotfiles)
+    (define-key map [remap dired-hide-details-mode]      'lf-toggle-preview)
+    (define-key map [remap dired-find-file]              'lf-find-file)
+    (define-key map [remap dired-up-directory]           'lf-up-directory)
+    (define-key map [remap dired-next-line]              'lf-next-file)
+    (define-key map [remap dired-previous-line]          'lf-prev-file)
+    (define-key map [remap end-of-buffer]                'lf-go-bottom)
+    (define-key map [remap beginning-of-buffer]          'lf-go-top)
+    (define-key map [remap dired-sort-toggle-or-edit]    'lf-sort-criteria)
+    (define-key map [remap revert-buffer]                'lf-refresh)
+    (define-key map [remap dired-view-file]              'lf-toggle-preview)
+    (define-key map [remap quit-window]                  'lf-quit)
+    (define-key map [remap delete-window]
+      (lambda ()
+        (interactive)
+        (message "%s" (substitute-command-keys "Press \\[quit-window] to quit lf"))))
+    map)
+  "Lf mode map.")
 
 ;;; Layout
 
