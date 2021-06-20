@@ -1,0 +1,32 @@
+#+TITLE: fired.el - A modern FILE manager based on DIRED
+#+AUTHOR: Alen Lu
+#+EMAIL: alexluigit@gmail.com
+
+* Introduction
+
+todo
+
+* Features
+
+todo
+
+screenshots
+
+* Configuration
+
+todo
+
+* Key bindings
+
+todo
+ 
+* Compatability
+
+todo
+
+* Todo
+
+- Use `cl-defstruct' for managing fired instance
+- Fix completing preview initialization
+- Better history navigation (something like `z' in zsh)
+- A help buffer better than describe-mode
