@@ -422,7 +422,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (unless lf-completing-preview-window
       (let* ((min-w (ceiling (* (frame-width) lf-width-preview)))
              (min-h (ceiling (* (frame-height) lf-completing-preview--height)))
-             (pos-f (or lf-completing-preview-position posframe-poshandler-frame-top-center))
+             (pos-f (or lf-completing-preview-position #'posframe-poshandler-frame-top-center))
              (override `((minibuffer . ,(active-minibuffer-window))))
              (f-props `(:min-width ,min-w :min-height ,min-h :poshandler ,pos-f
                                    :override-parameters ,override
