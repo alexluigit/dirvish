@@ -22,6 +22,10 @@
 ;;; Code:
 
 (declare-function format-spec "format-spec")
+(declare-function image-get-display-property "image-mode")
+(declare-function selectrum--get-candidate "selectrum")
+(declare-function selectrum--get-full "selectrum")
+(declare-function vertico--candidate "vertico")
 (require 'ring)
 (require 'transient)
 (require 'posframe)
@@ -161,6 +165,12 @@ TRASH-DIR is path to trash-dir in that disk."
     (t :inverse-video t))
   "Face used for `lf-update--line'."
   :group 'lf-faces)
+
+;;;; Compiler
+
+(defvar recentf-list)
+(defvar selectrum--current-candidate-index)
+(defvar lf-update--preview-timer)
 
 ;;;; Internal variables
 
@@ -489,7 +499,7 @@ TRASH-DIR is path to trash-dir in that disk."
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
               (setq args (cl-substitute (car format) (cdr format) args :test 'string=)))
-            (let ((callback (lambda (res) (lf-update--preview))))
+            (let ((callback (lambda (res) (ignore res) (lf-update--preview))))
               (apply #'async-start-process (append (list "Lf I/O" cmd callback) args)))
             (insert "[Cache] Generating thumbnail..."))))
       buf)))
@@ -698,7 +708,7 @@ window at the designated `side' of the frame."
     (when (string-prefix-p (car dir) (dired-current-directory))
       (cl-return (concat (car dir) (cdr dir))))))
 
-(defun lf-get--i/o-status (&optional brief)
+(defun lf-get--i/o-status ()
   (when-let* ((task (car-safe lf-i/o-queue)))
     (let ((finished (car task))
           (size (nth 2 task))
@@ -1084,7 +1094,7 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
     (when (lf-get--i/o-status)
       (lf-delay--repeat lf-update--footer 0 0.1)
       (lf-delay--repeat lf-set--i/o-status 0 0.1))
-    (with-eval-after-load 'recentf (setq lf-orig-recentf-list recentf-list))
+    (setq lf-orig-recentf-list recentf-list)
     (mailcap-parse-mimetypes)
     (setq lf-initialized t)))
 
@@ -1092,7 +1102,6 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   "Revert previous window config and deinit lf."
   (setq lf-initialized nil)
   (setq recentf-list lf-orig-recentf-list)
-  (with-eval-after-load 'recentf (setq recentf-list lf-orig-recentf-list))
   (when-let* ((config (cdr-safe (assoc (window-frame) lf-frame-alist)))
               (valid (window-configuration-p config)))
     (set-window-configuration config))
