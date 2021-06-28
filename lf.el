@@ -280,47 +280,23 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Keymap
 
-(transient-define-prefix lf-open ()
-  "Open files in new split or other windows."
-  ["Open file in:"
-   ("h" "HORIZONTAL window" (lambda () (interactive) (lf-open-file 'horizontal)))
-   ("v" "VETICAL    window" (lambda () (interactive) (lf-open-file 'vertical)))
-   ("o" "OTHER      window" (lambda () (interactive) (lf-open-file 'other)))
-   ("e" "EXTERNAL   programs" (lambda () (interactive) (lf-open-in-external-app)))])
-
 (transient-define-prefix lf-file ()
   "Get file information."
   ["Select file operation:"
    ("m" "mark file REGEX" dired-mark-files-regexp)
-   ("l" "goto file TRUEPATH" (lambda () (interactive) (lf-find-file (file-truename (dired-get-filename)))))
-   ("n" "copy file NAME" (lambda () (interactive) (dired-copy-filename-as-kill)))
-   ("p" "copy file PATH" (lambda () (interactive) (lf-yank-filepath)))
-   ("t" "show file TYPE" (lambda () (interactive) (dired-show-file-type (dired-get-filename))))])
-
-(transient-define-prefix lf-do-yank ()
-  "Paste marked files to current directory."
-  ["Choose paste method:"
-   ("y" "PASTE (yank)" (lambda () (interactive) (lf-paste)))
-   ("m" "MOVE" (lambda () (interactive) (lf-paste 'move)))
-   ("l" "SYMLINK" (lambda () (interactive) (lf-paste 'symlink)))
-   ("L" "SYMLINK (relative)" (lambda () (interactive) (lf-paste 'relalink)))])
-
-(transient-define-prefix lf-layout ()
-  "Change lf layout."
-  ["Change layout:"
-   ("-" "DECREASE columns" (lambda () (interactive) (setq lf-depth (max 0 (- lf-depth 1))) (lf-refresh t)))
-   ("+" "INCREASE columns" (lambda () (interactive) (setq lf-depth (1+ lf-depth)) (lf-refresh t)))
-   ("p" "TOGGLE preview window" (lambda () (interactive) (lf-toggle-preview)))])
+   ("n" "copy file NAME" dired-copy-filename-as-kill)
+   ("p" "copy file PATH" lf-yank-filepath)
+   ("t" "show file TYPE" dired-show-file-type)
+   ("l" "goto file TRUEPATH" lf-file-truename)])
 
 (defvar lf-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "f"                                  'lf-file)
-    (define-key map "y"                                  'lf-do-yank)
+    (define-key map "y"                                  'lf-yank)
     (define-key map "r"                                  'lf-routes)
     (define-key map (kbd "TAB")                          'lf-show-history)
-    (define-key map [remap dired-find-file-other-window] 'lf-open)
     (define-key map [remap dired-jump]                   'lf-jump)
-    (define-key map [remap dired-do-redisplay]           'lf-layout)
+    (define-key map [remap dired-do-redisplay]           'lf-change-level)
     (define-key map [remap dired-omit-mode]              'lf-toggle-dotfiles)
     (define-key map [remap dired-hide-details-mode]      'lf-toggle-preview)
     (define-key map [remap dired-find-file]              'lf-find-file)
@@ -883,6 +859,18 @@ the idle timer fires are ignored."
 
 ;;;; Utilities
 
+(defun lf-file-truename ()
+  (interactive)
+  (lf-find-file (file-truename (dired-get-filename))))
+
+(defun lf-yank (&optional arg)
+  (interactive "P")
+  (if arg (lf-paste 'move) (lf-paste)))
+
+(defun lf-change-level (&optional arg)
+  (interactive "p")
+  (setq lf-depth (or arg 1)) (lf-refresh t))
+
 (defun lf-toggle-dotfiles ()
   "Show/hide dot-files."
   (interactive)
@@ -938,32 +926,6 @@ the idle timer fires are ignored."
   (let* ((after-make-frame-functions (lambda (f) (select-frame f)))
          (frame (make-frame '((name . "lf-emacs")))))
     (with-selected-frame frame (lf))))
-
-;;;; File open commands
-
-(defun lf-open-file (mode)
-  "Find file in lf buffer.  `ENTRY' can be used as path or filename, else will use
-currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on change"
-  (let ((marked-files (dired-get-marked-files)))
-    (lf-quit :keep-alive)
-    (cl-loop for file in marked-files do
-             (let ((dir-p (file-directory-p file)))
-               (when (and file (not dir-p))
-                 (cl-case mode
-                   ('horizontal (split-window-right) (windmove-right))
-                   ('vertical (split-window-below) (windmove-down))
-                   ('other (other-window 1))))
-               (when file (find-file file))))))
-
-(defun lf-open-in-external-app ()
-  "Open the current file or dired marked files in external app."
-  (interactive)
-  (when-let ((marked-files (dired-get-marked-files))
-             (mac (lambda (f) (shell-command (format "open \"%s\"" f))))
-             (linux (lambda (f) (start-process "" nil "xdg-open" f)))
-             (windows (lambda (f) (start-process "" nil "open" (replace-regexp-in-string "/" "\\" f t t))))
-             (cmd (cl-case system-type ('darwin mac) ('gnu/linux linux) ('windows-nt windows))))
-    (mapc `,cmd marked-files)))
 
 ;;; Init
 
