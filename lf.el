@@ -71,7 +71,14 @@
 
 (defcustom lf-routes '(("h" "home" "~") ("u" "media" "/media"))
   "doc"
-  :group 'lf :type 'list)
+  :group 'lf :type 'list
+  :set
+  (lambda (k v)
+    `(setq ,k v)
+    (eval `(transient-define-prefix lf-routes ()
+             ["Go to Directory: "
+              ,@(cl-loop for (key desc path) in v
+                         collect (list key desc `(lambda () (interactive) (lf-find-file ,path))))]))))
 
 (defcustom lf-history-length 30
   "Length of history lf will track."
@@ -262,15 +269,6 @@ TRASH-DIR is path to trash-dir in that disk."
   "doc")
 
 ;;;; Keymap
-
-(eval `(transient-define-prefix lf-routes ()
-         ["Directory"
-          ,@(cl-loop for (key desc path) in lf-routes
-                     collect (list key desc `(lambda () (interactive) (lf-find-file ,path))))]
-         ["Navigation"
-          ("N" "Next subdir" dired-next-subdir)
-          ("P" "Prev subdir" dired-prev-subdir)]))
-
 
 (transient-define-prefix lf-open ()
   "Open files in new split or other windows."
