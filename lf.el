@@ -920,12 +920,12 @@ the idle timer fires are ignored."
   "Util function for detecting if in lf mode."
   (memq (or win (selected-window)) lf-parent-windows))
 
-(defun lf-new-frame ()
+(defun lf-new-frame (&optional path)
   "Make a new frame and launch lf."
   (interactive)
   (let* ((after-make-frame-functions (lambda (f) (select-frame f)))
          (frame (make-frame '((name . "lf-emacs")))))
-    (with-selected-frame frame (lf))))
+    (with-selected-frame frame (lf path))))
 
 ;;; Init
 
@@ -985,6 +985,12 @@ the idle timer fires are ignored."
   "Advice for `find-file' and `find-file-other-window'"
   (when (lf-live-p) (lf-quit :keep-alive)) (apply fn args))
 
+(defun lf-other-window--advice (fn &rest args)
+  (let ((file (dired-get-file-for-visit)))
+       (if (file-directory-p file)
+           (lf-new-frame file)
+         (apply fn args))))
+
 (defun lf-completing--update-advice (fn &rest args)
   "doc"
   (apply fn args)
@@ -1012,6 +1018,7 @@ the idle timer fires are ignored."
 (defvar lf-advice-alist
   '((files         find-file                    lf-file-open--advice)
     (files         find-file-other-window       lf-file-open--advice)
+    (dired         dired-find-file-other-window lf-other-window--advice)
     (dired         dired-readin                 lf-setup-dired-buffer--advice)
     (dired         dired-mark                   lf-update-line--advice)
     (dired         dired-flag-file-deletion     lf-update-line--advice)
