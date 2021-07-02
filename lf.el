@@ -1057,6 +1057,11 @@ the idle timer fires are ignored."
   (lf-init--buffer)
   (unless lf-initialized
     (add-hook 'window-scroll-functions #'lf-update--viewports)
+    (add-to-list 'display-buffer-alist
+                 '("\\(\\*info\\|\\*Help\\|\\*helpful\\|magit:\\).*"
+                   (display-buffer-in-side-window)
+                   (window-height . 0.4)
+                   (side . bottom)))
     (add-function :after after-focus-change-function #'lf-redisplay--frame)
     (pcase-dolist (`(,file ,sym ,fn) lf-advice-alist)
       (with-eval-after-load file (advice-add sym :around fn)))
@@ -1080,6 +1085,7 @@ the idle timer fires are ignored."
   (set-frame-parameter nil 'lf-header--frame nil)
   (when-let ((singleton (< (length lf-frame-alist) 2)))
     (remove-hook 'window-scroll-functions #'lf-update--viewports)
+    (setq display-buffer-alist (cdr display-buffer-alist))
     (remove-function after-focus-change-function #'lf-redisplay--frame)
     (pcase-dolist (`(,file ,sym ,fn) lf-advice-alist)
       (with-eval-after-load file (advice-remove sym fn)))
