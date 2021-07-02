@@ -451,7 +451,8 @@ TRASH-DIR is path to trash-dir in that disk."
         (cl-dolist (fmt `((,entry . "%i") (,size . "%s")))
           (setq args (cl-substitute (car fmt) (cdr fmt) args :test 'string=)))
         (unless cache
-          (apply #'call-process cmd nil t nil args)
+          (let ((default-directory "~")) ; Avoid "Setting current directory" error after deleting dir
+            (apply #'call-process cmd nil t nil args))
           (when (string= cmd "exa")
             (ansi-color-apply-on-region
              (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))
