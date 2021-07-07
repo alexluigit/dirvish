@@ -125,7 +125,7 @@
   "Position of header line."
   :group 'lf :type '(choice (number cons function)))
 
-(defcustom lf-completing-preview-position nil
+(defcustom lf-minibuf-preview-position nil
   "doc"
   :group 'lf :type '(choice (number cons function)))
 
@@ -174,10 +174,10 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Internal variables
 
-(defconst lf-completing-preview-categories '(file project-file)
+(defconst lf-minibuf-preview-categories '(file project-file)
   "doc")
 
-(defconst lf-completing-preview--height (- 1 max-mini-window-height)
+(defconst lf-minibuf-preview--height (- 1 max-mini-window-height)
   "doc")
 
 (defvar lf-width-img nil
@@ -237,16 +237,16 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-override-dired-mode nil
   "doc")
 
-(defvar lf-completing-preview-window nil
+(defvar lf-minibuf-preview-window nil
   "doc")
 
-(defvar lf-completing-preview--category nil
+(defvar lf-minibuf-preview--category nil
   "doc")
 
-(defvar lf-completing-preview--width nil
+(defvar lf-minibuf-preview--width nil
   "doc")
 
-(defvar lf-completing--get-candidate
+(defvar lf-minibuf--get-candidate
   (cond ((bound-and-true-p vertico-mode)
          (lambda () (vertico--candidate)))
         ((bound-and-true-p selectrum-mode)
@@ -384,48 +384,48 @@ TRASH-DIR is path to trash-dir in that disk."
       (setq lf-width-img (window-width new-window t))
       (set-frame-parameter nil 'lf-preview-window new-window))))
 
-;;;; Completing preview frame
+;;;; Minibuf preview frame
 
-(defun lf-completing-preview-create ()
+(defun lf-minibuf-preview-create ()
   "doc"
   (when-let* ((meta (completion-metadata
                      (buffer-substring-no-properties (field-beginning) (point))
                      minibuffer-completion-table
                      minibuffer-completion-predicate))
               (category (completion-metadata-get meta 'category))
-              (show-preview (memq category lf-completing-preview-categories)))
+              (show-preview (memq category lf-minibuf-preview-categories)))
     (with-eval-after-load 'lsp-mode (advice-add 'lsp-deferred :around #'ignore))
-    (setq lf-completing-preview--category category)
+    (setq lf-minibuf-preview--category category)
     (walk-window-tree (lambda (w)
                         (when (window-live-p w)
                           (with-current-buffer (window-buffer w)
                             (let ((ov (make-overlay (point-min) (point-max))))
                               (overlay-put ov 'temp-inactive-ov t)
                               (overlay-put ov 'font-lock-face 'font-lock-doc-face))))))
-    (setq lf-completing-preview-window (frame-parameter nil 'lf-preview-window))
-    (unless lf-completing-preview-window
+    (setq lf-minibuf-preview-window (frame-parameter nil 'lf-preview-window))
+    (unless lf-minibuf-preview-window
       (let* ((min-w (ceiling (* (frame-width) lf-width-preview)))
-             (min-h (ceiling (* (frame-height) lf-completing-preview--height)))
-             (pos-f (or lf-completing-preview-position #'posframe-poshandler-frame-top-center))
+             (min-h (ceiling (* (frame-height) lf-minibuf-preview--height)))
+             (pos-f (or lf-minibuf-preview-position #'posframe-poshandler-frame-top-center))
              (override `((minibuffer . ,(active-minibuffer-window))))
              (f-props `(:min-width ,min-w :min-height ,min-h :poshandler ,pos-f
                                    :override-parameters ,override
                                    :border-width 5 :border-color "#c55c34"))
              (frame (apply #'posframe-show "*candidate preview*" f-props)))
-        (setq lf-completing-preview-window (frame-root-window frame))
-        (set-window-fringes lf-completing-preview-window 30 30 nil t)))
+        (setq lf-minibuf-preview-window (frame-root-window frame))
+        (set-window-fringes lf-minibuf-preview-window 30 30 nil t)))
     (lf-init--buffer)
-    (setq lf-completing-preview--width (window-width lf-completing-preview-window t))
-    (set-window-dedicated-p lf-completing-preview-window nil)))
+    (setq lf-minibuf-preview--width (window-width lf-minibuf-preview-window t))
+    (set-window-dedicated-p lf-minibuf-preview-window nil)))
 
-(defun lf-completing-preview-teardown ()
+(defun lf-minibuf-preview-teardown ()
   "doc"
   (posframe-delete "*candidate preview*")
   (with-eval-after-load 'lsp-mode (advice-remove 'lsp-deferred #'ignore))
   (walk-window-tree (lambda (w)
                       (with-current-buffer (window-buffer w)
                         (remove-overlays (point-min) (point-max) 'temp-inactive-ov t))))
-  (setq lf-completing-preview--category nil)
+  (setq lf-minibuf-preview--category nil)
   (mapc 'kill-buffer lf-preview-buffers))
 
 ;;; Update
@@ -992,18 +992,18 @@ the idle timer fires are ignored."
            (lf-new-frame file)
          (apply fn args))))
 
-(defun lf-completing--update-advice (fn &rest args)
+(defun lf-minibuf--update-advice (fn &rest args)
   "doc"
   (apply fn args)
-  (when-let* ((category lf-completing-preview--category)
-              (cand (funcall lf-completing--get-candidate)))
+  (when-let* ((category lf-minibuf-preview--category)
+              (cand (funcall lf-minibuf--get-candidate)))
     (if (eq category 'project-file)
         (setq cand (expand-file-name cand (or (cdr-safe (project-current))
                                               (car (minibuffer-history-value)))))
       (setq cand (expand-file-name cand)))
     (set-frame-parameter nil 'lf-index-path cand)
-    (let ((lf-width-img lf-completing-preview--width))
-      (lf-delay--once lf-update--preview lf-preview-delay lf-completing-preview-window))))
+    (let ((lf-width-img lf-minibuf-preview--width))
+      (lf-delay--once lf-update--preview lf-preview-delay lf-minibuf-preview-window))))
 
 (defun lf-update--viewports (win _)
   "Refresh attributes in viewport, added to `window-scroll-functions'."
@@ -1174,20 +1174,20 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
       (remove-hook 'dired-after-readin-hook overrider))))
 
 ;;;###autoload
-(define-minor-mode lf-completing-preview-mode
-  "Show lf preview when completing."
+(define-minor-mode lf-minibuf-preview-mode
+  "Show lf preview when minibuf."
   :group 'lf :global t
-  (when lf-completing--get-candidate
-    (if lf-completing-preview-mode
+  (when lf-minibuf--get-candidate
+    (if lf-minibuf-preview-mode
         (progn
-          (add-hook 'minibuffer-setup-hook #'lf-completing-preview-create)
-          (add-hook 'minibuffer-exit-hook #'lf-completing-preview-teardown)
-          (advice-add 'vertico--exhibit :around #'lf-completing--update-advice)
-          (advice-add 'selectrum--update :around #'lf-completing--update-advice))
-      (remove-hook 'minibuffer-setup-hook #'lf-completing-preview-create)
-      (remove-hook 'minibuffer-exit-hook #'lf-completing-preview-teardown)
-      (advice-remove 'vertico--exhibit #'lf-completing--update-advice)
-      (advice-remove 'selectrum--update #'lf-completing--update-advice))))
+          (add-hook 'minibuffer-setup-hook #'lf-minibuf-preview-create)
+          (add-hook 'minibuffer-exit-hook #'lf-minibuf-preview-teardown)
+          (advice-add 'vertico--exhibit :around #'lf-minibuf--update-advice)
+          (advice-add 'selectrum--update :around #'lf-minibuf--update-advice))
+      (remove-hook 'minibuffer-setup-hook #'lf-minibuf-preview-create)
+      (remove-hook 'minibuffer-exit-hook #'lf-minibuf-preview-teardown)
+      (advice-remove 'vertico--exhibit #'lf-minibuf--update-advice)
+      (advice-remove 'selectrum--update #'lf-minibuf--update-advice))))
 
 (define-derived-mode lf-mode dired-mode "Lf"
   "Major mode emulating the lf file manager in `dired'."
