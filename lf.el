@@ -174,12 +174,6 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Internal variables
 
-(defconst lf-minibuf-preview-categories '(file project-file)
-  "doc")
-
-(defconst lf-minibuf-preview--height (- 1 max-mini-window-height)
-  "doc")
-
 (defvar lf-width-img nil
   "Calculated preview window width. Used for image preview.")
 
@@ -237,13 +231,19 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-override-dired-mode nil
   "doc")
 
+(defvar lf-minibuf-preview-categories '(file project-file)
+  "doc")
+
+(defvar lf-minibuf-preview--height (- 1 max-mini-window-height)
+  "doc")
+
+(defvar lf-minibuf-preview--width nil
+  "doc")
+
 (defvar lf-minibuf-preview-window nil
   "doc")
 
 (defvar lf-minibuf-preview--category nil
-  "doc")
-
-(defvar lf-minibuf-preview--width nil
   "doc")
 
 (defvar lf-minibuf--get-candidate
@@ -426,6 +426,7 @@ TRASH-DIR is path to trash-dir in that disk."
                       (with-current-buffer (window-buffer w)
                         (remove-overlays (point-min) (point-max) 'temp-inactive-ov t))))
   (setq lf-minibuf-preview--category nil)
+  (setq lf-minibuf-preview--width nil)
   (mapc 'kill-buffer lf-preview-buffers))
 
 ;;; Update
@@ -436,7 +437,7 @@ TRASH-DIR is path to trash-dir in that disk."
   "Get corresponding preview buffer."
   (let ((buf (frame-parameter nil 'lf-preview-buffer))
         (process-connection-type nil)
-        (size (number-to-string lf-width-img)) cache)
+        (size (number-to-string (or lf-minibuf-preview--width lf-width-img))) cache)
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
       (unless cmd (insert entry) (cl-return-from lf-get--preview-create buf))
@@ -1002,8 +1003,7 @@ the idle timer fires are ignored."
                                               (car (minibuffer-history-value)))))
       (setq cand (expand-file-name cand)))
     (set-frame-parameter nil 'lf-index-path cand)
-    (let ((lf-width-img lf-minibuf-preview--width))
-      (lf-delay--once lf-update--preview lf-preview-delay lf-minibuf-preview-window))))
+    (lf-delay--once lf-update--preview lf-preview-delay lf-minibuf-preview-window)))
 
 (defun lf-update--viewports (win _)
   "Refresh attributes in viewport, added to `window-scroll-functions'."
