@@ -327,7 +327,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defun lf-build--header-frame ()
   (let* ((buf (frame-parameter nil 'lf-header-buffer))
          (min-w (1+ (ceiling (lf-width-header))))
-         (f-props `(:min-height 2 :background-color "#565761"
+         (f-props `(:min-height 2 :background-color ,(face-attribute 'region :background)
                                 :position ,lf-header-position :min-width ,min-w))
          (h-frame (frame-parameter nil 'lf-header--frame)))
     (setq lf-width-header min-w)
