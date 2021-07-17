@@ -931,7 +931,7 @@ the idle timer fires are ignored."
   "Make a new frame and launch lf."
   (interactive)
   (let* ((after-make-frame-functions (lambda (f) (select-frame f)))
-         (frame (make-frame '((name . "lf-emacs")))))
+         (frame (make-frame '((name . "lf-emacs") (alpha . (100 50))))))
     (with-selected-frame frame (lf path))))
 
 ;;; Init
