@@ -125,7 +125,11 @@
   "Position of header line."
   :group 'lf :type '(choice (number cons function)))
 
-(defcustom lf-minibuf-preview-position nil
+(defcustom lf-minibuf-preview-position
+  (lambda (info)
+    (cons (/ (- (plist-get info :parent-frame-width)
+                (plist-get info :posframe-width)) 2)
+          (or (* (frame-parameter nil 'internal-border-width) 2) 60)))
   "doc"
   :group 'lf :type '(choice (number cons function)))
 
@@ -234,7 +238,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-minibuf-preview-categories '(file project-file)
   "doc")
 
-(defvar lf-minibuf-preview--height (- 1 max-mini-window-height)
+(defvar lf-minibuf-preview--height (- 1 (* max-mini-window-height 1.5))
   "doc")
 
 (defvar lf-minibuf-preview--width nil
@@ -406,11 +410,12 @@ TRASH-DIR is path to trash-dir in that disk."
     (unless lf-minibuf-preview-window
       (let* ((min-w (ceiling (* (frame-width) lf-width-preview)))
              (min-h (ceiling (* (frame-height) lf-minibuf-preview--height)))
+             (b-color (face-attribute 'font-lock-doc-face :foreground))
              (pos-f (or lf-minibuf-preview-position #'posframe-poshandler-frame-top-center))
              (override `((minibuffer . ,(active-minibuffer-window))))
              (f-props `(:min-width ,min-w :min-height ,min-h :poshandler ,pos-f
                                    :override-parameters ,override
-                                   :border-width 5 :border-color "#c55c34"))
+                                   :border-width 5 :border-color ,b-color))
              (frame (apply #'posframe-show "*candidate preview*" f-props)))
         (setq lf-minibuf-preview-window (frame-root-window frame))
         (set-window-fringes lf-minibuf-preview-window 30 30 nil t)))
