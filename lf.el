@@ -113,7 +113,7 @@
   "Fraction of frame width taken by preview window."
   :group 'lf :type 'float)
 
-(defcustom lf-line-padding 0.08
+(defcustom lf-line-padding 0.1
   "doc"
   :group 'lf :type 'float)
 
@@ -1199,7 +1199,8 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
   :group 'lf
   :interactive nil
   (setq dired-clean-confirm-killing-deleted-buffers nil)
-  (setq header-line-format (propertize " " 'display '(height 2.3))))
+  (setq header-line-format (propertize " " 'display
+                                       `(height ,(* 2 (1+ lf-line-padding))))))
 
 (provide 'lf)
 
