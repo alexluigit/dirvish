@@ -121,9 +121,10 @@
   "Function used to output a string that will show up as header."
   :group 'lf :type 'function)
 
-(defcustom lf-header-position '(0 . 0)
-  "Position of header line."
-  :group 'lf :type '(choice (number cons function)))
+(defcustom lf-header-position
+  (lambda (_) (cons 0 (or (frame-parameter nil 'internal-border-width) 0)))
+  "doc"
+  :group 'lf :type 'function)
 
 (defcustom lf-minibuf-preview-position
   (lambda (info)
@@ -131,7 +132,7 @@
                 (plist-get info :posframe-width)) 2)
           (or (* (frame-parameter nil 'internal-border-width) 2) 60)))
   "doc"
-  :group 'lf :type '(choice (number cons function)))
+  :group 'lf :type 'function)
 
 (defcustom lf-footer-format "Sort: %S  Filter: %f  %d  %p%w%t %i"
   "Format for footer display. "
@@ -331,8 +332,11 @@ TRASH-DIR is path to trash-dir in that disk."
 (defun lf-build--header-frame ()
   (let* ((buf (frame-parameter nil 'lf-header-buffer))
          (min-w (1+ (ceiling (lf-width-header))))
-         (f-props `(:min-height 2 :background-color ,(face-attribute 'region :background)
-                                :position ,lf-header-position :min-width ,min-w))
+         (f-props `(:background-color
+                    ,(face-attribute 'region :background)
+                    :poshandler ,lf-header-position
+                    :min-width ,min-w
+                    :min-height 2))
          (h-frame (frame-parameter nil 'lf-header--frame)))
     (setq lf-width-header min-w)
     (if h-frame
