@@ -54,8 +54,6 @@
 (defcustom lf-hidden-regexp
   '("^\\.\\(git\\|hg\\|svn\\)$"
     "\\.\\(pyc\\|o\\|elc\\|lock\\|css.map\\)$"
-    "^\\(node_modules\\|vendor\\|.\\(project\\|cask\\|yardoc\\|sass-cache\\)\\)$"
-    "^\\.\\(sync\\|export\\|attach\\)$"
     "~$" "^#.*#$")
   "Regexp of custom filetypes to omit in lf."
   :group 'lf :type 'list)
