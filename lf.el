@@ -249,15 +249,6 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar lf-minibuf-preview--category nil
   "doc")
 
-(defvar lf-minibuf--get-candidate
-  (cond ((bound-and-true-p vertico-mode)
-         (lambda () (vertico--candidate)))
-        ((bound-and-true-p selectrum-mode)
-         (lambda ()
-           (selectrum--get-full
-            (selectrum--get-candidate selectrum--current-candidate-index)))))
-  "doc")
-
 ;;;; Buffer / Frame local variables
 
 (defvar-local lf-child-entry nil
@@ -1004,7 +995,11 @@ the idle timer fires are ignored."
   "doc"
   (apply fn args)
   (when-let* ((category lf-minibuf-preview--category)
-              (cand (funcall lf-minibuf--get-candidate)))
+              (cand (cond ((bound-and-true-p vertico-mode)
+                           (vertico--candidate))
+                          ((bound-and-true-p selectrum-mode)
+                           (selectrum--get-full
+                            (selectrum--get-candidate selectrum--current-candidate-index))))))
     (if (eq category 'project-file)
         (setq cand (expand-file-name cand (or (cdr-safe (project-current))
                                               (car (minibuffer-history-value)))))
@@ -1184,17 +1179,16 @@ currently selected file in lf. `IGNORE-HISTORY' will not update history-ring on 
 (define-minor-mode lf-minibuf-preview-mode
   "Show lf preview when minibuf."
   :group 'lf :global t
-  (when lf-minibuf--get-candidate
-    (if lf-minibuf-preview-mode
-        (progn
-          (add-hook 'minibuffer-setup-hook #'lf-minibuf-preview-create)
-          (add-hook 'minibuffer-exit-hook #'lf-minibuf-preview-teardown)
-          (advice-add 'vertico--exhibit :around #'lf-minibuf--update-advice)
-          (advice-add 'selectrum--update :around #'lf-minibuf--update-advice))
-      (remove-hook 'minibuffer-setup-hook #'lf-minibuf-preview-create)
-      (remove-hook 'minibuffer-exit-hook #'lf-minibuf-preview-teardown)
-      (advice-remove 'vertico--exhibit #'lf-minibuf--update-advice)
-      (advice-remove 'selectrum--update #'lf-minibuf--update-advice))))
+  (if lf-minibuf-preview-mode
+      (progn
+        (add-hook 'minibuffer-setup-hook #'lf-minibuf-preview-create)
+        (add-hook 'minibuffer-exit-hook #'lf-minibuf-preview-teardown)
+        (advice-add 'vertico--exhibit :around #'lf-minibuf--update-advice)
+        (advice-add 'selectrum--update :around #'lf-minibuf--update-advice))
+    (remove-hook 'minibuffer-setup-hook #'lf-minibuf-preview-create)
+    (remove-hook 'minibuffer-exit-hook #'lf-minibuf-preview-teardown)
+    (advice-remove 'vertico--exhibit #'lf-minibuf--update-advice)
+    (advice-remove 'selectrum--update #'lf-minibuf--update-advice)))
 
 (define-derived-mode lf-mode dired-mode "Lf"
   "Major mode emulating the lf file manager in `dired'."
