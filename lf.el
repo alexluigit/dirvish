@@ -391,7 +391,6 @@ TRASH-DIR is path to trash-dir in that disk."
                      minibuffer-completion-predicate))
               (category (completion-metadata-get meta 'category))
               (show-preview (memq category lf-minibuf-preview-categories)))
-    (with-eval-after-load 'lsp-mode (advice-add 'lsp-deferred :around #'ignore))
     (setq lf-minibuf-preview--category category)
     (walk-window-tree (lambda (w)
                         (when (window-live-p w)
@@ -419,7 +418,6 @@ TRASH-DIR is path to trash-dir in that disk."
 (defun lf-minibuf-preview-teardown ()
   "doc"
   (posframe-delete "*candidate preview*")
-  (with-eval-after-load 'lsp-mode (advice-remove 'lsp-deferred #'ignore))
   (walk-window-tree (lambda (w)
                       (with-current-buffer (window-buffer w)
                         (remove-overlays (point-min) (point-max) 'temp-inactive-ov t))))
