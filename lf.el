@@ -175,6 +175,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar selectrum--current-candidate-index)
 (defvar lf-update--preview-timer)
 (defvar posframe-mouse-banish)
+(defvar image-mode-map)
 (setq posframe-mouse-banish '(10000 . 10000))
 
 ;;;; Internal variables
@@ -311,6 +312,10 @@ TRASH-DIR is path to trash-dir in that disk."
         (message "%s" (substitute-command-keys "Press \\[quit-window] to quit lf"))))
     map)
   "Lf mode map.")
+
+(with-eval-after-load 'image-mode
+  (define-key image-mode-map [remap image-next-file] (lambda () (interactive) (lf) (lf-next-file 1)))
+  (define-key image-mode-map [remap image-previous-file] (lambda () (interactive) (lf) (lf-next-file -1))))
 
 ;;; Layout
 
