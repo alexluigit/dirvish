@@ -174,6 +174,8 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar recentf-list)
 (defvar selectrum--current-candidate-index)
 (defvar lf-update--preview-timer)
+(defvar posframe-mouse-banish)
+(setq posframe-mouse-banish '(10000 . 10000))
 
 ;;;; Internal variables
 
@@ -330,7 +332,8 @@ TRASH-DIR is path to trash-dir in that disk."
     (setq lf-width-header min-w)
     (if h-frame
         (posframe--set-frame-size h-frame 1 2 1 min-w)
-      (set-frame-parameter nil 'lf-header--frame (apply #'posframe-show buf f-props)))))
+      (let ((fr (apply #'posframe-show buf f-props)))
+        (set-frame-parameter nil 'lf-header--frame fr)))))
 
 ;;;; Parent windows
 
