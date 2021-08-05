@@ -1111,6 +1111,7 @@ the idle timer fires are ignored."
                        (not (get-buffer-process buf))))
           (kill-buffer buf))))
     (cl-dolist (tm danger-repeat-timers) (cancel-timer (symbol-value tm))))
+  (when (featurep 'meow) (meow--update-cursor))
   (set-frame-parameter nil 'danger-preview-window nil)
   (setq danger-frame-alist (delq (assoc (window-frame) danger-frame-alist) danger-frame-alist))
   (setq danger-window nil)
