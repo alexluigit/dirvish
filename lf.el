@@ -120,7 +120,10 @@
   :group 'lf :type 'function)
 
 (defcustom lf-header-position
-  (lambda (_) (cons 0 (or (frame-parameter nil 'internal-border-width) 0)))
+  (lambda (_)
+    (let ((tab-h (tab-bar-height nil t))
+          (fringe (or (frame-parameter nil 'internal-border-width) 0)))
+      (cons 0 (+ tab-h fringe))))
   "doc"
   :group 'lf :type 'function)
 
