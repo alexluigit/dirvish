@@ -1,4 +1,4 @@
-#+TITLE: fired.el - A modern FILE manager based on DIRED
+#+TITLE: danger.el - a Dired interface inspired by rANGER
 #+AUTHOR: Alen Lu
 #+EMAIL: alexluigit@gmail.com
 
