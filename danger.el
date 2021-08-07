@@ -1192,7 +1192,7 @@ currently selected file in danger. `IGNORE-HISTORY' will not update history-ring
   "Show danger preview when minibuf."
   :group 'danger :global t
   (if danger-minibuf-preview-mode
-      (progn
+      (when window-system
         (add-hook 'minibuffer-setup-hook #'danger-minibuf-preview-create)
         (add-hook 'minibuffer-exit-hook #'danger-minibuf-preview-teardown)
         (advice-add 'vertico--exhibit :around #'danger-minibuf--update-advice)
