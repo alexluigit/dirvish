@@ -1207,6 +1207,7 @@ currently selected file in danger. `IGNORE-HISTORY' will not update history-ring
   :group 'danger
   :interactive nil
   (setq dired-clean-confirm-killing-deleted-buffers nil)
+  (setq tab-line-format nil)
   (setq header-line-format (propertize " " 'display
                                        `(height ,(* 2 (1+ danger-line-padding))))))
 
