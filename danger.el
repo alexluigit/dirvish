@@ -11,15 +11,16 @@
 ;;; Commentary:
 
 ;; danger.el is a minimalistic file manager based on `dired-mode'.  It
-;; is inspired by ranger, see <https://github.com/ranger/ranger>.  It
-;; shows a stack of the parent directories and updates the parent
-;; buffers while navigating the file system with an optional preview
-;; window at side showing the content or meta information of the
-;; selected file. Unlike ranger.el, which is a all-around emulation of
-;; ranger (see <https://github.com/ralesi/ranger.el>), danger.el is
-;; more bare-bone. Instead of trying to port all functionalities from
-;; ranger, danger.el only provides a better dired UI and a few core
-;; features relating to file management.
+;; is inspired by ranger (see <https://github.com/ranger/ranger>)
+;; which is a terminal file manager that shows a stack of the parent
+;; directories and updates the parent buffers while navigating the
+;; file system with an optional preview window at side showing the
+;; content of the selected file. Unlike ranger.el, which tries to
+;; become an all-around emulation of ranger (check their doc at
+;; <https://github.com/ralesi/ranger.el>), danger.el is more bare-bone
+;; in the sense that instead of trying to port all "goodness" from
+;; ranger, it only provides a better dired UI and a few core features
+;; relating to file management.
 
 ;;; Code:
 
