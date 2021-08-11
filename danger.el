@@ -6,7 +6,7 @@
 ;; Keywords: ranger, file, dired
 ;; Homepage: https://github.com/alexluigit/danger.el
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (posframe "1.0.4") (async "1.9.5") (all-the-icons "5.0.0"))
+;; Package-Requires: ((emacs "28.0") (posframe "1.0.4") (async "1.9.5"))
 
 ;;; Commentary:
 
@@ -29,14 +29,13 @@
 (declare-function selectrum--get-candidate "selectrum")
 (declare-function selectrum--get-full "selectrum")
 (declare-function vertico--candidate "vertico")
+(declare-function async-start-process "async")
 (require 'ring)
 (require 'transient)
 (require 'posframe)
 (require 'dired-x)
-(require 'all-the-icons)
 (require 'ansi-color)
 (require 'mailcap)
-(require 'async)
 (eval-when-compile (require 'subr-x))
 
 (defgroup danger nil
@@ -1079,7 +1078,8 @@ the idle timer fires are ignored."
     (add-function :after after-focus-change-function #'danger-redisplay--frame)
     (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
       (with-eval-after-load file (advice-add sym :around fn)))
-    (unless (posframe-workable-p) (error "Danger requires GUI emacs."))
+    (unless (posframe-workable-p) (user-error "danger.el: requires GUI emacs."))
+    (when danger-show-icons (setq danger-show-icons (ignore-errors (require 'all-the-icons))))
     (when (danger-get--i/o-status)
       (danger-delay--repeat danger-update--footer 0 0.1)
       (danger-delay--repeat danger-set--i/o-status 0 0.1))
