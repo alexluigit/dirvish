@@ -73,17 +73,6 @@
   "doc"
   :group 'danger :type '(alist :value-type ((choice list string) list)))
 
-(defcustom danger-routes '(("h" "home" "~") ("u" "media" "/media"))
-  "doc"
-  :group 'danger :type 'list
-  :set
-  (lambda (k v)
-    `(setq ,k v)
-    (eval `(transient-define-prefix danger-routes ()
-             ["Go to Directory: "
-              ,@(cl-loop for (key desc path) in v
-                         collect (list key desc `(lambda () (interactive) (danger-find-file ,path))))]))))
-
 (defcustom danger-history-length 30
   "Length of history danger will track."
   :group 'danger :type 'integer)
@@ -295,7 +284,6 @@ TRASH-DIR is path to trash-dir in that disk."
   (let ((map (make-sparse-keymap)))
     (define-key map "f"                                  'danger-file)
     (define-key map "y"                                  'danger-yank)
-    (define-key map "r"                                  'danger-routes)
     (define-key map (kbd "TAB")                          'danger-show-history)
     (define-key map [remap dired-jump]                   'danger-jump)
     (define-key map [remap dired-do-redisplay]           'danger-change-level)
