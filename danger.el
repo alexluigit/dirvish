@@ -1017,6 +1017,10 @@ the idle timer fires are ignored."
 (cl-dolist (fn '(danger-next-file danger-go-top danger-go-bottom danger-flag-file-yank))
   (advice-add fn :around 'danger-update-line--advice))
 
+(with-eval-after-load 'pdf-tools
+  (delete '(("pdf") ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t"))
+          danger-preview-cmd-alist))
+
 (defvar danger-advice-alist
   '((files         find-file                    danger-file-open--advice)
     (files         find-file-other-window       danger-file-open--advice)
