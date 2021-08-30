@@ -431,6 +431,15 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Preview
 
+(defun danger--preview-process-sentinel (proc _exit)
+  "doc"
+  (with-current-buffer (frame-parameter nil 'danger-preview-buffer)
+    (erase-buffer) (remove-overlays)
+    (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
+      (insert result-str)
+      (ansi-color-apply-on-region
+       (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))))
+
 (cl-defun danger-get--preview-create (entry &optional cmd args)
   "Get corresponding preview buffer."
   (let ((buf (frame-parameter nil 'danger-preview-buffer))
@@ -445,17 +454,18 @@ TRASH-DIR is path to trash-dir in that disk."
       (unless (executable-find cmd)
         (insert (format "Install `%s' to preview %s" cmd entry))
         (cl-return-from danger-get--preview-create buf))
+      (when (or (member "%T" args) (member "%t" args)) (setq cache t))
+      (cl-dolist (fmt `((,entry . "%i") (,size . "%s")))
+        (setq args (cl-substitute (car fmt) (cdr fmt) args :test 'string=)))
+      (unless cache
+        (let* ((process-connection-type nil)
+               (default-directory "~") ; Avoid "Setting current directory" error after deleting dir
+               (res-buf (get-buffer-create " *Danger preview result*"))
+               (proc (apply 'start-process "danger-preview-process" res-buf cmd args)))
+          (with-current-buffer res-buf (erase-buffer) (remove-overlays))
+          (set-process-sentinel proc 'danger--preview-process-sentinel))
+        (cl-return-from danger-get--preview-create buf))
       (save-excursion
-        (when (or (member "%T" args) (member "%t" args)) (setq cache t))
-        (cl-dolist (fmt `((,entry . "%i") (,size . "%s")))
-          (setq args (cl-substitute (car fmt) (cdr fmt) args :test 'string=)))
-        (unless cache
-          (let ((default-directory "~")) ; Avoid "Setting current directory" error after deleting dir
-            (apply #'call-process cmd nil t nil args))
-          (when (string= cmd "exa")
-            (ansi-color-apply-on-region
-             (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))
-          (cl-return-from danger-get--preview-create buf))
         ;; FIXME: a better way to deal with gif?
         (when (string= (mailcap-file-name-to-mime-type entry) "image/gif")
           (let ((gif-buf (find-file-noselect entry t nil))
