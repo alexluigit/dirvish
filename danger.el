@@ -266,9 +266,6 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar danger-header--frame nil
   "Frame for showing header line.")
 
-(defvar danger-cleanup-regex "*Danger \\(I/O\\|Preview\\|Header\\)*"
-  "doc")
-
 ;;;; Keymap
 
 (transient-define-prefix danger-file ()
@@ -826,7 +823,7 @@ the idle timer fires are ignored."
   "Helper for `danger-paste'."
   (let* ((target (dired-current-directory))
          (process-connection-type nil)
-         (io-buffer (generate-new-buffer "*Danger I/O*"))
+         (io-buffer (generate-new-buffer " *Danger I/O*"))
          (paste-func
           (cl-case mode
             ('copy (lambda (fr to) (start-process "" io-buffer "cp" "-f" "-r" "-v" fr to)))
@@ -940,8 +937,8 @@ the idle timer fires are ignored."
 
 (defun danger-init--buffer ()
   (let* ((index (number-to-string (length danger-frame-alist)))
-         (header-buf (get-buffer-create (concat "*Danger Header-" index "*")))
-         (preview-buf (get-buffer-create (concat "*Danger Preview-" index "*"))))
+         (header-buf (get-buffer-create (concat " *Danger Header-" index "*")))
+         (preview-buf (get-buffer-create (concat " *Danger Preview-" index "*"))))
     (with-current-buffer preview-buf (setq mode-line-format nil))
     (set-frame-parameter nil 'danger-preview-buffer preview-buf)
     (set-frame-parameter nil 'danger-header-buffer header-buf)))
@@ -1113,7 +1110,7 @@ the idle timer fires are ignored."
             (mode (buffer-local-value 'major-mode buf)))
         (when (or (eq 'dired-mode mode) (eq 'danger-mode mode)
                   (and (not (string-equal name ""))
-                       (string-match danger-cleanup-regex name)
+                       (string-match " \\*Danger .*" name)
                        (not (get-buffer-process buf))))
           (kill-buffer buf))))
     (cl-dolist (tm danger-repeat-timers) (cancel-timer (symbol-value tm))))
