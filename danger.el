@@ -6,7 +6,7 @@
 ;; Keywords: ranger, file, dired
 ;; Homepage: https://github.com/alexluigit/danger.el
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "28.0") (posframe "1.0.4") (async "1.9.5"))
+;; Package-Requires: ((emacs "28.0") (posframe "1.0.4"))
 
 ;;; Commentary:
 
@@ -29,7 +29,6 @@
 (declare-function selectrum--get-candidate "selectrum")
 (declare-function selectrum--get-full "selectrum")
 (declare-function vertico--candidate "vertico")
-(declare-function async-start-process "async")
 (require 'ring)
 (require 'transient)
 (require 'posframe)
@@ -485,8 +484,8 @@ TRASH-DIR is path to trash-dir in that disk."
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
               (setq args (cl-substitute (car format) (cdr format) args :test 'string=)))
-            (let ((callback (lambda (res) (ignore res) (danger-update--preview))))
-              (apply #'async-start-process (append (list "Danger I/O" cmd callback) args)))
+            (let ((proc (apply 'start-process "danger-preview-process" buf cmd args)))
+              (set-process-sentinel proc (lambda (_p _e) (danger-update--preview))))
             (insert "[Cache] Generating thumbnail..."))))
       buf)))
 
