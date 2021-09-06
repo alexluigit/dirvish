@@ -429,12 +429,14 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (defun danger--preview-process-sentinel (proc _exit)
   "doc"
-  (with-current-buffer (frame-parameter nil 'danger-preview-buffer)
-    (erase-buffer) (remove-overlays)
-    (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
-      (insert result-str)
-      (ansi-color-apply-on-region
-       (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))))
+  (let ((buf (frame-parameter nil 'danger-preview-buffer)))
+    (when (buffer-live-p buf)
+      (with-current-buffer (frame-parameter nil 'danger-preview-buffer)
+        (erase-buffer) (remove-overlays)
+        (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
+          (insert result-str)
+          (ansi-color-apply-on-region
+           (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))))))
 
 (cl-defun danger-get--preview-create (entry &optional cmd args)
   "Get corresponding preview buffer."
