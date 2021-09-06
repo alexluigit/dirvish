@@ -167,7 +167,6 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar recentf-list)
 (defvar selectrum--current-candidate-index)
 (defvar danger-update--preview-timer)
-(defvar danger--saved-alpha)
 (defvar posframe-mouse-banish)
 (defvar image-mode-map)
 (setq posframe-mouse-banish '(10000 . 10000))
@@ -932,7 +931,7 @@ the idle timer fires are ignored."
   "Make a new frame and launch danger."
   (interactive)
   (let* ((after-make-frame-functions (lambda (f) (select-frame f)))
-         (frame (make-frame '((name . "danger-emacs")))))
+         (frame (make-frame '((name . "danger-emacs") (alpha . (100 50))))))
     (with-selected-frame frame (danger path))))
 
 ;;; Init
@@ -1080,8 +1079,6 @@ the idle timer fires are ignored."
     (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
       (with-eval-after-load file (advice-add sym :around fn)))
     (unless (posframe-workable-p) (user-error "danger.el: requires GUI emacs."))
-    (setq danger--saved-alpha (frame-parameter nil 'alpha))
-    (set-frame-parameter nil 'alpha '(100 . 50))
     (when danger-show-icons (setq danger-show-icons (ignore-errors (require 'all-the-icons))))
     (when (danger-get--i/o-status)
       (danger-delay--repeat danger-update--footer 0 0.1)
@@ -1100,7 +1097,6 @@ the idle timer fires are ignored."
   (mapc #'kill-buffer danger-preview-buffers)
   (posframe-delete (frame-parameter nil 'danger-header-buffer))
   (set-frame-parameter nil 'danger-header--frame nil)
-  (set-frame-parameter nil 'alpha danger--saved-alpha)
   (when-let ((singleton (< (length danger-frame-alist) 2)))
     (remove-hook 'window-scroll-functions #'danger-update--viewports)
     (setq display-buffer-alist (cdr display-buffer-alist))
