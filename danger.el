@@ -333,10 +333,10 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (defun danger-build--parent-windows ()
   (cl-flet ((danger-setup (child win buf)
-                      (when child (dired-goto-file child))
-                      (add-to-list 'danger-parent-windows win)
-                      (add-to-list 'danger-parent-buffers buf)
-                      (danger-mode)))
+                          (when child (dired-goto-file child))
+                          (add-to-list 'danger-parent-windows win)
+                          (add-to-list 'danger-parent-buffers buf)
+                          (danger-mode)))
     (let* ((current (expand-file-name default-directory))
            (parent (danger-get--parent current))
            (parent-dirs ()) (i 0))
@@ -994,9 +994,9 @@ the idle timer fires are ignored."
 
 (defun danger-other-window--advice (fn &rest args)
   (let ((file (dired-get-file-for-visit)))
-       (if (file-directory-p file)
-           (danger-new-frame file)
-         (apply fn args))))
+    (if (file-directory-p file)
+        (danger-new-frame file)
+      (apply fn args))))
 
 (defun danger-minibuf--update-advice (fn &rest args)
   "doc"
