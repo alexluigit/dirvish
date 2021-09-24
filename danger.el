@@ -1083,7 +1083,7 @@ the idle timer fires are ignored."
     (when (danger-get--i/o-status)
       (danger-delay--repeat danger-update--footer 0 0.1)
       (danger-delay--repeat danger-set--i/o-status 0 0.1))
-    (setq danger-orig-recentf-list recentf-list)
+    (when (featurep 'recentf) (setq danger-orig-recentf-list recentf-list))
     (mailcap-parse-mimetypes)
     (setq danger-initialized t)))
 
