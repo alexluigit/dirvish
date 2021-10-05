@@ -333,10 +333,10 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (defun danger-build--parent-windows ()
   (cl-flet ((danger-setup (child win buf)
-                          (when child (dired-goto-file child))
-                          (add-to-list 'danger-parent-windows win)
-                          (add-to-list 'danger-parent-buffers buf)
-                          (danger-mode)))
+              (when child (dired-goto-file child))
+              (add-to-list 'danger-parent-windows win)
+              (add-to-list 'danger-parent-buffers buf)
+              (danger-mode)))
     (let* ((current (expand-file-name default-directory))
            (parent (danger-get--parent current))
            (parent-dirs ()) (i 0))
@@ -812,7 +812,7 @@ the idle timer fires are ignored."
          (yanked-files ())
          (mode (or mode 'copy))
          case-fold-search)
-    (cl-dolist (buf danger-parent-buffers)
+    (cl-dolist (buf (seq-filter 'buffer-live-p danger-parent-buffers))
       (with-current-buffer buf
         (when (save-excursion (goto-char (point-min))
                               (re-search-forward regexp nil t))
@@ -991,7 +991,8 @@ the idle timer fires are ignored."
 
 (defun danger-file-open--advice (fn &rest args)
   "Advice for `find-file' and `find-file-other-window'"
-  (when (danger-live-p) (danger-quit :keep-alive)) (apply fn args))
+  (when (danger-live-p) (danger-quit :keep-alive))
+  (let ((default-directory "")) (apply fn args)))
 
 (defun danger-other-window--advice (fn &rest args)
   (let ((file (dired-get-file-for-visit)))
