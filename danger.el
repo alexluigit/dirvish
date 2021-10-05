@@ -506,6 +506,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (cl-return-from danger-preview--entry
       (danger-get--preview-create "directory" "exa" (list "--color=always" "-al" entry))))
   (let ((match (danger-match--preview-mime entry))
+        (enable-local-variables nil)
         (inhibit-modification-hooks t)
         (auto-save-default nil)
         (delay-mode-hooks t)
