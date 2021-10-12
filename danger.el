@@ -942,6 +942,7 @@ the idle timer fires are ignored."
          (header-buf (get-buffer-create (concat " *Danger Header-" index "*")))
          (preview-buf (get-buffer-create (concat " *Danger Preview-" index "*"))))
     (with-current-buffer preview-buf (setq mode-line-format nil))
+    (with-current-buffer header-buf (setq-local face-font-rescale-alist nil))
     (set-frame-parameter nil 'danger-preview-buffer preview-buf)
     (set-frame-parameter nil 'danger-header-buffer header-buf)))
 
