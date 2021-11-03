@@ -60,15 +60,15 @@
   :group 'danger :type 'list)
 
 (defcustom danger-preview-cmd-alist
-  '(("text/"             (find-file-noselect . (t nil)))
-    ("image/"            ("convert" "-resize" "%s" "%i" "%T"))
-    ("audio/"            ("mediainfo" "%i"))
-    ("video/"            ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
-    (("iso" "bin" "exe") ("*Preview Disable*"))
-    (("zip")             ("zipinfo" "%i"))
-    (("zst" "tar")       ("tar" "-tvf" "%i"))
-    (("epub")            ("epub-thumbnailer" "%i" "%T" "1024"))
-    (("pdf")             ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
+  '(("text/"                   (find-file-noselect . (t nil)))
+    ("image/"                  ("convert" "-resize" "%s" "%i" "%T"))
+    ("audio/"                  ("mediainfo" "%i"))
+    ("video/"                  ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
+    (("iso" "bin" "exe" "gpg") ("*Preview Disable*"))
+    (("zip")                   ("zipinfo" "%i"))
+    (("zst" "tar")             ("tar" "-tvf" "%i"))
+    (("epub")                  ("epub-thumbnailer" "%i" "%T" "1024"))
+    (("pdf")                   ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t")))
   "doc"
   :group 'danger :type '(alist :value-type ((choice list string) list)))
 
