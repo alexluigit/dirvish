@@ -169,7 +169,7 @@ TRASH-DIR is path to trash-dir in that disk."
 (defvar danger-update--preview-timer)
 (defvar posframe-mouse-banish)
 (defvar image-mode-map)
-(setq posframe-mouse-banish '(10000 . 10000))
+(setq posframe-mouse-banish nil)
 
 ;;;; Internal variables
 
