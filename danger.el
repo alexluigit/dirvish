@@ -296,9 +296,9 @@ TRASH-DIR is path to trash-dir in that disk."
     (define-key map [remap dired-view-file]              'danger-toggle-preview)
     (define-key map [remap quit-window]                  'danger-quit)
     (define-key map [remap delete-window]
-      (lambda ()
-        (interactive)
-        (message "%s" (substitute-command-keys "Press \\[quit-window] to quit danger"))))
+                (lambda ()
+                  (interactive)
+                  (message "%s" (substitute-command-keys "Press \\[quit-window] to quit danger"))))
     map)
   "Danger mode map.")
 
