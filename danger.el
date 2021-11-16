@@ -322,10 +322,12 @@ TRASH-DIR is path to trash-dir in that disk."
                     :poshandler ,danger-header-position
                     :min-width ,min-w
                     :min-height 2))
-         (h-frame (frame-parameter nil 'danger-header--frame)))
+         (h-frame (frame-parameter nil 'danger-header--frame))
+         (size `(:posframe ,h-frame :height 2 :max-height 2 :min-height 2
+                           :width: ,min-w :min-width ,min-w :max-width ,min-w)))
     (setq danger-width-header min-w)
     (if h-frame
-        (posframe--set-frame-size h-frame 1 2 1 min-w)
+        (posframe--set-frame-size size)
       (let ((fr (apply #'posframe-show buf f-props)))
         (set-frame-parameter nil 'danger-header--frame fr)))))
 
