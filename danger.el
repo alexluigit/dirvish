@@ -280,7 +280,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (define-key map [remap dired-previous-line]          'danger-prev-file)
     (define-key map [remap end-of-buffer]                'danger-go-bottom)
     (define-key map [remap beginning-of-buffer]          'danger-go-top)
-    (define-key map [remap dired-sort-toggle-or-edit]    'danger-sort-criteria)
+    (define-key map [remap dired-sort-toggle-or-edit]    'danger-sort-by-criteria)
     (define-key map [remap revert-buffer]                'danger-refresh)
     (define-key map [remap dired-view-file]              'danger-toggle-preview)
     (define-key map [remap quit-window]                  'danger-quit)
@@ -880,7 +880,7 @@ the idle timer fires are ignored."
   (setq danger-enable-preview (not danger-enable-preview))
   (danger-refresh t))
 
-(defun danger-sort-criteria (criteria)
+(defun danger-sort-by-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
   (interactive
    (list
