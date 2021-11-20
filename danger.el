@@ -30,7 +30,6 @@
 (declare-function selectrum--get-full "selectrum")
 (declare-function vertico--candidate "vertico")
 (require 'ring)
-(require 'transient)
 (require 'posframe)
 (require 'dired-x)
 (require 'ansi-color)
@@ -267,18 +266,8 @@ TRASH-DIR is path to trash-dir in that disk."
 
 ;;;; Keymap
 
-(transient-define-prefix danger-file ()
-  "Get file information."
-  ["Select file operation:"
-   ("m" "mark file REGEX" dired-mark-files-regexp)
-   ("n" "copy file NAME" dired-copy-filename-as-kill)
-   ("p" "copy file PATH" danger-yank-filepath)
-   ("t" "show file TYPE" dired-show-file-type)
-   ("l" "goto file TRUEPATH" danger-file-truename)])
-
 (defvar danger-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "f"                                  'danger-file)
     (define-key map "y"                                  'danger-yank)
     (define-key map (kbd "TAB")                          'danger-show-history)
     (define-key map [remap dired-jump]                   'danger-jump)
@@ -869,10 +858,6 @@ the idle timer fires are ignored."
 
 ;;;; Utilities
 
-(defun danger-file-truename ()
-  (interactive)
-  (danger-find-file (file-truename (dired-get-filename))))
-
 (defun danger-yank (&optional arg)
   (interactive "P")
   (if arg (danger-paste 'move) (danger-paste)))
@@ -917,13 +902,6 @@ the idle timer fires are ignored."
       (setq danger-sort-criteria (car sort-flag))
       (dired-sort-other switch)
       (danger-refresh))))
-
-(defun danger-yank-filepath (&optional dir-only)
-  "Copy the current directory's (`default-directory''s) absolute path."
-  (interactive "P")
-  (if dir-only
-      (message (kill-new (expand-file-name default-directory)))
-    (message (kill-new (dired-get-filename nil t)))))
 
 ;;;###autoload
 (defun danger-live-p (&optional win)
