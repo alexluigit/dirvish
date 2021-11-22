@@ -645,7 +645,7 @@ window at the designated `side' of the frame."
           (cancel-timer (symbol-value 'danger-set--i/o-status-timer))))
       (setcar (nth 3 (car-safe danger-i/o-queue)) progress))))
 
-(defmacro danger-delay--repeat (func delay interval &rest args)
+(defmacro danger-repeat (func delay interval &rest args)
   "doc"
   (let ((timer (intern (format "%s-timer" func))))
     `(progn
@@ -653,7 +653,7 @@ window at the designated `side' of the frame."
        (add-to-list 'danger-repeat-timers ',timer)
        (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
 
-(defmacro danger-delay--once (func delay &rest args)
+(defmacro danger-debounce (func delay &rest args)
   "Execute a delayed version of FUNC with delay time DELAY.
 When called, the FUNC only runs after the idle time
 specified by DELAY. Multiple calls to the same function before
@@ -709,7 +709,7 @@ the idle timer fires are ignored."
     (set-frame-parameter nil 'danger-index-path (dired-get-filename nil t))
     (danger-update--header)
     (danger-update--footer)
-    (danger-delay--once danger-update--preview danger-preview-delay)))
+    (danger-debounce danger-update--preview danger-preview-delay)))
 
 (defun danger-prev-file (arg)
   (interactive "^p")
@@ -778,8 +778,8 @@ the idle timer fires are ignored."
     (let ((size (danger-get--filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
       (add-to-list 'danger-i/o-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
-    (danger-delay--repeat danger-update--footer 0 0.1)
-    (danger-delay--repeat danger-set--i/o-status 0 0.1)
+    (danger-repeat danger-update--footer 0 0.1)
+    (danger-repeat danger-set--i/o-status 0 0.1)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf danger-parent-buffers)
@@ -977,8 +977,8 @@ the idle timer fires are ignored."
     (unless (posframe-workable-p) (user-error "danger.el: requires GUI emacs."))
     (when danger-show-icons (setq danger-show-icons (ignore-errors (require 'all-the-icons))))
     (when (danger-get--i/o-status)
-      (danger-delay--repeat danger-update--footer 0 0.1)
-      (danger-delay--repeat danger-set--i/o-status 0 0.1))
+      (danger-repeat danger-update--footer 0 0.1)
+      (danger-repeat danger-set--i/o-status 0 0.1))
     (when (featurep 'recentf) (setq danger-orig-recentf-list recentf-list))
     (mailcap-parse-mimetypes)
     (setq danger-initialized t)))
