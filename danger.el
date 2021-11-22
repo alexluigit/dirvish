@@ -248,6 +248,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (define-key map [remap dired-omit-mode]              'danger-toggle-dotfiles)
     (define-key map [remap dired-hide-details-mode]      'danger-toggle-preview)
     (define-key map [remap dired-find-file]              'danger-find-file)
+    (define-key map [remap dired-find-alternate-file]    'danger-find-file)
     (define-key map [remap dired-up-directory]           'danger-up-directory)
     (define-key map [remap dired-next-line]              'danger-next-file)
     (define-key map [remap dired-previous-line]          'danger-prev-file)
@@ -672,7 +673,7 @@ the idle timer fires are ignored."
 
 (defun danger-jump (file)
   "Replacement for `dired-jump'"
-  (interactive (list (read-file-name "Jump to: "))) (danger file))
+  (interactive (list (read-file-name "Jump to: "))) (danger-find-file-dwim file))
 
 (defun danger-up-directory ()
   "Move to parent directory."
@@ -1092,6 +1093,13 @@ currently selected file in danger. `IGNORE-HISTORY' will not update history-ring
   (setq tab-line-format nil)
   (setq header-line-format (propertize " " 'display
                                        `(height ,(* 2 (1+ danger-line-padding))))))
+;;;###autoload
+(defun danger-find-file-dwim (&rest args)
+  "Call `danger-find-file' or `dired-find-file'."
+  (if (derived-mode-p 'danger-mode)
+      (apply 'danger-find-file args)
+    (apply 'find-alternate-file args)))
+
 
 (provide 'danger)
 
