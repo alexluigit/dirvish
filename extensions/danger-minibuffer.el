@@ -31,6 +31,7 @@
 (declare-function selectrum--get-candidate "selectrum")
 (declare-function selectrum--get-full "selectrum")
 (declare-function vertico--candidate "vertico")
+(defvar danger-update--preview-timer)
 
 (require 'danger)
 

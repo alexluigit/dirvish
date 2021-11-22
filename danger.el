@@ -154,6 +154,7 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (defvar recentf-list)
 (defvar danger-update--preview-timer)
+(defvar danger-override-dired-mode)
 (defvar posframe-mouse-banish)
 (defvar image-mode-map)
 (setq posframe-mouse-banish nil)
@@ -212,9 +213,6 @@ TRASH-DIR is path to trash-dir in that disk."
   "Timers with repeat flag need to be clean when exit.")
 
 (defvar danger-i/o-queue ()
-  "doc")
-
-(defvar danger-override-dired-mode nil
   "doc")
 
 ;;;; Buffer / Frame local variables
@@ -277,7 +275,9 @@ TRASH-DIR is path to trash-dir in that disk."
   "Calculate header frame width. Default to frame width when disable preview."
   (* (frame-width) (if danger-enable-preview (- 1 danger-width-preview) 1)))
 
-(defun danger-build--header-frame ()
+(cl-defun danger-build--header-frame ()
+  (when-let ((one-window (frame-parameter nil 'danger-one-window)))
+    (cl-return-from danger-build--header-frame))
   (let* ((buf (frame-parameter nil 'danger-header-buffer))
          (min-w (1+ (ceiling (danger-width-header))))
          (f-props `(:background-color
@@ -297,42 +297,53 @@ TRASH-DIR is path to trash-dir in that disk."
 ;;;; Parent windows
 
 (defun danger-build--parent-windows ()
-  (cl-flet ((danger-setup (child win buf)
+  (cl-flet ((setup (child win buf)
               (when child (dired-goto-file child))
               (add-to-list 'danger-parent-windows win)
               (add-to-list 'danger-parent-buffers buf)
-              (danger-mode)))
+              (danger-mode)
+              (danger-setup--header 'posframe))
+            (setup-one-window ()
+              (danger-mode)
+              (danger-setup--header 'one-window)))
     (let* ((current (expand-file-name default-directory))
            (parent (danger-get--parent current))
-           (parent-dirs ()) (i 0))
-      (delete-other-windows)
+           (parent-dirs ())
+           (one-window (frame-parameter nil 'danger-one-window))
+           (depth danger-depth)
+           (i 0))
+      (if one-window (setq depth 0) (delete-other-windows))
       (setq danger-window (frame-selected-window))
-      (danger-setup danger-child-entry danger-window (current-buffer))
-      (when danger-enable-preview (dired-hide-details-mode t))
-      (while (and (< i danger-depth) (not (string= current parent)))
+      (setup danger-child-entry danger-window (current-buffer))
+      (while (and (< i depth) (not (string= current parent)))
         (setq i (+ i 1))
         (push (cons current parent) parent-dirs)
         (setq current (danger-get--parent current))
         (setq parent (danger-get--parent parent)))
-      (let ((width (min (/ danger-max-parent-width danger-depth) danger-width-parents)))
-        (cl-dolist (parent-dir parent-dirs)
-          (let* ((current (car parent-dir))
-                 (parent (cdr parent-dir))
-                 (win-alist `((side . left)
-                              (inhibit-same-window . t)
-                              (window-width . ,width)))
-                 (buffer (dired-noselect parent))
-                 (window (display-buffer buffer `(danger-display--buffer . ,win-alist))))
-            (with-selected-window window
-              (danger-setup current window buffer)
-              (dired-hide-details-mode t)
-              (danger-update--padding)
-              (danger-update--icons)
-              (danger-update--line))))))))
+      (if (< depth 1)
+          (setup-one-window)
+        (let ((width (min (/ danger-max-parent-width depth) danger-width-parents)))
+          (cl-dolist (parent-dir parent-dirs)
+            (let* ((current (car parent-dir))
+                   (parent (cdr parent-dir))
+                   (win-alist `((side . left)
+                                (inhibit-same-window . t)
+                                (window-width . ,width)))
+                   (buffer (dired-noselect parent))
+                   (window (display-buffer buffer `(danger-display--buffer . ,win-alist))))
+              (with-selected-window window
+                (setup current window buffer)
+                (dired-hide-details-mode t)
+                (danger-update--padding)
+                (danger-update--icons)
+                (danger-update--line))))))
+      (when danger-enable-preview (dired-hide-details-mode t)))))
 
 ;;;; Preview window
 
-(defun danger-build--preview-window ()
+(cl-defun danger-build--preview-window ()
+  (when-let ((one-window (frame-parameter nil 'danger-one-window)))
+    (cl-return-from danger-build--preview-window))
   (when danger-enable-preview
     (let* ((inhibit-modification-hooks t)
            (win-alist `((side . right) (window-width . ,danger-width-preview)))
@@ -362,7 +373,10 @@ TRASH-DIR is path to trash-dir in that disk."
   "Get corresponding preview buffer."
   (let ((buf (frame-parameter nil 'danger-preview-buffer))
         (process-connection-type nil)
-        (size (number-to-string (or danger-minibuf-preview--width danger-width-img))) cache)
+        (size (number-to-string (or (and (boundp 'danger-minibuf-preview--width)
+                                         danger-minibuf-preview--width)
+                                    danger-width-img)))
+        cache)
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
       (unless cmd (insert entry) (cl-return-from danger-get--preview-create buf))
@@ -445,7 +459,9 @@ TRASH-DIR is path to trash-dir in that disk."
 
 (defun danger-update--preview (&optional preview-window)
   "Setup danger preview window."
-  (when (or danger-enable-preview preview-window)
+  (when (or (and danger-enable-preview
+                 (not (frame-parameter nil 'danger-one-window)))
+            preview-window)
     (let* ((orig-buffer-list (buffer-list))
            (index (or (frame-parameter nil 'danger-index-path) ""))
            (preview-buffer (danger-preview--entry index))
@@ -461,15 +477,17 @@ TRASH-DIR is path to trash-dir in that disk."
 (defun danger-update--header ()
   "Update header string.  Make sure the length of header string
 is less then `danger-width-header'."
-  (with-current-buffer (frame-parameter nil 'danger-header-buffer)
-    (erase-buffer)
-    (let ((str (funcall danger-header-string-fn))
-          (max-width (1- (floor (/ danger-width-header danger-header-scale)))))
-      (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
-        (setq str (substring str 0 -1)))
-      (insert (concat str "\n")))
-    (add-text-properties (point-min) (point-max)
-                         `(display '(height ,danger-header-scale) line-spacing 0.5 line-height 1.5))))
+  (if-let ((one-window (frame-parameter nil 'danger-one-window)))
+      (danger-setup--header 'one-window)
+    (with-current-buffer (frame-parameter nil 'danger-header-buffer)
+      (erase-buffer)
+      (let ((str (funcall danger-header-string-fn))
+            (max-width (1- (floor (/ danger-width-header danger-header-scale)))))
+        (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
+          (setq str (substring str 0 -1)))
+        (insert (concat str "\n")))
+      (add-text-properties (point-min) (point-max)
+                           `(display '(height ,danger-header-scale) line-spacing 0.5 line-height 1.5)))))
 
 (defun danger--header-string ()
   "Compose header string."
@@ -483,8 +501,10 @@ is less then `danger-width-header'."
             (propertize path-tail 'face 'dired-mark)
             (propertize file-name 'face 'font-lock-constant-face))))
 
-(defun danger-update--footer ()
+(cl-defun danger-update--footer ()
   "Show file details in echo area."
+  (when-let ((one-window (frame-parameter nil 'danger-one-window)))
+    (cl-return-from danger-update--footer))
   (when (and (dired-get-filename nil t) (danger-live-p))
     (let* ((fwidth (frame-width))
            (footer (format-spec danger-footer-format (danger--footer-spec)))
@@ -645,6 +665,10 @@ window at the designated `side' of the frame."
         (when (eq (length danger-i/o-queue) 1)
           (cancel-timer (symbol-value 'danger-set--i/o-status-timer))))
       (setcar (nth 3 (car-safe danger-i/o-queue)) progress))))
+
+(defun danger-override-dired ()
+  "Helper func for `danger-override-dired-mode'."
+  (unless danger-initialized (danger nil t)))
 
 (defmacro danger-repeat (func delay interval &rest args)
   "doc"
@@ -808,7 +832,10 @@ the idle timer fires are ignored."
   "Show/hide preview window."
   (interactive)
   (setq danger-enable-preview (not danger-enable-preview))
-  (danger-refresh t))
+  (danger-refresh t)
+  (when danger-enable-preview
+    (dired-hide-details-mode t))
+  )
 
 (defun danger-sort-by-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
@@ -855,6 +882,16 @@ the idle timer fires are ignored."
     (with-current-buffer header-buf (setq-local face-font-rescale-alist nil))
     (set-frame-parameter nil 'danger-preview-buffer preview-buf)
     (set-frame-parameter nil 'danger-header-buffer header-buf)))
+
+(defun danger-setup--header (type)
+  (setq tab-line-format nil)
+  (cl-case type
+    ('posframe
+     (setq header-line-format (propertize " " 'display `(height ,(* 2 (1+ danger-line-padding)))))
+     (set-face-attribute 'header-line nil :box nil))
+    ('one-window
+     (setq header-line-format (propertize (danger--header-string) 'display `(height ,danger-header-scale)))
+     (set-face-attribute 'header-line nil :box '(:line-width 4 :color "#353644")))))
 
 ;;;; Advices / Hooks
 
@@ -1051,18 +1088,19 @@ also rebuild danger layout."
 ;;;; Core utilities
 
 ;;;###autoload
-(defun danger (&optional path)
+(defun danger (&optional path one-window)
   "Launch dired in danger-mode."
   (interactive)
   (let* ((file (or path buffer-file-name))
          (dir (if file (expand-file-name (file-name-directory file))
                 (expand-file-name default-directory))))
-    (danger-init)
+    (danger-init one-window)
     (danger-find-file dir)))
 
 (defun danger-find-file (&optional file ignore-history)
-  "Find file in danger buffer.  `ENTRY' can be used as path or filename, else will use
-currently selected file in danger. `IGNORE-HISTORY' will not update history-ring on change"
+  "Find file in danger buffer.  `ENTRY' can be used as path or
+filename, else will use currently selected file in
+danger. `IGNORE-HISTORY' will not update history-ring on change"
   (interactive)
   (let ((entry (or file (dired-get-filename nil t)))
         (bname (buffer-file-name (current-buffer)))
@@ -1090,24 +1128,11 @@ currently selected file in danger. `IGNORE-HISTORY' will not update history-ring
              (string= (frame-parameter nil 'name) "danger-emacs"))
     (delete-frame)))
 
-;;;###autoload
-(define-minor-mode danger-override-dired-mode
-  "Toggle danger to override dired whenever in danger-mode."
-  :group 'danger :global t
-  (let ((overrider '(lambda () (unless (danger-live-p) (danger)))))
-    (if danger-override-dired-mode
-        (add-hook 'dired-after-readin-hook overrider)
-      (remove-hook 'dired-after-readin-hook overrider))))
-
-
 (define-derived-mode danger-mode dired-mode "Danger"
   "Major mode emulating the danger file manager in `dired'."
   :group 'danger
-  :interactive nil
-  (setq dired-clean-confirm-killing-deleted-buffers nil)
-  (setq tab-line-format nil)
-  (setq header-line-format (propertize " " 'display
-                                       `(height ,(* 2 (1+ danger-line-padding))))))
+  :interactive nil)
+
 ;;;###autoload
 (defun danger-find-file-dwim (&rest args)
   "Call `danger-find-file' or `dired-find-file'."
@@ -1115,6 +1140,13 @@ currently selected file in danger. `IGNORE-HISTORY' will not update history-ring
       (apply 'danger-find-file args)
     (apply 'find-alternate-file args)))
 
+;;;###autoload
+(define-minor-mode danger-override-dired-mode
+  "Setup dired buffer in a `danger' way."
+  :group 'danger :global t
+  (if danger-override-dired-mode
+      (add-hook 'dired-after-readin-hook #'danger-override-dired)
+    (remove-hook 'dired-after-readin-hook #'danger-override-dired)))
 
 (provide 'danger)
 
