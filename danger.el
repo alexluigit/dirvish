@@ -875,10 +875,14 @@ the idle timer fires are ignored."
       (delete-region (point-min) (progn (forward-line 1) (point))))))
 
 (defun danger-refresh--advice (fn &rest args)
-  "Advice function for FN with ARGS."
+  "Apply FN with ARGS, rebuild danger frame when necessary."
   (apply fn args)
   (let ((rebuild (not (eq major-mode 'danger-mode))))
-    (danger-refresh rebuild nil t)))
+    (danger-refresh rebuild nil 'no-revert)))
+
+(defun danger-revert--advice (fn &rest args)
+  "Apply FN with ARGS then revert buffer."
+  (apply fn args) (danger-refresh))
 
 (defun danger-refresh-cursor--advice (fn &rest args)
   (unless (and (not (eq major-mode 'wdired-mode)) (danger-live-p))
@@ -901,7 +905,7 @@ the idle timer fires are ignored."
   (danger-refresh))
 
 (defun danger-file-open--advice (fn &rest args)
-  "Advice for `find-file' and `find-file-other-window'"
+  "Advice for commands that open a file."
   (when (danger-live-p) (danger-quit :keep-alive))
   (let ((default-directory "")) (apply fn args)))
 
@@ -938,12 +942,14 @@ the idle timer fires are ignored."
     (dired         wdired-exit                  danger-refresh--advice)
     (dired         wdired-finish-edit           danger-refresh--advice)
     (dired         wdired-abort-changes         danger-refresh--advice)
+    (dired-aux     dired-kill-line              danger-refresh--advice)
     (dired-aux     dired-do-kill-lines          danger-refresh--advice)
     (dired-aux     dired-create-directory       danger-refresh--advice)
     (dired-aux     dired-create-empty-file      danger-refresh--advice)
     (dired-aux     dired-do-create-files        danger-refresh--advice)
-    (dired-aux     dired-do-rename              danger-refresh--advice)
     (dired-aux     dired-insert-subdir          danger-refresh--advice)
+    (dired-aux     dired-kill-subdir            danger-refresh--advice)
+    (dired-aux     dired-rename-file            danger-revert--advice)
     (dired-narrow  dired-narrow--internal       danger-refresh--advice)
     (isearch       isearch-repeat-backward      danger-refresh--advice)
     (isearch       isearch-repeat-forward       danger-refresh--advice)
@@ -954,12 +960,23 @@ the idle timer fires are ignored."
     (lsp-mode      lsp-deferred                 ignore))
   "A list of file, adviced function, and advice function.")
 
+(defun danger-add--advices ()
+  "Add all advice listed in `danger-advice-alist'."
+  (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
+    (with-eval-after-load file (advice-add sym :around fn))))
+
+(defun danger-clean--advices ()
+  "Remove all advice listed in `danger-advice-alist'."
+  (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
+    (with-eval-after-load file (advice-remove sym fn))))
+
 (put 'dired-subdir-alist 'permanent-local t)
 
 ;;;; Core setup
 
-(defun danger-init ()
+(defun danger-init (&optional one-window)
   "Save previous window config and initialize danger."
+  (set-frame-parameter nil 'danger-one-window one-window)
   (when-let* ((frame (window-frame))
               (new-danger-frame (not (assoc frame danger-frame-alist))))
     (push (cons frame (current-window-configuration)) danger-frame-alist))
@@ -973,8 +990,7 @@ the idle timer fires are ignored."
                    (window-height . 0.4)
                    (side . bottom)))
     (add-function :after after-focus-change-function #'danger-redisplay--frame)
-    (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
-      (with-eval-after-load file (advice-add sym :around fn)))
+    (danger-add--advices)
     (unless (posframe-workable-p) (user-error "danger.el: requires GUI emacs."))
     (when danger-show-icons (setq danger-show-icons (ignore-errors (require 'all-the-icons))))
     (when (danger-get--i/o-status)
@@ -998,8 +1014,7 @@ the idle timer fires are ignored."
     (remove-hook 'window-scroll-functions #'danger-update--viewports)
     (setq display-buffer-alist (cdr display-buffer-alist))
     (remove-function after-focus-change-function #'danger-redisplay--frame)
-    (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
-      (with-eval-after-load file (advice-remove sym fn)))
+    (danger-clean--advices)
     (cl-dolist (buf (buffer-list))
       (let ((name (buffer-name buf))
             (mode (buffer-local-value 'major-mode buf)))
