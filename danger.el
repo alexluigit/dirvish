@@ -119,7 +119,7 @@
 
 (defcustom danger-trash-dir-alist nil
   "An alist of (DISK . TRASH-DIR) where DISK is path to a disk and
-TRASH-DIR is path to trash-dir in that disk."
+TRASH-DIR is corresponding trash directory."
   :group 'danger :type 'alist)
 
 (defcustom danger-show-icons t
@@ -399,8 +399,9 @@ TRASH-DIR is path to trash-dir in that disk."
         (when (string= (mailcap-file-name-to-mime-type entry) "image/gif")
           (let ((gif-buf (find-file-noselect entry t nil))
                 (callback (lambda (buf)
-                            (with-current-buffer buf
-                              (image-animate (image-get-display-property))))))
+                            (when (buffer-live-p buf)
+                              (with-current-buffer buf
+                                (image-animate (image-get-display-property)))))))
             (run-with-idle-timer 1 nil callback gif-buf)
             (cl-return-from danger-get--preview-create gif-buf)))
         (let* ((target-raw (concat danger-cache-dir size entry))
