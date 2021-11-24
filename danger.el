@@ -239,7 +239,6 @@ TRASH-DIR is corresponding trash directory."
 
 (defvar danger-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "TAB")                          'danger-show-history)
     (define-key map [remap dired-do-copy]                'danger-yank)
     (define-key map [remap dired-jump]                   'danger-jump)
     (define-key map [remap dired-do-redisplay]           'danger-change-level)
