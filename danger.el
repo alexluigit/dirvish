@@ -2,11 +2,11 @@
 ;; Copyright (C) 2021 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Package-Version: 0.6.3
+;; Package-Version: 0.7.0
 ;; Keywords: ranger, file, dired
 ;; Homepage: https://github.com/alexluigit/danger.el
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "28.0") (posframe "1.0.4"))
+;; Package-Requires: ((emacs "26") (posframe "1.1.1"))
 
 ;;; Commentary:
 
