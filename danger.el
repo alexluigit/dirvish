@@ -297,31 +297,27 @@ TRASH-DIR is path to trash-dir in that disk."
 ;;;; Parent windows
 
 (defun danger-build--parent-windows ()
-  (cl-flet ((setup (child win buf)
+  (cl-flet ((setup (child win buf one-w)
               (when child (dired-goto-file child))
               (add-to-list 'danger-parent-windows win)
               (add-to-list 'danger-parent-buffers buf)
               (danger-mode)
-              (danger-setup--header 'posframe))
-            (setup-one-window ()
-              (danger-mode)
-              (danger-setup--header 'one-window)))
+              (danger-setup--header (if one-w 'one-window 'posframe))))
     (let* ((current (expand-file-name default-directory))
            (parent (danger-get--parent current))
            (parent-dirs ())
            (one-window (frame-parameter nil 'danger-one-window))
            (depth danger-depth)
            (i 0))
-      (if one-window (setq depth 0) (delete-other-windows))
       (setq danger-window (frame-selected-window))
-      (setup danger-child-entry danger-window (current-buffer))
+      (if one-window (setq depth 0) (delete-other-windows))
+      (setup danger-child-entry danger-window (current-buffer) one-window)
       (while (and (< i depth) (not (string= current parent)))
         (setq i (+ i 1))
         (push (cons current parent) parent-dirs)
         (setq current (danger-get--parent current))
         (setq parent (danger-get--parent parent)))
-      (if (< depth 1)
-          (setup-one-window)
+      (when (> depth 0)
         (let ((width (min (/ danger-max-parent-width depth) danger-width-parents)))
           (cl-dolist (parent-dir parent-dirs)
             (let* ((current (car parent-dir))
@@ -332,7 +328,7 @@ TRASH-DIR is path to trash-dir in that disk."
                    (buffer (dired-noselect parent))
                    (window (display-buffer buffer `(danger-display--buffer . ,win-alist))))
               (with-selected-window window
-                (setup current window buffer)
+                (setup current window buffer one-window)
                 (dired-hide-details-mode t)
                 (danger-update--padding)
                 (danger-update--icons)
@@ -666,10 +662,6 @@ window at the designated `side' of the frame."
           (cancel-timer (symbol-value 'danger-set--i/o-status-timer))))
       (setcar (nth 3 (car-safe danger-i/o-queue)) progress))))
 
-(defun danger-override-dired ()
-  "Helper func for `danger-override-dired-mode'."
-  (unless danger-initialized (danger nil t)))
-
 (defmacro danger-repeat (func delay interval &rest args)
   "doc"
   (let ((timer (intern (format "%s-timer" func))))
@@ -867,7 +859,9 @@ the idle timer fires are ignored."
 
 (defun danger-new-frame (&optional path)
   "Make a new frame and launch danger."
-  (interactive)
+  (interactive (list (read-file-name "Open in new frame: ")))
+  (when (with-selected-window (selected-window) (eq major-mode 'danger-mode))
+    (danger-quit))
   (let* ((after-make-frame-functions (lambda (f) (select-frame f)))
          (frame (make-frame '((name . "danger-emacs") (alpha . (100 50))))))
     (with-selected-frame frame (danger path))))
@@ -999,11 +993,21 @@ the idle timer fires are ignored."
 
 (defun danger-add--advices ()
   "Add all advice listed in `danger-advice-alist'."
+  (add-hook 'window-scroll-functions #'danger-update--viewports)
+  (add-to-list 'display-buffer-alist
+               '("\\(\\*info\\|\\*Help\\|\\*helpful\\|magit:\\).*"
+                 (display-buffer-in-side-window)
+                 (window-height . 0.4)
+                 (side . bottom)))
+  (add-function :after after-focus-change-function #'danger-redisplay--frame)
   (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
     (with-eval-after-load file (advice-add sym :around fn))))
 
 (defun danger-clean--advices ()
   "Remove all advice listed in `danger-advice-alist'."
+  (remove-hook 'window-scroll-functions #'danger-update--viewports)
+  (setq display-buffer-alist (cdr display-buffer-alist))
+  (remove-function after-focus-change-function #'danger-redisplay--frame)
   (pcase-dolist (`(,file ,sym ,fn) danger-advice-alist)
     (with-eval-after-load file (advice-remove sym fn))))
 
@@ -1013,22 +1017,17 @@ the idle timer fires are ignored."
 
 (defun danger-init (&optional one-window)
   "Save previous window config and initialize danger."
+  (unless (or (posframe-workable-p) one-window) (user-error "danger.el: requires GUI."))
+  (when (eq major-mode 'danger-mode) (danger-quit))
   (set-frame-parameter nil 'danger-one-window one-window)
-  (when-let* ((frame (window-frame))
+  (when-let* ((ignore-one-win (not one-window))
+              (frame (window-frame))
               (new-danger-frame (not (assoc frame danger-frame-alist))))
     (push (cons frame (current-window-configuration)) danger-frame-alist))
   (when (window-parameter nil 'window-side) (delete-window))
   (danger-init--buffer)
   (unless danger-initialized
-    (add-hook 'window-scroll-functions #'danger-update--viewports)
-    (add-to-list 'display-buffer-alist
-                 '("\\(\\*info\\|\\*Help\\|\\*helpful\\|magit:\\).*"
-                   (display-buffer-in-side-window)
-                   (window-height . 0.4)
-                   (side . bottom)))
-    (add-function :after after-focus-change-function #'danger-redisplay--frame)
     (danger-add--advices)
-    (unless (posframe-workable-p) (user-error "danger.el: requires GUI emacs."))
     (when danger-show-icons (setq danger-show-icons (ignore-errors (require 'all-the-icons))))
     (when (danger-get--i/o-status)
       (danger-repeat danger-update--footer 0 0.1)
@@ -1037,36 +1036,44 @@ the idle timer fires are ignored."
     (mailcap-parse-mimetypes)
     (setq danger-initialized t)))
 
+(defun danger-clean--buffers ()
+  (cl-dolist (buf (buffer-list))
+    (let ((name (buffer-name buf))
+          (mode (buffer-local-value 'major-mode buf)))
+      (when (or (eq 'dired-mode mode) (eq 'danger-mode mode)
+                (and (not (string-equal name ""))
+                     (string-match " \\*Danger .*" name)
+                     (not (get-buffer-process buf))))
+        (kill-buffer buf)))))
+
 (defun danger-deinit ()
   "Revert previous window config and deinit danger."
   (setq danger-initialized nil)
   (setq recentf-list danger-orig-recentf-list)
-  (when-let* ((config (cdr-safe (assoc (window-frame) danger-frame-alist)))
-              (valid (window-configuration-p config)))
-    (set-window-configuration config))
   (mapc #'kill-buffer danger-preview-buffers)
-  (posframe-delete (frame-parameter nil 'danger-header-buffer))
-  (set-frame-parameter nil 'danger-header--frame nil)
-  (when-let ((singleton (< (length danger-frame-alist) 2)))
-    (remove-hook 'window-scroll-functions #'danger-update--viewports)
-    (setq display-buffer-alist (cdr display-buffer-alist))
-    (remove-function after-focus-change-function #'danger-redisplay--frame)
-    (danger-clean--advices)
-    (cl-dolist (buf (buffer-list))
-      (let ((name (buffer-name buf))
-            (mode (buffer-local-value 'major-mode buf)))
-        (when (or (eq 'dired-mode mode) (eq 'danger-mode mode)
-                  (and (not (string-equal name ""))
-                       (string-match " \\*Danger .*" name)
-                       (not (get-buffer-process buf))))
-          (kill-buffer buf))))
-    (cl-dolist (tm danger-repeat-timers) (cancel-timer (symbol-value tm))))
-  (set-frame-parameter nil 'danger-preview-window nil)
-  (setq danger-frame-alist (delq (assoc (window-frame) danger-frame-alist) danger-frame-alist))
-  (setq danger-window nil)
-  (setq danger-parent-windows ())
-  (setq danger-preview-buffers ())
-  (setq danger-parent-buffers ()))
+  (let ((one-window (frame-parameter nil 'danger-one-window))
+        (config (cdr-safe (assoc (window-frame) danger-frame-alist))))
+    (if one-window
+        (while (eq 'danger-mode (buffer-local-value 'major-mode (current-buffer)))
+          (delq (selected-window) danger-parent-windows)
+          (quit-window))
+      (posframe-delete (frame-parameter nil 'danger-header-buffer))
+      (set-frame-parameter nil 'danger-header--frame nil)
+      (set-frame-parameter nil 'danger-preview-window nil)
+      (setq danger-frame-alist (delq (assoc (window-frame) danger-frame-alist) danger-frame-alist))
+      (when (window-configuration-p config)
+        (set-window-configuration config)))
+    (unless
+        (or (and one-window (> (length danger-parent-windows) 1))
+            (> (length danger-frame-alist) 1))
+      (danger-clean--buffers)
+      (danger-clean--advices)
+      (cl-dolist (tm danger-repeat-timers) (cancel-timer (symbol-value tm))))
+    (unless one-window (set-frame-parameter nil 'danger-one-window t))
+    (setq danger-window nil)
+    (setq danger-parent-windows ())
+    (setq danger-preview-buffers ())
+    (setq danger-parent-buffers ())))
 
 (defun danger-refresh (&optional rebuild filter no-revert)
   "Reset danger. With optional prefix ARG (\\[universal-argument])
@@ -1140,13 +1147,19 @@ danger. `IGNORE-HISTORY' will not update history-ring on change"
       (apply 'danger-find-file args)
     (apply 'find-alternate-file args)))
 
+(defun danger-override-dired (&rest _)
+  "Helper func for `danger-override-dired-mode'."
+  (if (= (length (window-list)) 1)
+      (danger)
+    (danger nil t)))
+
 ;;;###autoload
 (define-minor-mode danger-override-dired-mode
   "Setup dired buffer in a `danger' way."
   :group 'danger :global t
   (if danger-override-dired-mode
-      (add-hook 'dired-after-readin-hook #'danger-override-dired)
-    (remove-hook 'dired-after-readin-hook #'danger-override-dired)))
+      (advice-add 'dired-jump :around #'danger-override-dired)
+    (advice-remove 'dired-jump #'danger-override-dired)))
 
 (provide 'danger)
 
