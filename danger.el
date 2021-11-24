@@ -255,6 +255,7 @@ TRASH-DIR is path to trash-dir in that disk."
     (define-key map [remap dired-sort-toggle-or-edit]    'danger-sort-by-criteria)
     (define-key map [remap revert-buffer]                'danger-refresh)
     (define-key map [remap dired-view-file]              'danger-toggle-preview)
+    (define-key map [remap mode-line-other-buffer]       'danger-other-buffer)
     (define-key map [remap quit-window]                  'danger-quit)
     (define-key map [remap delete-window]
                 (lambda ()
@@ -662,6 +663,10 @@ window at the designated `side' of the frame."
           (cancel-timer (symbol-value 'danger-set--i/o-status-timer))))
       (setcar (nth 3 (car-safe danger-i/o-queue)) progress))))
 
+(defun danger-override-dired (&rest _)
+  "Helper func for `danger-override-dired-mode'."
+  (danger nil (not (= (length (window-list)) 1))))
+
 (defmacro danger-repeat (func delay interval &rest args)
   "doc"
   (let ((timer (intern (format "%s-timer" func))))
@@ -686,6 +691,14 @@ the idle timer fires are ignored."
 ;;; Commands
 
 ;;;; Navigation
+
+(defun danger-other-buffer ()
+  "Replacement for `mode-line-other-buffer' in danger-mode."
+  (interactive)
+  (let ((one-window (frame-parameter nil 'danger-one-window)))
+    (if one-window
+        (switch-to-buffer (other-buffer) nil t)
+      (danger-find-file (ring-ref danger-history-ring 1)))))
 
 (defun danger-jump (file)
   "Replacement for `dired-jump'"
@@ -826,8 +839,7 @@ the idle timer fires are ignored."
   (setq danger-enable-preview (not danger-enable-preview))
   (danger-refresh t)
   (when danger-enable-preview
-    (dired-hide-details-mode t))
-  )
+    (dired-hide-details-mode t)))
 
 (defun danger-sort-by-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
@@ -1104,21 +1116,23 @@ also rebuild danger layout."
     (danger-init one-window)
     (danger-find-file dir)))
 
-(defun danger-find-file (&optional file ignore-history)
-  "Find file in danger buffer.  `ENTRY' can be used as path or
-filename, else will use currently selected file in
-danger. `IGNORE-HISTORY' will not update history-ring on change"
+(defun danger-find-file (&optional file ignore-hist)
+  "Find file in danger buffer.
+
+FILE can be a file or a directory, if nil then infer entry from
+current `buffer-file-name'. If IGNORE-HIST is non-nil, do not
+update `danger-history-ring'."
   (interactive)
   (let ((entry (or file (dired-get-filename nil t)))
         (bname (buffer-file-name (current-buffer)))
         (curr-dir (expand-file-name default-directory)))
     (when entry
       (if (file-directory-p entry)
-          (progn
-            (unless ignore-history
+          (let ((hist (directory-file-name entry)))
+            (unless ignore-hist
               (when (or (ring-empty-p danger-history-ring)
-                        (not (eq entry (ring-ref danger-history-ring 0))))
-                (ring-insert danger-history-ring (directory-file-name entry))))
+                        (not (eq hist (ring-ref danger-history-ring 0))))
+                (ring-insert danger-history-ring hist)))
             (switch-to-buffer (or (car (dired-buffers-for-dir entry))
                                   (dired-noselect entry)))
             (setq danger-child-entry (or bname curr-dir))
@@ -1146,12 +1160,6 @@ danger. `IGNORE-HISTORY' will not update history-ring on change"
   (if (derived-mode-p 'danger-mode)
       (apply 'danger-find-file args)
     (apply 'find-alternate-file args)))
-
-(defun danger-override-dired (&rest _)
-  "Helper func for `danger-override-dired-mode'."
-  (if (= (length (window-list)) 1)
-      (danger)
-    (danger nil t)))
 
 ;;;###autoload
 (define-minor-mode danger-override-dired-mode
