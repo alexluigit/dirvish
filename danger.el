@@ -665,7 +665,8 @@ window at the designated `side' of the frame."
 
 (defun danger-override-dired (&rest _)
   "Helper func for `danger-override-dired-mode'."
-  (danger nil (not (= (length (window-list)) 1))))
+  (danger nil (or (not window-system)
+                  (not (= (length (window-list)) 1)))))
 
 (defmacro danger-repeat (func delay interval &rest args)
   "doc"
@@ -1029,7 +1030,8 @@ the idle timer fires are ignored."
 
 (defun danger-init (&optional one-window)
   "Save previous window config and initialize danger."
-  (unless (or (posframe-workable-p) one-window) (user-error "danger.el: requires GUI."))
+  (unless (or (posframe-workable-p) one-window)
+    (user-error "danger.el: requires GUI."))
   (when (eq major-mode 'danger-mode) (danger-quit))
   (set-frame-parameter nil 'danger-one-window one-window)
   (when-let* ((ignore-one-win (not one-window))
