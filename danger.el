@@ -912,7 +912,7 @@ the idle timer fires are ignored."
         (danger-update--header)))))
 
 (defun danger-setup-dired-buffer--advice (fn &rest args)
-  "Setup the dired buffer by removing the header and filter files."
+  "Remove the header line in dired buffer."
   (apply fn args)
   (save-excursion
     (let ((inhibit-read-only t))
@@ -953,11 +953,20 @@ the idle timer fires are ignored."
   (when (danger-live-p) (danger-quit :keep-alive))
   (let ((default-directory "")) (apply fn args)))
 
+;; FIXME: it should support window when current instance is launched by `(danger nil t)'
 (defun danger-other-window--advice (fn &rest args)
+  "Open current file/dir in new frame."
   (let ((file (dired-get-file-for-visit)))
     (if (file-directory-p file)
         (danger-new-frame file)
       (apply fn args))))
+
+(defun danger-get-subdir--advice (fn &rest args)
+  "Don't return subdir when cursor is in first line.
+
+See `danger-setup-dired-buffer--advice'."
+  (unless (eq (line-number-at-pos) 1)
+    (apply fn args)))
 
 (defun danger-update--viewports (win _)
   "Refresh attributes in viewport, added to `window-scroll-functions'."
@@ -979,6 +988,7 @@ the idle timer fires are ignored."
     (files         find-file-other-window       danger-file-open--advice)
     (dired         dired-find-file-other-window danger-other-window--advice)
     (dired         dired-readin                 danger-setup-dired-buffer--advice)
+    (dired         dired-get-subdir             danger-get-subdir--advice)
     (dired         dired-mark                   danger-update-line--advice)
     (dired         dired-flag-file-deletion     danger-update-line--advice)
     (dired         dired-goto-file              danger-update-line--advice)
@@ -1002,7 +1012,7 @@ the idle timer fires are ignored."
     (evil          evil-refresh-cursor          danger-refresh-cursor--advice)
     (meow          meow--update-cursor          danger-refresh-cursor--advice)
     (lsp-mode      lsp-deferred                 ignore))
-  "A list of file, adviced function, and advice function.")
+  "A list of file, adviced function, and advice function for `danger-add--advices'.")
 
 (defun danger-add--advices ()
   "Add all advice listed in `danger-advice-alist'."
