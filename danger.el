@@ -24,7 +24,7 @@
 
 ;;; Code:
 
-(declare-function format-spec "format-spec")
+(autoload 'format-spec "format-spec")
 (declare-function image-get-display-property "image-mode")
 (require 'ring)
 (require 'posframe)
