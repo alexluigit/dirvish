@@ -1,4 +1,4 @@
-#+TITLE: danger.el - a Dired interface inspired by rANGER
+#+TITLE: dirvish.el - a Dired interface inspired by ranger
 #+AUTHOR: Alen Lu
 #+EMAIL: alexluigit@gmail.com
 
