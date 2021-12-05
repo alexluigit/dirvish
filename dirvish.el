@@ -553,7 +553,6 @@ is less then `dirvish-width-header'."
 
 (defun dirvish-update--padding ()
   (save-excursion
-    (remove-overlays)
     (let ((o (make-overlay (point-min) (point-max))))
       (setq line-spacing dirvish-line-padding)
       (overlay-put o 'display `(height ,(1+ dirvish-line-padding))))))
@@ -917,8 +916,8 @@ the idle timer fires are ignored."
   "Remove the header line in dired buffer."
   (apply fn args)
   (save-excursion
-    (let ((inhibit-read-only t))
-      (delete-region (point-min) (progn (forward-line 1) (point))))))
+    (let ((o (make-overlay (point-min) (progn (forward-line 1) (point)))))
+      (overlay-put o 'invisible t))))
 
 (defun dirvish-refresh--advice (fn &rest args)
   "Apply FN with ARGS, rebuild dirvish frame when necessary."
@@ -963,13 +962,6 @@ the idle timer fires are ignored."
         (dirvish-new-frame file)
       (apply fn args))))
 
-(defun dirvish-get-subdir--advice (fn &rest args)
-  "Don't return subdir when cursor is in first line.
-
-See `dirvish-setup-dired-buffer--advice'."
-  (unless (eq (line-number-at-pos) 1)
-    (apply fn args)))
-
 (defun dirvish-update--viewports (win _)
   "Refresh attributes in viewport, added to `window-scroll-functions'."
   (when (and (eq win dirvish-window)
@@ -990,7 +982,6 @@ See `dirvish-setup-dired-buffer--advice'."
     (files         find-file-other-window       dirvish-file-open--advice)
     (dired         dired-find-file-other-window dirvish-other-window--advice)
     (dired         dired-readin                 dirvish-setup-dired-buffer--advice)
-    (dired         dired-get-subdir             dirvish-get-subdir--advice)
     (dired         dired-mark                   dirvish-update-line--advice)
     (dired         dired-flag-file-deletion     dirvish-update-line--advice)
     (dired         dired-goto-file              dirvish-update-line--advice)
