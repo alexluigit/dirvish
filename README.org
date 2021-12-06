@@ -13,6 +13,23 @@ todo
 screenshots
 
 * Configuration
+** Installation
+
+#+begin_src emacs-lisp
+  (use-package dirvish
+    :straight (dirvish :type git :depth full :host github :repo "alexluigit/dirvish.el"
+                      :files ("*.el" "extensions"))
+    :hook
+    (dirvish-mode . (lambda () (setq cursor-type nil) (setq mode-line-format nil)))
+    :bind
+    (:map dirvish-mode-map ("SPC" . dirvish-show-history))
+    :config
+    (dirvish-override-dired-mode)
+    (require 'dirvish-minibuffer)
+    (dirvish-minibuf-preview-mode)
+    (setq dirvish-trash-dir-alist '(("/mnt/HDD/" . ".Trash/files")
+                                    ("/mnt/Cloud/" . ".Trash/files"))))
+#+end_src
 
 todo
 
