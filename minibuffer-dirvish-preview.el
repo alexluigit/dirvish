@@ -1,4 +1,4 @@
-;;; dirvish-minibuffer.el --- minibuffer preview window -*- lexical-binding: t -*-
+;;; minibuffer-dirvish-preview.el --- minibuffer file/directory preview powered by dirvish -*- lexical-binding: t -*-
 
 ;; Author: Alex Lu <alexluigit@gmail.com>
 ;; Maintainer: Alex Lu <alexluigit@gmail.com>
@@ -133,4 +133,5 @@
     (advice-remove 'vertico--exhibit #'dirvish-minibuf--update-advice)
     (advice-remove 'selectrum--update #'dirvish-minibuf--update-advice)))
 
-(provide 'dirvish-minibuffer)
+(provide 'minibuffer-dirvish-preview)
+;;; minibuffer-dirvish-preview.el ends here
