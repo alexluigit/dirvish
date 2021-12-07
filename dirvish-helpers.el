@@ -1,0 +1,182 @@
+;;; dirvish-helpers.el --- helper functions for Dirvish. -*- lexical-binding: t -*-
+
+;; This file is NOT part of GNU Emacs.
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;; Helper functions for dirvish.
+
+;;; Code:
+
+(declare-function dirvish "dirvish-commands")
+(declare-function dirvish-refresh "dirvish-commands")
+(require 'dirvish-vars)
+(require 'dired-x)
+
+(defmacro dirvish-repeat (func delay interval &rest args)
+  "doc"
+  (let ((timer (intern (format "%s-timer" func))))
+    `(progn
+       (defvar ,timer nil)
+       (add-to-list 'dirvish-repeat-timers ',timer)
+       (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
+
+(defmacro dirvish-debounce (func delay &rest args)
+  "Execute a delayed version of FUNC with delay time DELAY.
+When called, the FUNC only runs after the idle time
+specified by DELAY. Multiple calls to the same function before
+the idle timer fires are ignored."
+  (let* ((timer (intern (format "%s-timer" func)))
+         (do-once `(lambda (&rest args)
+                     (unwind-protect (apply #',func args) (setq ,timer nil)))))
+    `(progn
+       (unless (boundp ',timer) (defvar ,timer nil))
+       (unless (timerp ,timer)
+         (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
+
+;;;###autoload
+(defun dirvish-live-p (&optional win)
+  "Util function for detecting if in dirvish mode."
+  (memq (or win (selected-window)) dirvish-parent-windows))
+
+(defun dirvish-update--filter ()
+  (save-excursion
+    (let* ((all-re '("^\\.?#\\|^\\.$\\|^\\.\\.$"))
+           (dot-re '("^\\."))
+           (method (cl-case dirvish-show-hidden ('dirvish dirvish-hidden-regexp)
+                            ('dot dot-re)))
+           (omit-re (mapconcat 'concat (append all-re method) "\\|"))
+           buffer-read-only)
+      (dired-mark-unmarked-files omit-re nil nil 'no-dir)
+      (goto-char (point-min))
+      (let ((regexp (dired-marker-regexp)))
+        (while (and (not (eobp)) (re-search-forward regexp nil t))
+          (delete-region (line-beginning-position) (progn (forward-line 1) (point))))))))
+
+(defun dirvish-display--buffer (buffer alist)
+  "Try displaying `BUFFER' at one side of the selected frame. This splits the
+window at the designated `side' of the frame."
+  (let* ((side (cdr (assq 'side alist)))
+         (window-configuration-change-hook nil)
+         (window-width (or (cdr (assq 'window-width alist)) 0.5))
+         (size (ceiling (* (frame-width) window-width)))
+         (split-width-threshold 0)
+         (new-window (split-window-no-error dirvish-window size side)))
+    (window--display-buffer buffer new-window 'window alist)))
+
+(defun dirvish-internal-paste (fileset mode)
+  "Helper for `dirvish-paste'."
+  (let* ((target (dired-current-directory))
+         (process-connection-type nil)
+         (io-buffer (generate-new-buffer " *Dirvish I/O*"))
+         (paste-func
+          (cl-case mode
+            ('copy (lambda (fr to) (start-process "" io-buffer "cp" "-f" "-r" "-v" fr to)))
+            ('move (lambda (fr to) (start-process "" io-buffer "mv" "-f" "-v" fr to)))
+            ('symlink (lambda (fr to) (make-symbolic-link fr to)))
+            ('relalink (lambda (fr to) (dired-make-relative-symlink fr to)))))
+         (new-fileset ())
+         overwrite abort)
+    (cl-dolist (file fileset)
+      (when (and (not abort) (file-exists-p file))
+        (let* ((base-name (file-name-nondirectory file))
+               (paste-name (concat target base-name))
+               (prompt (concat base-name " exists, overwrite?: (y)es (n)o (a)ll (q)uit"))
+               choice)
+          (if overwrite
+              (push (cons file paste-name) new-fileset)
+            (if (file-exists-p paste-name)
+                (let ((name~ paste-name)
+                      (idx 1))
+                  (setq choice (read-char-choice prompt '(?y ?n ?a ?q)))
+                  (when (eq choice ?n)
+                    (while (file-exists-p name~)
+                      (setq name~ (concat paste-name (number-to-string idx) "~"))
+                      (setq idx (1+ idx))))
+                  (cl-case choice
+                    ((?y ?n) (push (cons file name~) new-fileset))
+                    (?a (setq overwrite t) (push (cons file name~) new-fileset))
+                    (?q (setq abort t) (setq new-fileset ()))))
+              (push (cons file paste-name) new-fileset))))))
+    (let ((size (dirvish-get--filesize (mapcar #'car new-fileset)))
+          (leng (length new-fileset)))
+      (add-to-list 'dirvish-i/o-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
+    (dirvish-repeat dirvish-footer-update 0 0.1)
+    (dirvish-repeat dirvish-set--i/o-status 0 0.1)
+    (cl-dolist (file new-fileset)
+      (funcall paste-func (car file) (cdr file)))
+    (cl-dolist (buf dirvish-parent-buffers)
+      (with-current-buffer buf (dired-unmark-all-marks)))))
+
+(defun dirvish-get--parent (path)
+  "Get parent directory of `PATH'"
+  (file-name-directory (directory-file-name (expand-file-name path))))
+
+(defun dirvish-get--filesize (fileset)
+  "Determine file size of provided list of files in `FILESET'."
+  (unless (executable-find "du") (user-error "`du' executable not found."))
+  (with-temp-buffer
+    (apply 'call-process "du" nil t nil "-sch" fileset)
+    (format "%s" (progn (re-search-backward "\\(^[0-9.,]+[a-zA-Z]*\\).*total$")
+                        (match-string 1)))))
+
+(defun dirvish-get--trash-dir ()
+  "Get trash directory for current disk."
+  (cl-dolist (dir dirvish-trash-dir-alist)
+    (when (string-prefix-p (car dir) (dired-current-directory))
+      (cl-return (concat (car dir) (cdr dir))))))
+
+(defun dirvish-get--i/o-status ()
+  (when-let* ((task (car-safe dirvish-i/o-queue)))
+    (let ((finished (car task))
+          (size (nth 2 task))
+          (index (car (nth 3 task)))
+          (length (cdr (nth 3 task))))
+      (when finished
+        (setq dirvish-i/o-queue (cdr dirvish-i/o-queue))
+        (unless dirvish-i/o-queue
+          (cancel-timer (symbol-value 'dirvish-footer-update-timer))))
+      (format "%s: %s total size: %s"
+              (if finished "Success" "Progress")
+              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
+              (propertize size 'face 'font-lock-builtin-face)))))
+
+(defun dirvish-set--i/o-status ()
+  (when-let* ((task (car-safe dirvish-i/o-queue)))
+    (let ((io-buf (nth 1 task))
+          (progress (car (nth 3 task)))
+          (length (cdr (nth 3 task)))
+          (mode (nth 4 task))
+          (proc-exit "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"))
+      (if (or (eq mode 'copy) (eq mode 'move))
+          (setq progress (with-current-buffer io-buf
+                           (how-many proc-exit (point-min) (point-max))))
+        (setq progress length))
+      (when (eq progress length)
+        (when (dirvish-live-p) (dirvish-refresh))
+        (setf (nth 0 (car-safe dirvish-i/o-queue)) t)
+        (when (eq (length dirvish-i/o-queue) 1)
+          (cancel-timer (symbol-value 'dirvish-set--i/o-status-timer))))
+      (setcar (nth 3 (car-safe dirvish-i/o-queue)) progress))))
+
+(defun dirvish-override-dired (&rest _)
+  "Helper func for `dirvish-override-dired-mode'."
+  (dirvish nil (or (not window-system)
+                  (not (= (length (window-list)) 1)))))
+
+(provide 'dirvish-helpers)
+
+;;; dirvish-helpers.el ends here

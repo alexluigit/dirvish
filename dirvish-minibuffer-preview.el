@@ -1,4 +1,4 @@
-;;; minibuffer-dirvish-preview.el --- minibuffer file/directory preview powered by dirvish -*- lexical-binding: t -*-
+;;; dirvish-minibuffer-preview.el --- minibuffer file/directory preview powered by dirvish -*- lexical-binding: t -*-
 
 ;; Author: Alex Lu <alexluigit@gmail.com>
 ;; Maintainer: Alex Lu <alexluigit@gmail.com>
@@ -31,7 +31,6 @@
 (declare-function selectrum--get-candidate "selectrum")
 (declare-function selectrum--get-full "selectrum")
 (declare-function vertico--candidate "vertico")
-(defvar dirvish-update--preview-timer)
 
 (require 'dirvish)
 
@@ -43,22 +42,13 @@
   "doc"
   :group 'dirvish :type 'function)
 
-(defvar dirvish-minibuf-preview-categories '(file project-file)
-  "doc")
-
-(defvar dirvish-minibuf-preview--height (- 1 (* max-mini-window-height 1.5))
-  "doc")
-
-(defvar dirvish-minibuf-preview--width nil
-  "doc")
-
-(defvar dirvish-minibuf-preview-window nil
-  "doc")
-
-(defvar dirvish-minibuf-preview--category nil
-  "doc")
-
+(defvar dirvish-minibuf-preview-categories '(file project-file))
+(defvar dirvish-minibuf-preview--height (- 1 (* max-mini-window-height 1.5)))
+(defvar dirvish-minibuf-preview--width nil)
+(defvar dirvish-minibuf-preview-window nil)
+(defvar dirvish-minibuf-preview--category nil)
 (defvar selectrum--current-candidate-index)
+(defvar dirvish-preview-update-timer)
 
 (defun dirvish-minibuf-preview-create ()
   "doc"
@@ -116,7 +106,7 @@
                                               (car (minibuffer-history-value)))))
       (setq cand (expand-file-name cand)))
     (set-frame-parameter nil 'dirvish-index-path cand)
-    (dirvish-debounce dirvish-update--preview dirvish-preview-delay dirvish-minibuf-preview-window)))
+    (dirvish-debounce dirvish-preview-update dirvish-preview-delay dirvish-minibuf-preview-window)))
 
 ;;;###autoload
 (define-minor-mode dirvish-minibuf-preview-mode
@@ -133,5 +123,6 @@
     (advice-remove 'vertico--exhibit #'dirvish-minibuf--update-advice)
     (advice-remove 'selectrum--update #'dirvish-minibuf--update-advice)))
 
-(provide 'minibuffer-dirvish-preview)
-;;; minibuffer-dirvish-preview.el ends here
+(provide 'dirvish-minibuffer-preview)
+
+;;; dirvish-minibuffer-preview.el ends here

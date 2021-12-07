@@ -1,0 +1,86 @@
+;;; dirvish-body.el --- Setup/update body for Dirvish. -*- lexical-binding: t -*-
+
+;; This file is NOT part of GNU Emacs.
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;; Setup/update body of dirvish buffer.
+
+;;; Code:
+
+(declare-function dired-move-to-filename "dired")
+(declare-function dired-get-filename "dired")
+(require 'dirvish-vars)
+
+(defun dirvish-body-update (&optional skip-icons skip-padding)
+  (unless skip-icons
+    (dirvish-body--update-icons))
+  (unless skip-padding
+    (dirvish-body--update-padding))  
+  (dirvish-body--update-line))
+
+(defun dirvish-body--update-line ()
+  (remove-overlays (point-min) (point-max) 'dirvish-body t)
+  (when-let* ((pos (dired-move-to-filename nil))
+              (beg (line-beginning-position))
+              (end (line-beginning-position 2))
+              (ol (make-overlay beg end)))
+    (when dirvish-show-icons
+      (remove-overlays beg end 'dirvish-icons t)
+      (dirvish-body--render-icon pos 'dirvish-body-face))
+    (overlay-put ol 'dirvish-body t)
+    (overlay-put ol 'face 'dirvish-body-face)))
+
+(defun dirvish-body--update-icons ()
+  (when dirvish-show-icons
+    (remove-overlays (point-min) (point-max) 'dirvish-icons t)
+    (dirvish-body-render 'dirvish-body--render-icon)))
+
+(defun dirvish-body--update-padding ()
+  (save-excursion
+    (let ((o (make-overlay (point-min) (point-max))))
+      (setq line-spacing dirvish-body-padding)
+      (overlay-put o 'display `(height ,(1+ dirvish-body-padding))))))
+
+(defun dirvish-body--render-icon (pos &optional face)
+  (let* ((entry (dired-get-filename 'relative 'noerror))
+         (offset `(:v-adjust ,dirvish-icons-v-offset))
+         (icon-face (or (when face `(:face ,face))
+                        (when dirvish-icons-monochrome `(:face ,(face-at-point)))))
+         (icon-attrs (append icon-face offset))
+         (icon (if (file-directory-p entry)
+                   (apply 'all-the-icons-icon-for-dir entry icon-attrs)
+                 (apply 'all-the-icons-icon-for-file entry icon-attrs)))
+         (icon-w/-offset (concat icon "\t"))
+         (icon-str (propertize icon-w/-offset 'font-lock-face face))
+         (ov (make-overlay (1- pos) pos)))
+    (overlay-put ov 'dirvish-icons t)
+    (overlay-put ov 'after-string icon-str)))
+
+(defun dirvish-body-render (render-func &optional range)
+  "doc"
+  (save-excursion
+    (let ((beg (or (car range) (- 0 (frame-height))))
+          (end (or (cdr range) (+ (line-number-at-pos) (frame-height)))))
+      (forward-line beg)
+      (while (and (not (eobp)) (< (line-number-at-pos) end))
+        (when-let ((pos (dired-move-to-filename nil)))
+          (funcall render-func pos))
+        (forward-line 1)))))
+
+(provide 'dirvish-body)
+
+;;; dirvish-body.el ends here
