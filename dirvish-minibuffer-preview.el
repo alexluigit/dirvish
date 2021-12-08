@@ -93,24 +93,29 @@
   (mapc 'kill-buffer dirvish-preview-buffers))
 
 (defun dirvish-minibuf--update-advice (fn &rest args)
-  "doc"
+  "Update preview when file name under cursor in minibuffer updated.
+
+Used as an advice for `vertico--exhibit' or `selectrum--update'."
   (apply fn args)
   (when-let* ((category dirvish-minibuf-preview--category)
               (cand (cond ((bound-and-true-p vertico-mode)
                            (vertico--candidate))
                           ((bound-and-true-p selectrum-mode)
                            (selectrum--get-full
-                            (selectrum--get-candidate selectrum--current-candidate-index))))))
+                            (selectrum--get-candidate
+                             selectrum--current-candidate-index))))))
     (if (eq category 'project-file)
         (setq cand (expand-file-name cand (or (cdr-safe (project-current))
                                               (car (minibuffer-history-value)))))
       (setq cand (expand-file-name cand)))
     (set-frame-parameter nil 'dirvish-index-path cand)
-    (dirvish-debounce dirvish-preview-update dirvish-preview-delay dirvish-minibuf-preview-window)))
+    (dirvish-debounce dirvish-preview-update
+                      dirvish-preview-delay
+                      dirvish-minibuf-preview-window)))
 
 ;;;###autoload
 (define-minor-mode dirvish-minibuf-preview-mode
-  "Show dirvish preview when minibuf."
+  "Show dirvish preview when minibuffer candidates are files/dirs."
   :group 'dirvish :global t
   (if dirvish-minibuf-preview-mode
       (when window-system

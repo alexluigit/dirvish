@@ -172,10 +172,10 @@
     (apply 'find-alternate-file args)))
 
 ;;;###autoload
-(define-minor-mode dirvish-override-dired-mode
-  "Setup dired buffer in a `dirvish' way."
+(define-minor-mode dirvish-override-dired-jump
+  "Override `dired-jump' with `dirvish-jump'."
   :group 'dirvish :global t
-  (if dirvish-override-dired-mode
+  (if dirvish-override-dired-jump
       (advice-add 'dired-jump :around #'dirvish-override-dired)
     (advice-remove 'dired-jump #'dirvish-override-dired)))
 

@@ -84,7 +84,7 @@
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-body-padding 0.1
-  "doc"
+  "Line spacing for dirvish body."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-footer-format "Sort: %S  Filter: %f  %d  %p%w%t %i"
@@ -106,11 +106,11 @@ TRASH-DIR is corresponding trash directory."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-icons-monochrome t
-  "doc"
+  "Whether icon face use `face-at-point'."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-icons-v-offset 0.01
-  "doc"
+  "Icon vertical offset."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-width-preview 0.65
@@ -134,7 +134,8 @@ TRASH-DIR is corresponding trash directory."
     (let ((tab-h (tab-bar-height nil t))
           (fringe (or (frame-parameter nil 'internal-border-width) 0)))
       (cons 0 (+ tab-h fringe))))
-  "doc"
+  "A functino determines dirvish header position, used as
+`:poshandler' for `posframe-show'."
   :group 'dirvish :type 'function)
 
 ;;;; Faces
@@ -176,8 +177,7 @@ TRASH-DIR is corresponding trash directory."
 (defvar dirvish-preview-window nil
   "Window contains file / directory preview.")
 
-(defvar dirvish-preview-buffer nil
-  "doc")
+(defvar dirvish-preview-buffer nil)
 
 (defvar dirvish-history-ring (make-ring dirvish-history-length)
   "History for `dirvish-find-file'.")
@@ -185,8 +185,7 @@ TRASH-DIR is corresponding trash directory."
 (defvar dirvish-initialized nil
   "Indicate if previous window config saved.")
 
-(defvar dirvish-orig-recentf-list nil
-  "doc")
+(defvar dirvish-orig-recentf-list nil)
 
 (defvar dirvish-footer-repeat 0.02
   "Time in seconds to repeat footer update.")
@@ -212,13 +211,11 @@ TRASH-DIR is corresponding trash directory."
 (defvar dirvish-repeat-timers '()
   "Timers with repeat flag need to be clean when exit.")
 
-(defvar dirvish-i/o-queue ()
-  "doc")
+(defvar dirvish-i/o-queue ())
 
 ;;;; Buffer / Frame local variables
 
-(defvar-local dirvish-child-entry nil
-  "doc")
+(defvar-local dirvish-child-entry nil)
 
 (defvar dirvish-index-path nil
   "Latest path in dirvish-window.")

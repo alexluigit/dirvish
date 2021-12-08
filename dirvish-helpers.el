@@ -27,7 +27,8 @@
 (require 'dired-x)
 
 (defmacro dirvish-repeat (func delay interval &rest args)
-  "doc"
+  "Execute FUNC with ARGS in every INTERVAL after DELAY, cancelled
+when quit dirvish."
   (let ((timer (intern (format "%s-timer" func))))
     `(progn
        (defvar ,timer nil)
@@ -49,7 +50,7 @@ the idle timer fires are ignored."
 
 ;;;###autoload
 (defun dirvish-live-p (&optional win)
-  "Util function for detecting if in dirvish mode."
+  "Helper function for detecting if in dirvish mode."
   (memq (or win (selected-window)) dirvish-parent-windows))
 
 (defun dirvish-update--filter ()
@@ -175,7 +176,7 @@ window at the designated `side' of the frame."
 (defun dirvish-override-dired (&rest _)
   "Helper func for `dirvish-override-dired-mode'."
   (dirvish nil (or (not window-system)
-                  (not (= (length (window-list)) 1)))))
+                   (not (= (length (window-list)) 1)))))
 
 (provide 'dirvish-helpers)
 

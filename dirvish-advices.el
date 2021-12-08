@@ -58,11 +58,12 @@
   (apply fn args) (dirvish-refresh))
 
 (defun dirvish-refresh-cursor--advice (fn &rest args)
+  "Only apply FN with ARGS when editing."
   (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
     (apply fn args)))
 
 (defun dirvish-update-line--advice (fn &rest args)
-  "Advice function for FN with ARGS."
+  "Apply FN with ARGS then update current line in dirvish."
   (remove-overlays (point-min) (point-max) 'dirvish-body t)
   (when-let ((pos (dired-move-to-filename nil))
              dirvish-show-icons)
@@ -78,7 +79,7 @@
   (dirvish-refresh))
 
 (defun dirvish-file-open--advice (fn &rest args)
-  "Advice for commands that open a file."
+  "Quit dirvish when open a file."
   (when (dirvish-live-p) (dirvish-quit :keep-alive))
   (let ((default-directory "")) (apply fn args)))
 

@@ -17,7 +17,8 @@
 
 ;;; Commentary:
 
-;;; Parent windows for dirvish.
+;;; Creating parent windows for dirvish. A parent window is a window that holds a dirvish buffer,
+;;; which exhibit information of parent directory for window on the right side.
 
 ;;; Code:
 
@@ -29,7 +30,7 @@
 (require 'dirvish-helpers)
 
 (defun dirvish-parent-build ()
-  "doc"
+  "Create all dirvish parent windows."
   (cl-flet ((setup (child win buf one-w)
               (when child (dired-goto-file child))
               (add-to-list 'dirvish-parent-windows win)
@@ -73,7 +74,7 @@
     (setq mode-line-format nil)))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
-  "Major mode emulating the dirvish file manager in `dired'."
+  "Convert `dired' buffer to a `dirvish' buffer."
   :group 'dirvish
   :interactive nil)
 

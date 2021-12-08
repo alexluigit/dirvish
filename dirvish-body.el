@@ -17,7 +17,10 @@
 
 ;;; Commentary:
 
-;;; Setup/update body of dirvish buffer.
+;;; Setup/update body of dirvish buffer. For icons, the `body' means every visible line in dirvish
+;;; buffer rather than the whole buffer, we do this for performance reason, since we don't want to
+;;; render icons for every file/directory in the dirvish buffer, what we really care is the visible
+;;; part.
 
 ;;; Code:
 
@@ -26,6 +29,11 @@
 (require 'dirvish-vars)
 
 (defun dirvish-body-update (&optional skip-icons skip-padding)
+  "Update attributes in dirvish body.
+
+By default update icons, padding, and current line.  If
+SKIP-ICONS is non-nil, do not update icons.  If SKIP-PADDING is
+non-nil, do not update padding."
   (unless skip-icons
     (dirvish-body--update-icons))
   (unless skip-padding
@@ -71,7 +79,10 @@
     (overlay-put ov 'after-string icon-str)))
 
 (defun dirvish-body-render (render-func &optional range)
-  "doc"
+  "Call RENDER-FUNC on every line in dirvish body with optional RANGE.
+
+Where RENDER-FUNC is a function takes a position (point in
+current line) and optional face as args, range"
   (save-excursion
     (let ((beg (or (car range) (- 0 (frame-height))))
           (end (or (cdr range) (+ (line-number-at-pos) (frame-height)))))
