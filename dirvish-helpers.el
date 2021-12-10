@@ -21,8 +21,8 @@
 
 ;;; Code:
 
-(declare-function dirvish "dirvish-commands")
-(declare-function dirvish-refresh "dirvish-commands")
+(declare-function dirvish "dirvish")
+(declare-function dirvish-refresh "dirvish")
 (require 'dirvish-vars)
 (require 'dired-x)
 
@@ -47,6 +47,25 @@ the idle timer fires are ignored."
        (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
+
+(defun dirvish-init--buffer ()
+  (let* ((index (number-to-string (length dirvish-frame-alist)))
+         (header-buf (get-buffer-create (concat " *Dirvish Header-" index "*")))
+         (preview-buf (get-buffer-create (concat " *Dirvish Preview-" index "*"))))
+    (with-current-buffer preview-buf (setq mode-line-format nil))
+    (with-current-buffer header-buf (setq-local face-font-rescale-alist nil))
+    (set-frame-parameter nil 'dirvish-preview-buffer preview-buf)
+    (set-frame-parameter nil 'dirvish-header-buffer header-buf)))
+
+(defun dirvish-clean--buffers ()
+  (cl-dolist (buf (buffer-list))
+    (let ((name (buffer-name buf))
+          (mode (buffer-local-value 'major-mode buf)))
+      (when (or (eq 'dired-mode mode) (eq 'dirvish-mode mode)
+                (and (not (string-equal name ""))
+                     (string-match " \\*Dirvish .*" name)
+                     (not (get-buffer-process buf))))
+        (kill-buffer buf)))))
 
 ;;;###autoload
 (defun dirvish-live-p (&optional win)

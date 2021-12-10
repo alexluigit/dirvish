@@ -21,10 +21,10 @@
 
 ;;; Code:
 
-(declare-function dirvish-quit "dirvish-init")
-(declare-function dirvish-refresh "dirvish-init")
-(declare-function dirvish-new-frame "dirvish-commands")
-(declare-function dirvish-next-file "dirvish-commands")
+(declare-function dirvish-quit "dirvish")
+(declare-function dirvish-refresh "dirvish")
+(declare-function dirvish-new-frame "dirvish")
+(declare-function dirvish-next-file "dirvish")
 (require 'cl-lib)
 (require 'dirvish-helpers)
 (require 'dirvish-header)
@@ -32,7 +32,7 @@
 (require 'dirvish-vars)
 
 (defun dirvish-redisplay--frame ()
-  "Refresh dirvish frame, added to `after-focus-change-functions'."
+  "Refresh dirvish frame, added to `after-focus-change-function'."
   (if (eq major-mode 'dirvish-mode)
       (dirvish-refresh t)
     (when (memq (previous-frame) (mapcar 'car dirvish-frame-alist))
@@ -103,6 +103,26 @@
                  dirvish-go-bottom
                  dirvish-flag-file-yank))
   (advice-add fn :around 'dirvish-update-line--advice))
+
+(defun dirvish-add--advices ()
+  "Add all advice listed in `dirvish-advice-alist'."
+  (add-hook 'window-scroll-functions #'dirvish-update--viewports)
+  (add-to-list 'display-buffer-alist
+               '("\\(\\*info\\|\\*Help\\|\\*helpful\\|magit:\\).*"
+                 (display-buffer-in-side-window)
+                 (window-height . 0.4)
+                 (side . bottom)))
+  (add-function :after after-focus-change-function #'dirvish-redisplay--frame)
+  (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
+    (with-eval-after-load file (advice-add sym :around fn))))
+
+(defun dirvish-clean--advices ()
+  "Remove all advice listed in `dirvish-advice-alist'."
+  (remove-hook 'window-scroll-functions #'dirvish-update--viewports)
+  (setq display-buffer-alist (cdr display-buffer-alist))
+  (remove-function after-focus-change-function #'dirvish-redisplay--frame)
+  (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
+    (with-eval-after-load file (advice-remove sym fn))))
 
 (provide 'dirvish-advices)
 

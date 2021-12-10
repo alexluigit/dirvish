@@ -25,6 +25,9 @@
 
 (require 'ring)
 
+(defvar dirvish-preview-update-timer nil)
+(defvar recentf-list nil)
+
 (defgroup dirvish nil
   "A better dired."
   :group 'dired)
