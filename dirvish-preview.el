@@ -144,9 +144,7 @@
 
 (defun dirvish-preview-update (&optional preview-window)
   "Setup dirvish preview window."
-  (when (or (and dirvish-enable-preview
-                 (not (frame-parameter nil 'dirvish-one-window)))
-            preview-window)
+  (when (or dirvish-enable-preview preview-window)
     (let* ((orig-buffer-list (buffer-list))
            (index (or (frame-parameter nil 'dirvish-index-path) ""))
            (preview-buffer (dirvish-preview--entry index))
