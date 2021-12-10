@@ -1,49 +1,55 @@
-#+TITLE: dirvish.el - a Dired interface inspired by ranger
-#+AUTHOR: Alen Lu
+#+AUTHOR: Alex Lu
 #+EMAIL: alexluigit@gmail.com
+#+startup: inlineimages content
 
-* Introduction
+* *Dirvish* - wish you a better dired
 
-todo
+#+ATTR_ORG: :width 1024
+[[./assets/multi-win.png]]
 
-* Features
+** Introduction
 
-todo
+*Dirvish* is a minimalistic file manager based on *dired-mode*.  It is inspired
+by [[https://github.com/ranger/ranger][ranger]], which is a terminal file manager that shows a stack of the parent
+directories, and updates its parent buffers while navigating the file system
+with an optional preview window showing the selected file.
 
-screenshots
+Unlike [[https://github.com/ralesi/ranger.el][ranger.el]], which tries to become an all-around emulation of ranger,
+*dirvish* is more bare-bone, meaning it does *NOT* try to port all "goodness"
+from ranger. Instead, it tries to:
 
-* Configuration
+  - provides a better dired UI
+  - improve some dired commands, make them more intuitive and accesible.
+  - keep all your dired key bindings
+
+The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
+
 ** Installation
+
+Dirvish is available from [[https://melpa.org][Melpa]], you can install it directly via =package-install=
+if you have melpa in your =package-archives=.
+
+To install it manually, first clone this repository,
+
+#+begin_src bash
+  git clone https://github.com/alexluigit/dirvish
+#+end_src
+
+then add =path/to/dirvish= to your =load-path=.
+
+#+begin_src emacs-lisp
+  (add-to-list 'load-path "/path/to/dirvish")
+  (require 'dirvish)
+#+end_src
+
+Alternatively, install it by using *use-package* and *straight* in tandem.
 
 #+begin_src emacs-lisp
   (use-package dirvish
-    :straight (dirvish :type git :depth full :host github :repo "alexluigit/dirvish.el"
-                      :files ("*.el" "extensions"))
-    :hook
-    (dirvish-mode . (lambda () (setq cursor-type nil) (setq mode-line-format nil)))
-    :bind
-    (:map dirvish-mode-map ("SPC" . dirvish-show-history))
-    :config
-    (dirvish-override-dired-mode)
-    (require 'dirvish-minibuffer)
-    (dirvish-minibuf-preview-mode)
-    (setq dirvish-trash-dir-alist '(("/mnt/HDD/" . ".Trash/files")
-                                    ("/mnt/Cloud/" . ".Trash/files"))))
+    :straight t)
 #+end_src
 
-todo
-
-* Key bindings
-
-todo
+** Features
+** Configuration
+** Key bindings
  
-* Compatability
-
-todo
-
-* Todo
-
-- Use `cl-defstruct' for managing fired instance
-- Fix completing preview initialization
-- Better history navigation (something like `z' in zsh)
-- A help buffer better than describe-mode
