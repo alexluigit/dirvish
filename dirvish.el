@@ -10,13 +10,15 @@
 
 ;;; Commentary:
 
-;; `dirvish.el' is a minimalistic file manager based on `dired-mode'.  It is inspired by ranger (see
-;; https://github.com/ranger/ranger), which is a terminal file manager that shows a stack of the
-;; parent directories, and updates its parent buffers while navigating the file system with an
-;; optional preview window at side showing the content of the selected file.
+;; `dirvish.el' is a minimalistic file manager based on `dired-mode'.  It is
+;; inspired by ranger (see https://github.com/ranger/ranger), which is a
+;; terminal file manager that shows a stack of the parent directories, and
+;; updates its parent buffers while navigating the file system with an optional
+;; preview window at side showing the content of the selected file.
 
-;; Unlike `ranger.el', which tries to become an all-around emulation of ranger, dirvish.el is more
-;; bare-bone, meaning it does NOT try to port all "goodness" from ranger, instead, it tries to:
+;; Unlike `ranger.el', which tries to become an all-around emulation of ranger,
+;; dirvish.el is more bare-bone, meaning it does NOT try to port all "goodness"
+;; from ranger, instead, it tries to:
 ;;
 ;;   - provides a better Dired UI
 ;;   - make some Dired commands more intuitive
@@ -261,7 +263,8 @@ update `dirvish-history-ring'."
         (curr-dir (expand-file-name default-directory)))
     (when entry
       (if (file-directory-p entry)
-          (let ((hist (directory-file-name entry)))
+          (let ((hist (directory-file-name entry))
+                enable-dir-local-variables)
             (unless ignore-hist
               (when (or (ring-empty-p dirvish-history-ring)
                         (not (eq hist (ring-ref dirvish-history-ring 0))))
