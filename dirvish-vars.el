@@ -216,8 +216,6 @@ TRASH-DIR is corresponding trash directory."
 
 (defvar dirvish-i/o-queue ())
 
-;;;; Buffer / Frame local variables
-
 (defvar-local dirvish-child-entry nil)
 
 (defvar dirvish-index-path nil
@@ -242,10 +240,6 @@ TRASH-DIR is corresponding trash directory."
     (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
     (define-key map [remap mode-line-other-buffer]       'dirvish-other-buffer)
     (define-key map [remap quit-window]                  'dirvish-quit)
-    (define-key map [remap delete-window]
-                (lambda ()
-                  (interactive)
-                  (message "%s" (substitute-command-keys "Press \\[quit-window] to quit dirvish"))))
     map)
   "Dirvish mode map.")
 
