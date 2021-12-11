@@ -4,7 +4,7 @@
 ;; Author : Alex Lu <https://github.com/alexluigit>
 ;; Package-Version: 0.7.0
 ;; Keywords: dirvish, ranger, file, dired
-;; Homepage: https://github.com/alexluigit/dirvish.el
+;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 ;; Package-Requires: ((emacs "26") (posframe "1.1.2"))
 
