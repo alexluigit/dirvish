@@ -10,21 +10,34 @@
 ** Introduction
 
 *Dirvish* is a minimalistic file manager based on *dired-mode*.  It is inspired
-by [[https://github.com/ranger/ranger][ranger]], which is a terminal file manager that shows a stack of the parent
-directories, and updates its parent buffers while navigating the file system
-with an optional preview window showing the selected file.
+by [[https://github.com/ranger/ranger][ranger]], a terminal file manager comes with a lot of features.
 
 Unlike [[https://github.com/ralesi/ranger.el][ranger.el]], which tries to become an all-around emulation of ranger,
 *dirvish* is more bare-bone, meaning it does *NOT* try to port all "goodness"
-from ranger. Instead, it tries to:
+from ranger. Instead, it only tries to:
 
   - provides a better dired UI
+  - support preview for directory and all common file types.
   - improve some dired commands, make them more intuitive and accesible.
-  - keep all your dired key bindings
+
+Moreover, dirvish does not introduce any new keybindings by default.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 
-** Installation
+*** Dependencies
+
+| Package           | Description                      | Required |
+|-------------------+----------------------------------+----------|
+| =exa=               | For directory preview            | Yes      |
+| =all-the-icons.el=  | Icon support                     | Optional |
+| =pdftoppm=          | Generate pdf preface image       | Optional |
+| =imagemagick=       | Generate image cache             | Optional |
+| =ffmpegthumbnailer= | Generate video thumbnailer       | Optional |
+| =epub-thumbnailer=  | Generate epub thumbnailer        | Optional |
+| =zipinfo=           | Preview zip files                | Optional |
+| =mediainfo=         | Show information for audio files | Optional |
+
+*** Installation
 
 Dirvish is available from [[https://melpa.org][Melpa]], you can install it directly via =package-install=
 if you have melpa in your =package-archives=.
@@ -49,7 +62,109 @@ Alternatively, install it by using *use-package* and *straight* in tandem.
     :straight t)
 #+end_src
 
+*** Quickstart
+
+After installation, just =M-x= and run =dirvish=.
+
+Since =dirvish-mode= is just a =major-mode= derived from =dired-mode=, it respects all
+of your dired config (including keymapping) in principle.
+
+As an example, here is an excerpt from my personal dired config:
+
+#+begin_src emacs-lisp
+  (setq dired-kill-when-opening-new-dired-buffer t) ;; added in emacs 28
+  (setq dired-clean-confirm-killing-deleted-buffers nil)
+  (setq large-file-warning-threshold 50000000)
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
+  (setq delete-by-moving-to-trash t)
+  (setq dired-dwim-target t)
+  (setq dired-listing-switches "-AGhlv --group-directories-first --time-style=long-iso")
+#+end_src
+
 ** Features
+
+*** File preview
+
+When =dirvish-enable-preview= is non-nil, a preview window showing the content of
+selected file/directory will be displayed at right side of dirvish frame.
+
+- Debouncing ::
+- Native GIF support ::
+- *Image cache* ::
+
+*** More intuitive file operation
+
+*Dired* is superb, but from a modern file manager's (like *ranger*, *lf*) perspective,
+it lacks some abilities when it comes file operation, such as:
+
+- You can not mark files/directory across multiple dired buffers (by default)
+- You can not paste/move files without specify the target directory explicitly
+  (input in minibuffer)
+
+Whereas with dirvish, you can:
+
+- Marking files across multiple dirvish buffers
+- Paste/move marked files/directory to current directory with one keystroke
+
+*** Asynchronous I/O
+
+To prevent emacs from getting freezes, dirvish uses external process to deal
+with heavy I/O task, such as file copy/move, directory preview, or image cache
+generation etc.
+
+*** Bulit-in icon support
+
+You don't need [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] anymore since dirvish have built-in icon
+support. This native icon solution has several advantages over
+*dired + all-the-icons-dired*, those are:
+
+- it handles line highlighting nicely (*all-the-icons-dired* doesn't play well
+  with =hl-line-mode=).
+- it doesn't render icon for all the files in a directory eagerly, instead it
+  only render icons that are displayed within the viewport. (Try visiting
+  =/usr/bin= or any directory with over 1000 files using both *dirvish* or
+  *dired + all-the-icons-dired* to see the difference.)
+
+*** "Dirvish-ish" dired
+
+Usually =dirvish= takes up the whole frame, but sometimes we prefer managing files
+inside current window, just like how dired does it. To enable a single window
+dirvish, you can either:
+
+- Enable it once ::
+
+#+begin_src emacs-lisp
+  (dirvish nil t)
+#+end_src
+
+- Enable it automatically everytime you invoke =dired-jump= ::
+
+#+begin_src emacs-lisp
+  (dirvish-override-dired-jump)
+#+end_src
+
 ** Configuration
-** Key bindings
- 
+
+See dirvish wiki [TODO] for all customization options.
+
+** Issues
+
+- You may experience some issue with Windows since dirvish has not been tested on it
+- It might have conflicts with packages that controls window placement.
+
+Feel free to report issues.
+
+** Copying
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program. If not, see http://www.gnu.org/licenses/.
