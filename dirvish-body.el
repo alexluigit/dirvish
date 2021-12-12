@@ -17,13 +17,16 @@
 
 ;;; Commentary:
 
-;;; Setup/update body of dirvish buffer. For icons, the `body' means every visible line in dirvish
-;;; buffer rather than the whole buffer, we do this for performance reason, since we don't want to
-;;; render icons for every file/directory in the dirvish buffer, what we really care is the visible
+;;; Setup/update body of dirvish buffer.  For icons, the `body' means every
+;;; visible line in dirvish buffer rather than the whole buffer, we do this for
+;;; performance reason, since we don't want to render icons for every
+;;; file/directory in the dirvish buffer, what we really care is the visible
 ;;; part.
 
 ;;; Code:
 
+(declare-function all-the-icons-icon-for-file "all-the-icons")
+(declare-function all-the-icons-icon-for-dir "all-the-icons")
 (declare-function dired-move-to-filename "dired")
 (declare-function dired-get-filename "dired")
 (require 'dirvish-vars)
@@ -37,10 +40,11 @@ non-nil, do not update padding."
   (unless skip-icons
     (dirvish-body--update-icons))
   (unless skip-padding
-    (dirvish-body--update-padding))  
+    (dirvish-body--update-padding))
   (dirvish-body--update-line))
 
 (defun dirvish-body--update-line ()
+  "Update highlighting in current dirvish line."
   (remove-overlays (point-min) (point-max) 'dirvish-body t)
   (when-let* ((pos (dired-move-to-filename nil))
               (beg (line-beginning-position))
@@ -53,25 +57,28 @@ non-nil, do not update padding."
     (overlay-put ol 'face 'dirvish-body-face)))
 
 (defun dirvish-body--update-icons ()
+  "Update icon in current dirvish line."
   (when dirvish-show-icons
     (remove-overlays (point-min) (point-max) 'dirvish-icons t)
     (dirvish-body-render 'dirvish-body--render-icon)))
 
 (defun dirvish-body--update-padding ()
+  "Update paddings in current dirvish buffer."
   (save-excursion
     (let ((o (make-overlay (point-min) (point-max))))
       (setq line-spacing dirvish-body-padding)
       (overlay-put o 'display `(height ,(1+ dirvish-body-padding))))))
 
 (defun dirvish-body--render-icon (pos &optional face)
+  "Render icon in POS with optional FACE."
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icons-v-offset))
          (icon-face (or (when face `(:face ,face))
                         (when dirvish-icons-monochrome `(:face ,(face-at-point)))))
          (icon-attrs (append icon-face offset))
          (icon (if (file-directory-p entry)
-                   (apply 'all-the-icons-icon-for-dir entry icon-attrs)
-                 (apply 'all-the-icons-icon-for-file entry icon-attrs)))
+                   (apply #'all-the-icons-icon-for-dir entry icon-attrs)
+                 (apply #'all-the-icons-icon-for-file entry icon-attrs)))
          (icon-w/-offset (concat icon "\t"))
          (icon-str (propertize icon-w/-offset 'font-lock-face face))
          (ov (make-overlay (1- pos) pos)))

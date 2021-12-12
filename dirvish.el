@@ -1,12 +1,12 @@
-;;; dirvish.el --- a modern file manager based on dired mode. -*- lexical-binding: t -*-
+;;; dirvish.el --- A modern file manager based on dired mode -*- lexical-binding: t -*-
 ;; Copyright (C) 2021 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Package-Version: 0.7.0
-;; Keywords: dirvish, ranger, file, dired
+;; Version: 0.7.0
+;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "26") (posframe "1.1.2"))
+;; Package-Requires: ((emacs "27.1") (posframe "1.1.2"))
 
 ;;; Commentary:
 
@@ -31,6 +31,7 @@
 ;;;; Deps
 
 (require 'ring)
+(require 'recentf)
 
 ;;;; Modules
 
@@ -130,7 +131,7 @@ MODE can be `'copy', `'move', `symlink', or `relalink'."
          (yanked-files ())
          (mode (or mode 'copy))
          case-fold-search)
-    (cl-dolist (buf (seq-filter 'buffer-live-p dirvish-parent-buffers))
+    (cl-dolist (buf (seq-filter #'buffer-live-p dirvish-parent-buffers))
       (with-current-buffer buf
         (when (save-excursion (goto-char (point-min))
                               (re-search-forward regexp nil t))
@@ -196,7 +197,7 @@ With optional prefix ARG, delete source files/directories."
 If ONE-WINDOW is not-nil, initialize dirvish only in current
 window, not the whole frame."
   (unless (or (posframe-workable-p) one-window)
-    (user-error "dirvish.el: Requires GUI"))
+    (user-error "Dirvish.el: Requires GUI"))
   (when (eq major-mode 'dirvish-mode) (dirvish-quit))
   (set-frame-parameter nil 'dirvish-one-window one-window)
   (when-let* ((ignore-one-win (not one-window))
@@ -208,9 +209,9 @@ window, not the whole frame."
   (unless dirvish-initialized
     (dirvish-add--advices)
     (when dirvish-show-icons (setq dirvish-show-icons (ignore-errors (require 'all-the-icons))))
-    (when (dirvish-get--i/o-status)
+    (when (dirvish-get--IO-status)
       (dirvish-repeat 'dirvish-footer-update 0 0.1)
-      (dirvish-repeat dirvish-set--i/o-status 0 0.1))
+      (dirvish-repeat dirvish-set--IO-status 0 0.1))
     (when (featurep 'recentf) (setq dirvish-orig-recentf-list recentf-list))
     (mailcap-parse-mimetypes)
     (setq dirvish-initialized t)))
@@ -302,8 +303,8 @@ non-nil, do not update `dirvish-history-ring'."
 (defun dirvish-find-file-dwim (&rest args)
   "Apply `dirvish-find-file' or `dired-find-file' with ARGS."
   (if (derived-mode-p 'dirvish-mode)
-      (apply 'dirvish-find-file args)
-    (apply 'find-alternate-file args)))
+      (apply #'dirvish-find-file args)
+    (apply #'find-alternate-file args)))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-jump

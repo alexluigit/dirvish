@@ -1,4 +1,4 @@
-;;; dirvish-footer.el --- footer line for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-footer.el --- Footer for Dirvish. -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -21,7 +21,7 @@
 
 ;;; Code:
 
-(autoload 'format-spec "format-spec")
+(require 'format-spec)
 (require 'dirvish-vars)
 (require 'dirvish-helpers)
 (require 'cl-lib)
@@ -57,7 +57,7 @@
          (final-pos (- (line-number-at-pos (point-max)) 3))
          (index (format "%3d/%-3d" cur-pos final-pos))
          (sorting (if (string= "" dirvish-sort-criteria) "name" dirvish-sort-criteria))
-         (i/o-task (or (dirvish-get--i/o-status) ""))
+         (i/o-task (or (dirvish-get--IO-status) ""))
          (filter (format "%s" dirvish-show-hidden))
          (space "&&&"))
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)

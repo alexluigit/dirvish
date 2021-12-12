@@ -1,4 +1,4 @@
-;;; dirvish-header.el --- header line for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-header.el --- Header for Dirvish. -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -29,10 +29,11 @@
 (defvar recentf-list)
 
 (defun dirvish-header-width ()
-  "Calculate header frame width. Default to frame width when disable preview."
+  "Calculate header frame width.  Default to frame width when disable preview."
   (* (frame-width) (if dirvish-enable-preview (- 1 dirvish-width-preview) 1)))
 
 (cl-defun dirvish-header-build ()
+  "Create a posframe showing dirvish header."
   (when-let ((one-window (frame-parameter nil 'dirvish-one-window)))
     (cl-return-from dirvish-header-build))
   (let* ((buf (frame-parameter nil 'dirvish-header-buffer))
@@ -52,8 +53,9 @@
         (set-frame-parameter nil 'dirvish-header--frame fr)))))
 
 (defun dirvish-header-update ()
-  "Update header string.  Make sure the length of header string
-is less then `dirvish-header-width'."
+  "Update header string.
+Make sure the length of header string
+is less then `(variable) dirvish-header-width'."
   (if-let ((one-window (frame-parameter nil 'dirvish-one-window)))
       (dirvish-header--setup 'one-window)
     (with-current-buffer (frame-parameter nil 'dirvish-header-buffer)
@@ -62,11 +64,14 @@ is less then `dirvish-header-width'."
             (max-width (1- (floor (/ dirvish-header-width dirvish-header-scale)))))
         (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
           (setq str (substring str 0 -1)))
-        (insert (concat str "\n")))
+        (insert str "\n"))
       (add-text-properties (point-min) (point-max)
                            `(display '(height ,dirvish-header-scale) line-spacing 0.5 line-height 1.5)))))
 
 (defun dirvish-header--setup (type)
+  "Apply default setup for dirvish header TYPE.
+
+Where TYPE is either `posframe' or `one-window'."
   ;; FIXME: use face-remapping-alist
   (setq tab-line-format nil)
   (cl-case type

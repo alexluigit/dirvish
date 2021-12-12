@@ -1,4 +1,4 @@
-;;; dirvish-preview.el --- file preview for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-preview.el --- File preview for Dirvish. -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -40,7 +40,7 @@
         (cl-return-from dirvish-preview-match-mime cmd)))))
 
 (cl-defun dirvish-preview--entry (entry)
-  "Create the preview buffer of `ENTRY'."
+  "Create the preview buffer of ENTRY."
   (unless (file-readable-p entry)
     (cl-return-from dirvish-preview--entry
       (dirvish-preview--get-create "File Not Readable")))
@@ -65,7 +65,9 @@
           (find-file-noselect entry t nil))))))
 
 (cl-defun dirvish-preview--get-create (entry &optional cmd args)
-  "Get corresponding preview buffer."
+  "Get corresponding preview buffer for ENTRY.
+
+Optionally, a shell command CMD and its ARGS can be passed."
   (let ((buf (frame-parameter nil 'dirvish-preview-buffer))
         (process-connection-type nil)
         (size (number-to-string (or (and (boundp 'dirvish-minibuf-preview--width)
@@ -88,7 +90,7 @@
         (let* ((process-connection-type nil)
                (default-directory "~") ; Avoid "Setting current directory" error after deleting dir
                (res-buf (get-buffer-create " *Dirvish preview result*"))
-               (proc (apply 'start-process "dirvish-preview-process" res-buf cmd args)))
+               (proc (apply #'start-process "dirvish-preview-process" res-buf cmd args)))
           (with-current-buffer res-buf (erase-buffer) (remove-overlays))
           (set-process-sentinel proc 'dirvish-preview--process-sentinel))
         (cl-return-from dirvish-preview--get-create buf))
@@ -113,12 +115,13 @@
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
               (setq args (cl-substitute (car format) (cdr format) args :test 'string=)))
-            (let ((proc (apply 'start-process "dirvish-preview-process" buf cmd args)))
+            (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
               (set-process-sentinel proc (lambda (_p _e) (dirvish-preview-update))))
             (insert "[Cache] Generating thumbnail..."))))
       buf)))
 
 (cl-defun dirvish-preview-build ()
+  "Build dirvish preview window."
   (when-let ((one-window (frame-parameter nil 'dirvish-one-window)))
     (cl-return-from dirvish-preview-build))
   (when dirvish-enable-preview
@@ -131,8 +134,11 @@
       (setq dirvish-width-img (window-width new-window t))
       (set-frame-parameter nil 'dirvish-preview-window new-window))))
 
-(defun dirvish-preview--process-sentinel (proc _exit)
-  "doc"
+(defun dirvish-preview--process-sentinel (proc _)
+  "Dirvish preview process sentinel.
+
+When PROC finishes, fill `dirvish-preview-buffer' with process
+result string."
   (let ((buf (frame-parameter nil 'dirvish-preview-buffer)))
     (when (buffer-live-p buf)
       (with-current-buffer (frame-parameter nil 'dirvish-preview-buffer)
@@ -143,7 +149,9 @@
            (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))))))
 
 (defun dirvish-preview-update (&optional preview-window)
-  "Setup dirvish preview window."
+  "Update dirvish preview window.
+
+Only take effect when `dirvish-enable-preview' or PREVIEW-WINDOW is not nil."
   (when (or dirvish-enable-preview preview-window)
     (let* ((orig-buffer-list (buffer-list))
            (index (or (frame-parameter nil 'dirvish-index-path) ""))
@@ -155,9 +163,9 @@
         (push preview-buffer dirvish-preview-buffers))
       (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook)))))
 
-(with-eval-after-load 'pdf-tools
+(when (require 'pdf-tools nil t)
   (custom-reevaluate-setting 'dirvish-preview-cmd-alist))
-
+  
 (provide 'dirvish-preview)
 
 ;;; dirvish-preview.el ends here
