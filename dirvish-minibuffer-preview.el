@@ -1,11 +1,4 @@
-;;; dirvish-minibuffer-preview.el --- minibuffer file/directory preview powered by dirvish -*- lexical-binding: t -*-
-
-;; Author: Alex Lu <alexluigit@gmail.com>
-;; Maintainer: Alex Lu <alexluigit@gmail.com>
-;; Created: 2021
-;; Version: 0.1
-;; Package-Requires: ((emacs "27.1") (dirvish "0.7.0"))
-;; Homepage: https://github.com/alexluigit/dirvish
+;;; dirvish-minibuffer-preview.el --- Minibuffer file preview powered by dirvish -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -39,7 +32,9 @@
     (cons (/ (- (plist-get info :parent-frame-width)
                 (plist-get info :posframe-width)) 2)
           (or (* (frame-parameter nil 'internal-border-width) 2) 60)))
-  "doc"
+  "A function determines position of dirvish minibuffer preview window.
+
+Used as `:poshandler' for `posframe-show'."
   :group 'dirvish :type 'function)
 
 (defvar dirvish-minibuf-preview-categories '(file project-file))
@@ -51,7 +46,7 @@
 (defvar dirvish-preview-update-timer)
 
 (defun dirvish-minibuf-preview-create ()
-  "doc"
+  "Create dirvish minibuffer preview window using `posframe'."
   (when-let* ((meta (completion-metadata
                      (buffer-substring-no-properties (field-beginning) (point))
                      minibuffer-completion-table
@@ -83,7 +78,7 @@
     (set-window-dedicated-p dirvish-minibuf-preview-window nil)))
 
 (defun dirvish-minibuf-preview-teardown ()
-  "doc"
+  "Teardown dirvish minibuffer preview window."
   (posframe-delete "*candidate preview*")
   (walk-window-tree (lambda (w)
                       (with-current-buffer (window-buffer w)
@@ -93,9 +88,10 @@
   (mapc 'kill-buffer dirvish-preview-buffers))
 
 (defun dirvish-minibuf--update-advice (fn &rest args)
-  "Update preview when file name under cursor in minibuffer updated.
+  "Apply FN with ARGS, then update dirvish minibuffer preview window.
 
-Used as an advice for `vertico--exhibit' or `selectrum--update'."
+Used as an advice for `vertico--exhibit' or `selectrum--update',
+invoked when file name under cursor in minibuffer changed."
   (apply fn args)
   (when-let* ((category dirvish-minibuf-preview--category)
               (cand (cond ((bound-and-true-p vertico-mode)

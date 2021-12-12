@@ -26,10 +26,9 @@
 (require 'ring)
 
 (defvar dirvish-preview-update-timer nil)
-(defvar recentf-list nil)
 
 (defgroup dirvish nil
-  "A better dired."
+  "A better Dired."
   :group 'dired)
 
 (defcustom dirvish-show-hidden 'all
@@ -58,7 +57,7 @@
     (("pdf")                   ,(if (featurep 'pdf-tools)
                                     '(find-file-noselect '(t nil))
                                   '("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t"))))
-  "doc"
+  "Determine how dirvish show preview for different MIME types."
   :group 'dirvish :type '(alist :value-type ((choice list string) list)))
 
 (defcustom dirvish-cache-dir
@@ -91,17 +90,18 @@
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-footer-format "Sort: %S  Filter: %f  %d  %p%w%t %i"
-  "Format for footer display. "
+  "Format for footer display."
   :group 'dirvish :type 'string)
 
 (defcustom dirvish-trash-dir-alist nil
-  "An alist of (DISK . TRASH-DIR) where DISK is path to a disk and
-TRASH-DIR is corresponding trash directory."
+  "An alist of (DISK . TRASH-DIR).
+
+Where DISK is path to a disk and TRASH-DIR is corresponding trash
+directory."
   :group 'dirvish :type 'alist)
 
 (defcustom dirvish-use-default-setup t
-  "When not-nil, use default config for dirvish buffer, see
-`dirvish-setup--default' for more details."
+  "Whether use default config for dirvish buffer."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-show-icons t
@@ -137,8 +137,9 @@ TRASH-DIR is corresponding trash directory."
     (let ((tab-h (tab-bar-height nil t))
           (fringe (or (frame-parameter nil 'internal-border-width) 0)))
       (cons 0 (+ tab-h fringe))))
-  "A functino determines dirvish header position, used as
-`:poshandler' for `posframe-show'."
+  "A function determines dirvish header position.
+
+Used as `:poshandler' for `posframe-show'."
   :group 'dirvish :type 'function)
 
 ;;;; Faces
@@ -174,8 +175,8 @@ TRASH-DIR is corresponding trash directory."
 (defvar dirvish-preview-setup-hook nil
   "Hooks for setting dirvish preview windows.")
 
-(defvar dirvish-width-img nil
-  "Calculated preview window width. Used for image preview.")
+(defvar dirvish-width-img 0
+  "Calculated preview window width.  Used for image preview.")
 
 (defvar dirvish-preview-window nil
   "Window contains file / directory preview.")
@@ -197,7 +198,7 @@ TRASH-DIR is corresponding trash directory."
   "Default `ls' sorting switches.")
 
 (defvar dirvish-window nil
-  "Main dirvish window. Adjacent to preview window.")
+  "Main dirvish window.  Adjacent to preview window.")
 
 (defvar dirvish-parent-windows ()
   "List of parent windows.")
@@ -214,12 +215,12 @@ TRASH-DIR is corresponding trash directory."
 (defvar dirvish-repeat-timers '()
   "Timers with repeat flag need to be clean when exit.")
 
-(defvar dirvish-i/o-queue ())
+(defvar dirvish-IO-queue ())
 
 (defvar-local dirvish-child-entry nil)
 
 (defvar dirvish-index-path nil
-  "Latest path in dirvish-window.")
+  "Latest path in `dirvish-window'.")
 
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
@@ -271,8 +272,9 @@ TRASH-DIR is corresponding trash directory."
     (evil          evil-refresh-cursor          dirvish-refresh-cursor--advice)
     (meow          meow--update-cursor          dirvish-refresh-cursor--advice)
     (lsp-mode      lsp-deferred                 ignore))
-  "A list of file, adviced function, and advice function for
-`dirvish-add--advices'.")
+  "A list of file, adviced function, and advice function.
+
+This variable is consumed by `dirvish-add--advices'.")
 
 (provide 'dirvish-vars)
 

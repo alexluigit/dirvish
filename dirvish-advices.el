@@ -35,13 +35,13 @@
   "Refresh dirvish frame, added to `after-focus-change-function'."
   (if (eq major-mode 'dirvish-mode)
       (dirvish-refresh t)
-    (when (memq (previous-frame) (mapcar 'car dirvish-frame-alist))
+    (when (memq (previous-frame) (mapcar #'car dirvish-frame-alist))
       (with-selected-frame (previous-frame)
         (dirvish-header-build)
         (dirvish-header-update)))))
 
 (defun dirvish-setup-dired-buffer--advice (fn &rest args)
-  "Remove the header line in dired buffer."
+  "Apply FN with ARGS, remove the header line in Dired buffer."
   (apply fn args)
   (save-excursion
     (let ((o (make-overlay (point-min) (progn (forward-line 1) (point)))))
@@ -79,20 +79,20 @@
   (dirvish-refresh))
 
 (defun dirvish-file-open--advice (fn &rest args)
-  "Quit dirvish when open a file."
+  "Apply FN with ARGS with empty `default-directory'."
   (when (dirvish-live-p) (dirvish-quit :keep-alive))
   (let ((default-directory "")) (apply fn args)))
 
 ;; FIXME: it should support window when current instance is launched by `(dirvish nil t)'
 (defun dirvish-other-window--advice (fn &rest args)
-  "Open current file/dir in new frame."
+  "Apply FN with ARGS in new dirvish frame."
   (let ((file (dired-get-file-for-visit)))
     (if (file-directory-p file)
         (dirvish-new-frame file)
       (apply fn args))))
 
 (defun dirvish-update--viewports (win _)
-  "Refresh attributes in viewport, added to `window-scroll-functions'."
+  "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
   (when (and (eq win dirvish-window)
              (eq (selected-frame) (window-frame dirvish-window)))
     (with-selected-window win
@@ -114,7 +114,7 @@
                  (side . bottom)))
   (add-function :after after-focus-change-function #'dirvish-redisplay--frame)
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
-    (with-eval-after-load file (advice-add sym :around fn))))
+    (when (require file nil t) (advice-add sym :around fn))))
 
 (defun dirvish-clean--advices ()
   "Remove all advice listed in `dirvish-advice-alist'."
@@ -122,7 +122,7 @@
   (setq display-buffer-alist (cdr display-buffer-alist))
   (remove-function after-focus-change-function #'dirvish-redisplay--frame)
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
-    (with-eval-after-load file (advice-remove sym fn))))
+    (when (require file nil t) (advice-remove sym fn))))
 
 (provide 'dirvish-advices)
 
