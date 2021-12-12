@@ -1,0 +1,30 @@
+# melpazoid <https://github.com/riscy/melpazoid> build checks.
+
+# If your package is on GitHub, enable melpazoid's checks by copying this file
+# to .github/workflows/melpazoid.yml and modifying RECIPE and EXIST_OK below.
+
+name: melpazoid
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.6
+      uses: actions/setup-python@v1
+      with: { python-version: 3.6 }
+    - name: Install
+      run: |
+        python -m pip install --upgrade pip
+        sudo apt-get install emacs && emacs --version
+        git clone https://github.com/riscy/melpazoid.git ~/melpazoid
+        pip install ~/melpazoid
+    - name: Run
+      env:
+        LOCAL_REPO: ${{ github.workspace }}
+        # RECIPE is your recipe as written for MELPA:
+        RECIPE: (dirvish :repo "alexluigit/dirvish" :fetcher github)
+        # set this to false (or remove it) if the package isn't on MELPA:
+        EXIST_OK: false
+      run: echo $GITHUB_REF && make -C ~/melpazoid
