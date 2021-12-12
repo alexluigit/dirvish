@@ -9,18 +9,11 @@
 
 ** Introduction
 
-*Dirvish* is a minimalistic file manager based on *dired-mode*.  It is inspired
-by [[https://github.com/ranger/ranger][ranger]], a terminal file manager comes with a lot of features.
-
-Unlike [[https://github.com/ralesi/ranger.el][ranger.el]], which tries to become an all-around emulation of ranger,
-*dirvish* is more bare-bone, meaning it does *NOT* try to port all "goodness"
-from ranger. Instead, it only tries to:
-
-  - provides a better dired UI
-  - support preview for directory and all common file types.
-  - improve some dired commands, make them more intuitive and accesible.
-
-Moreover, dirvish does not introduce any new keybindings by default.
+*Dirvish* is a minimalistic file manager based on *dired*.  This package tries to
+empower dired with a modern user interface, in the meantime, preserves the
+customizability of dired. Emacs users deserve a file manager that is even better
+than those popular ones such as [[https://github.com/ranger/ranger][ranger]], [[y][vifm]], [[https://www.google.com/search?q=lf+go+github&oq=lf+go+github&aqs=chrome.0.69i59.3016j0j1&sourceid=chrome&ie=UTF-8][lf]] since it is not limited to a
+terminal.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 
@@ -147,6 +140,78 @@ dirvish, you can either:
 ** Configuration
 
 See dirvish wiki [TODO] for all customization options.
+
+** Similar projects
+
+*** Ranger.el
+
+This package is inspired a lot by [[https://github.com/ralesi/ranger.el][ranger.el]], thanks @ralesi for bringing in
+*ranger* to emacs!
+
+Although these 2 packages have something in common, unlike *ranger.el*, which
+tries to become an all-around emulation of ranger, *dirvish* is more bare-bone
+(roughly 1.2 kLOC), meaning it does *NOT* try to port all "goodness" from
+ranger. Instead, it only tries to:
+
+- provides a better dired UI
+- support preview for directory and common file types.
+- improve some dired commands, make them more intuitive and accesible.
+
+And here are some specific differences between *dirvish* and *ranger.el*:
+
+- Highlight current line / Icons
+
+  Ranger uses =hl-line-mode= to highlight current line, but this minor-mode
+  doesn't play very well with =all-the-icons-dired-mode=.
+
+  + Ranger + hl-line-mode + all-the-icons-dired-mode ::
+
+  [[./assets/ranger-line.png]]
+
+  + Dirvish ::
+
+  [[./assets/dirvish-line.png]]
+
+- Header display
+
+  Ranger uses =header-line-format= to show the header, this approach leads to
+  misaligned/mismatched header string when you have multiple parent windows. In
+  contrast, dirvish uses *posframe* for that purpose.
+
+  + Ranger ::
+
+  [[./assets/ranger-header.png]]
+
+  + Dirvish ::
+
+  [[./assets/dirvish-header.png]]
+
+- Preview buffer
+
+  Ranger uses dired for creating both parent buffers and directory preview
+  buffer, which causes a lot of undesirable behaviours. Because when you have
+  multiple ranger instance running, a ranger buffer can be both a parent buffer
+  in INSTANCE-1 and a preview buffer in INSTANCE-2. In this case, update
+  INSTANCE-1 inevitably mutate the state of INSTANCE-2, which is definitely not
+  what we want.
+
+  In ranger, it's quite difficult to customize the setup of a preview
+  buffer. The reason is, again, a preview buffer can either be a dired buffer or
+  Non-dired buffer.
+
+  To avoid this confusion, dirvish use external shell command (=exa= by default)
+  for directory preview, so a preview buffer would never be a dired
+  buffer. Also, you can customize the setup for preview buffer with
+  =dirvish-preview-setup-hook= and =dirvish-preview-cmd-alist=.
+
+- Keybindings
+
+  Dirvish does not introduce any keybindings by default, see =dirvish-mode-map=
+  for more details.
+
+*** Neotree.el
+
+TODO
 
 ** Issues
 
