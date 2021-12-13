@@ -36,10 +36,10 @@
               (add-to-list 'dirvish-parent-windows win)
               (add-to-list 'dirvish-parent-buffers buf)
               (dirvish-mode)
-              (dirvish-parent--default-config)
-              (dirvish-header--setup (if one-w 'one-window 'posframe))))
+              (dirvish--parent-default-config)
+              (dirvish--header-setup (if one-w 'one-window 'posframe))))
     (let* ((current (expand-file-name default-directory))
-           (parent (dirvish-get--parent current))
+           (parent (dirvish--get-parent current))
            (parent-dirs ())
            (one-window (frame-parameter nil 'dirvish-one-window))
            (depth dirvish-depth)
@@ -50,8 +50,8 @@
       (while (and (< i depth) (not (string= current parent)))
         (setq i (+ i 1))
         (push (cons current parent) parent-dirs)
-        (setq current (dirvish-get--parent current))
-        (setq parent (dirvish-get--parent parent)))
+        (setq current (dirvish--get-parent current))
+        (setq parent (dirvish--get-parent parent)))
       (when (> depth 0)
         (let ((width (min (/ dirvish-max-parent-width depth) dirvish-width-parents)))
           (cl-dolist (parent-dir parent-dirs)
@@ -61,14 +61,14 @@
                                 (inhibit-same-window . t)
                                 (window-width . ,width)))
                    (buffer (dired-noselect parent))
-                   (window (display-buffer buffer `(dirvish-display--buffer . ,win-alist))))
+                   (window (display-buffer buffer `(dirvish--display-buffer . ,win-alist))))
               (with-selected-window window
                 (setup current window buffer one-window)
                 (dired-hide-details-mode t)
                 (dirvish-body-update))))))
       (when dirvish-enable-preview (dired-hide-details-mode t)))))
 
-(defun dirvish-parent--default-config ()
+(defun dirvish--parent-default-config ()
   "Apply default config for dirvish parent window.
 
 This function won't take effect if `dirvish-use-default-setup' is

@@ -124,7 +124,7 @@ directory."
   "Time in seconds to delay running preview file functions."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-header-string-fn 'dirvish-header--string
+(defcustom dirvish-header-string-fn 'dirvish--header-string
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
 
@@ -166,7 +166,7 @@ Used as `:poshandler' for `posframe-show'."
 (defvar dirvish-header-buffer nil
   "Buffer for showing header line.")
 
-(defvar dirvish-header--frame nil
+(defvar dirvish--header-frame nil
   "Frame for showing header line.")
 
 (defvar dirvish-preview-buffers ()
@@ -252,29 +252,29 @@ Used as `:poshandler' for `posframe-show'."
     (dired         dired-mark                   dirvish-update-line--advice)
     (dired         dired-flag-file-deletion     dirvish-update-line--advice)
     (dired         dired-goto-file              dirvish-update-line--advice)
-    (dired         dired-internal-do-deletions  dirvish-deletion--advice)
-    (dired         wdired-exit                  dirvish-refresh--advice)
-    (dired         wdired-finish-edit           dirvish-refresh--advice)
-    (dired         wdired-abort-changes         dirvish-refresh--advice)
-    (dired-aux     dired-kill-line              dirvish-refresh--advice)
-    (dired-aux     dired-do-kill-lines          dirvish-refresh--advice)
-    (dired-aux     dired-create-directory       dirvish-refresh--advice)
-    (dired-aux     dired-create-empty-file      dirvish-refresh--advice)
-    (dired-aux     dired-do-create-files        dirvish-refresh--advice)
-    (dired-aux     dired-insert-subdir          dirvish-refresh--advice)
-    (dired-aux     dired-kill-subdir            dirvish-refresh--advice)
-    (dired-aux     dired-rename-file            dirvish-revert--advice)
-    (dired-narrow  dired-narrow--internal       dirvish-refresh--advice)
-    (isearch       isearch-repeat-backward      dirvish-refresh--advice)
-    (isearch       isearch-repeat-forward       dirvish-refresh--advice)
-    (isearch       isearch-exit                 dirvish-refresh--advice)
-    (find-dired    find-dired-sentinel          dirvish-refresh--advice)
+    (dired         dired-internal-do-deletions  dirvish--deletion-advice)
+    (dired         wdired-exit                  dirvish--refresh-advice)
+    (dired         wdired-finish-edit           dirvish--refresh-advice)
+    (dired         wdired-abort-changes         dirvish--refresh-advice)
+    (dired-aux     dired-kill-line              dirvish--refresh-advice)
+    (dired-aux     dired-do-kill-lines          dirvish--refresh-advice)
+    (dired-aux     dired-create-directory       dirvish--refresh-advice)
+    (dired-aux     dired-create-empty-file      dirvish--refresh-advice)
+    (dired-aux     dired-do-create-files        dirvish--refresh-advice)
+    (dired-aux     dired-insert-subdir          dirvish--refresh-advice)
+    (dired-aux     dired-kill-subdir            dirvish--refresh-advice)
+    (dired-aux     dired-rename-file            dirvish--revert-advice)
+    (dired-narrow  dired--narrow-internal       dirvish--refresh-advice)
+    (isearch       isearch-repeat-backward      dirvish--refresh-advice)
+    (isearch       isearch-repeat-forward       dirvish--refresh-advice)
+    (isearch       isearch-exit                 dirvish--refresh-advice)
+    (find-dired    find-dired-sentinel          dirvish--refresh-advice)
     (evil          evil-refresh-cursor          dirvish-refresh-cursor--advice)
     (meow          meow--update-cursor          dirvish-refresh-cursor--advice)
     (lsp-mode      lsp-deferred                 ignore))
   "A list of file, adviced function, and advice function.
 
-This variable is consumed by `dirvish-add--advices'.")
+This variable is consumed by `dirvish--add-advices'.")
 
 (provide 'dirvish-vars)
 

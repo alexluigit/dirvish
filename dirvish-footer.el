@@ -34,7 +34,7 @@
   (when (and (dired-get-filename nil t)
              (dirvish-live-p))
     (let* ((fwidth (frame-width))
-           (footer (format-spec dirvish-footer-format (dirvish-footer--spec)))
+           (footer (format-spec dirvish-footer-format (dirvish--footer-spec)))
            (parts (split-string footer "&&&"))
            (lhs (nth 0 parts))
            (rhs (and (> (length parts) 1) (nth 1 parts)))
@@ -44,7 +44,7 @@
            (msg (format (format "%%s%%%ds" space) lhs rhs)))
       (message "%s" msg))))
 
-(defun dirvish-footer--spec ()
+(defun dirvish--footer-spec ()
   "File specs for current file that will be sent to `format-spec'."
   (let* ((entry (dired-get-filename nil t))
          (fattr (file-attributes entry))
@@ -57,7 +57,7 @@
          (final-pos (- (line-number-at-pos (point-max)) 3))
          (index (format "%3d/%-3d" cur-pos final-pos))
          (sorting (if (string= "" dirvish-sort-criteria) "name" dirvish-sort-criteria))
-         (i/o-task (or (dirvish-get--IO-status) ""))
+         (i/o-task (or (dirvish--get-IO-status) ""))
          (filter (format "%s" dirvish-show-hidden))
          (space "&&&"))
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)

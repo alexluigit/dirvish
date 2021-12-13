@@ -73,7 +73,7 @@ Used as `:poshandler' for `posframe-show'."
              (frame (apply #'posframe-show "*candidate preview*" f-props)))
         (setq dirvish-minibuf-preview-window (frame-root-window frame))
         (set-window-fringes dirvish-minibuf-preview-window 30 30 nil t)))
-    (dirvish-init--buffer)
+    (dirvish--init-buffer)
     (setq dirvish-minibuf-preview--width (window-width dirvish-minibuf-preview-window t))
     (set-window-dedicated-p dirvish-minibuf-preview-window nil)))
 
@@ -87,7 +87,7 @@ Used as `:poshandler' for `posframe-show'."
   (setq dirvish-minibuf-preview--width nil)
   (mapc 'kill-buffer dirvish-preview-buffers))
 
-(defun dirvish-minibuf--update-advice (fn &rest args)
+(defun dirvish--minibuf-update-advice (fn &rest args)
   "Apply FN with ARGS, then update dirvish minibuffer preview window.
 
 Used as an advice for `vertico--exhibit' or `selectrum--update',
@@ -117,12 +117,12 @@ invoked when file name under cursor in minibuffer changed."
       (when window-system
         (add-hook 'minibuffer-setup-hook #'dirvish-minibuf-preview-create)
         (add-hook 'minibuffer-exit-hook #'dirvish-minibuf-preview-teardown)
-        (advice-add 'vertico--exhibit :around #'dirvish-minibuf--update-advice)
-        (advice-add 'selectrum--update :around #'dirvish-minibuf--update-advice))
+        (advice-add 'vertico--exhibit :around #'dirvish--minibuf-update-advice)
+        (advice-add 'selectrum--update :around #'dirvish--minibuf-update-advice))
     (remove-hook 'minibuffer-setup-hook #'dirvish-minibuf-preview-create)
     (remove-hook 'minibuffer-exit-hook #'dirvish-minibuf-preview-teardown)
-    (advice-remove 'vertico--exhibit #'dirvish-minibuf--update-advice)
-    (advice-remove 'selectrum--update #'dirvish-minibuf--update-advice)))
+    (advice-remove 'vertico--exhibit #'dirvish--minibuf-update-advice)
+    (advice-remove 'selectrum--update #'dirvish--minibuf-update-advice)))
 
 (provide 'dirvish-minibuffer-preview)
 
