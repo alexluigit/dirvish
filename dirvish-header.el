@@ -26,8 +26,6 @@
 (require 'dirvish-vars)
 (eval-when-compile (require 'subr-x))
 
-(defvar recentf-list)
-
 (defun dirvish-header-width ()
   "Calculate header frame width.  Default to frame width when disable preview."
   (* (frame-width) (if dirvish-enable-preview (- 1 dirvish-width-preview) 1)))
@@ -43,21 +41,21 @@
                     :poshandler ,dirvish-header-position
                     :min-width ,min-w
                     :min-height 2))
-         (h-frame (frame-parameter nil 'dirvish-header--frame))
+         (h-frame (frame-parameter nil 'dirvish--header-frame))
          (size `(:posframe ,h-frame :height 2 :max-height 2 :min-height 2
                            :width: ,min-w :min-width ,min-w :max-width ,min-w)))
     (setq dirvish-header-width min-w)
     (if h-frame
         (posframe--set-frame-size size)
       (let ((fr (apply #'posframe-show buf f-props)))
-        (set-frame-parameter nil 'dirvish-header--frame fr)))))
+        (set-frame-parameter nil 'dirvish--header-frame fr)))))
 
 (defun dirvish-header-update ()
   "Update header string.
 Make sure the length of header string
 is less then `(variable) dirvish-header-width'."
   (if-let ((one-window (frame-parameter nil 'dirvish-one-window)))
-      (dirvish-header--setup 'one-window)
+      (dirvish--header-setup 'one-window)
     (with-current-buffer (frame-parameter nil 'dirvish-header-buffer)
       (erase-buffer)
       (let ((str (funcall dirvish-header-string-fn))
@@ -68,7 +66,7 @@ is less then `(variable) dirvish-header-width'."
       (add-text-properties (point-min) (point-max)
                            `(display '(height ,dirvish-header-scale) line-spacing 0.5 line-height 1.5)))))
 
-(defun dirvish-header--setup (type)
+(defun dirvish--header-setup (type)
   "Apply default setup for dirvish header TYPE.
 
 Where TYPE is either `posframe' or `one-window'."
@@ -79,10 +77,10 @@ Where TYPE is either `posframe' or `one-window'."
      (setq header-line-format (propertize " " 'display `(height ,(* 2 (1+ dirvish-body-padding)))))
      (set-face-attribute 'header-line nil :box nil))
     ('one-window
-     (setq header-line-format (propertize (dirvish-header--string) 'display `(height ,dirvish-header-scale)))
+     (setq header-line-format (propertize (dirvish--header-string) 'display `(height ,dirvish-header-scale)))
      (set-face-attribute 'header-line nil :box '(:line-width 4 :color "#353644")))))
 
-(defun dirvish-header--string ()
+(defun dirvish--header-string ()
   "Compose header string."
   (let* ((index (frame-parameter nil 'dirvish-index-path))
          (file-path (file-name-directory index))

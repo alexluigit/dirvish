@@ -61,7 +61,7 @@
   "Move to parent directory."
   (interactive)
   (let* ((current (expand-file-name default-directory))
-         (parent (dirvish-get--parent current)))
+         (parent (dirvish--get-parent current)))
     (if (string= parent current)
         (when (eq system-type 'windows-nt)
           (let* ((output (shell-command-to-string "wmic logicaldisk get name"))
@@ -137,8 +137,8 @@ MODE can be `'copy', `'move', `symlink', or `relalink'."
                               (re-search-forward regexp nil t))
           (setq yanked-files
                 (append yanked-files (dired-map-over-marks (dired-get-filename) nil))))))
-    (unless yanked-files (error "No files marked for pasting"))
-    (dirvish-internal-paste yanked-files mode)))
+    (unless yanked-files (user-error "No files marked for pasting"))
+    (dirvish--paste yanked-files mode)))
 
 (defun dirvish-yank (&optional arg)
   "Paste marked files/directory to current directory.
@@ -205,13 +205,13 @@ window, not the whole frame."
               (new-dirvish-frame (not (assoc frame dirvish-frame-alist))))
     (push (cons frame (current-window-configuration)) dirvish-frame-alist))
   (when (window-parameter nil 'window-side) (delete-window))
-  (dirvish-init--buffer)
+  (dirvish--init-buffer)
   (unless dirvish-initialized
-    (dirvish-add--advices)
+    (dirvish--add-advices)
     (when dirvish-show-icons (setq dirvish-show-icons (ignore-errors (require 'all-the-icons))))
-    (when (dirvish-get--IO-status)
+    (when (dirvish--get-IO-status)
       (dirvish-repeat 'dirvish-footer-update 0 0.1)
-      (dirvish-repeat dirvish-set--IO-status 0 0.1))
+      (dirvish-repeat dirvish--set-IO-status 0 0.1))
     (when (featurep 'recentf) (setq dirvish-orig-recentf-list recentf-list))
     (mailcap-parse-mimetypes)
     (setq dirvish-initialized t)))
@@ -228,7 +228,7 @@ window, not the whole frame."
           (delq (selected-window) dirvish-parent-windows)
           (quit-window))
       (posframe-delete (frame-parameter nil 'dirvish-header-buffer))
-      (set-frame-parameter nil 'dirvish-header--frame nil)
+      (set-frame-parameter nil 'dirvish--header-frame nil)
       (set-frame-parameter nil 'dirvish-preview-window nil)
       (setq dirvish-frame-alist (delq (assoc (window-frame) dirvish-frame-alist) dirvish-frame-alist))
       (when (window-configuration-p config)
@@ -236,8 +236,8 @@ window, not the whole frame."
     (unless
         (or (and one-window (> (length dirvish-parent-windows) 1))
             (> (length dirvish-frame-alist) 1))
-      (dirvish-clean--buffers)
-      (dirvish-clean--advices)
+      (dirvish--clean-buffers)
+      (dirvish--clean-advices)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (unless one-window (set-frame-parameter nil 'dirvish-one-window t))
     (setq dirvish-window nil)
@@ -248,7 +248,7 @@ window, not the whole frame."
 (defun dirvish-quit (&optional keep-alive)
   "Revert dirvish settings and disable dirvish.
 
-Delete current frame if it's a dirvish frame unless KEEP-ALIVE
+Delete current frame if it's a dirvish-only frame unless KEEP-ALIVE
 is not-nil."
   (interactive)
   (dirvish-deinit)
@@ -267,7 +267,7 @@ Unless NO-REVERT is not-nil, revert current buffer."
     (dirvish-preview-build)
     (dirvish-header-build))
   (unless no-revert (revert-buffer))
-  (when filter (dirvish-update--filter))
+  (when filter (dirvish--update-filter))
   (dirvish-body-update)
   (dirvish-preview-update)
   (dirvish-header-update)

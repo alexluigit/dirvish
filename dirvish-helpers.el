@@ -48,7 +48,7 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
 
-(defun dirvish-init--buffer ()
+(defun dirvish--init-buffer ()
   "Create buffers that hold dirvish header/preview/etc. content."
   (let* ((index (number-to-string (length dirvish-frame-alist)))
          (header-buf (get-buffer-create (concat " *Dirvish Header-" index "*")))
@@ -58,7 +58,7 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
     (set-frame-parameter nil 'dirvish-preview-buffer preview-buf)
     (set-frame-parameter nil 'dirvish-header-buffer header-buf)))
 
-(defun dirvish-clean--buffers ()
+(defun dirvish--clean-buffers ()
   "Cleanup all dirvish buffers."
   (cl-dolist (buf (buffer-list))
     (let ((name (buffer-name buf))
@@ -76,7 +76,7 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
 If WIN is nil, defaults to `\\(selected-window\\)'."
   (memq (or win (selected-window)) dirvish-parent-windows))
 
-(defun dirvish-update--filter ()
+(defun dirvish--update-filter ()
   "Update file list in dirvish buffer.
 
 According to `dirvish-hidden-regexp'."
@@ -93,7 +93,7 @@ According to `dirvish-hidden-regexp'."
         (while (and (not (eobp)) (re-search-forward regexp nil t))
           (delete-region (line-beginning-position) (progn (forward-line 1) (point))))))))
 
-(defun dirvish-display--buffer (buffer alist)
+(defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.
 
  This splits the window at the designated side of the
@@ -107,7 +107,7 @@ According to `dirvish-hidden-regexp'."
          (new-window (split-window-no-error dirvish-window size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish-internal-paste (fileset mode)
+(defun dirvish--paste (fileset mode)
   "Run paste-mode MODE on FILESET.
 This function is a helper for `dirvish-paste'."
   (let* ((target (dired-current-directory))
@@ -142,21 +142,21 @@ This function is a helper for `dirvish-paste'."
                     (?a (setq overwrite t) (push (cons file name~) new-fileset))
                     (?q (setq abort t) (setq new-fileset ()))))
               (push (cons file paste-name) new-fileset))))))
-    (let ((size (dirvish-get--filesize (mapcar #'car new-fileset)))
+    (let ((size (dirvish--get-filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
       (add-to-list 'dirvish-IO-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
     (dirvish-repeat dirvish-footer-update 0 0.1)
-    (dirvish-repeat dirvish-set--IO-status 0 0.1)
+    (dirvish-repeat dirvish--set-IO-status 0 0.1)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf dirvish-parent-buffers)
       (with-current-buffer buf (dired-unmark-all-marks)))))
 
-(defun dirvish-get--parent (path)
+(defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
 
-(defun dirvish-get--filesize (fileset)
+(defun dirvish--get-filesize (fileset)
   "Determine file size of provided list of files in FILESET."
   (unless (executable-find "du") (user-error "`du' executable not found"))
   (with-temp-buffer
@@ -164,13 +164,13 @@ This function is a helper for `dirvish-paste'."
     (format "%s" (progn (re-search-backward "\\(^[0-9.,]+[a-zA-Z]*\\).*total$")
                         (match-string 1)))))
 
-(defun dirvish-get--trash-dir ()
+(defun dirvish--get-trash-dir ()
   "Get trash directory for current disk."
   (cl-dolist (dir dirvish-trash-dir-alist)
     (when (string-prefix-p (car dir) (dired-current-directory))
       (cl-return (concat (car dir) (cdr dir))))))
 
-(defun dirvish-get--IO-status ()
+(defun dirvish--get-IO-status ()
   "Get current disk I/O task."
   (when-let* ((task (car-safe dirvish-IO-queue)))
     (let ((finished (car task))
@@ -186,7 +186,7 @@ This function is a helper for `dirvish-paste'."
               (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
               (propertize size 'face 'font-lock-builtin-face)))))
 
-(defun dirvish-set--IO-status ()
+(defun dirvish--set-IO-status ()
   "Set current disk I/O task."
   (when-let* ((task (car-safe dirvish-IO-queue)))
     (let ((io-buf (nth 1 task))
@@ -202,7 +202,7 @@ This function is a helper for `dirvish-paste'."
         (when (dirvish-live-p) (dirvish-refresh))
         (setf (nth 0 (car-safe dirvish-IO-queue)) t)
         (when (eq (length dirvish-IO-queue) 1)
-          (cancel-timer (symbol-value 'dirvish-set--IO-status-timer))))
+          (cancel-timer (symbol-value 'dirvish--set-IO-status-timer))))
       (setcar (nth 3 (car-safe dirvish-IO-queue)) progress))))
 
 (defun dirvish-override-dired (&rest _)

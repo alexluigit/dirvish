@@ -38,12 +38,12 @@ By default update icons, padding, and current line.  If
 SKIP-ICONS is non-nil, do not update icons.  If SKIP-PADDING is
 non-nil, do not update padding."
   (unless skip-icons
-    (dirvish-body--update-icons))
+    (dirvish--body-update-icons))
   (unless skip-padding
-    (dirvish-body--update-padding))
-  (dirvish-body--update-line))
+    (dirvish--body-update-padding))
+  (dirvish--body-update-line))
 
-(defun dirvish-body--update-line ()
+(defun dirvish--body-update-line ()
   "Update highlighting in current dirvish line."
   (remove-overlays (point-min) (point-max) 'dirvish-body t)
   (when-let* ((pos (dired-move-to-filename nil))
@@ -52,24 +52,24 @@ non-nil, do not update padding."
               (ol (make-overlay beg end)))
     (when dirvish-show-icons
       (remove-overlays beg end 'dirvish-icons t)
-      (dirvish-body--render-icon pos 'dirvish-body-face))
+      (dirvish--body-render-icon pos 'dirvish-body-face))
     (overlay-put ol 'dirvish-body t)
     (overlay-put ol 'face 'dirvish-body-face)))
 
-(defun dirvish-body--update-icons ()
+(defun dirvish--body-update-icons ()
   "Update icon in current dirvish line."
   (when dirvish-show-icons
     (remove-overlays (point-min) (point-max) 'dirvish-icons t)
-    (dirvish-body-render 'dirvish-body--render-icon)))
+    (dirvish-body-render 'dirvish--body-render-icon)))
 
-(defun dirvish-body--update-padding ()
+(defun dirvish--body-update-padding ()
   "Update paddings in current dirvish buffer."
   (save-excursion
     (let ((o (make-overlay (point-min) (point-max))))
       (setq line-spacing dirvish-body-padding)
       (overlay-put o 'display `(height ,(1+ dirvish-body-padding))))))
 
-(defun dirvish-body--render-icon (pos &optional face)
+(defun dirvish--body-render-icon (pos &optional face)
   "Render icon in POS with optional FACE."
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icons-v-offset))
