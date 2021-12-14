@@ -41,8 +41,8 @@
 
 (defun dirvish-header-update ()
   "Update header string.
-Make sure the length of header string
-is less then `(variable) dirvish-header-width'."
+
+Make header string shorter than variable `dirvish-header-width'."
   (if-let ((one-window (frame-parameter nil 'dirvish-one-window)))
       (dirvish--header-setup 'one-window)
     (with-current-buffer (frame-parameter nil 'dirvish-header-buffer)
