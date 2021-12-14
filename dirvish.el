@@ -277,8 +277,8 @@ Unless NO-REVERT is not-nil, revert current buffer."
   "Find file in dirvish buffer.
 
 FILE can be a file or a directory, if nil then infer entry from
-current `(variable) buffer-file-name'.  If IGNORE-HIST is
-non-nil, do not update `dirvish-history-ring'."
+variable `buffer-file-name'.  If IGNORE-HIST is non-nil, do not
+update `dirvish-history-ring'."
   (interactive)
   (let ((entry (or file (dired-get-filename nil t)))
         (bname (buffer-file-name (current-buffer)))
@@ -318,7 +318,7 @@ non-nil, do not update `dirvish-history-ring'."
 (defun dirvish (&optional path one-window)
   "Open dirvish in PATH, optionally in single-window if ONE-WINDOW is not-nil.
 
-PATH defaults to `(variable)buffer-file-name'."
+PATH defaults to variable `buffer-file-name'."
   (interactive)
   (let* ((file (or path buffer-file-name))
          (dir (if file (expand-file-name (file-name-directory file))
