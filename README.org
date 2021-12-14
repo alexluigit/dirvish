@@ -2,7 +2,14 @@
 #+EMAIL: alexluigit@gmail.com
 #+startup: inlineimages content
 
-* *Dirvish* - wish you a better dired
+* *Dirvish*
+
+[[https://melpa.org/#/dirvish][file:https://melpa.org/packages/dirvish-badge.svg]]
+[[https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml][file:https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml/badge.svg]]
+
+#+begin_quote
+Wish you a better dired.
+#+end_quote
 
 #+ATTR_ORG: :width 1024
 [[./assets/multi-win.png]]
@@ -10,9 +17,9 @@
 ** Introduction
 
 *Dirvish* is a minimalistic file manager based on *dired*.  This package tries to
-empower dired with a modern user interface, in the meantime, preserves the
-customizability of dired. Emacs users deserve a file manager that is even better
-than those popular ones such as [[https://github.com/ranger/ranger][ranger]], [[y][vifm]], [[https://www.google.com/search?q=lf+go+github&oq=lf+go+github&aqs=chrome.0.69i59.3016j0j1&sourceid=chrome&ie=UTF-8][lf]] since it is not limited to a
+empower dired by giving it a modern user interface, in the meantime, preserves
+its customizability. Emacs users deserve a file manager that is even better than
+those popular ones such as [[https://github.com/ranger/ranger][ranger]], [[y][vifm]], [[https://www.google.com/search?q=lf+go+github&oq=lf+go+github&aqs=chrome.0.69i59.3016j0j1&sourceid=chrome&ie=UTF-8][lf]] since it is not limited to a
 terminal.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
@@ -32,8 +39,26 @@ The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vi
 
 *** Installation
 
-Dirvish is available from [[https://melpa.org][Melpa]], you can install it directly via =package-install=
-if you have melpa in your =package-archives=.
+Dirvish is available from [[https://melpa.org][Melpa]].
+
+**** For =package.el= user
+
+You can install it directly via =package-install= if you have melpa in your =package-archives=.
+
+**** For =straight.el= user
+
+#+begin_src emacs-lisp
+  (straight-use-package 'dirvish)
+#+end_src
+
+Alternatively, install it by using *use-package* and *straight* in tandem.
+
+#+begin_src emacs-lisp
+  (use-package dirvish
+    :straight t)
+#+end_src
+
+**** Manual install
 
 To install it manually, first clone this repository,
 
@@ -48,13 +73,6 @@ then add =path/to/dirvish= to your =load-path=.
   (require 'dirvish)
 #+end_src
 
-Alternatively, install it by using *use-package* and *straight* in tandem.
-
-#+begin_src emacs-lisp
-  (use-package dirvish
-    :straight t)
-#+end_src
-
 *** Quickstart
 
 After installation, just =M-x= and run =dirvish=.
@@ -65,9 +83,8 @@ of your dired config (including keymapping) in principle.
 As an example, here is an excerpt from my personal dired config:
 
 #+begin_src emacs-lisp
-  (setq dired-kill-when-opening-new-dired-buffer t) ;; added in emacs 28
+  (setq dired-kill-when-opening-new-dired-buffer t) ; added in emacs 28
   (setq dired-clean-confirm-killing-deleted-buffers nil)
-  (setq large-file-warning-threshold 50000000)
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
   (setq delete-by-moving-to-trash t)
@@ -83,8 +100,25 @@ When =dirvish-enable-preview= is non-nil, a preview window showing the content o
 selected file/directory will be displayed at right side of dirvish frame.
 
 - Debouncing ::
+
+  Reduce unnecessary UI redraw.
+
 - Native GIF support ::
+
+  Navigate to a GIF file in Dirvish and check out the preview window.
+
 - *Image cache* ::
+
+  A image cache file, with small filesize that is unlikely to block Emacs when
+  rendering, is generated when the original image file is larger than 500KB.
+
+- Highly customizable ::
+
+  A preview buffer is created either by an elisp function or by the help of a
+  shell command. If you don't like the way dirvish creates the preview buffer
+  for certain file types, take a look at =dirvish-preview-cmd-alist=. This
+  variable determines how a preview buffer get generated for different file
+  types, customize it to suit your need. See [[https://github.com][Dirvish wiki_TODO]] for more details.
 
 *** More intuitive file operation
 
@@ -137,9 +171,39 @@ dirvish, you can either:
   (dirvish-override-dired-jump)
 #+end_src
 
+A glimpse of single-window dirvish:
+
+[[./assets/dirvish-one-win.png]]
+
+*** Minibuffer file preview (extension)
+
+*dirvish-minibuffer-preview.el* is an extension for dirvish, it provides
+=dirvish-minibuf-preview-mode=, which is a feature to preview file when narrowing
+file/directory candidates using minibuffer.
+
+- Why does this feature exist? ::
+
+  *Dirvish* and *minibuffer* seem unrelated at first glance. But when it comes to
+  display a file preview, they actually share the same mechanism, that is: /get
+  file path under the cursor and update preview window accordingly./ Displaying
+  minibuffer file preview in a "dirvish" way, not only a lot of source code can
+  be reused, but also related user configurations.  In other words, you don't
+  have to configure file preview for dirvish and for minibuffer separately, they
+  will always /display the same thing./
+
+For *selectrum* or *vertico* users (only support these 2 completion UIs for now), if
+you'd like to give this extension a try, all you need is:
+
+#+begin_src emacs-lisp
+  (require 'dirvish-minibuffer-preview)
+  (dirvish-minibuf-preview-mode)
+#+end_src
+
+Check out this [[https://www.youtube.com][YOUTUBE_VIDEO_UPLOAD_TODO]] and [[https://github.com][Dirvish wiki_TODO]] for more details.
+
 ** Configuration
 
-See dirvish wiki [TODO] for all customization options.
+See [[https://github.com][Dirvish wiki_TODO]] for all customization options.
 
 ** Similar projects
 
@@ -174,7 +238,7 @@ And here are some specific differences between *dirvish* and *ranger.el*:
 
 - Header display
 
-  Ranger uses =header-line-format= to show the header, this approach leads to
+  Ranger uses =header-line-format= to display its header, this approach leads to
   misaligned/mismatched header string when you have multiple parent windows. In
   contrast, dirvish uses *posframe* for that purpose.
 
@@ -217,6 +281,7 @@ TODO
 
 - You may experience some issue with Windows since dirvish has not been tested on it
 - It might have conflicts with packages that controls window placement.
+- GIF may fail to play due to large filesize.
 
 Feel free to report issues.
 
