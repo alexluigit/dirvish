@@ -37,9 +37,15 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
 
+(defun dirvish-meta (&optional frame)
+  "Get dirvish metadata of FRAME.
+
+FRAME defaults to current frame."
+  (frame-parameter frame 'dirvish-meta))
+
 (defun dirvish--init-buffer ()
   "Create buffers that hold dirvish header/preview/etc. content."
-  (let* ((index (number-to-string (length dirvish-frame-alist)))
+  (let* ((index (number-to-string (length dirvish-frame-list)))
          (header-buf (get-buffer-create (concat " *Dirvish Header-" index "*")))
          (preview-buf (get-buffer-create (concat " *Dirvish Preview-" index "*"))))
     (with-current-buffer preview-buf (setq mode-line-format nil))
