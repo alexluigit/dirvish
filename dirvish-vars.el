@@ -142,9 +142,6 @@ Used as `:poshandler' for `posframe-show'."
 (defvar dirvish-header-width nil
   "Calculated header frame width.")
 
-(defvar dirvish-header-buffer nil
-  "Buffer for showing header line.")
-
 (defvar dirvish--header-frame nil
   "Frame for showing header line.")
 
@@ -159,8 +156,6 @@ Used as `:poshandler' for `posframe-show'."
 
 (defvar dirvish-preview-window nil
   "Window contains file / directory preview.")
-
-(defvar dirvish-preview-buffer nil)
 
 (defvar dirvish-history-ring (make-ring dirvish-history-length)
   "History for `dirvish-find-file'.")

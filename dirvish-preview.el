@@ -12,6 +12,7 @@
 (require 'ansi-color)
 (require 'mailcap)
 (require 'dirvish-vars)
+(require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))
 
 (defvar dirvish-preview-update-timer)
@@ -55,7 +56,7 @@
   "Get corresponding preview buffer for ENTRY.
 
 Optionally, a shell command CMD and its ARGS can be passed."
-  (let ((buf (frame-parameter nil 'dirvish-preview-buffer))
+  (let ((buf (dirvish-preview-buffer (dirvish-meta)))
         (process-connection-type nil)
         (size (number-to-string (or (and (boundp 'dirvish-minibuf-preview--width)
                                          dirvish-minibuf-preview--width)
@@ -113,7 +114,7 @@ Optionally, a shell command CMD and its ARGS can be passed."
     (cl-return-from dirvish-preview-build))
   (when dirvish-enable-preview
     (let* ((inhibit-modification-hooks t)
-           (buf (frame-parameter nil 'dirvish-preview-buffer))
+           (buf (dirvish-preview-buffer (dirvish-meta)))
            (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
            (fringe 30)
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
@@ -126,9 +127,9 @@ Optionally, a shell command CMD and its ARGS can be passed."
 
 When PROC finishes, fill `dirvish-preview-buffer' with process
 result string."
-  (let ((buf (frame-parameter nil 'dirvish-preview-buffer)))
+  (let ((buf (dirvish-preview-buffer (dirvish-meta))))
     (when (buffer-live-p buf)
-      (with-current-buffer (frame-parameter nil 'dirvish-preview-buffer)
+      (with-current-buffer (dirvish-preview-buffer (dirvish-meta))
         (erase-buffer) (remove-overlays)
         (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
           (insert result-str)

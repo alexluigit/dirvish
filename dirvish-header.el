@@ -23,7 +23,7 @@
   "Create a posframe showing dirvish header."
   (when-let ((one-window (frame-parameter nil 'dirvish-one-window)))
     (cl-return-from dirvish-header-build))
-  (let* ((buf (frame-parameter nil 'dirvish-header-buffer))
+  (let* ((buf (dirvish-header-buffer (dirvish-meta)))
          (min-w (1+ (ceiling (dirvish-header-width))))
          (f-props `(:background-color
                     ,(face-attribute 'region :background)
@@ -45,7 +45,7 @@
 Make header string shorter than variable `dirvish-header-width'."
   (if-let ((one-window (frame-parameter nil 'dirvish-one-window)))
       (dirvish--header-setup 'one-window)
-    (with-current-buffer (frame-parameter nil 'dirvish-header-buffer)
+    (with-current-buffer (dirvish-header-buffer (dirvish-meta))
       (erase-buffer)
       (let ((str (funcall dirvish-header-string-fn))
             (max-width (1- (floor (/ dirvish-header-width dirvish-header-scale)))))

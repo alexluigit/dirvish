@@ -199,9 +199,17 @@ With optional prefix ARG, delete source files/directories."
 It has following fields:
 
 WINDOW-CONF is the window configuration given by
-`current-window-configuration' first time the dirvish was
-created for current frame (only for full-frame dirvish)."
-  window-conf)
+`current-window-configuration'.
+
+HEADER-BUFFER is a buffer created by
+`dirvish--header-buffer-default'.
+
+PREVIEW-BUFFER is a buffer created by
+`dirvish--preview-buffer-default'.
+"
+  window-conf
+  (header-buffer (dirvish--header-buffer-default))
+  (preview-buffer (dirvish--preview-buffer-default)))
 
 (defun dirvish-init (&optional one-window)
   "Save previous window config and initialize dirvish.
@@ -217,7 +225,6 @@ window, not the whole frame."
     (setf (dirvish-window-conf (dirvish-meta)) (current-window-configuration))
     (add-to-list 'dirvish-frame-list (window-frame)))
   (when (window-parameter nil 'window-side) (delete-window))
-  (dirvish--init-buffer)
   (unless dirvish-initialized
     (dirvish--add-advices)
     (when dirvish-show-icons (setq dirvish-show-icons (ignore-errors (require 'all-the-icons))))
@@ -239,7 +246,7 @@ window, not the whole frame."
         (while (eq 'dirvish-mode (buffer-local-value 'major-mode (current-buffer)))
           (delq (selected-window) dirvish-parent-windows)
           (quit-window))
-      (posframe-delete (frame-parameter nil 'dirvish-header-buffer))
+      (posframe-delete (dirvish-header-buffer (dirvish-meta)))
       (set-frame-parameter nil 'dirvish--header-frame nil)
       (set-frame-parameter nil 'dirvish-preview-window nil)
       (setq dirvish-frame-list (delq (window-frame) dirvish-frame-list))

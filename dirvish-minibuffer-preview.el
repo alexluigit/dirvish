@@ -60,7 +60,8 @@ Used as `:poshandler' for `posframe-show'."
              (frame (apply #'posframe-show "*candidate preview*" f-props)))
         (setq dirvish-minibuf-preview-window (frame-root-window frame))
         (set-window-fringes dirvish-minibuf-preview-window 30 30 nil t)))
-    (dirvish--init-buffer)
+    (or (frame-parameter nil 'dirvish-meta)
+        (set-frame-parameter nil 'dirvish-meta (make--dirvish)))
     (setq dirvish-minibuf-preview--width (window-width dirvish-minibuf-preview-window t))
     (set-window-dedicated-p dirvish-minibuf-preview-window nil)))
 
@@ -72,7 +73,7 @@ Used as `:poshandler' for `posframe-show'."
                         (remove-overlays (point-min) (point-max) 'temp-inactive-ov t))))
   (setq dirvish-minibuf-preview--category nil)
   (setq dirvish-minibuf-preview--width nil)
-  (mapc 'kill-buffer dirvish-preview-buffers))
+  (mapc #'kill-buffer dirvish-preview-buffers))
 
 (defun dirvish--minibuf-update-advice (fn &rest args)
   "Apply FN with ARGS, then update dirvish minibuffer preview window.
