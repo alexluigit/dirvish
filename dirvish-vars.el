@@ -87,10 +87,6 @@ Where DISK is path to a disk and TRASH-DIR is corresponding trash
 directory."
   :group 'dirvish :type 'alist)
 
-(defcustom dirvish-use-default-setup t
-  "Whether use default config for dirvish buffer."
-  :group 'dirvish :type 'boolean)
-
 (defcustom dirvish-show-icons t
   "When not-nil show file / dir icon."
   :group 'dirvish :type 'boolean)
