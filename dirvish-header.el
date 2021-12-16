@@ -17,7 +17,7 @@
 
 (defun dirvish-header-width ()
   "Calculate header frame width.  Default to frame width when disable preview."
-  (* (frame-width) (if dirvish-enable-preview (- 1 dirvish-width-preview) 1)))
+  (* (frame-width) (if dirvish-enable-preview (- 1 dirvish-preview-width) 1)))
 
 (cl-defun dirvish-header-build ()
   "Create a posframe showing dirvish header."

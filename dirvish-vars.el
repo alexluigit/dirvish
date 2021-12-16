@@ -64,12 +64,12 @@
   "Number of directories up to traverse."
   :group 'dirvish :type 'integer)
 
-(defcustom dirvish-width-parents 0.12
-  "Fraction of frame width taken by parent windows."
+(defcustom dirvish-parent-max-width 0.12
+  "The max width allocated to showing parent windows."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-max-parent-width 0.25
-  "The max width allocated to showing parent windows."
+(defcustom dirvish-preview-width 0.65
+  "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-body-padding 0.1
@@ -101,10 +101,6 @@ directory."
 
 (defcustom dirvish-icons-v-offset 0.01
   "Icon vertical offset."
-  :group 'dirvish :type 'float)
-
-(defcustom dirvish-width-preview 0.65
-  "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-preview-delay 0.02

@@ -49,7 +49,7 @@ Used as `:poshandler' for `posframe-show'."
                               (overlay-put ov 'font-lock-face 'font-lock-doc-face))))))
     (setq dirvish-minibuf-preview-window (frame-parameter nil 'dirvish-preview-window))
     (unless dirvish-minibuf-preview-window
-      (let* ((min-w (ceiling (* (frame-width) dirvish-width-preview)))
+      (let* ((min-w (ceiling (* (frame-width) dirvish-preview-width)))
              (min-h (ceiling (* (frame-height) dirvish-minibuf-preview--height)))
              (b-color (face-attribute 'font-lock-doc-face :foreground))
              (pos-f (or dirvish-minibuf-preview-position #'posframe-poshandler-frame-top-center))
