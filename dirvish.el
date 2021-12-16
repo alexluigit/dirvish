@@ -37,6 +37,7 @@
 
 (require 'dirvish-vars)
 (require 'dirvish-helpers)
+(require 'dirvish-structs)
 (require 'dirvish-header)
 (require 'dirvish-footer)
 (require 'dirvish-parents)
@@ -191,26 +192,6 @@ With optional prefix ARG, delete source files/directories."
       (dired-sort-other switch)
       (dirvish-refresh))))
 
-(cl-defstruct (dirvish
-               (:conc-name dirvish-)
-               (:constructor make--dirvish))
-  "Return a dirvish struct.
-
-It has following fields:
-
-WINDOW-CONF is the window configuration given by
-`current-window-configuration'.
-
-HEADER-BUFFER is a buffer created by
-`dirvish--header-buffer-default'.
-
-PREVIEW-BUFFER is a buffer created by
-`dirvish--preview-buffer-default'.
-"
-  window-conf
-  (header-buffer (dirvish--header-buffer-default))
-  (preview-buffer (dirvish--preview-buffer-default)))
-
 (defun dirvish-init (&optional one-window)
   "Save previous window config and initialize dirvish.
 
@@ -227,7 +208,7 @@ window, not the whole frame."
   (when (window-parameter nil 'window-side) (delete-window))
   (unless dirvish-initialized
     (dirvish--add-advices)
-    (when dirvish-show-icons (setq dirvish-show-icons (ignore-errors (require 'all-the-icons))))
+    (when dirvish-show-icons (setq dirvish-show-icons (require 'all-the-icons nil t)))
     (when (dirvish--get-IO-status)
       (dirvish-repeat 'dirvish-footer-update 0 0.1)
       (dirvish-repeat dirvish--set-IO-status 0 0.1))
