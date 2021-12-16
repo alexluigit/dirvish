@@ -113,8 +113,8 @@ Optionally, a shell command CMD and its ARGS can be passed."
     (cl-return-from dirvish-preview-build))
   (when dirvish-enable-preview
     (let* ((inhibit-modification-hooks t)
-           (win-alist `((side . right) (window-width . ,dirvish-width-preview)))
            (buf (frame-parameter nil 'dirvish-preview-buffer))
+           (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
            (fringe 30)
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
       (set-window-fringes new-window fringe fringe nil t)
