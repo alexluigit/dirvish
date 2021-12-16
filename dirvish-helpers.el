@@ -43,15 +43,23 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
 FRAME defaults to current frame."
   (frame-parameter frame 'dirvish-meta))
 
-(defun dirvish--init-buffer ()
-  "Create buffers that hold dirvish header/preview/etc. content."
-  (let* ((index (number-to-string (length dirvish-frame-list)))
-         (header-buf (get-buffer-create (concat " *Dirvish Header-" index "*")))
-         (preview-buf (get-buffer-create (concat " *Dirvish Preview-" index "*"))))
-    (with-current-buffer preview-buf (setq mode-line-format nil))
-    (with-current-buffer header-buf (setq-local face-font-rescale-alist nil))
-    (set-frame-parameter nil 'dirvish-preview-buffer preview-buf)
-    (set-frame-parameter nil 'dirvish-header-buffer header-buf)))
+(defun dirvish--header-buffer-default ()
+  "Return a buffer for dirvish header with sensible settings."
+  (with-current-buffer
+      (get-buffer-create
+       (format " *Dirvish Header-%s*"
+               (number-to-string (length dirvish-frame-list))))
+    (setq-local face-font-rescale-alist nil)
+    (current-buffer)))
+
+(defun dirvish--preview-buffer-default ()
+  "Return a buffer for dirvish preview with sensible settings."
+  (with-current-buffer
+      (get-buffer-create
+       (format " *Dirvish Preview-%s*"
+               (number-to-string (length dirvish-frame-list))))
+    (setq-local mode-line-format nil)
+    (current-buffer)))
 
 (defun dirvish--clean-buffers ()
   "Cleanup all dirvish buffers."
