@@ -191,6 +191,18 @@ With optional prefix ARG, delete source files/directories."
       (dired-sort-other switch)
       (dirvish-refresh))))
 
+(cl-defstruct (dirvish
+               (:conc-name dirvish-)
+               (:constructor make--dirvish))
+  "Return a dirvish struct.
+
+It has following fields:
+
+WINDOW-CONF is the window configuration given by
+`current-window-configuration' first time the dirvish was
+created for current frame (only for full-frame dirvish)."
+  window-conf)
+
 (defun dirvish-init (&optional one-window)
   "Save previous window config and initialize dirvish.
 
@@ -200,10 +212,10 @@ window, not the whole frame."
     (user-error "Dirvish.el: posframe unable to initialize under current Emacs instance"))
   (when (eq major-mode 'dirvish-mode) (dirvish-quit))
   (set-frame-parameter nil 'dirvish-one-window one-window)
-  (when-let* ((ignore-one-win (not one-window))
-              (frame (window-frame))
-              (new-dirvish-frame (not (assoc frame dirvish-frame-alist))))
-    (push (cons frame (current-window-configuration)) dirvish-frame-alist))
+  (set-frame-parameter nil 'dirvish-meta (make--dirvish))
+  (unless one-window
+    (setf (dirvish-window-conf (dirvish-meta)) (current-window-configuration))
+    (add-to-list 'dirvish-frame-list (window-frame)))
   (when (window-parameter nil 'window-side) (delete-window))
   (dirvish--init-buffer)
   (unless dirvish-initialized
@@ -222,7 +234,7 @@ window, not the whole frame."
   (setq recentf-list dirvish-orig-recentf-list)
   (mapc #'kill-buffer dirvish-preview-buffers)
   (let ((one-window (frame-parameter nil 'dirvish-one-window))
-        (config (cdr-safe (assoc (window-frame) dirvish-frame-alist))))
+        (config (dirvish-window-conf (dirvish-meta))))
     (if one-window
         (while (eq 'dirvish-mode (buffer-local-value 'major-mode (current-buffer)))
           (delq (selected-window) dirvish-parent-windows)
@@ -230,12 +242,12 @@ window, not the whole frame."
       (posframe-delete (frame-parameter nil 'dirvish-header-buffer))
       (set-frame-parameter nil 'dirvish--header-frame nil)
       (set-frame-parameter nil 'dirvish-preview-window nil)
-      (setq dirvish-frame-alist (delq (assoc (window-frame) dirvish-frame-alist) dirvish-frame-alist))
+      (setq dirvish-frame-list (delq (window-frame) dirvish-frame-list))
       (when (window-configuration-p config)
         (set-window-configuration config)))
     (unless
         (or (and one-window (> (length dirvish-parent-windows) 1))
-            (> (length dirvish-frame-alist) 1))
+            (> (length dirvish-frame-list) 1))
       (dirvish--clean-buffers)
       (dirvish--clean-advices)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))

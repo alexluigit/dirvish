@@ -185,7 +185,7 @@ Used as `:poshandler' for `posframe-show'."
 (defvar dirvish-parent-buffers ()
   "List with buffers of parent buffers.")
 
-(defvar dirvish-frame-alist ()
+(defvar dirvish-frame-list ()
   "List of frames using dirvish.")
 
 (defvar dirvish-mode-hook nil

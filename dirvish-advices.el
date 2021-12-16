@@ -24,7 +24,7 @@
   "Refresh dirvish frame, added to `after-focus-change-function'."
   (if (eq major-mode 'dirvish-mode)
       (dirvish-refresh t)
-    (when (memq (previous-frame) (mapcar #'car dirvish-frame-alist))
+    (when (memq (previous-frame) dirvish-frame-list)
       (with-selected-frame (previous-frame)
         (dirvish-header-build)
         (dirvish-header-update)))))
