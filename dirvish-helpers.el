@@ -43,24 +43,6 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
 FRAME defaults to current frame."
   (frame-parameter frame 'dirvish-meta))
 
-(defun dirvish--header-buffer-default ()
-  "Return a buffer for dirvish header with sensible settings."
-  (with-current-buffer
-      (get-buffer-create
-       (format " *Dirvish Header-%s*"
-               (number-to-string (length dirvish-frame-list))))
-    (setq-local face-font-rescale-alist nil)
-    (current-buffer)))
-
-(defun dirvish--preview-buffer-default ()
-  "Return a buffer for dirvish preview with sensible settings."
-  (with-current-buffer
-      (get-buffer-create
-       (format " *Dirvish Preview-%s*"
-               (number-to-string (length dirvish-frame-list))))
-    (setq-local mode-line-format nil)
-    (current-buffer)))
-
 (defun dirvish--clean-buffers ()
   "Cleanup all dirvish buffers."
   (cl-dolist (buf (buffer-list))
