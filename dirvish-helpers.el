@@ -50,7 +50,7 @@ FRAME defaults to current frame."
           (mode (buffer-local-value 'major-mode buf)))
       (when (or (eq 'dired-mode mode) (eq 'dirvish-mode mode)
                 (and (not (string-equal name ""))
-                     (string-match " \\*Dirvish .*" name)
+                     (string-match " \\*Dirvish I/O.*" name)
                      (not (get-buffer-process buf))))
         (kill-buffer buf)))))
 
