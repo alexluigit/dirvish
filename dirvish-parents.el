@@ -57,13 +57,9 @@
       (when dirvish-enable-preview (dired-hide-details-mode t)))))
 
 (defun dirvish--parent-default-config ()
-  "Apply default config for dirvish parent window.
-
-This function won't take effect if `dirvish-use-default-setup' is
-nil."
-  (when dirvish-use-default-setup
-    (setq cursor-type nil)
-    (setq mode-line-format nil)))
+  "Apply default config for dirvish parent window."
+  (setq cursor-type nil)
+  (setq mode-line-format nil))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
