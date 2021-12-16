@@ -258,6 +258,7 @@ Used as `:poshandler' for `posframe-show'."
     (find-dired    find-dired-sentinel          dirvish--refresh-advice)
     (evil          evil-refresh-cursor          dirvish-refresh-cursor--advice)
     (meow          meow--update-cursor          dirvish-refresh-cursor--advice)
+    (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
     (lsp-mode      lsp-deferred                 ignore))
   "A list of file, adviced function, and advice function.
 
