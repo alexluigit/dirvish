@@ -12,6 +12,7 @@
 
 (declare-function dirvish "dirvish")
 (declare-function dirvish-refresh "dirvish")
+(require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dired-x)
 
@@ -61,22 +62,11 @@ FRAME defaults to current frame."
 If WIN is nil, defaults to `\\(selected-window\\)'."
   (memq (or win (selected-window)) dirvish-parent-windows))
 
-(defun dirvish--update-filter ()
-  "Update file list in dirvish buffer.
-
-According to `dirvish-hidden-regexp'."
-  (save-excursion
-    (let* ((all-re '("^\\.?#\\|^\\.$\\|^\\.\\.$"))
-           (dot-re '("^\\."))
-           (method (cl-case dirvish-show-hidden ('dirvish dirvish-hidden-regexp)
-                            ('dot dot-re)))
-           (omit-re (mapconcat #'concat (append all-re method) "\\|"))
-           buffer-read-only)
-      (dired-mark-unmarked-files omit-re nil nil 'no-dir)
-      (goto-char (point-min))
-      (let ((regexp (dired-marker-regexp)))
-        (while (and (not (eobp)) (re-search-forward regexp nil t))
-          (delete-region (line-beginning-position) (progn (forward-line 1) (point))))))))
+(defun dirvish--update-sorter ()
+  "Sort current dirvish buffer according to
+`dirvish-sort-criteria'."
+  (let ((sort-flag (cdr (dirvish-sort-criteria (dirvish-meta)))))
+    (dired-sort-other (concat dired-listing-switches sort-flag))))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.
@@ -89,7 +79,8 @@ According to `dirvish-hidden-regexp'."
          (window-width (or (cdr (assq 'window-width alist)) 0.5))
          (size (ceiling (* (frame-width) window-width)))
          (split-width-threshold 0)
-         (new-window (split-window-no-error dirvish-window size side)))
+         (root-win (dirvish-root-window (dirvish-meta)))
+         (new-window (split-window-no-error root-win size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
 (defun dirvish--paste (fileset mode)
@@ -130,8 +121,8 @@ This function is a helper for `dirvish-paste'."
     (let ((size (dirvish--get-filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
       (add-to-list 'dirvish-IO-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
-    (dirvish-repeat dirvish-footer-update 0 0.1)
-    (dirvish-repeat dirvish--set-IO-status 0 0.1)
+    (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
+    (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf dirvish-parent-buffers)

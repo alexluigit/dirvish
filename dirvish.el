@@ -49,7 +49,7 @@
 (defun dirvish-other-buffer ()
   "Replacement for `mode-line-other-buffer' in `dirvish-mode'."
   (interactive)
-  (let ((one-window (frame-parameter nil 'dirvish-one-window)))
+  (let ((one-window (dirvish-one-window-p (dirvish-meta))))
     (if one-window
         (switch-to-buffer (other-buffer) nil t)
       (dirvish-find-file (ring-ref dirvish-history-ring 1)))))
@@ -91,18 +91,10 @@ lines."
   (dired-next-line arg)
   (cond
    ((eobp) (unless (region-active-p) (forward-line -1)))
-   ((bobp) (dired-next-line 1)))
-  (when (dired-move-to-filename nil)
-    (set-frame-parameter nil 'dirvish-index-path (dired-get-filename nil t))
-    (dirvish-header-update)
-    (dirvish-footer-update)
-    (dirvish-debounce dirvish-preview-update dirvish-preview-delay)))
+   ((bobp) (dired-next-line 1))))
 
 (defun dirvish-prev-file (arg)
-  "Same as `dirvish-next-file', only in opposite direction.
-
-With optional prefix ARG (\\[universal-argument]), backward ARG
-lines."
+  "Do `dirvish-next-file' in opposite direction with ARG."
   (interactive "^p")
   (dirvish-next-file (- 0 arg)))
 
@@ -153,14 +145,6 @@ With optional prefix ARG, delete source files/directories."
   (interactive "p")
   (setq dirvish-depth (or arg 1)) (dirvish-refresh t))
 
-(defun dirvish-toggle-dotfiles ()
-  "Show/hide dot-files."
-  (interactive)
-  (setq dirvish-show-hidden
-        (cl-case dirvish-show-hidden
-          ('all 'dot) ('dot 'dirvish) ('dirvish 'all)))
-  (dirvish-refresh nil t))
-
 (defun dirvish-toggle-preview ()
   "Show/hide preview window."
   (interactive)
@@ -174,22 +158,22 @@ With optional prefix ARG, delete source files/directories."
   (interactive
    (list
     (read-char-choice
-     "criteria: (n/N)ame (e/E)xt (s/S)ize (t/T)ime (c/C)time "
-     '(?q ?n ?N ?e ?E ?s ?S ?t ?T ?c ?C))))
+     "Sort by criteria [capital for reverse]: (d/D)efault (e/E)xt (s/S)ize (t/T)ime (c/C)time "
+     '(?q ?d ?D ?e ?E ?s ?S ?t ?T ?c ?C))))
   (unless (eq criteria ?q)
     (let* ((c (char-to-string criteria))
            (revp (string-equal c (upcase c)))
            (cc (downcase c))
            (sort-flag
             (cond
-             ((string-equal cc "n") '("name" . ""))
+             ((string-equal cc "d") '("default" . ""))
              ((string-equal cc "c") '("modified" . " -c"))
              ((string-equal cc "e") '("ext" . " -X"))
              ((string-equal cc "t") '("time" . " -t"))
              ((string-equal cc "s") '("size" . " -S"))))
+           (name (concat (car sort-flag) (when revp " [rev]")))
            (switch (concat dired-listing-switches (cdr sort-flag) (when revp " -r"))))
-      (setq dirvish-sort-criteria (car sort-flag))
-      (dired-sort-other switch)
+      (setf (dirvish-sort-criteria (dirvish-meta)) (cons name switch))
       (dirvish-refresh))))
 
 (defun dirvish-init (&optional one-window)
@@ -200,47 +184,43 @@ window, not the whole frame."
   (unless (or (posframe-workable-p) one-window)
     (user-error "Dirvish.el: posframe unable to initialize under current Emacs instance"))
   (when (eq major-mode 'dirvish-mode) (dirvish-quit))
-  (set-frame-parameter nil 'dirvish-one-window one-window)
   (set-frame-parameter nil 'dirvish-meta (make--dirvish))
+  (setf (dirvish-one-window-p (dirvish-meta)) one-window)
   (unless one-window
     (setf (dirvish-window-conf (dirvish-meta)) (current-window-configuration))
     (add-to-list 'dirvish-frame-list (window-frame)))
-  (when (window-parameter nil 'window-side) (delete-window))
+  (when (window-parameter nil 'window-side) (delete-window)) ;; side window can not be split
+  (setf (dirvish-root-window (dirvish-meta)) (frame-selected-window))
   (unless dirvish-initialized
     (dirvish--add-advices)
     (when dirvish-show-icons (setq dirvish-show-icons (require 'all-the-icons nil t)))
     (when (dirvish--get-IO-status)
-      (dirvish-repeat 'dirvish-footer-update 0 0.1)
-      (dirvish-repeat dirvish--set-IO-status 0 0.1))
-    (when (featurep 'recentf) (setq dirvish-orig-recentf-list recentf-list))
+      (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
+      (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat))
     (mailcap-parse-mimetypes)
     (setq dirvish-initialized t)))
 
 (defun dirvish-deinit ()
   "Revert previous window config and deinit dirvish."
   (setq dirvish-initialized nil)
-  (setq recentf-list dirvish-orig-recentf-list)
+  (setq recentf-list (dirvish-saved-recentf (dirvish-meta)))
   (mapc #'kill-buffer dirvish-preview-buffers)
-  (let ((one-window (frame-parameter nil 'dirvish-one-window))
+  (let ((one-window-p (dirvish-one-window-p (dirvish-meta)))
         (config (dirvish-window-conf (dirvish-meta))))
-    (if one-window
+    (if one-window-p
         (while (eq 'dirvish-mode (buffer-local-value 'major-mode (current-buffer)))
           (delq (selected-window) dirvish-parent-windows)
           (quit-window))
       (posframe-delete (dirvish-header-buffer (dirvish-meta)))
-      (set-frame-parameter nil 'dirvish--header-frame nil)
-      (set-frame-parameter nil 'dirvish-preview-window nil)
       (setq dirvish-frame-list (delq (window-frame) dirvish-frame-list))
       (when (window-configuration-p config)
         (set-window-configuration config)))
     (unless
-        (or (and one-window (> (length dirvish-parent-windows) 1))
+        (or (and one-window-p (> (length dirvish-parent-windows) 1))
             (> (length dirvish-frame-list) 1))
       (dirvish--clean-buffers)
       (dirvish--clean-advices)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
-    (unless one-window (set-frame-parameter nil 'dirvish-one-window t))
-    (setq dirvish-window nil)
     (setq dirvish-parent-windows ())
     (setq dirvish-preview-buffers ())
     (setq dirvish-parent-buffers ())))
@@ -256,18 +236,17 @@ is not-nil."
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))
 
-(defun dirvish-refresh (&optional rebuild filter no-revert)
+(defun dirvish-refresh (&optional rebuild no-revert)
   "Reset dirvish.
-If REBUILD is not-nil, rebuild dirvish layout;
-If FILTER is not-nil, update dirvish file filter;
-Unless NO-REVERT is not-nil, revert current buffer."
+If REBUILD is not-nil, rebuild dirvish layout.
+Unless NO-REVERT, revert current buffer."
   (interactive "P")
   (when rebuild
     (dirvish-parent-build)
     (dirvish-preview-build)
     (dirvish-header-build))
   (unless no-revert (revert-buffer))
-  (when filter (dirvish--update-filter))
+  (dirvish--update-sorter)
   (dirvish-body-update)
   (dirvish-preview-update)
   (dirvish-header-update)
@@ -294,8 +273,8 @@ update `dirvish-history-ring'."
             (switch-to-buffer (or (car (dired-buffers-for-dir entry))
                                   (dired-noselect entry)))
             (setq dirvish-child-entry (or bname curr-dir))
-            (set-frame-parameter nil 'dirvish-index-path
-                                 (or (dired-get-filename nil t) entry))
+            (setf (dirvish-index-path (dirvish-meta))
+                  (or (dired-get-filename nil t) entry))
             (dirvish-refresh t))
         (find-file entry)))))
 

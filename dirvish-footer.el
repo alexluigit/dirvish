@@ -18,7 +18,7 @@
 
 (cl-defun dirvish-footer-update ()
   "Show file details in echo area."
-  (when-let ((one-window (frame-parameter nil 'dirvish-one-window)))
+  (when-let ((one-window-p (dirvish-one-window-p (dirvish-meta))))
     (cl-return-from dirvish-footer-update))
   (when (and (dired-get-filename nil t)
              (dirvish-live-p))
@@ -45,9 +45,9 @@
          (cur-pos (- (line-number-at-pos (point)) 2))
          (final-pos (- (line-number-at-pos (point-max)) 3))
          (index (format "%3d/%-3d" cur-pos final-pos))
-         (sorting (if (string= "" dirvish-sort-criteria) "name" dirvish-sort-criteria))
+         (sorting (car (dirvish-sort-criteria (dirvish-meta))))
          (i/o-task (or (dirvish--get-IO-status) ""))
-         (filter (format "%s" dirvish-show-hidden))
+         (filter (if dired-omit-mode "ON" "OFF"))
          (space "&&&"))
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)
       (?s . ,file-size) (?S . ,sorting) (?w . ,space) (?t . ,i/o-task))))

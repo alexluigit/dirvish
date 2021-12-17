@@ -6,11 +6,12 @@
 
 ;;; Commentary:
 
-;;; This file contains data structures defined in dirvish.
+;;; This file contains data structures for dirvish.
 
 ;;; Code:
 
 (require 'dirvish-vars)
+(require 'recentf)
 
 (defun dirvish--header-buffer-default ()
   "Return a buffer for dirvish header with sensible settings."
@@ -37,18 +38,44 @@
 
 It has following fields:
 
-WINDOW-CONF is the window configuration given by
-`current-window-configuration'.
+ROOT-WINDOW is the main dirvish window who is adjacent to preview window.
+
+ONE-WINDOW-P indicate if current dirvish is a single window instance.
+
+HEADER-FRAME is the frame created by `posframe-show' for header display.
 
 HEADER-BUFFER is a buffer created by
 `dirvish--header-buffer-default'.
 
+HEADER-WIDTH is the calculated header frame width.
+
+PREVIEW-WINDOW is the window display file preview.
+
 PREVIEW-BUFFER is a buffer created by
 `dirvish--preview-buffer-default'.
-"
-  window-conf
+
+PREVIEW-PIXEL-WIDTH is the pixelwise width of preview window.
+
+WINDOW-CONF is the window configuration given by
+`current-window-configuration'.
+
+INDEX-PATH is the file path under cursor in ROOT-WINDOW.
+
+SORT-CRITERIA is the sorting flag passed to `ls'.
+
+SAVED-RECENTF is a backup of original `recentf-list'."
+  root-window
+  one-window-p
+  header-frame
   (header-buffer (dirvish--header-buffer-default))
-  (preview-buffer (dirvish--preview-buffer-default)))
+  header-width
+  preview-window
+  (preview-buffer (dirvish--preview-buffer-default))
+  preview-pixel-width
+  window-conf
+  index-path
+  (sort-criteria (cons "default" ""))
+  (saved-recentf recentf-list))
 
 (provide 'dirvish-structs)
 
