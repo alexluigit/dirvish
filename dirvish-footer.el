@@ -37,7 +37,7 @@
   "File specs for current file that will be sent to `format-spec'."
   (let* ((entry (dired-get-filename nil t))
          (fattr (file-attributes entry))
-         (file-size (format "%6s" (file-size-human-readable (nth 7 fattr))))
+         (file-size (format "%6s" (file-size-human-readable (or (nth 7 fattr) 0))))
          (user (nth 2 fattr))
          (file-date (propertize (format-time-string "%Y-%m-%d %H:%m" (nth 5 fattr))
                                 'face 'font-lock-warning-face))
