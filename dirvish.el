@@ -305,6 +305,12 @@ PATH defaults to variable `buffer-file-name'."
     (dirvish-init one-window)
     (dirvish-find-file dir)))
 
+;;;###autoload
+(defun dirvish-dired (&optional path)
+  "Open a single window dirvish."
+  (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: "))))
+  (dirvish path t))
+
 (put 'dired-subdir-alist 'permanent-local t)
 
 (provide 'dirvish)

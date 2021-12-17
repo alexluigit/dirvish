@@ -162,7 +162,7 @@ dirvish, you can either:
 - Enable it once ::
 
 #+begin_src emacs-lisp
-  (dirvish nil t)
+  (dirvish-dired)
 #+end_src
 
 - Enable it automatically everytime you invoke =dired-jump= ::

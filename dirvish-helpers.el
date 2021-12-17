@@ -181,10 +181,10 @@ This function is a helper for `dirvish-paste'."
           (cancel-timer (symbol-value 'dirvish--set-IO-status-timer))))
       (setcar (nth 3 (car-safe dirvish-IO-queue)) progress))))
 
-(defun dirvish-override-dired (&rest _)
+(defun dirvish-override-dired (_ &optional _ path)
   "Helper func for `dirvish-override-dired-mode'."
-  (dirvish nil (or (not window-system)
-                   (not (= (length (window-list)) 1)))))
+  (dirvish path (or (not window-system)
+                    (not (= (length (window-list)) 1)))))
 
 (provide 'dirvish-helpers)
 
