@@ -13,42 +13,46 @@
 
 (require 'posframe)
 (require 'dirvish-vars)
+(require 'dirvish-structs)
+(require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))
 
-(defun dirvish-header-width ()
+(defun dirvish--get-header-width ()
   "Calculate header frame width.  Default to frame width when disable preview."
   (* (frame-width) (if dirvish-enable-preview (- 1 dirvish-preview-width) 1)))
 
 (cl-defun dirvish-header-build ()
   "Create a posframe showing dirvish header."
-  (when-let ((one-window (frame-parameter nil 'dirvish-one-window)))
+  (when-let ((one-window-p (dirvish-one-window-p (dirvish-meta))))
     (cl-return-from dirvish-header-build))
   (let* ((buf (dirvish-header-buffer (dirvish-meta)))
-         (min-w (1+ (ceiling (dirvish-header-width))))
+         (min-w (1+ (ceiling (dirvish--get-header-width))))
          (f-props `(:background-color
                     ,(face-attribute 'region :background)
                     :poshandler ,dirvish-header-position
                     :min-width ,min-w
                     :min-height 2))
-         (h-frame (frame-parameter nil 'dirvish--header-frame))
+         (h-frame (dirvish-header-frame (dirvish-meta)))
          (size `(:posframe ,h-frame :height 2 :max-height 2 :min-height 2
                            :width: ,min-w :min-width ,min-w :max-width ,min-w)))
-    (setq dirvish-header-width min-w)
+    (setf (dirvish-header-width (dirvish-meta)) min-w)
+    ;; (setq dirvish-header-width min-w)
     (if h-frame
         (posframe--set-frame-size size)
       (let ((fr (apply #'posframe-show buf f-props)))
-        (set-frame-parameter nil 'dirvish--header-frame fr)))))
+        (setf (dirvish-header-frame (dirvish-meta)) fr)))))
 
 (defun dirvish-header-update ()
   "Update header string.
 
 Make header string shorter than variable `dirvish-header-width'."
-  (if-let ((one-window (frame-parameter nil 'dirvish-one-window)))
+  (if-let ((one-window (dirvish-one-window-p (dirvish-meta))))
       (dirvish--header-setup 'one-window)
     (with-current-buffer (dirvish-header-buffer (dirvish-meta))
       (erase-buffer)
       (let ((str (funcall dirvish-header-string-fn))
-            (max-width (1- (floor (/ dirvish-header-width dirvish-header-scale)))))
+            ;; (max-width (1- (floor (/ dirvish-header-width dirvish-header-scale)))))
+            (max-width (1- (floor (/ (dirvish-header-width (dirvish-meta)) dirvish-header-scale)))))
         (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
           (setq str (substring str 0 -1)))
         (insert str "\n"))
@@ -71,7 +75,7 @@ Where TYPE is either `posframe' or `one-window'."
 
 (defun dirvish--header-string ()
   "Compose header string."
-  (let* ((index (frame-parameter nil 'dirvish-index-path))
+  (let* ((index (dirvish-index-path (dirvish-meta)))
          (file-path (file-name-directory index))
          (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
          (path-regex (concat (getenv "HOME") "/\\|\\/$"))

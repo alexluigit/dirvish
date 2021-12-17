@@ -47,8 +47,10 @@ Used as `:poshandler' for `posframe-show'."
                             (let ((ov (make-overlay (point-min) (point-max))))
                               (overlay-put ov 'temp-inactive-ov t)
                               (overlay-put ov 'font-lock-face 'font-lock-doc-face))))))
-    (setq dirvish-minibuf-preview-window (frame-parameter nil 'dirvish-preview-window))
-    (unless dirvish-minibuf-preview-window
+    (or (frame-parameter nil 'dirvish-meta)
+        (set-frame-parameter nil 'dirvish-meta (make--dirvish)))
+    (setq dirvish-minibuf-preview-window (dirvish-preview-window (dirvish-meta)))
+    (unless (window-live-p dirvish-minibuf-preview-window)
       (let* ((min-w (ceiling (* (frame-width) dirvish-preview-width)))
              (min-h (ceiling (* (frame-height) dirvish-minibuf-preview--height)))
              (b-color (face-attribute 'font-lock-doc-face :foreground))
@@ -60,8 +62,6 @@ Used as `:poshandler' for `posframe-show'."
              (frame (apply #'posframe-show "*candidate preview*" f-props)))
         (setq dirvish-minibuf-preview-window (frame-root-window frame))
         (set-window-fringes dirvish-minibuf-preview-window 30 30 nil t)))
-    (or (frame-parameter nil 'dirvish-meta)
-        (set-frame-parameter nil 'dirvish-meta (make--dirvish)))
     (setq dirvish-minibuf-preview--width (window-width dirvish-minibuf-preview-window t))
     (set-window-dedicated-p dirvish-minibuf-preview-window nil)))
 
@@ -92,7 +92,7 @@ invoked when file name under cursor in minibuffer changed."
         (setq cand (expand-file-name cand (or (cdr-safe (project-current))
                                               (car (minibuffer-history-value)))))
       (setq cand (expand-file-name cand)))
-    (set-frame-parameter nil 'dirvish-index-path cand)
+    (setf (dirvish-index-path (dirvish-meta)) cand)
     (dirvish-debounce dirvish-preview-update
                       dirvish-preview-delay
                       dirvish-minibuf-preview-window)))

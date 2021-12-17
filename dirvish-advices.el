@@ -15,8 +15,11 @@
 (declare-function dirvish-new-frame "dirvish")
 (declare-function dirvish-next-file "dirvish")
 (require 'cl-lib)
+(require 'dirvish-structs)
 (require 'dirvish-helpers)
 (require 'dirvish-header)
+(require 'dirvish-preview)
+(require 'dirvish-footer)
 (require 'dirvish-body)
 (require 'dirvish-vars)
 
@@ -29,29 +32,29 @@
         (dirvish-header-build)
         (dirvish-header-update)))))
 
-(defun dirvish-setup-dired-buffer--advice (fn &rest args)
+(defun dirvish-setup-dired-buffer-ad (fn &rest args)
   "Apply FN with ARGS, remove the header line in Dired buffer."
   (apply fn args)
   (save-excursion
     (let ((o (make-overlay (point-min) (progn (forward-line 1) (point)))))
       (overlay-put o 'invisible t))))
 
-(defun dirvish--refresh-advice (fn &rest args)
+(defun dirvish-refresh-ad (fn &rest args)
   "Apply FN with ARGS, rebuild dirvish frame when necessary."
   (apply fn args)
   (let ((rebuild (not (eq major-mode 'dirvish-mode))))
-    (dirvish-refresh rebuild nil 'no-revert)))
+    (dirvish-refresh rebuild 'no-revert)))
 
-(defun dirvish--revert-advice (fn &rest args)
+(defun dirvish-revert-ad (fn &rest args)
   "Apply FN with ARGS then revert buffer."
   (apply fn args) (dirvish-refresh))
 
-(defun dirvish-refresh-cursor--advice (fn &rest args)
+(defun dirvish-refresh-cursor-ad (fn &rest args)
   "Only apply FN with ARGS when editing."
   (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
     (apply fn args)))
 
-(defun dirvish-update-line--advice (fn &rest args)
+(defun dirvish-update-line-ad (fn &rest args)
   "Apply FN with ARGS then update current line in dirvish."
   (remove-overlays (point-min) (point-max) 'dirvish-body t)
   (when-let ((pos (dired-move-to-filename nil))
@@ -59,21 +62,28 @@
     (remove-overlays (1- pos) pos 'dirvish-icons t)
     (dirvish--body-render-icon pos))
   (apply fn args)
-  (dirvish-body-update t t))
+  (dirvish-body-update t t)
+  (when (dired-move-to-filename nil)
+    (setf (dirvish-index-path (dirvish-meta)) (dired-get-filename nil t))
+    (when (or (dirvish-header-width (dirvish-meta))
+              (dirvish-one-window-p (dirvish-meta)))
+      (dirvish-header-update))
+    (dirvish-footer-update)
+    (dirvish-debounce dirvish-preview-update dirvish-preview-delay)))
 
-(defun dirvish--deletion-advice (fn &rest args)
+(defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN with ARGS."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
   (unless (dired-get-filename nil t) (dirvish-next-file 1))
   (dirvish-refresh))
 
-(defun dirvish-file-open--advice (fn &rest args)
+(defun dirvish-file-open-ad (fn &rest args)
   "Apply FN with ARGS with empty `default-directory'."
   (when (dirvish-live-p) (dirvish-quit :keep-alive))
   (let ((default-directory "")) (apply fn args)))
 
 ;; FIXME: it should support window when current instance is launched by `(dirvish nil t)'
-(defun dirvish-other-window--advice (fn &rest args)
+(defun dirvish-other-window-ad (fn &rest args)
   "Apply FN with ARGS in new dirvish frame."
   (let ((file (dired-get-file-for-visit)))
     (if (file-directory-p file)
@@ -82,16 +92,16 @@
 
 (defun dirvish--update-viewports (win _)
   "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
-  (when (and (eq win dirvish-window)
-             (eq (selected-frame) (window-frame dirvish-window)))
-    (with-selected-window win
-      (dirvish-body-update nil t))))
+  (let ((root-win (dirvish-root-window (dirvish-meta))))
+    (when (and (eq win root-win)
+               (eq (selected-frame) (window-frame root-win)))
+      (with-selected-window win
+        (dirvish-body-update nil t)))))
 
 (cl-dolist (fn '(dirvish-next-file
                  dirvish-go-top
-                 dirvish-go-bottom
-                 dirvish-flag-file-yank))
-  (advice-add fn :around 'dirvish-update-line--advice))
+                 dirvish-go-bottom))
+  (advice-add fn :around 'dirvish-update-line-ad))
 
 (defun dirvish--add-advices ()
   "Add all advice listed in `dirvish-advice-alist'."

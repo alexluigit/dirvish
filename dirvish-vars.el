@@ -11,26 +11,13 @@
 ;;;; User facing options
 
 (require 'ring)
+(require 'dired-x)
 
 (defvar dirvish-preview-update-timer nil)
 
 (defgroup dirvish nil
   "A better Dired."
   :group 'dired)
-
-(defcustom dirvish-show-hidden 'all
-  "Determine hidden method in dirvish."
-  :group 'dirvish
-  :type '(radio (const :tag "Show All Files" :value 'all)
-                (const :tag "Hide Common Files" :value 'dirvish)
-                (const :tag "Hide All Dotfiles" :value 'dot)))
-
-(defcustom dirvish-hidden-regexp
-  '("^\\.\\(git\\|hg\\|svn\\)$"
-    "\\.\\(pyc\\|o\\|elc\\|lock\\|css.map\\)$"
-    "~$" "^#.*#$")
-  "Regexp of custom filetypes to omit in dirvish."
-  :group 'dirvish :type 'list)
 
 (defcustom dirvish-preview-cmd-alist
   `(("text/"                   (find-file-noselect . (t nil)))
@@ -76,7 +63,7 @@
   "Line spacing for dirvish body."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-footer-format "Sort: %S  Filter: %f  %d  %p%w%t %i"
+(defcustom dirvish-footer-format "Sort: %S  Omit: %f  %d  %p%w%t %i"
   "Format for footer display."
   :group 'dirvish :type 'string)
 
@@ -97,10 +84,6 @@ directory."
 
 (defcustom dirvish-icons-v-offset 0.01
   "Icon vertical offset."
-  :group 'dirvish :type 'float)
-
-(defcustom dirvish-preview-delay 0.02
-  "Time in seconds to delay running preview file functions."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-header-string-fn 'dirvish--header-string
@@ -139,11 +122,11 @@ Used as `:poshandler' for `posframe-show'."
 
 ;;;; Internal variables
 
-(defvar dirvish-header-width nil
-  "Calculated header frame width.")
+(defconst dirvish-preview-delay 0.02
+  "Time in seconds to delay running preview file functions.")
 
-(defvar dirvish--header-frame nil
-  "Frame for showing header line.")
+(defconst dirvish-footer-repeat 0.1
+  "Time in seconds to repeat footer update.")
 
 (defvar dirvish-preview-buffers ()
   "List with buffers of previewed files.")
@@ -151,28 +134,11 @@ Used as `:poshandler' for `posframe-show'."
 (defvar dirvish-preview-setup-hook nil
   "Hooks for setting dirvish preview windows.")
 
-(defvar dirvish-width-img 0
-  "Calculated preview window width.  Used for image preview.")
-
-(defvar dirvish-preview-window nil
-  "Window contains file / directory preview.")
-
 (defvar dirvish-history-ring (make-ring dirvish-history-length)
   "History for `dirvish-find-file'.")
 
 (defvar dirvish-initialized nil
   "Indicate if previous window config saved.")
-
-(defvar dirvish-orig-recentf-list nil)
-
-(defvar dirvish-footer-repeat 0.02
-  "Time in seconds to repeat footer update.")
-
-(defvar dirvish-sort-criteria ""
-  "Default `ls' sorting switches.")
-
-(defvar dirvish-window nil
-  "Main dirvish window.  Adjacent to preview window.")
 
 (defvar dirvish-parent-windows ()
   "List of parent windows.")
@@ -193,15 +159,11 @@ Used as `:poshandler' for `posframe-show'."
 
 (defvar-local dirvish-child-entry nil)
 
-(defvar dirvish-index-path nil
-  "Latest path in `dirvish-window'.")
-
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map [remap dired-do-copy]                'dirvish-yank)
     (define-key map [remap dired-jump]                   'dirvish-jump)
     (define-key map [remap dired-do-redisplay]           'dirvish-change-level)
-    (define-key map [remap dired-omit-mode]              'dirvish-toggle-dotfiles)
     (define-key map [remap dired-hide-details-mode]      'dirvish-toggle-preview)
     (define-key map [remap dired-find-file]              'dirvish-find-file)
     (define-key map [remap dired-find-alternate-file]    'dirvish-find-file)
@@ -213,38 +175,38 @@ Used as `:poshandler' for `posframe-show'."
     (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
     (define-key map [remap revert-buffer]                'dirvish-refresh)
     (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
-    (define-key map [remap mode-line-other-buffer]       'dirvish-other-buffer)
     (define-key map [remap quit-window]                  'dirvish-quit)
     map)
   "Dirvish mode map.")
 
 (defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-file-open--advice)
-    (files         find-file-other-window       dirvish-file-open--advice)
-    (dired         dired-find-file-other-window dirvish-other-window--advice)
-    (dired         dired-readin                 dirvish-setup-dired-buffer--advice)
-    (dired         dired-mark                   dirvish-update-line--advice)
-    (dired         dired-flag-file-deletion     dirvish-update-line--advice)
-    (dired         dired-goto-file              dirvish-update-line--advice)
-    (dired         dired-internal-do-deletions  dirvish--deletion-advice)
-    (dired         wdired-exit                  dirvish--refresh-advice)
-    (dired         wdired-finish-edit           dirvish--refresh-advice)
-    (dired         wdired-abort-changes         dirvish--refresh-advice)
-    (dired-aux     dired-kill-line              dirvish--refresh-advice)
-    (dired-aux     dired-do-kill-lines          dirvish--refresh-advice)
-    (dired-aux     dired-create-directory       dirvish--refresh-advice)
-    (dired-aux     dired-create-empty-file      dirvish--refresh-advice)
-    (dired-aux     dired-do-create-files        dirvish--refresh-advice)
-    (dired-aux     dired-insert-subdir          dirvish--refresh-advice)
-    (dired-aux     dired-kill-subdir            dirvish--refresh-advice)
-    (dired-aux     dired-rename-file            dirvish--revert-advice)
-    (dired-narrow  dired--narrow-internal       dirvish--refresh-advice)
-    (isearch       isearch-repeat-backward      dirvish--refresh-advice)
-    (isearch       isearch-repeat-forward       dirvish--refresh-advice)
-    (isearch       isearch-exit                 dirvish--refresh-advice)
-    (find-dired    find-dired-sentinel          dirvish--refresh-advice)
-    (evil          evil-refresh-cursor          dirvish-refresh-cursor--advice)
-    (meow          meow--update-cursor          dirvish-refresh-cursor--advice)
+  '((files         find-file                    dirvish-file-open-ad)
+    (files         find-file-other-window       dirvish-file-open-ad)
+    (dired         dired-find-file-other-window dirvish-other-window-ad)
+    (dired         dired-readin                 dirvish-setup-dired-buffer-ad)
+    (dired         dired-mark                   dirvish-update-line-ad)
+    (dired         dired-flag-file-deletion     dirvish-update-line-ad)
+    (dired         dired-goto-file              dirvish-update-line-ad)
+    (dired         dired-internal-do-deletions  dirvish-deletion-ad)
+    (dired         wdired-exit                  dirvish-refresh-ad)
+    (dired         wdired-finish-edit           dirvish-refresh-ad)
+    (dired         wdired-abort-changes         dirvish-refresh-ad)
+    (dired-x       dired-omit-mode              dirvish-refresh-ad)
+    (dired-aux     dired-kill-line              dirvish-refresh-ad)
+    (dired-aux     dired-create-directory       dirvish-refresh-ad)
+    (dired-aux     dired-create-empty-file      dirvish-refresh-ad)
+    (dired-aux     dired-do-create-files        dirvish-refresh-ad)
+    (dired-aux     dired-insert-subdir          dirvish-refresh-ad)
+    (dired-aux     dired-kill-subdir            dirvish-refresh-ad)
+    (dired-aux     dired-rename-file            dirvish-revert-ad)
+    (dired-aux     dired-do-kill-lines          dirvish-update-line-ad)
+    (dired-narrow  dired--narrow-internal       dirvish-refresh-ad)
+    (isearch       isearch-repeat-backward      dirvish-refresh-ad)
+    (isearch       isearch-repeat-forward       dirvish-refresh-ad)
+    (isearch       isearch-exit                 dirvish-refresh-ad)
+    (find-dired    find-dired-sentinel          dirvish-refresh-ad)
+    (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
+    (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
     (lsp-mode      lsp-deferred                 ignore))
   "A list of file, adviced function, and advice function.

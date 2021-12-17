@@ -11,6 +11,7 @@
 (declare-function image-get-display-property "image-mode")
 (require 'ansi-color)
 (require 'mailcap)
+(require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))
@@ -60,7 +61,7 @@ Optionally, a shell command CMD and its ARGS can be passed."
         (process-connection-type nil)
         (size (number-to-string (or (and (boundp 'dirvish-minibuf-preview--width)
                                          dirvish-minibuf-preview--width)
-                                    dirvish-width-img)))
+                                    (dirvish-preview-pixel-width (dirvish-meta)))))
         cache)
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
@@ -98,7 +99,7 @@ Optionally, a shell command CMD and its ARGS can be passed."
                                 (< (nth 7 (file-attributes entry)) (* 1024 1024 0.5)))
                            entry target-ext)))
           (if (file-exists-p target)
-              (let ((img (create-image target nil nil :max-width dirvish-width-img)))
+              (let ((img (create-image target nil nil :max-width (dirvish-preview-pixel-width (dirvish-meta)))))
                 (put-image img 0) (cl-return-from dirvish--preview-get-create buf))
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
@@ -110,7 +111,7 @@ Optionally, a shell command CMD and its ARGS can be passed."
 
 (cl-defun dirvish-preview-build ()
   "Build dirvish preview window."
-  (when-let ((one-window (frame-parameter nil 'dirvish-one-window)))
+  (when-let ((one-window-p (dirvish-one-window-p (dirvish-meta))))
     (cl-return-from dirvish-preview-build))
   (when dirvish-enable-preview
     (let* ((inhibit-modification-hooks t)
@@ -119,8 +120,8 @@ Optionally, a shell command CMD and its ARGS can be passed."
            (fringe 30)
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
       (set-window-fringes new-window fringe fringe nil t)
-      (setq dirvish-width-img (window-width new-window t))
-      (set-frame-parameter nil 'dirvish-preview-window new-window))))
+      (setf (dirvish-preview-pixel-width (dirvish-meta)) (window-width new-window t))
+      (setf (dirvish-preview-window (dirvish-meta)) new-window))))
 
 (defun dirvish--preview-process-sentinel (proc _)
   "Dirvish preview process sentinel.
@@ -140,11 +141,13 @@ result string."
   "Update dirvish preview window.
 
 Only take effect when `dirvish-enable-preview' or PREVIEW-WINDOW is not nil."
-  (when (or dirvish-enable-preview preview-window)
+  (when (or (and (not (dirvish-one-window-p (dirvish-meta)))
+             dirvish-enable-preview)
+             preview-window)
     (let* ((orig-buffer-list (buffer-list))
-           (index (or (frame-parameter nil 'dirvish-index-path) ""))
+           (index (or (dirvish-index-path (dirvish-meta)) ""))
            (preview-buffer (dirvish--preview-entry index))
-           (preview-window (or preview-window (frame-parameter nil 'dirvish-preview-window))))
+           (preview-window (or preview-window (dirvish-preview-window (dirvish-meta)))))
       (when (window-live-p preview-window)
         (set-window-buffer preview-window preview-buffer))
       (unless (memq preview-buffer orig-buffer-list)
