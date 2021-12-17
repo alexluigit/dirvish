@@ -176,6 +176,7 @@ Used as `:poshandler' for `posframe-show'."
     (define-key map [remap revert-buffer]                'dirvish-refresh)
     (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
     (define-key map [remap quit-window]                  'dirvish-quit)
+    (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
     map)
   "Dirvish mode map.")
 
