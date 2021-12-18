@@ -146,12 +146,26 @@ You don't need [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-di
 support. This native icon solution has several advantages over
 *dired + all-the-icons-dired*, those are:
 
-- it handles line highlighting nicely (*all-the-icons-dired* doesn't play well
-  with =hl-line-mode=).
-- it doesn't render icon for all the files in a directory eagerly, instead it
-  only render icons that are displayed within the viewport. (Try visiting
-  =/usr/bin= or any directory with over 1000 files using both *dirvish* or
-  *dired + all-the-icons-dired* to see the difference.)
+**** Better integration with line highlighting
+
+  If you want to highlight current (cursor) line in dired, normally you enable
+  =hl-line-mode= or add it to =dired-mode-hook=, but it doesn't play very well with
+  =all-the-icons-dired-mode= due to conflict overlays. Dirvish handles line
+  highlighting and icon rendering on its own.
+
+  + hl-line-mode + all-the-icons-dired-mode ::
+
+  [[./assets/ranger-line.png]]
+
+  + dirvish ::
+
+  [[./assets/dirvish-line.png]]
+
+**** Lazy rendering
+
+Dirvish doesn't render icons for all the files in a directory eagerly, instead
+it only render icons that are displayed within the viewport. Visiting =/usr/bin=
+(or any directory with over 1000 files) will no longer freeze your Emacs.
 
 *** "Dirvish-ish" dired
 
@@ -222,19 +236,6 @@ ranger. Instead, it only tries to:
 - improve some dired commands, make them more intuitive and accesible.
 
 And here are some specific differences between *dirvish* and *ranger.el*:
-
-- Highlight current line / Icons
-
-  Ranger uses =hl-line-mode= to highlight current line, but this minor-mode
-  doesn't play very well with =all-the-icons-dired-mode=.
-
-  + Ranger + hl-line-mode + all-the-icons-dired-mode ::
-
-  [[./assets/ranger-line.png]]
-
-  + Dirvish ::
-
-  [[./assets/dirvish-line.png]]
 
 - Header display
 
