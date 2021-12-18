@@ -11,7 +11,7 @@
 ;;; Code:
 
 (declare-function dirvish "dirvish")
-(declare-function dirvish-refresh "dirvish")
+(declare-function dirvish-reset "dirvish")
 (require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dired-x)
@@ -49,7 +49,8 @@ FRAME defaults to current frame."
   (cl-dolist (buf (buffer-list))
     (let ((name (buffer-name buf))
           (mode (buffer-local-value 'major-mode buf)))
-      (when (or (eq 'dired-mode mode) (eq 'dirvish-mode mode)
+      (when (or (eq 'dired-mode mode)
+                (eq 'dirvish-mode mode)
                 (and (not (string-equal name ""))
                      (string-match " \\*Dirvish I/O.*" name)
                      (not (get-buffer-process buf))))
@@ -175,7 +176,7 @@ This function is a helper for `dirvish-paste'."
                            (how-many proc-exit (point-min) (point-max))))
         (setq progress length))
       (when (eq progress length)
-        (when (dirvish-live-p) (dirvish-refresh))
+        (when (dirvish-live-p) (dirvish-reset))
         (setf (nth 0 (car-safe dirvish-IO-queue)) t)
         (when (eq (length dirvish-IO-queue) 1)
           (cancel-timer (symbol-value 'dirvish--set-IO-status-timer))))
