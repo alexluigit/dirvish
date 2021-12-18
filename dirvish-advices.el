@@ -11,7 +11,7 @@
 ;;; Code:
 
 (declare-function dirvish-quit "dirvish")
-(declare-function dirvish-refresh "dirvish")
+(declare-function dirvish-reset "dirvish")
 (declare-function dirvish-new-frame "dirvish")
 (declare-function dirvish-next-file "dirvish")
 (require 'cl-lib)
@@ -39,11 +39,11 @@
     (let ((o (make-overlay (point-min) (progn (forward-line 1) (point)))))
       (overlay-put o 'invisible t))))
 
-(defun dirvish-refresh-ad (fn &rest args)
+(defun dirvish-reset-ad (fn &rest args)
   "Apply FN with ARGS, rebuild dirvish frame when necessary."
   (apply fn args)
   (let ((rebuild (not (eq major-mode 'dirvish-mode))))
-    (dirvish-refresh rebuild 'no-revert)))
+    (dirvish-reset rebuild 'no-revert)))
 
 (defun dirvish-refresh-cursor-ad (fn &rest args)
   "Only apply FN with ARGS when editing."
@@ -86,7 +86,7 @@
   "Advice function for FN with ARGS."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
   (unless (dired-get-filename nil t) (dirvish-next-file 1))
-  (dirvish-refresh))
+  (dirvish-reset))
 
 (defun dirvish-file-open-ad (fn &rest args)
   "Apply FN with ARGS with empty `default-directory'."
@@ -113,6 +113,8 @@
                  dirvish-go-top
                  dirvish-go-bottom))
   (advice-add fn :around 'dirvish-lazy-update-frame-ad))
+
+(advice-add #'dirvish-reset :around #'dirvish-full-update-frame-ad)
 
 (defun dirvish--add-advices ()
   "Add all advice listed in `dirvish-advice-alist'."

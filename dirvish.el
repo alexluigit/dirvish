@@ -143,13 +143,13 @@ With optional prefix ARG, delete source files/directories."
 (defun dirvish-change-level (&optional arg)
   "Change `dirvish-depth' to ARG."
   (interactive "p")
-  (setq dirvish-depth (or arg 1)) (dirvish-refresh t))
+  (setq dirvish-depth (or arg 1)) (dirvish-reset t))
 
 (defun dirvish-toggle-preview ()
   "Show/hide preview window."
   (interactive)
   (setq dirvish-enable-preview (not dirvish-enable-preview))
-  (dirvish-refresh t)
+  (dirvish-reset t)
   (when dirvish-enable-preview
     (dired-hide-details-mode t)))
 
@@ -174,7 +174,7 @@ With optional prefix ARG, delete source files/directories."
            (name (concat (car sort-flag) (when revp " [rev]")))
            (switch (concat dired-listing-switches (cdr sort-flag) (when revp " -r"))))
       (setf (dirvish-sort-criteria (dirvish-meta)) (cons name switch))
-      (dirvish-refresh))))
+      (dirvish-reset))))
 
 (defun dirvish-init (&optional one-window)
   "Save previous window config and initialize dirvish.
@@ -236,7 +236,7 @@ is not-nil."
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))
 
-(defun dirvish-refresh (&optional rebuild no-revert)
+(defun dirvish-reset (&optional rebuild no-revert)
   "Reset dirvish.
 If REBUILD is not-nil, rebuild dirvish layout.
 Unless NO-REVERT, revert current buffer."
@@ -246,11 +246,7 @@ Unless NO-REVERT, revert current buffer."
     (dirvish-preview-build)
     (dirvish-header-build))
   (unless no-revert (revert-buffer))
-  (dirvish--update-sorter)
-  (dirvish-body-update)
-  (dirvish-preview-update)
-  (dirvish-header-update)
-  (dirvish-footer-update))
+  (dirvish--update-sorter))
 
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
@@ -275,7 +271,7 @@ update `dirvish-history-ring'."
             (setq dirvish-child-entry (or bname curr-dir))
             (setf (dirvish-index-path (dirvish-meta))
                   (or (dired-get-filename nil t) entry))
-            (dirvish-refresh t))
+            (dirvish-reset t))
         (find-file entry)))))
 
 ;;;###autoload
