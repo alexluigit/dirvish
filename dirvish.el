@@ -109,11 +109,12 @@ lines."
 (defun dirvish-new-frame (&optional path)
   "Make a new frame and launch dirvish with optional PATH."
   (interactive (list (read-file-name "Open in new frame: ")))
-  (when (with-selected-window (selected-window) (eq major-mode 'dirvish-mode))
-    (dirvish-quit))
-  (let* ((after-make-frame-functions (lambda (f) (select-frame f)))
-         (frame (make-frame '((name . "dirvish-emacs") (alpha . (100 50))))))
-    (with-selected-frame frame (dirvish path))))
+  (let ((after-make-frame-functions
+          (lambda (f)
+            (select-frame f)
+            (switch-to-buffer (get-buffer-create "*scratch*")))))
+    (make-frame '((name . "dirvish-emacs")))
+    (dirvish path)))
 
 (defun dirvish-paste (&optional mode)
   "Paste marked files/directory to current directory according to MODE.
