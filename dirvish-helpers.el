@@ -63,10 +63,10 @@ If WIN is nil, defaults to `\\(selected-window\\)'."
   (memq (or win (selected-window)) dirvish-parent-windows))
 
 (defun dirvish--update-sorter ()
-  "Sort current dirvish buffer according to
-`dirvish-sort-criteria'."
+  "Sort files under the dirvish window.
+The sort flag is accessed from `dirvish-sort-criteria'."
   (let ((sort-flag (cdr (dirvish-sort-criteria (dirvish-meta)))))
-    (dired-sort-other (concat dired-listing-switches sort-flag))))
+    (dired-sort-other (string-join (list dired-listing-switches sort-flag) " "))))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.
@@ -181,8 +181,10 @@ This function is a helper for `dirvish-paste'."
           (cancel-timer (symbol-value 'dirvish--set-IO-status-timer))))
       (setcar (nth 3 (car-safe dirvish-IO-queue)) progress))))
 
-(defun dirvish-override-dired (_ &optional _ path)
-  "Helper func for `dirvish-override-dired-mode'."
+(defun dirvish-override-dired (_fn &optional _other-win path)
+  "Helper func for `dirvish-override-dired-mode'.
+
+PATH is passed from `dired-jump' if called with `prefix-arg'."
   (dirvish path (or (not window-system)
                     (not (= (length (window-list)) 1)))))
 
