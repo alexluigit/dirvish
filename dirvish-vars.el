@@ -180,40 +180,6 @@ Used as `:poshandler' for `posframe-show'."
     map)
   "Dirvish mode map.")
 
-(defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-file-open-ad)
-    (files         find-file-other-window       dirvish-file-open-ad)
-    (dired         dired-find-file-other-window dirvish-other-window-ad)
-    (dired         dired-readin                 dirvish-setup-dired-buffer-ad)
-    (dired         dired-mark                   dirvish-lazy-update-frame-ad)
-    (dired         dired-flag-file-deletion     dirvish-lazy-update-frame-ad)
-    (dired         dired-goto-file              dirvish-lazy-update-frame-ad)
-    (dired         dired-internal-do-deletions  dirvish-deletion-ad)
-    (dired         wdired-exit                  dirvish-reset-ad)
-    (dired         wdired-finish-edit           dirvish-reset-ad)
-    (dired         wdired-abort-changes         dirvish-reset-ad)
-    (dired         dired-next-dirline           dirvish-reset-ad)
-    (dired-aux     dired-kill-line              dirvish-reset-ad)
-    (dired-aux     dired-create-directory       dirvish-reset-ad)
-    (dired-aux     dired-create-empty-file      dirvish-reset-ad)
-    (dired-aux     dired-do-create-files        dirvish-reset-ad)
-    (dired-aux     dired-insert-subdir          dirvish-reset-ad)
-    (dired-aux     dired-kill-subdir            dirvish-reset-ad)
-    (dired-aux     dired-do-kill-lines          dirvish-lazy-update-frame-ad)
-    (dired-x       dired-omit-mode              dirvish-full-update-frame-ad)
-    (dired-narrow  dired--narrow-internal       dirvish-reset-ad)
-    (isearch       isearch-repeat-backward      dirvish-reset-ad)
-    (isearch       isearch-repeat-forward       dirvish-reset-ad)
-    (isearch       isearch-exit                 dirvish-reset-ad)
-    (find-dired    find-dired-sentinel          dirvish-reset-ad)
-    (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
-    (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
-    (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
-    (lsp-mode      lsp-deferred                 ignore))
-  "A list of file, adviced function, and advice function.
-
-This variable is consumed by `dirvish--add-advices'.")
-
 (provide 'dirvish-vars)
 
 ;;; dirvish-vars.el ends here
