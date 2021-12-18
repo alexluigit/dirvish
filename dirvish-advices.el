@@ -23,14 +23,14 @@
 (require 'dirvish-body)
 (require 'dirvish-vars)
 
-(defun dirvish--redisplay-frame ()
-  "Refresh dirvish frame, added to `after-focus-change-function'."
-  (if (eq major-mode 'dirvish-mode)
-      (dirvish-refresh t)
-    (when (memq (previous-frame) dirvish-frame-list)
-      (with-selected-frame (previous-frame)
-        (dirvish-header-build)
-        (dirvish-header-update)))))
+(defun dirvish-redisplay-frames-fn ()
+  "Refresh dirvish frames, added to `after-focus-change-function'."
+  (when (eq major-mode 'dirvish-mode)
+    (dirvish-reset t))
+  (when (memq (previous-frame) dirvish-frame-list)
+    (with-selected-frame (previous-frame)
+      (when (dirvish-live-p)
+        (dirvish-reset t)))))
 
 (defun dirvish-setup-dired-buffer-ad (fn &rest args)
   "Apply FN with ARGS, remove the header line in Dired buffer."
@@ -124,7 +124,7 @@
                  (display-buffer-in-side-window)
                  (window-height . 0.4)
                  (side . bottom)))
-  (add-function :after after-focus-change-function #'dirvish--redisplay-frame)
+  (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
     (when (require file nil t) (advice-add sym :around fn))))
 
@@ -132,7 +132,7 @@
   "Remove all advice listed in `dirvish-advice-alist'."
   (remove-hook 'window-scroll-functions #'dirvish--update-viewports)
   (setq display-buffer-alist (cdr display-buffer-alist))
-  (remove-function after-focus-change-function #'dirvish--redisplay-frame)
+  (remove-function after-focus-change-function #'dirvish-redisplay-frames-fn)
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
     (when (require file nil t) (advice-remove sym fn))))
 
