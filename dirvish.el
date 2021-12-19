@@ -116,30 +116,12 @@ lines."
     (make-frame '((name . "dirvish-emacs")))
     (dirvish path)))
 
-(defun dirvish-paste (&optional mode)
-  "Paste marked files/directory to current directory according to MODE.
-
-MODE can be `'copy', `'move', `symlink', or `relalink'."
-  (interactive)
-  (let* ((regexp (dired-marker-regexp))
-         (yanked-files ())
-         (mode (or mode 'copy))
-         case-fold-search)
-    (cl-dolist (buf (seq-filter #'buffer-live-p dirvish-parent-buffers))
-      (with-current-buffer buf
-        (when (save-excursion (goto-char (point-min))
-                              (re-search-forward regexp nil t))
-          (setq yanked-files
-                (append yanked-files (dired-map-over-marks (dired-get-filename) nil))))))
-    (unless yanked-files (user-error "No files marked for pasting"))
-    (dirvish--paste yanked-files mode)))
-
 (defun dirvish-yank (&optional arg)
   "Paste marked files/directory to current directory.
 
 With optional prefix ARG, delete source files/directories."
   (interactive "P")
-  (if arg (dirvish-paste 'move) (dirvish-paste)))
+  (if arg (dirvish--yank 'move) (dirvish--yank)))
 
 (defun dirvish-change-level (&optional arg)
   "Change `dirvish-depth' to ARG."

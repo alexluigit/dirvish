@@ -84,9 +84,27 @@ The sort flag is accessed from `dirvish-sort-criteria'."
          (new-window (split-window-no-error root-win size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--paste (fileset mode)
+(defun dirvish--yank (&optional mode)
+  "Paste marked files/directory to current directory according to MODE.
+
+MODE can be `'copy', `'move', `symlink', or `relalink'."
+  (interactive)
+  (let* ((regexp (dired-marker-regexp))
+         (yanked-files ())
+         (mode (or mode 'copy))
+         case-fold-search)
+    (cl-dolist (buf (seq-filter #'buffer-live-p dirvish-parent-buffers))
+      (with-current-buffer buf
+        (when (save-excursion (goto-char (point-min))
+                              (re-search-forward regexp nil t))
+          (setq yanked-files
+                (append yanked-files (dired-map-over-marks (dired-get-filename) nil))))))
+    (unless yanked-files (user-error "No files marked for pasting"))
+    (dirvish--do-yank yanked-files mode)))
+
+(defun dirvish--do-yank (fileset mode)
   "Run paste-mode MODE on FILESET.
-This function is a helper for `dirvish-paste'."
+This function is a helper for `dirvish--yank'."
   (let* ((target (dired-current-directory))
          (process-connection-type nil)
          (io-buffer (generate-new-buffer " *Dirvish I/O*"))
