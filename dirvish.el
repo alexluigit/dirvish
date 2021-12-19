@@ -44,6 +44,13 @@
 (require 'dirvish-preview)
 (require 'dirvish-advices)
 
+;;;; Setup
+
+(when dirvish-show-icons
+  (setq dirvish-show-icons (require 'all-the-icons nil t)))
+(mailcap-parse-mimetypes)
+(put 'dired-subdir-alist 'permanent-local t)
+
 ;;;; Commands
 
 (defun dirvish-other-buffer ()
@@ -176,11 +183,9 @@ window, not the whole frame."
   (setf (dirvish-root-window (dirvish-meta)) (frame-selected-window))
   (unless dirvish-initialized
     (dirvish--add-advices)
-    (when dirvish-show-icons (setq dirvish-show-icons (require 'all-the-icons nil t)))
     (when (dirvish--get-IO-status)
       (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
       (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat))
-    (mailcap-parse-mimetypes)
     (setq dirvish-initialized t)))
 
 (defun dirvish-deinit ()
@@ -289,8 +294,6 @@ PATH defaults to variable `buffer-file-name'."
   "Open a single window dirvish for PATH."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: "))))
   (dirvish path t))
-
-(put 'dired-subdir-alist 'permanent-local t)
 
 (provide 'dirvish)
 
