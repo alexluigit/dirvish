@@ -171,8 +171,7 @@ With optional prefix ARG, delete source files/directories."
 
 If ONE-WINDOW is not-nil, initialize dirvish only in current
 window, not the whole frame."
-  (unless (or (posframe-workable-p) one-window)
-    (user-error "Dirvish.el: posframe unable to initialize under current Emacs instance"))
+  (dirvish-posframe-guard one-window)
   (when (eq major-mode 'dirvish-mode) (dirvish-quit))
   (set-frame-parameter nil 'dirvish-meta (make--dirvish))
   (setf (dirvish-one-window-p (dirvish-meta)) one-window)
