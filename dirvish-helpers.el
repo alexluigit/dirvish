@@ -15,6 +15,7 @@
 (require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dired-x)
+(require 'posframe)
 
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
@@ -43,6 +44,11 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
 
 FRAME defaults to current frame."
   (frame-parameter frame 'dirvish-meta))
+
+(defun dirvish-posframe-guard (one-window)
+  "Make sure posframe workable under current env."
+  (unless (or (posframe-workable-p) one-window)
+    (user-error "Dirvish: posframe unable to initialize under current Emacs")))
 
 (defun dirvish--clean-buffers ()
   "Cleanup all dirvish buffers."
