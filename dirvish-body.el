@@ -29,7 +29,7 @@ non-nil, do not update padding."
   (unless skip-icons
     (dirvish--body-update-icons))
   (unless skip-padding
-    (dirvish--body-update-padding))
+    (dirvish--body-update-fontsize))
   (dirvish--body-update-line))
 
 (defun dirvish--body-update-line ()
@@ -51,12 +51,13 @@ non-nil, do not update padding."
     (remove-overlays (point-min) (point-max) 'dirvish-icons t)
     (dirvish-body-render 'dirvish--body-render-icon)))
 
-(defun dirvish--body-update-padding ()
+(defun dirvish--body-update-fontsize ()
   "Update paddings in current dirvish buffer."
-  (save-excursion
-    (let ((o (make-overlay (point-min) (point-max))))
-      (setq line-spacing dirvish-body-padding)
-      (overlay-put o 'display `(height ,(1+ dirvish-body-padding))))))
+  (when (> dirvish-body-fontsize-increment 0)
+    (save-excursion
+      (let ((o (make-overlay (point-min) (point-max))))
+        (setq line-spacing dirvish-body-fontsize-increment)
+        (overlay-put o 'display `(height ,(1+ dirvish-body-fontsize-increment)))))))
 
 (defun dirvish--body-render-icon (pos &optional face)
   "Render icon in POS with optional FACE."
