@@ -135,13 +135,14 @@ This variable is consumed by `dirvish--add-advices'.")
         (dirvish-new-frame file)
       (apply fn args))))
 
-(defun dirvish--update-viewports (win _)
+(defun dirvish-update-viewport-h (win _)
   "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
-  (let ((root-win (dirvish-root-window (dirvish-meta))))
-    (when (and (eq win root-win)
-               (eq (selected-frame) (window-frame root-win)))
-      (with-selected-window win
-        (dirvish-body-update nil t)))))
+  (when-let (meta-info (dirvish-meta))
+    (let ((root-win (dirvish-root-window meta-info)))
+      (when (and (eq win root-win)
+                 (eq (selected-frame) (window-frame root-win)))
+        (with-selected-window win
+          (dirvish-body-update nil t))))))
 
 (cl-dolist (fn '(dirvish-next-file
                  dirvish-go-top
@@ -152,7 +153,7 @@ This variable is consumed by `dirvish--add-advices'.")
 
 (defun dirvish--add-advices ()
   "Add all advice listed in `dirvish-advice-alist'."
-  (add-hook 'window-scroll-functions #'dirvish--update-viewports)
+  (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
   (add-to-list 'display-buffer-alist
                '("\\(\\*info\\|\\*Help\\|\\*helpful\\|magit:\\).*"
                  (display-buffer-in-side-window)
@@ -164,7 +165,7 @@ This variable is consumed by `dirvish--add-advices'.")
 
 (defun dirvish--clean-advices ()
   "Remove all advice listed in `dirvish-advice-alist'."
-  (remove-hook 'window-scroll-functions #'dirvish--update-viewports)
+  (remove-hook 'window-scroll-functions #'dirvish-update-viewport-h)
   (setq display-buffer-alist (cdr display-buffer-alist))
   (remove-function after-focus-change-function #'dirvish-redisplay-frames-fn)
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
