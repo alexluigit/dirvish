@@ -44,7 +44,16 @@
 (require 'dirvish-preview)
 (require 'dirvish-advices)
 
+;;;; Setup
+
+(when dirvish-show-icons
+  (setq dirvish-show-icons (require 'all-the-icons nil t)))
+(mailcap-parse-mimetypes)
+(put 'dired-subdir-alist 'permanent-local t)
+
 ;;;; Commands
+
+;;;;; Dirvish commands
 
 (defun dirvish-other-buffer ()
   "Replacement for `mode-line-other-buffer' in `dirvish-mode'."
@@ -116,30 +125,12 @@ lines."
     (make-frame '((name . "dirvish-emacs")))
     (dirvish path)))
 
-(defun dirvish-paste (&optional mode)
-  "Paste marked files/directory to current directory according to MODE.
-
-MODE can be `'copy', `'move', `symlink', or `relalink'."
-  (interactive)
-  (let* ((regexp (dired-marker-regexp))
-         (yanked-files ())
-         (mode (or mode 'copy))
-         case-fold-search)
-    (cl-dolist (buf (seq-filter #'buffer-live-p dirvish-parent-buffers))
-      (with-current-buffer buf
-        (when (save-excursion (goto-char (point-min))
-                              (re-search-forward regexp nil t))
-          (setq yanked-files
-                (append yanked-files (dired-map-over-marks (dired-get-filename) nil))))))
-    (unless yanked-files (user-error "No files marked for pasting"))
-    (dirvish--paste yanked-files mode)))
-
 (defun dirvish-yank (&optional arg)
   "Paste marked files/directory to current directory.
 
 With optional prefix ARG, delete source files/directories."
   (interactive "P")
-  (if arg (dirvish-paste 'move) (dirvish-paste)))
+  (if arg (dirvish--yank 'move) (dirvish--yank)))
 
 (defun dirvish-change-level (&optional arg)
   "Change `dirvish-depth' to ARG."
@@ -176,55 +167,6 @@ With optional prefix ARG, delete source files/directories."
            (switch (concat dired-listing-switches (cdr sort-flag) (when revp " -r"))))
       (setf (dirvish-sort-criteria (dirvish-meta)) (cons name switch))
       (dirvish-reset))))
-
-(defun dirvish-init (&optional one-window)
-  "Save previous window config and initialize dirvish.
-
-If ONE-WINDOW is not-nil, initialize dirvish only in current
-window, not the whole frame."
-  (unless (or (posframe-workable-p) one-window)
-    (user-error "Dirvish.el: posframe unable to initialize under current Emacs instance"))
-  (when (eq major-mode 'dirvish-mode) (dirvish-quit))
-  (set-frame-parameter nil 'dirvish-meta (make--dirvish))
-  (setf (dirvish-one-window-p (dirvish-meta)) one-window)
-  (unless one-window
-    (setf (dirvish-window-conf (dirvish-meta)) (current-window-configuration))
-    (add-to-list 'dirvish-frame-list (window-frame)))
-  (when (window-parameter nil 'window-side) (delete-window)) ;; side window can not be split
-  (setf (dirvish-root-window (dirvish-meta)) (frame-selected-window))
-  (unless dirvish-initialized
-    (dirvish--add-advices)
-    (when dirvish-show-icons (setq dirvish-show-icons (require 'all-the-icons nil t)))
-    (when (dirvish--get-IO-status)
-      (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
-      (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat))
-    (mailcap-parse-mimetypes)
-    (setq dirvish-initialized t)))
-
-(defun dirvish-deinit ()
-  "Revert previous window config and deinit dirvish."
-  (setq dirvish-initialized nil)
-  (setq recentf-list (dirvish-saved-recentf (dirvish-meta)))
-  (mapc #'kill-buffer dirvish-preview-buffers)
-  (let ((one-window-p (dirvish-one-window-p (dirvish-meta)))
-        (config (dirvish-window-conf (dirvish-meta))))
-    (if one-window-p
-        (while (eq 'dirvish-mode (buffer-local-value 'major-mode (current-buffer)))
-          (delq (selected-window) dirvish-parent-windows)
-          (quit-window))
-      (posframe-delete (dirvish-header-buffer (dirvish-meta)))
-      (setq dirvish-frame-list (delq (window-frame) dirvish-frame-list))
-      (when (window-configuration-p config)
-        (set-window-configuration config)))
-    (unless
-        (or (and one-window-p (> (length dirvish-parent-windows) 1))
-            (> (length dirvish-frame-list) 1))
-      (dirvish--clean-buffers)
-      (dirvish--clean-advices)
-      (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
-    (setq dirvish-parent-windows ())
-    (setq dirvish-preview-buffers ())
-    (setq dirvish-parent-buffers ())))
 
 (defun dirvish-quit (&optional keep-alive)
   "Revert dirvish settings and disable dirvish.
@@ -275,6 +217,8 @@ update `dirvish-history-ring'."
             (dirvish-reset t))
         (find-file entry)))))
 
+;;;;; Global commands
+
 ;;;###autoload
 (defun dirvish-find-file-dwim (&rest args)
   "Apply `dirvish-find-file' or `dired-find-file' with ARGS."
@@ -307,8 +251,6 @@ PATH defaults to variable `buffer-file-name'."
   "Open a single window dirvish for PATH."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: "))))
   (dirvish path t))
-
-(put 'dired-subdir-alist 'permanent-local t)
 
 (provide 'dirvish)
 
