@@ -24,7 +24,7 @@
               (add-to-list 'dirvish-parent-windows win)
               (add-to-list 'dirvish-parent-buffers buf)
               (dirvish-mode)
-              (dirvish--parent-default-config)
+              (dirvish--parent-default-config win)
               (dirvish--header-setup (if one-w 'one-window 'posframe))))
     (let* ((current (expand-file-name default-directory))
            (parent (dirvish--get-parent current))
@@ -32,7 +32,6 @@
            (one-window-p (dirvish-one-window-p (dirvish-meta)))
            (depth dirvish-depth)
            (i 0))
-      ;; (setq dirvish-window (frame-selected-window))
       (if one-window-p (setq depth 0) (delete-other-windows))
       (setup dirvish-child-entry (dirvish-root-window (dirvish-meta)) (current-buffer) one-window-p)
       (while (and (< i depth) (not (string= current parent)))
@@ -57,10 +56,11 @@
                 (dirvish-body-update))))))
       (when dirvish-enable-preview (dired-hide-details-mode t)))))
 
-(defun dirvish--parent-default-config ()
-  "Apply default config for dirvish parent window."
+(defun dirvish--parent-default-config (win)
+  "Apply default config for dirvish parent window WIN."
   (setq cursor-type nil)
-  (setq mode-line-format nil))
+  (setq mode-line-format nil)
+  (set-window-fringes win 1 1))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
