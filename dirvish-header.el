@@ -25,9 +25,10 @@
   "Calculate dirvish header coordinate.
 
 Used as `:poshandler' for `posframe-show'."
-    (let ((tab-h (tab-bar-height nil t))
-          (fringe (or (frame-parameter nil 'internal-border-width) 0)))
-      (cons 0 (+ tab-h fringe))))
+  (let ((tab-h (tab-bar-height nil t))
+        (fringe (or (frame-parameter nil 'internal-border-width) 0))
+        (offset 4))
+    (cons (max 0 (- fringe offset)) (+ tab-h fringe))))
 
 (defun dirvish--header-fontsize-increment ()
   "Get dirvish header font size increment in percentage.
@@ -40,7 +41,7 @@ increase header font size by 25%.  Otherwise return 0."
   (when-let ((one-window-p (dirvish-one-window-p (dirvish-meta))))
     (cl-return-from dirvish-header-build))
   (let* ((buf (dirvish-header-buffer (dirvish-meta)))
-         (min-w (1+ (ceiling (dirvish--get-header-width))))
+         (min-w (ceiling (dirvish--get-header-width)))
          (height (if dirvish-use-large-header 2 1))
          (f-props `(:background-color
                     ,(face-attribute 'region :background)
