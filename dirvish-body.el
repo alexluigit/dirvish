@@ -69,7 +69,7 @@ non-nil, do not update padding."
          (icon (if (file-directory-p entry)
                    (apply #'all-the-icons-icon-for-dir entry icon-attrs)
                  (apply #'all-the-icons-icon-for-file entry icon-attrs)))
-         (icon-w/-offset (concat icon "\t"))
+         (icon-w/-offset (concat icon dirvish-icon-delimiter))
          (icon-str (propertize icon-w/-offset 'font-lock-face face))
          (ov (make-overlay (1- pos) pos)))
     (overlay-put ov 'dirvish-icons t)
