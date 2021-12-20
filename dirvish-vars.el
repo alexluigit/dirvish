@@ -80,6 +80,10 @@ directory."
   "When not-nil show file / dir icon."
   :group 'dirvish :type 'boolean)
 
+(defcustom dirvish-icon-delimiter "\t"
+  "A string attached to a dirvish icon."
+  :group 'dirvish :type 'string)
+
 (defcustom dirvish-icons-monochrome t
   "Whether icon face use `face-at-point'."
   :group 'dirvish :type 'boolean)
