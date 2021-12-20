@@ -48,7 +48,7 @@
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-depth 1
-  "Number of directories up to traverse."
+  "Level of directories to traverse up."
   :group 'dirvish :type 'integer)
 
 (defcustom dirvish-parent-max-width 0.12
@@ -84,12 +84,12 @@ directory."
   "A string attached to a dirvish icon."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-icons-monochrome t
+(defcustom dirvish-icon-monochrome t
   "Whether icon face use `face-at-point'."
   :group 'dirvish :type 'boolean)
 
-(defcustom dirvish-icons-v-offset 0.01
-  "Icon vertical offset."
+(defcustom dirvish-icon-v-offset 0.01
+  "Icon's vertical offset in dirvish body."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-header-string-fn 'dirvish--header-string
