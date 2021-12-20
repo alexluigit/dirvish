@@ -59,8 +59,10 @@
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-body-padding 0.1
-  "Line spacing for dirvish body."
+(defcustom dirvish-body-fontsize-increment 0.1
+  "Font size increment in dirvish body.
+For example, if this value is 0.1, the font size in dirvish body
+will be scaled to 110% (1 + 0.1)."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-footer-format "Sort: %S  Omit: %f  %d  %p%w%t %i"
@@ -90,19 +92,16 @@ directory."
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
 
-(defcustom dirvish-header-scale 1.25
-  "Height of header line."
-  :group 'dirvish :type 'number)
+(defcustom dirvish-use-large-header t
+  "Whether use a larger dirvish header (2 lines height) or not."
+  :group 'dirvish :type 'boolean)
 
-(defcustom dirvish-header-position
-  (lambda (_)
-    (let ((tab-h (tab-bar-height nil t))
-          (fringe (or (frame-parameter nil 'internal-border-width) 0)))
-      (cons 0 (+ tab-h fringe))))
-  "A function determines dirvish header position.
-
-Used as `:poshandler' for `posframe-show'."
-  :group 'dirvish :type 'function)
+(defcustom dirvish-header-margin 0.1
+  "The bottom margin of dirvish header.
+The value of this number represent a proportion of header line
+height in percentage.  This variable only takes effect
+in a full frame dirvish instance."
+  :group 'dirvish :type 'float)
 
 ;;;; Faces
 
@@ -179,40 +178,6 @@ Used as `:poshandler' for `posframe-show'."
     (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
     map)
   "Dirvish mode map.")
-
-(defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-file-open-ad)
-    (files         find-file-other-window       dirvish-file-open-ad)
-    (dired         dired-find-file-other-window dirvish-other-window-ad)
-    (dired         dired-readin                 dirvish-setup-dired-buffer-ad)
-    (dired         dired-mark                   dirvish-lazy-update-frame-ad)
-    (dired         dired-flag-file-deletion     dirvish-lazy-update-frame-ad)
-    (dired         dired-goto-file              dirvish-lazy-update-frame-ad)
-    (dired         dired-internal-do-deletions  dirvish-deletion-ad)
-    (dired         wdired-exit                  dirvish-reset-ad)
-    (dired         wdired-finish-edit           dirvish-reset-ad)
-    (dired         wdired-abort-changes         dirvish-reset-ad)
-    (dired         dired-next-dirline           dirvish-reset-ad)
-    (dired-aux     dired-kill-line              dirvish-reset-ad)
-    (dired-aux     dired-create-directory       dirvish-reset-ad)
-    (dired-aux     dired-create-empty-file      dirvish-reset-ad)
-    (dired-aux     dired-do-create-files        dirvish-reset-ad)
-    (dired-aux     dired-insert-subdir          dirvish-reset-ad)
-    (dired-aux     dired-kill-subdir            dirvish-reset-ad)
-    (dired-aux     dired-do-kill-lines          dirvish-lazy-update-frame-ad)
-    (dired-x       dired-omit-mode              dirvish-full-update-frame-ad)
-    (dired-narrow  dired--narrow-internal       dirvish-reset-ad)
-    (isearch       isearch-repeat-backward      dirvish-reset-ad)
-    (isearch       isearch-repeat-forward       dirvish-reset-ad)
-    (isearch       isearch-exit                 dirvish-reset-ad)
-    (find-dired    find-dired-sentinel          dirvish-reset-ad)
-    (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
-    (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
-    (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
-    (lsp-mode      lsp-deferred                 ignore))
-  "A list of file, adviced function, and advice function.
-
-This variable is consumed by `dirvish--add-advices'.")
 
 (provide 'dirvish-vars)
 

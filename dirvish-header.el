@@ -21,22 +21,39 @@
   "Calculate header frame width.  Default to frame width when disable preview."
   (* (frame-width) (if dirvish-enable-preview (- 1 dirvish-preview-width) 1)))
 
+(defun dirvish--header-poshandler (_info)
+  "Calculate dirvish header coordinate.
+
+Used as `:poshandler' for `posframe-show'."
+    (let ((tab-h (tab-bar-height nil t))
+          (fringe (or (frame-parameter nil 'internal-border-width) 0)))
+      (cons 0 (+ tab-h fringe))))
+
+(defun dirvish--header-fontsize-increment ()
+  "Get dirvish header font size increment in percentage.
+If `dirvish-use-large-header' is non-nil, return 0.25, meaning
+increase header font size by 25%.  Otherwise return 0."
+  (if dirvish-use-large-header 0.25 0.0))
+
 (cl-defun dirvish-header-build ()
   "Create a posframe showing dirvish header."
   (when-let ((one-window-p (dirvish-one-window-p (dirvish-meta))))
     (cl-return-from dirvish-header-build))
   (let* ((buf (dirvish-header-buffer (dirvish-meta)))
          (min-w (1+ (ceiling (dirvish--get-header-width))))
+         (height (if dirvish-use-large-header 2 1))
          (f-props `(:background-color
                     ,(face-attribute 'region :background)
-                    :poshandler ,dirvish-header-position
+                    :poshandler dirvish--header-poshandler
                     :min-width ,min-w
-                    :min-height 2))
+                    :min-height ,height))
          (h-frame (dirvish-header-frame (dirvish-meta)))
-         (size `(:posframe ,h-frame :height 2 :max-height 2 :min-height 2
-                           :width: ,min-w :min-width ,min-w :max-width ,min-w)))
+         (size `(:posframe ,h-frame
+                 :height ,height
+                 :max-height ,height
+                 :min-height ,height
+                 :width: ,min-w :min-width ,min-w :max-width ,min-w)))
     (setf (dirvish-header-width (dirvish-meta)) min-w)
-    ;; (setq dirvish-header-width min-w)
     (if h-frame
         (posframe--set-frame-size size)
       (let ((fr (apply #'posframe-show buf f-props)))
@@ -51,13 +68,14 @@ Make header string shorter than variable `dirvish-header-width'."
     (with-current-buffer (dirvish-header-buffer (dirvish-meta))
       (erase-buffer)
       (let ((str (funcall dirvish-header-string-fn))
-            ;; (max-width (1- (floor (/ dirvish-header-width dirvish-header-scale)))))
-            (max-width (1- (floor (/ (dirvish-header-width (dirvish-meta)) dirvish-header-scale)))))
+            (max-width (1- (floor (/ (dirvish-header-width (dirvish-meta))
+                                     (1+ (dirvish--header-fontsize-increment)))))))
         (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
           (setq str (substring str 0 -1)))
-        (insert str "\n"))
+        (insert str (if dirvish-use-large-header "\n" "")))
       (add-text-properties (point-min) (point-max)
-                           `(display '(height ,dirvish-header-scale) line-spacing 0.5 line-height 1.5)))))
+                           `(display '(height ,(1+ (dirvish--header-fontsize-increment)))
+                                     line-height ,(1+ (* 2 (dirvish--header-fontsize-increment))))))))
 
 (defun dirvish--header-setup (type)
   "Apply default setup for dirvish header TYPE.
@@ -67,10 +85,16 @@ Where TYPE is either `posframe' or `one-window'."
   (setq tab-line-format nil)
   (cl-case type
     ('posframe
-     (setq header-line-format (propertize " " 'display `(height ,(* 2 (1+ dirvish-body-padding)))))
+     (setq header-line-format
+           (propertize
+            " " 'display `(height ,(+ (if dirvish-use-large-header 2 1)
+                                      dirvish-header-margin))))
      (set-face-attribute 'header-line nil :box nil))
     ('one-window
-     (setq header-line-format (propertize (dirvish--header-string) 'display `(height ,dirvish-header-scale)))
+     (setq header-line-format
+           (propertize
+            (funcall dirvish-header-string-fn)
+            'display `(height ,(1+ (dirvish--header-fontsize-increment)))))
      (set-face-attribute 'header-line nil :box '(:line-width 4 :color "#353644")))))
 
 (defun dirvish--header-string ()
