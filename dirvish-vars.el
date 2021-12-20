@@ -59,8 +59,10 @@
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-body-padding 0.1
-  "Line spacing for dirvish body."
+(defcustom dirvish-body-fontsize-increment 0.1
+  "Font size increment in dirvish body.
+For example, if this value is 0.1, the font size in dirvish body
+will be scaled to 110% (1 + 0.1)."
   :group 'dirvish :type 'float)
 
 (defcustom dirvish-footer-format "Sort: %S  Omit: %f  %d  %p%w%t %i"
@@ -90,19 +92,16 @@ directory."
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
 
-(defcustom dirvish-header-scale 1.25
-  "Height of header line."
-  :group 'dirvish :type 'number)
+(defcustom dirvish-use-large-header t
+  "Whether use a larger dirvish header (2 lines height) or not."
+  :group 'dirvish :type 'boolean)
 
-(defcustom dirvish-header-position
-  (lambda (_)
-    (let ((tab-h (tab-bar-height nil t))
-          (fringe (or (frame-parameter nil 'internal-border-width) 0)))
-      (cons 0 (+ tab-h fringe))))
-  "A function determines dirvish header position.
-
-Used as `:poshandler' for `posframe-show'."
-  :group 'dirvish :type 'function)
+(defcustom dirvish-header-margin 0.1
+  "The bottom margin of dirvish header.
+The value of this number represent a proportion of header line
+height in percentage.  This variable only takes effect
+in a full frame dirvish instance."
+  :group 'dirvish :type 'float)
 
 ;;;; Faces
 
