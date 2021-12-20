@@ -62,9 +62,9 @@ non-nil, do not update padding."
 (defun dirvish--body-render-icon (pos &optional face)
   "Render icon in POS with optional FACE."
   (let* ((entry (dired-get-filename 'relative 'noerror))
-         (offset `(:v-adjust ,dirvish-icons-v-offset))
+         (offset `(:v-adjust ,dirvish-icon-v-offset))
          (icon-face (or (when face `(:face ,face))
-                        (when dirvish-icons-monochrome `(:face ,(face-at-point)))))
+                        (when dirvish-icon-monochrome `(:face ,(face-at-point)))))
          (icon-attrs (append icon-face offset))
          (icon (if (file-directory-p entry)
                    (apply #'all-the-icons-icon-for-dir entry icon-attrs)
