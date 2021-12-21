@@ -83,13 +83,17 @@
 (defun dirvish-go-top ()
   "Move to top of file list."
   (interactive)
-  (goto-char (point-min)) (dired-next-line 1)
-  (dirvish-next-file -1))
+  (dirvish-with-update nil
+    (goto-char (point-min))
+    (dired-next-line 1)
+    (dirvish-next-file -1)))
 
 (defun dirvish-go-bottom ()
   "Move to bottom of file list."
   (interactive)
-  (goto-char (point-max)) (dirvish-next-file 1))
+  (dirvish-with-update nil
+    (goto-char (point-max))
+    (dirvish-next-file 1)))
 
 (defun dirvish-next-file (arg)
   "Move cursor to next line in dirvish and update to preview window.
@@ -97,10 +101,11 @@
 With optional prefix ARG (\\[universal-argument]), forward ARG
 lines."
   (interactive "^p")
-  (dired-next-line arg)
-  (cond
-   ((eobp) (unless (region-active-p) (forward-line -1)))
-   ((bobp) (dired-next-line 1))))
+  (dirvish-with-update nil
+    (dired-next-line arg)
+    (cond
+     ((eobp) (unless (region-active-p) (forward-line -1)))
+     ((bobp) (dired-next-line 1)))))
 
 (defun dirvish-prev-file (arg)
   "Do `dirvish-next-file' in opposite direction with ARG."
@@ -184,12 +189,13 @@ is not-nil."
 If REBUILD is not-nil, rebuild dirvish layout.
 Unless NO-REVERT, revert current buffer."
   (interactive "P")
-  (when rebuild
-    (dirvish-parent-build)
-    (dirvish-preview-build)
-    (dirvish-header-build))
-  (unless no-revert (revert-buffer))
-  (dirvish--update-sorter))
+  (dirvish-with-update t
+    (when rebuild
+      (dirvish-parent-build)
+      (dirvish-preview-build)
+      (dirvish-header-build))
+    (unless no-revert (revert-buffer))
+    (dirvish--update-sorter)))
 
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
