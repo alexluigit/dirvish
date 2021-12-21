@@ -92,7 +92,7 @@ directory."
   "Icon's vertical offset in dirvish body."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-header-string-fn 'dirvish--header-string
+(defcustom dirvish-header-text-fn 'dirvish-header-text
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
 

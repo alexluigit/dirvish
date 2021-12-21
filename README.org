@@ -18,11 +18,11 @@ Check out this [[https://www.youtube.com][introduction_video_NOT_UPLOADED_YET]].
 
 ** Introduction
 
-*Dirvish* is a minimalistic file manager based on *dired*.  This package tries to
-empower dired by giving it a modern user interface, in the meantime, preserves
-its customizability. Emacs users deserve a file manager that is even better than
-those popular ones such as [[https://github.com/ranger/ranger][ranger]], [[y][vifm]], [[https://www.google.com/search?q=lf+go+github&oq=lf+go+github&aqs=chrome.0.69i59.3016j0j1&sourceid=chrome&ie=UTF-8][lf]] since it is not limited to a
-terminal.
+*Dirvish* is a minimalistic file manager based on *dired*.
+
+This package empowers dired by giving it a modern UI in a unintrusive way. Emacs
+users deserve a file manager better than those popular ones on terminal such as
+[[https://github.com/ranger/ranger][ranger]], [[https://github.com/vifm/vifm][vifm]], [[https://github.com/gokcehan/lf][lf]] since Emacs is not limited to a terminal.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 
@@ -223,25 +223,25 @@ you'd like to give this extension a try, all you need is:
 
 *** Options
 
-| Option                          | Type     | Description                             | default                |
-|---------------------------------+----------+-----------------------------------------+------------------------|
-| =dirvish-cache-dir=               | String   | Cache directory                         | "~/.cache/dirvish"     |
-| =dirvish-trash-dir-alist=         | Alist    | See: M-x =describe-variable=              |                        |
-| =dirvish-history-length=          | Integer  | The length of history ring              | 30                     |
-| =dirvish-enable-preview=          | Boolean  | Enable file preview                     | t                      |
-| =dirvish-depth=                   | Integer  | Level of dirs to traverse up            | 1                      |
-| =dirvish-parent-max-width=        | Float    | Max width of parent windows             | 0.12                   |
-| =dirvish-preview-width=           | Float    | Width of preview window                 | 0.65                   |
-| =dirvish-body-fontsize-increment= | Float    | Increase fontsize in dirvish body       | 0.1                    |
-| =dirvish-footer-format=           | String   | See: M-x =describe-variable=              |                        |
-| =dirvish-header-string-fn=        | Function | A function for composing header string  | dirvish--header-string |
-| =dirvish-show-icons=              | Boolean  | Show icons                              | t                      |
-| =dirvish-icon-delimiter=          | String   | The delimiter between icon and filename | "\t"                   |
-| =dirvish-icon-monochrome=         | Boolean  | Whether icon inherit =face-at-point=      | t                      |
-| =dirvish-icon-v-offset=           | Float    | Icon's vertical offset                  | 0.01                   |
-| =dirvish-use-large-header=        | Boolean  | Enable large (2 lines height) header    | t                      |
-| =dirvish-header-margin=           | Float    | Bottom margin of header                 | 0.1                    |
-| =dirvish-preview-cmd-alist=       | Alist    | See: M-x =describe-variable=              |                        |
+| Option                          | Type     | Description                             | default             |
+|---------------------------------+----------+-----------------------------------------+---------------------|
+| =dirvish-cache-dir=               | String   | Cache directory                         | "~/.cache/dirvish"  |
+| =dirvish-trash-dir-alist=         | Alist    | See: M-x =describe-variable=              | nil                 |
+| =dirvish-history-length=          | Integer  | The length of history ring              | 30                  |
+| =dirvish-enable-preview=          | Boolean  | Enable file preview                     | t                   |
+| =dirvish-depth=                   | Integer  | Level of dirs to traverse up            | 1                   |
+| =dirvish-parent-max-width=        | Float    | Max width of parent windows             | 0.12                |
+| =dirvish-preview-width=           | Float    | Width of preview window                 | 0.65                |
+| =dirvish-body-fontsize-increment= | Float    | Increase fontsize in dirvish body       | 0.1                 |
+| =dirvish-footer-format=           | String   | See: M-x =describe-variable=              |                     |
+| =dirvish-use-large-header=        | Boolean  | Enable large (2 lines height) header    | t                   |
+| =dirvish-header-text-fn=          | Function | A function for composing header text    | dirvish-header-text |
+| =dirvish-header-margin=           | Float    | Bottom margin of header                 | 0.1                 |
+| =dirvish-show-icons=              | Boolean  | Show icons                              | t                   |
+| =dirvish-icon-delimiter=          | String   | The delimiter between icon and filename | "\t"                |
+| =dirvish-icon-monochrome=         | Boolean  | Whether icon inherit =face-at-point=      | t                   |
+| =dirvish-icon-v-offset=           | Float    | Icon's vertical offset                  | 0.01                |
+| =dirvish-preview-cmd-alist=       | Alist    | See: M-x =describe-variable=              |                     |
 
 *** Hooks
 
@@ -306,7 +306,7 @@ And here are some specific differences between *dirvish* and *ranger.el*:
 
 ** Issues
 
-- You may experience some issue with Windows since dirvish has not been tested on it
+- Bugs are expected on Windows since dirvish has not been tested on it.
 - It might have conflicts with packages that controls window placement.
 - *WIP*: multiple dirvish instances across tabs (=tab-bar-mode=) and frames.
 - *WIP*: mouse support.
