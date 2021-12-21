@@ -96,7 +96,7 @@ invoked when file name under cursor in minibuffer changed."
        (setq cand (expand-file-name cand (or (cdr-safe (project-current))
                                              (car (minibuffer-history-value))))))
       ('library
-       (setq cand (find-library-name cand))))
+       (setq cand (ignore-errors (find-library-name cand)))))
     (setf (dirvish-index-path (dirvish-meta)) cand)
     (dirvish-debounce dirvish-preview-update
                       dirvish-preview-delay
