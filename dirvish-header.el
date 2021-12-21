@@ -69,7 +69,7 @@ Make header string shorter than variable `dirvish-header-width'."
       (dirvish--header-setup 'one-window)
     (with-current-buffer (dirvish-header-buffer (dirvish-meta))
       (erase-buffer)
-      (let ((str (funcall dirvish-header-string-fn))
+      (let ((str (funcall dirvish-header-text-fn))
             (max-width (1- (floor (/ (dirvish-header-width (dirvish-meta))
                                      (1+ (dirvish--header-fontsize-increment)))))))
         (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
@@ -95,11 +95,11 @@ Where TYPE is either `posframe' or `one-window'."
     ('one-window
      (setq header-line-format
            (propertize
-            (funcall dirvish-header-string-fn)
+            (funcall dirvish-header-text-fn)
             'display `(height ,(1+ (dirvish--header-fontsize-increment)))))
      (set-face-attribute 'header-line nil :box '(:line-width 4 :color "#353644")))))
 
-(defun dirvish--header-string ()
+(defun dirvish-header-text ()
   "Compose header string."
   (let* ((index (dirvish-index-path (dirvish-meta)))
          (file-path (file-name-directory index))
