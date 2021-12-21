@@ -13,6 +13,7 @@
 (declare-function vertico--candidate "vertico")
 
 (require 'dirvish)
+(require 'find-func)
 
 (defcustom dirvish-minibuf-preview-position
   (lambda (info)
@@ -24,7 +25,7 @@
 Used as `:poshandler' for `posframe-show'."
   :group 'dirvish :type 'function)
 
-(defvar dirvish-minibuf-preview-categories '(file project-file))
+(defvar dirvish-minibuf-preview-categories '(file project-file library))
 (defvar dirvish-minibuf-preview--height (- 1 (* max-mini-window-height 1.5)))
 (defvar dirvish-minibuf-preview--width nil)
 (defvar dirvish-minibuf-preview-window nil)
@@ -88,10 +89,14 @@ invoked when file name under cursor in minibuffer changed."
                            (selectrum--get-full
                             (selectrum--get-candidate
                              selectrum--current-candidate-index))))))
-    (if (eq category 'project-file)
-        (setq cand (expand-file-name cand (or (cdr-safe (project-current))
-                                              (car (minibuffer-history-value)))))
-      (setq cand (expand-file-name cand)))
+    (pcase category
+      ('file
+       (setq cand (expand-file-name cand)))
+      ('project-file
+       (setq cand (expand-file-name cand (or (cdr-safe (project-current))
+                                             (car (minibuffer-history-value))))))
+      ('library
+       (setq cand (find-library-name cand))))
     (setf (dirvish-index-path (dirvish-meta)) cand)
     (dirvish-debounce dirvish-preview-update
                       dirvish-preview-delay
