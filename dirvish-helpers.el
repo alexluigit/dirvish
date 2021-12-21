@@ -13,12 +13,26 @@
 (declare-function dirvish "dirvish")
 (declare-function dirvish-reset "dirvish")
 (declare-function dirvish-quit "dirvish")
+(declare-function dirvish-header-update "dirvish-header")
+(declare-function dirvish-footer-update "dirvish-footer")
+(declare-function dirvish-preview-update "dirvish-preview")
+(declare-function dirvish--body-render-icon "dirvish-body")
+(declare-function dirvish--body-render-icon "dirvish-body")
 (declare-function dirvish--add-advices "dirvish-advices")
 (declare-function dirvish--clean-advices "dirvish-advices")
 (require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dired-x)
 (require 'posframe)
+
+(defmacro dirvish-with-update (full-update &rest body)
+  "Do necessary cleanup, execute BODY, update current dirvish.
+If FULL-UPDATE is non-nil, redraw icons and reset line height."
+  (declare (indent 1))
+  `(progn
+     (dirvish--update-frame-prepare)
+     ,@body
+     (dirvish--update-frame-execute ,full-update)))
 
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
@@ -41,6 +55,29 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
+
+(defun dirvish--update-frame-prepare ()
+  "Make current line ready for `dirvish--update-frame-execute'.
+
+Some overlays such as icons, line highlighting, need to be
+removed or updated before update current dirvish instance."
+  (remove-overlays (point-min) (point-max) 'dirvish-body t)
+  (when-let ((pos (dired-move-to-filename nil))
+             dirvish-show-icons)
+    (remove-overlays (1- pos) pos 'dirvish-icons t)
+    (dirvish--body-render-icon pos)))
+
+(defun dirvish--update-frame-execute (&optional lazy)
+  "Update current dirvish."
+  (let ((skip (not lazy)))
+    (dirvish-body-update skip skip)
+    (when (dired-move-to-filename nil)
+      (setf (dirvish-index-path (dirvish-meta)) (dired-get-filename nil t))
+      (when (or (dirvish-header-width (dirvish-meta))
+                (dirvish-one-window-p (dirvish-meta)))
+        (dirvish-header-update))
+      (dirvish-footer-update)
+      (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
 
 (defun dirvish-meta (&optional frame)
   "Get dirvish metadata of FRAME.

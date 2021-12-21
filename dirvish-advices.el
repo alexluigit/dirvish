@@ -17,9 +17,6 @@
 (require 'cl-lib)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
-(require 'dirvish-header)
-(require 'dirvish-preview)
-(require 'dirvish-footer)
 (require 'dirvish-body)
 (require 'dirvish-vars)
 
@@ -84,37 +81,13 @@ This variable is consumed by `dirvish--add-advices'.")
   (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
     (apply fn args)))
 
-(defun dirvish--update-frame-ad-before ()
-  "Helper func for `dirvish-lazy-update-frame-ad'."
-  (remove-overlays (point-min) (point-max) 'dirvish-body t)
-  (when-let ((pos (dired-move-to-filename nil))
-             dirvish-show-icons)
-    (remove-overlays (1- pos) pos 'dirvish-icons t)
-    (dirvish--body-render-icon pos)))
-
-(defun dirvish--update-frame-ad-after ()
-  "Helper func for `dirvish-lazy-update-frame-ad'."
-  (when (dired-move-to-filename nil)
-    (setf (dirvish-index-path (dirvish-meta)) (dired-get-filename nil t))
-    (when (or (dirvish-header-width (dirvish-meta))
-              (dirvish-one-window-p (dirvish-meta)))
-      (dirvish-header-update))
-    (dirvish-footer-update)
-    (dirvish-debounce dirvish-preview-update dirvish-preview-delay)))
-
 (defun dirvish-lazy-update-frame-ad (fn &rest args)
-  "Apply FN with ARGS then lazily update dirvish frame."
-  (dirvish--update-frame-ad-before)
-  (apply fn args)
-  (dirvish-body-update t t)
-  (dirvish--update-frame-ad-after))
+  "Apply FN with ARGS while lazily updating dirvish frame."
+  (dirvish-with-update nil (apply fn args)))
 
 (defun dirvish-full-update-frame-ad (fn &rest args)
-  "Apply FN with ARGS then fully update dirvish frame."
-  (dirvish--update-frame-ad-before)
-  (apply fn args)
-  (dirvish-body-update)
-  (dirvish--update-frame-ad-after))
+  "Apply FN with ARGS while fully updating dirvish frame."
+  (dirvish-with-update t (apply fn args)))
 
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN with ARGS."
@@ -143,13 +116,6 @@ This variable is consumed by `dirvish--add-advices'.")
                  (eq (selected-frame) (window-frame root-win)))
         (with-selected-window win
           (dirvish-body-update nil t))))))
-
-(cl-dolist (fn '(dirvish-next-file
-                 dirvish-go-top
-                 dirvish-go-bottom))
-  (advice-add fn :around 'dirvish-lazy-update-frame-ad))
-
-(advice-add #'dirvish-reset :around #'dirvish-full-update-frame-ad)
 
 (defun dirvish--add-advices ()
   "Add all advice listed in `dirvish-advice-alist'."
