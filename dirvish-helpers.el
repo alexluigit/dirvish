@@ -255,9 +255,8 @@ window, not the whole frame."
   (when (eq major-mode 'dirvish-mode) (dirvish-quit))
   (set-frame-parameter nil 'dirvish-meta (make--dirvish))
   (setf (dirvish-one-window-p (dirvish-meta)) one-window)
-  (unless one-window
-    (setf (dirvish-window-conf (dirvish-meta)) (current-window-configuration))
-    (add-to-list 'dirvish-frame-list (window-frame)))
+  (setf (dirvish-window-conf (dirvish-meta)) (current-window-configuration))
+  (add-to-list 'dirvish-frame-list (window-frame))
   (when (window-parameter nil 'window-side) (delete-window)) ;; side window can not be split
   (setf (dirvish-root-window (dirvish-meta)) (frame-selected-window))
   (unless dirvish-initialized
@@ -274,14 +273,10 @@ window, not the whole frame."
   (mapc #'kill-buffer dirvish-preview-buffers)
   (let ((one-window-p (dirvish-one-window-p (dirvish-meta)))
         (config (dirvish-window-conf (dirvish-meta))))
-    (if one-window-p
-        (while (eq 'dirvish-mode (buffer-local-value 'major-mode (current-buffer)))
-          (delq (selected-window) dirvish-parent-windows)
-          (quit-window))
-      (posframe-delete (dirvish-header-buffer (dirvish-meta)))
-      (setq dirvish-frame-list (delq (window-frame) dirvish-frame-list))
-      (when (window-configuration-p config)
-        (set-window-configuration config)))
+    (posframe-delete (dirvish-header-buffer (dirvish-meta)))
+    (setq dirvish-frame-list (delq (window-frame) dirvish-frame-list))
+    (when (window-configuration-p config)
+      (set-window-configuration config))
     (unless
         (or (and one-window-p (> (length dirvish-parent-windows) 1))
             (> (length dirvish-frame-list) 1))
