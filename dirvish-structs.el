@@ -10,9 +10,16 @@
 
 ;;; Code:
 
+(declare-function dirvish--add-advices "dirvish-advices")
+(declare-function dirvish--clean-advices "dirvish-advices")
 (require 'dirvish-vars)
 (require 'recentf)
 
+(defun dirvish-meta (&optional frame)
+  "Get dirvish metadata in FRAME.
+
+FRAME defaults to current frame."
+  (frame-parameter frame 'dirvish--curr))
 (defmacro dirvish--get-buffer (type &rest body)
   "Return dirvish buffer with TYPE.
 If BODY is non-nil, create the buffer and execute BODY in it."
@@ -56,6 +63,13 @@ FRAME defaults to the currently selected frame."
   (or (frame-parameter frame 'dirvish--hash)
       (make-hash-table)))
 
+(defun dirvish-all-names ()
+  "Return a list of the dirvish names for all frames."
+  (cl-reduce #'cl-union (mapcar
+                         (lambda (fr)
+                           (with-selected-frame fr
+                             (mapcar #'dirvish-name (hash-table-values (dirvish-hash)))))
+                         (frame-list))))
 (cl-defstruct (dirvish
                (:conc-name dirvish-)
                (:constructor make--dirvish))
@@ -63,9 +77,9 @@ FRAME defaults to the currently selected frame."
 
 It has following fields:
 
-ROOT-WINDOW is the main dirvish window who is adjacent to preview window.
+NAME is the a symbol that is unique for every instance.
 
-ONE-WINDOW-P indicate if current dirvish is a single window instance.
+ONE-WINDOW-P indicates if this instance only display one window.
 
 HEADER-FRAME is the frame created by `posframe-show' for header display.
 
@@ -73,32 +87,94 @@ HEADER-BUFFER is a buffer contains dirvish header text.
 
 HEADER-WIDTH is the calculated header frame width.
 
+PARENT-BUFFERS holds all `dirvish-mode' buffers in this instance.
+
+PARENT-WINDOWS holds all `dirvish-mode' windows in this instance.
+
 PREVIEW-WINDOW is the window display file preview.
 
 PREVIEW-BUFFER is a buffer for dirvish preview content.
 
+PREVIEW-BUFFERS holds all file preview buffers in this instance.
+
 PREVIEW-PIXEL-WIDTH is the pixelwise width of preview window.
+
+SAVED-RECENTF is a backup of original `recentf-list'.
 
 WINDOW-CONF is the window configuration given by
 `current-window-configuration'.
 
+ROOT-WINDOW is the main dirvish window.
+
 INDEX-PATH is the file path under cursor in ROOT-WINDOW.
 
-SORT-CRITERIA is the sorting flag passed to `ls'.
-
-SAVED-RECENTF is a backup of original `recentf-list'."
-  root-window
+SORT-CRITERIA is the sorting flag passed to `ls'."
+  (name (cl-gensym))
   one-window-p
   header-frame
   (header-buffer (dirvish--get-buffer "header"))
   header-width
+  (parent-buffers ())
+  parent-windows
   preview-window
   (preview-buffer (dirvish--get-buffer "preview"))
+  (preview-buffers ())
   preview-pixel-width
-  window-conf
+  (saved-recentf recentf-list)
+  (window-conf (current-window-configuration))
+  (root-window (progn
+                (when (window-parameter nil 'window-side) (delete-window))
+                (frame-selected-window)))
   index-path
-  (sort-criteria (cons "default" ""))
-  (saved-recentf recentf-list))
+  (sort-criteria (cons "default" "")))
+
+(defmacro dirvish-new (&rest args)
+  "Create a new dirvish struct and put it in `dirvish-hash'.
+
+ARGS is a list of keyword arguments followed by an optional BODY.
+The keyword arguments set the fields of the dirvish struct.
+If BODY is given, it is executed to set the window configuration
+for the dirvish.
+
+Save point, and current buffer before executing BODY, and then
+restore them after."
+  (declare (indent defun))
+  (let ((keywords))
+    (while (keywordp (car args))
+      (dotimes (_ 2) (push (pop args) keywords)))
+    (setq keywords (reverse keywords))
+    `(let ((dv (make--dirvish ,@keywords)))
+       (puthash (dirvish-name dv) dv (dirvish-hash))
+       ,(when args `(save-excursion ,@args)) ; Body form given
+       dv)))
+
+(defun dirvish-init (&optional one-window-p)
+  "Save previous window config and initialize dirvish.
+
+If ONE-WINDOW-P, initialize dirvish in current window rather than
+the whole frame."
+  (dirvish-posframe-guard one-window-p)
+  (when (eq major-mode 'dirvish-mode) (dirvish-deinit))
+  (set-frame-parameter nil 'dirvish--curr
+                       (dirvish-new :one-window-p one-window-p))
+  (dirvish--add-advices)
+  (when (and (dirvish--get-IO-status)
+             (not one-window-p))
+    (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
+    (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat)))
+
+(defun dirvish-deinit ()
+  "Revert previous window config and deinit dirvish."
+  (setq recentf-list (dirvish-saved-recentf (dirvish-meta)))
+  (posframe-delete-frame (dirvish-header-buffer (dirvish-meta)))
+  (unless (dirvish-one-window-p (dirvish-meta))
+    (set-window-configuration (dirvish-window-conf (dirvish-meta))))
+  (mapc #'kill-buffer (dirvish-parent-buffers (dirvish-meta)))
+  (mapc #'kill-buffer (dirvish-preview-buffers (dirvish-meta)))
+  (remhash (dirvish-name (dirvish-meta)) (dirvish-hash))
+  (unless (dirvish-all-names) (dirvish--clean-advices))
+  (set-frame-parameter nil 'dirvish--curr nil)
+  (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
 
 (provide 'dirvish-structs)
 
