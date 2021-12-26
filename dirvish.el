@@ -50,6 +50,8 @@
   (setq dirvish-show-icons (require 'all-the-icons nil t)))
 (mailcap-parse-mimetypes)
 (put 'dired-subdir-alist 'permanent-local t)
+(add-hook 'after-make-frame-functions #'dirvish-init-frame)
+(mapc #'dirvish-init-frame (frame-list))
 (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
 (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
 
@@ -125,12 +127,10 @@ lines."
 (defun dirvish-new-frame (&optional path)
   "Make a new frame and launch dirvish with optional PATH."
   (interactive (list (read-file-name "Open in new frame: ")))
-  (let ((after-make-frame-functions
-          (lambda (f)
-            (select-frame f)
-            (switch-to-buffer (get-buffer-create "*scratch*")))))
-    (make-frame '((name . "dirvish-emacs")))
-    (dirvish path)))
+  (let ((fr (make-frame '((name . "dirvish-emacs")))))
+    (with-selected-frame fr
+      (switch-to-buffer (get-buffer-create "*scratch*"))
+      (dirvish path))))
 
 (defun dirvish-yank (&optional arg)
   "Paste marked files/directory to current directory.
