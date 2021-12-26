@@ -102,7 +102,7 @@ This variable is consumed by `dirvish--add-advices'.")
 
 (defun dirvish-file-open-ad (fn &rest args)
   "Apply FN with ARGS with empty `default-directory'."
-  (when (dirvish-live-p) (dirvish-quit :keep-alive))
+  (when (dirvish-live-p) (dirvish-quit :keep-frame))
   (let ((default-directory "")) (apply fn args)))
 
 ;; FIXME: it should support window when current instance is launched by `(dirvish nil t)'
@@ -124,21 +124,17 @@ This variable is consumed by `dirvish--add-advices'.")
 
 (defun dirvish--add-advices ()
   "Add all advice listed in `dirvish-advice-alist'."
-  (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
   (add-to-list 'display-buffer-alist
                '("\\(\\*info\\|\\*Help\\|\\*helpful\\|magit:\\).*"
                  (display-buffer-in-side-window)
                  (window-height . 0.4)
                  (side . bottom)))
-  (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
     (when (require file nil t) (advice-add sym :around fn))))
 
 (defun dirvish--clean-advices ()
   "Remove all advice listed in `dirvish-advice-alist'."
-  (remove-hook 'window-scroll-functions #'dirvish-update-viewport-h)
   (setq display-buffer-alist (cdr display-buffer-alist))
-  (remove-function after-focus-change-function #'dirvish-redisplay-frames-fn)
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
     (when (require file nil t) (advice-remove sym fn))))
 
