@@ -125,7 +125,7 @@ MODE can be `'copy', `'move', `symlink', or `relalink'."
          (yanked-files ())
          (mode (or mode 'copy))
          case-fold-search)
-    (cl-dolist (buf (seq-filter #'buffer-live-p dirvish-parent-buffers))
+    (cl-dolist (buf (seq-filter #'buffer-live-p (dirvish-all-parent-buffers)))
       (with-current-buffer buf
         (when (save-excursion (goto-char (point-min))
                               (re-search-forward regexp nil t))
@@ -176,7 +176,7 @@ This function is a helper for `dirvish--yank'."
     (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
-    (cl-dolist (buf dirvish-parent-buffers)
+    (cl-dolist (buf (dirvish-all-parent-buffers))
       (with-current-buffer buf (dired-unmark-all-marks)))))
 
 (defun dirvish--get-parent (path)
