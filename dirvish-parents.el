@@ -21,8 +21,8 @@
   "Create all dirvish parent windows."
   (cl-flet ((setup (child win buf one-w)
               (when child (dired-goto-file child))
-              (add-to-list 'dirvish-parent-windows win)
-              (add-to-list 'dirvish-parent-buffers buf)
+              (push win (dirvish-parent-windows (dirvish-meta)))
+              (push buf (dirvish-parent-buffers (dirvish-meta)))
               (dirvish-mode)
               (dirvish--parent-default-config win)
               (dirvish--header-setup (if one-w 'one-window 'posframe))))

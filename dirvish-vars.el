@@ -13,8 +13,6 @@
 (require 'ring)
 (require 'dired-x)
 
-(defvar dirvish-preview-update-timer nil)
-
 (defgroup dirvish nil
   "A better Dired."
   :group 'dired)
@@ -107,6 +105,9 @@ height in percentage.  This variable only takes effect
 in a full frame dirvish instance."
   :group 'dirvish :type 'float)
 
+(defvar dirvish-preview-setup-hook nil
+  "Hook for preview buffer initialization.")
+
 ;;;; Faces
 
 (defgroup dirvish-faces nil
@@ -125,41 +126,12 @@ in a full frame dirvish instance."
 
 ;;;; Internal variables
 
-(defconst dirvish-preview-delay 0.02
-  "Time in seconds to delay running preview file functions.")
-
-(defconst dirvish-footer-repeat 0.1
-  "Time in seconds to repeat footer update.")
-
-(defvar dirvish-preview-buffers ()
-  "List with buffers of previewed files.")
-
-(defvar dirvish-preview-setup-hook nil
-  "Hooks for setting dirvish preview windows.")
-
-(defvar dirvish-history-ring (make-ring dirvish-history-length)
-  "History for `dirvish-find-file'.")
-
-(defvar dirvish-initialized nil
-  "Indicate if previous window config saved.")
-
-(defvar dirvish-parent-windows ()
-  "List of parent windows.")
-
-(defvar dirvish-parent-buffers ()
-  "List with buffers of parent buffers.")
-
-(defvar dirvish-frame-list ()
-  "List of frames using dirvish.")
-
-(defvar dirvish-mode-hook nil
-  "Hooks for setting dirvish parent windows.")
-
-(defvar dirvish-repeat-timers '()
-  "Timers with repeat flag need to be clean when exit.")
-
-(defvar dirvish-IO-queue ())
-
+(defconst dirvish-preview-delay 0.02)
+(defconst dirvish-footer-repeat 0.1)
+(defvar dirvish-history-ring (make-ring dirvish-history-length))
+(defvar dirvish-preview-update-timer nil)
+(defvar dirvish-repeat-timers '())
+(defvar dirvish-IO-queue '())
 (defvar-local dirvish-child-entry nil)
 
 (defvar dirvish-mode-map

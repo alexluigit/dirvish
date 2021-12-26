@@ -80,35 +80,20 @@ removed or updated before update current dirvish instance."
       (dirvish-footer-update)
       (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
 
-(defun dirvish-meta (&optional frame)
-  "Get dirvish metadata of FRAME.
-
-FRAME defaults to current frame."
-  (frame-parameter frame 'dirvish-meta))
 
 (defun dirvish-posframe-guard (one-window)
   "Make sure posframe workable under current env."
   (unless (or (posframe-workable-p) one-window)
     (user-error "Dirvish: posframe unable to initialize under current Emacs")))
 
-(defun dirvish--clean-buffers ()
-  "Cleanup all dirvish buffers."
-  (cl-dolist (buf (buffer-list))
-    (let ((name (buffer-name buf))
-          (mode (buffer-local-value 'major-mode buf)))
-      (when (or (eq 'dired-mode mode)
-                (eq 'dirvish-mode mode)
-                (and (not (string-equal name ""))
-                     (string-match " \\*Dirvish I/O.*" name)
-                     (not (get-buffer-process buf))))
-        (kill-buffer buf)))))
-
 ;;;###autoload
 (defun dirvish-live-p (&optional win)
-  "Helper function for detecting if WIN is in dirvish mode.
+  "Detecting if WIN is in dirvish mode.
 
 If WIN is nil, defaults to `\\(selected-window\\)'."
-  (memq (or win (selected-window)) dirvish-parent-windows))
+  (and
+   (dirvish-meta)
+   (memq (or win (selected-window)) (dirvish-parent-windows (dirvish-meta)))))
 
 (defun dirvish--update-sorter ()
   "Sort files under the dirvish window.
@@ -246,47 +231,6 @@ This function is a helper for `dirvish--yank'."
         (when (eq (length dirvish-IO-queue) 1)
           (cancel-timer (symbol-value 'dirvish--set-IO-status-timer))))
       (setcar (nth 3 (car-safe dirvish-IO-queue)) progress))))
-
-(defun dirvish-init (&optional one-window)
-  "Save previous window config and initialize dirvish.
-
-If ONE-WINDOW is not-nil, initialize dirvish only in current
-window, not the whole frame."
-  (dirvish-posframe-guard one-window)
-  (when (eq major-mode 'dirvish-mode) (dirvish-quit))
-  (set-frame-parameter nil 'dirvish-meta (make--dirvish))
-  (setf (dirvish-one-window-p (dirvish-meta)) one-window)
-  (setf (dirvish-window-conf (dirvish-meta)) (current-window-configuration))
-  (add-to-list 'dirvish-frame-list (window-frame))
-  (when (window-parameter nil 'window-side) (delete-window)) ;; side window can not be split
-  (setf (dirvish-root-window (dirvish-meta)) (frame-selected-window))
-  (unless dirvish-initialized
-    (dirvish--add-advices)
-    (when (dirvish--get-IO-status)
-      (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
-      (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat))
-    (setq dirvish-initialized t)))
-
-(defun dirvish-deinit ()
-  "Revert previous window config and deinit dirvish."
-  (setq dirvish-initialized nil)
-  (setq recentf-list (dirvish-saved-recentf (dirvish-meta)))
-  (mapc #'kill-buffer dirvish-preview-buffers)
-  (let ((one-window-p (dirvish-one-window-p (dirvish-meta)))
-        (config (dirvish-window-conf (dirvish-meta))))
-    (posframe-delete (dirvish-header-buffer (dirvish-meta)))
-    (setq dirvish-frame-list (delq (window-frame) dirvish-frame-list))
-    (when (window-configuration-p config)
-      (set-window-configuration config))
-    (unless
-        (or (and one-window-p (> (length dirvish-parent-windows) 1))
-            (> (length dirvish-frame-list) 1))
-      (dirvish--clean-buffers)
-      (dirvish--clean-advices)
-      (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
-    (setq dirvish-parent-windows ())
-    (setq dirvish-preview-buffers ())
-    (setq dirvish-parent-buffers ())))
 
 (defun dirvish--dired-overrider ()
   "Helper for `dirvish-override-dired-mode'."

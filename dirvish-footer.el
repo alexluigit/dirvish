@@ -12,6 +12,7 @@
 
 (require 'format-spec)
 (require 'dirvish-vars)
+(require 'dirvish-structs)
 (require 'dirvish-helpers)
 (require 'cl-lib)
 (eval-when-compile (require 'subr-x))

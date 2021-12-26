@@ -151,7 +151,7 @@ Only take effect when `dirvish-enable-preview' or PREVIEW-WINDOW is not nil."
       (when (window-live-p preview-window)
         (set-window-buffer preview-window preview-buffer))
       (unless (memq preview-buffer orig-buffer-list)
-        (push preview-buffer dirvish-preview-buffers))
+        (push preview-buffer (dirvish-preview-buffers (dirvish-meta))))
       (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook)))))
 
 (when (require 'pdf-tools nil t)
