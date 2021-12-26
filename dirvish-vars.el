@@ -158,6 +158,7 @@ in a full frame dirvish instance."
     (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
     map)
   "Dirvish mode map.")
+(defvar-local dirvish--curr-name nil)
 
 (provide 'dirvish-vars)
 

@@ -11,6 +11,7 @@
 
 (declare-function dired-hide-details-mode "dired")
 (declare-function dired-goto-file "dired")
+(declare-function dirvish-mode "dirvish")
 (require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dirvish-header)
@@ -63,11 +64,6 @@
   (setq cursor-type nil)
   (setq mode-line-format nil)
   (set-window-fringes win 1 1))
-
-(define-derived-mode dirvish-mode dired-mode "Dirvish"
-  "Convert Dired buffer to a Dirvish buffer."
-  :group 'dirvish
-  :interactive nil)
 
 (provide 'dirvish-parents)
 

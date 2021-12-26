@@ -58,10 +58,8 @@ This variable is consumed by `dirvish--add-advices'.")
   "Refresh dirvish frames, added to `after-focus-change-function'."
   (when (eq major-mode 'dirvish-mode)
     (dirvish-reset t))
-  (when (memq (previous-frame) dirvish-frame-list)
-    (with-selected-frame (previous-frame)
-      (when (dirvish-live-p)
-        (dirvish-reset t)))))
+  (with-selected-frame (previous-frame)
+    (dirvish--reclaim-current (previous-frame))))
 
 (defun dirvish-setup-dired-buffer-ad (fn &rest args)
   "Apply FN with ARGS, remove the header line in Dired buffer."

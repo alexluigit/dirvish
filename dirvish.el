@@ -54,6 +54,7 @@
 (mapc #'dirvish-init-frame (frame-list))
 (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
 (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
+(add-hook 'window-selection-change-functions #'dirvish--reclaim-current)
 
 ;;;; Commands
 
@@ -235,6 +236,12 @@ update `dirvish-history-ring'."
         (find-file entry)))))
 
 ;;;;; Global commands
+
+(define-derived-mode dirvish-mode dired-mode "Dirvish"
+  "Convert Dired buffer to a Dirvish buffer."
+  :group 'dirvish
+  :interactive nil
+  (setq-local dirvish--curr-name (dirvish-name (dirvish-meta))))
 
 ;;;###autoload
 (defun dirvish-find-file-dwim (&rest args)
