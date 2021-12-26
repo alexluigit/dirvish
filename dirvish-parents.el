@@ -63,6 +63,7 @@
   "Apply default config for dirvish parent window WIN."
   (setq cursor-type nil)
   (setq mode-line-format nil)
+  (setq-local face-font-rescale-alist nil)
   (set-window-fringes win 1 1))
 
 (provide 'dirvish-parents)
