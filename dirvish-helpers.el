@@ -11,6 +11,7 @@
 ;;; Code:
 
 (declare-function dirvish "dirvish")
+(declare-function dirvish-dired "dirvish")
 (declare-function dirvish-reset "dirvish")
 (declare-function dirvish-quit "dirvish")
 (declare-function dirvish-header-update "dirvish-header")
@@ -287,12 +288,12 @@ window, not the whole frame."
     (setq dirvish-preview-buffers ())
     (setq dirvish-parent-buffers ())))
 
-(defun dirvish-override-dired (_fn &optional _other-win path)
-  "Helper func for `dirvish-override-dired-mode'.
-
-PATH is passed from `dired-jump' if called with `prefix-arg'."
-  (dirvish path (or (not window-system)
-                    (not (= (length (window-list)) 1)))))
+(defun dirvish--dired-overrider ()
+  "Helper for `dirvish-override-dired-mode'."
+  (interactive)
+  (unless (and (dirvish-meta)
+               (not (dirvish-one-window-p (dirvish-meta))))
+    (dirvish-dired)))
 
 (provide 'dirvish-helpers)
 

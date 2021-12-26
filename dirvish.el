@@ -150,6 +150,14 @@ With optional prefix ARG, delete source files/directories."
   (when dirvish-enable-preview
     (dired-hide-details-mode t)))
 
+(defun dirvish-insert-subdir ()
+  "Replacement for `dired-insert-subdir'."
+  (interactive)
+  (dirvish-with-update t
+    (let ((dired-after-readin-hook
+           (remove #'dirvish--dired-overrider dired-after-readin-hook)))
+      (dired-insert-subdir (dired-get-filename nil t)))))
+
 (defun dirvish-sort-by-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
   (interactive
@@ -210,6 +218,8 @@ update `dirvish-history-ring'."
     (when entry
       (if (file-directory-p entry)
           (let ((hist (directory-file-name entry))
+                (dired-after-readin-hook
+                 (remove #'dirvish--dired-overrider dired-after-readin-hook))
                 enable-dir-local-variables)
             (unless ignore-hist
               (when (or (ring-empty-p dirvish-history-ring)
@@ -233,12 +243,12 @@ update `dirvish-history-ring'."
     (apply #'find-alternate-file args)))
 
 ;;;###autoload
-(define-minor-mode dirvish-override-dired-jump
-  "Override `dired-jump' with `dirvish-jump'."
+(define-minor-mode dirvish-override-dired-mode
+  "Override Dired with `dirvish-dired' globally."
   :group 'dirvish :global t
-  (if dirvish-override-dired-jump
-      (advice-add 'dired-jump :around #'dirvish-override-dired)
-    (advice-remove 'dired-jump #'dirvish-override-dired)))
+  (if dirvish-override-dired-mode
+      (add-hook 'dired-after-readin-hook #'dirvish--dired-overrider)
+    (remove-hook 'dired-after-readin-hook #'dirvish--dired-overrider)))
 
 ;;;###autoload
 (defun dirvish (&optional path one-window)
