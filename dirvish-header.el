@@ -107,7 +107,7 @@ Where TYPE is either `posframe' or `one-window'."
          (path-regex (concat (getenv "HOME") "/\\|\\/$"))
          (path-tail (replace-regexp-in-string path-regex "" file-path))
          (file-name (file-name-nondirectory index)))
-    (format "   %s %s %s" (propertize (if path-prefix-home "~" ":"))
+    (format "  %s %s %s" (propertize (if path-prefix-home "~" ":"))
             (propertize path-tail 'face 'dired-mark)
             (propertize file-name 'face 'font-lock-constant-face))))
 
