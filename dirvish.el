@@ -50,6 +50,8 @@
   (setq dirvish-show-icons (require 'all-the-icons nil t)))
 (mailcap-parse-mimetypes)
 (put 'dired-subdir-alist 'permanent-local t)
+(add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
+(add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
 
 ;;;; Commands
 
@@ -181,14 +183,14 @@ With optional prefix ARG, delete source files/directories."
       (setf (dirvish-sort-criteria (dirvish-meta)) (cons name switch))
       (dirvish-reset))))
 
-(defun dirvish-quit (&optional keep-alive)
+(defun dirvish-quit (&optional keep-frame)
   "Revert dirvish settings and disable dirvish.
 
-Delete current frame if it's a dirvish-only frame unless KEEP-ALIVE
+Delete current frame if it's a dirvish-only frame unless KEEP-FRAME
 is not-nil."
   (interactive)
   (dirvish-deinit)
-  (when (and (not keep-alive)
+  (when (and (not keep-frame)
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))
 
