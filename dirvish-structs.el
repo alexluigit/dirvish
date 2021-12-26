@@ -20,6 +20,13 @@
 
 FRAME defaults to current frame."
   (frame-parameter frame 'dirvish--curr))
+
+(defun dirvish--reclaim-current (_frame)
+  "Reclaim `dirvish--curr' in current frame."
+  (when-let ((dv-name (buffer-local-value 'dirvish--curr-name (current-buffer))))
+    (set-frame-parameter nil 'dirvish--curr (gethash dv-name (dirvish-hash)))
+    (dirvish-reset t)))
+
 (defmacro dirvish--get-buffer (type &rest body)
   "Return dirvish buffer with TYPE.
 If BODY is non-nil, create the buffer and execute BODY in it."
