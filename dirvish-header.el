@@ -48,18 +48,9 @@ increase header font size by 25%.  Otherwise return 0."
                     ,(face-attribute 'region :background)
                     :poshandler dirvish--header-poshandler
                     :min-width ,min-w
-                    :min-height ,height))
-         (h-frame (dirvish-header-frame (dirvish-meta)))
-         (size `(:posframe ,h-frame
-                 :height ,height
-                 :max-height ,height
-                 :min-height ,height
-                 :width: ,min-w :min-width ,min-w :max-width ,min-w)))
+                    :min-height ,height)))
     (setf (dirvish-header-width (dirvish-meta)) min-w)
-    (if h-frame
-        (posframe--set-frame-size size)
-      (let ((fr (apply #'posframe-show buf f-props)))
-        (setf (dirvish-header-frame (dirvish-meta)) fr)))))
+    (apply #'posframe-show buf f-props)))
 
 (defun dirvish-header-update ()
   "Update header string.
