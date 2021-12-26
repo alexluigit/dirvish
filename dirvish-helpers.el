@@ -17,6 +17,7 @@
 (declare-function dirvish-header-update "dirvish-header")
 (declare-function dirvish-footer-update "dirvish-footer")
 (declare-function dirvish-preview-update "dirvish-preview")
+(declare-function dirvish-body-update "dirvish-body")
 (declare-function dirvish--body-render-icon "dirvish-body")
 (declare-function dirvish--body-render-icon "dirvish-body")
 (declare-function dirvish--add-advices "dirvish-advices")
@@ -28,12 +29,28 @@
 
 (defmacro dirvish-with-update (full-update &rest body)
   "Do necessary cleanup, execute BODY, update current dirvish.
-If FULL-UPDATE is non-nil, redraw icons and reset line height."
+
+If FULL-UPDATE is non-nil, redraw icons and reset line height.
+
+Some overlays such as icons, line highlighting, need to be
+removed or updated before update current dirvish instance."
   (declare (indent 1))
   `(progn
-     (dirvish--update-frame-prepare)
+     (remove-overlays (point-min) (point-max) 'dirvish-body t)
+     (when-let ((pos (dired-move-to-filename nil))
+                dirvish-show-icons)
+       (remove-overlays (1- pos) pos 'dirvish-icons t)
+       (dirvish--body-render-icon pos))
      ,@body
-     (dirvish--update-frame-execute ,full-update)))
+     (let ((skip (not ,full-update)))
+       (dirvish-body-update skip skip))
+     (when (dired-move-to-filename nil)
+       (setf (dirvish-index-path (dirvish-meta)) (dired-get-filename nil t))
+       (when (or (dirvish-header-width (dirvish-meta))
+                 (dirvish-one-window-p (dirvish-meta)))
+         (dirvish-header-update))
+       (dirvish-footer-update)
+       (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
 
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
@@ -57,43 +74,11 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
 
-(defun dirvish--update-frame-prepare ()
-  "Make current line ready for `dirvish--update-frame-execute'.
-
-Some overlays such as icons, line highlighting, need to be
-removed or updated before update current dirvish instance."
-  (remove-overlays (point-min) (point-max) 'dirvish-body t)
-  (when-let ((pos (dired-move-to-filename nil))
-             dirvish-show-icons)
-    (remove-overlays (1- pos) pos 'dirvish-icons t)
-    (dirvish--body-render-icon pos)))
-
-(defun dirvish--update-frame-execute (&optional lazy)
-  "Update current dirvish."
-  (let ((skip (not lazy)))
-    (dirvish-body-update skip skip)
-    (when (dired-move-to-filename nil)
-      (setf (dirvish-index-path (dirvish-meta)) (dired-get-filename nil t))
-      (when (or (dirvish-header-width (dirvish-meta))
-                (dirvish-one-window-p (dirvish-meta)))
-        (dirvish-header-update))
-      (dirvish-footer-update)
-      (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
-
 
 (defun dirvish-posframe-guard (one-window)
   "Make sure posframe workable under current env."
   (unless (or (posframe-workable-p) one-window)
     (user-error "Dirvish: posframe unable to initialize under current Emacs")))
-
-;;;###autoload
-(defun dirvish-live-p (&optional win)
-  "Detecting if WIN is in dirvish mode.
-
-If WIN is nil, defaults to `\\(selected-window\\)'."
-  (and
-   (dirvish-meta)
-   (memq (or win (selected-window)) (dirvish-parent-windows (dirvish-meta)))))
 
 (defun dirvish--update-sorter ()
   "Sort files under the dirvish window.
@@ -238,6 +223,15 @@ This function is a helper for `dirvish--yank'."
   (unless (and (dirvish-meta)
                (not (dirvish-one-window-p (dirvish-meta))))
     (dirvish-dired)))
+
+;;;###autoload
+(defun dirvish-live-p (&optional win)
+  "Detecting if WIN is in dirvish mode.
+
+If WIN is nil, defaults to `\\(selected-window\\)'."
+  (and
+   (dirvish-meta)
+   (memq (or win (selected-window)) (dirvish-parent-windows (dirvish-meta)))))
 
 (provide 'dirvish-helpers)
 
