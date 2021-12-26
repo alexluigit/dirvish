@@ -38,7 +38,6 @@
     (dired-aux     dired-create-directory       dirvish-reset-ad)
     (dired-aux     dired-create-empty-file      dirvish-reset-ad)
     (dired-aux     dired-do-create-files        dirvish-reset-ad)
-    (dired-aux     dired-insert-subdir          dirvish-reset-ad)
     (dired-aux     dired-kill-subdir            dirvish-reset-ad)
     (dired-aux     dired-do-kill-lines          dirvish-lazy-update-frame-ad)
     (dired-x       dired-omit-mode              dirvish-full-update-frame-ad)
