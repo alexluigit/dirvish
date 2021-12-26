@@ -29,10 +29,11 @@
     (dired         dired-flag-file-deletion     dirvish-lazy-update-frame-ad)
     (dired         dired-goto-file              dirvish-lazy-update-frame-ad)
     (dired         dired-internal-do-deletions  dirvish-deletion-ad)
-    (dired         wdired-exit                  dirvish-reset-ad)
-    (dired         wdired-finish-edit           dirvish-reset-ad)
-    (dired         wdired-abort-changes         dirvish-reset-ad)
     (dired         dired-next-dirline           dirvish-reset-ad)
+    (wdired        wdired-change-to-wdired-mode dirvish-recover-cursor-ad)
+    (wdired        wdired-exit                  dirvish-reset-ad)
+    (wdired        wdired-finish-edit           dirvish-reset-ad)
+    (wdired        wdired-abort-changes         dirvish-reset-ad)
     (dired-aux     dired-kill-line              dirvish-reset-ad)
     (dired-aux     dired-create-directory       dirvish-reset-ad)
     (dired-aux     dired-create-empty-file      dirvish-reset-ad)
@@ -76,8 +77,13 @@ This variable is consumed by `dirvish--add-advices'.")
   (let ((rebuild (not (eq major-mode 'dirvish-mode))))
     (dirvish-reset rebuild 'no-revert)))
 
+(defun dirvish-recover-cursor-ad (fn &rest args)
+  "Apply FN with ARGS then show cursor."
+  (apply fn args)
+  (setq-local cursor-type 'bar))
+
 (defun dirvish-refresh-cursor-ad (fn &rest args)
-  "Only apply FN with ARGS when editing."
+  "Only apply FN with ARGS when editing filenames in dirvish."
   (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
     (apply fn args)))
 
