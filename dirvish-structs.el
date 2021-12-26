@@ -70,6 +70,16 @@ FRAME defaults to the currently selected frame."
                            (with-selected-frame fr
                              (mapcar #'dirvish-name (hash-table-values (dirvish-hash)))))
                          (frame-list))))
+
+(defun dirvish-all-parent-buffers ()
+  "Return a list of the dirvish parent buffers for all frames."
+  (delete-dups
+   (flatten-tree (mapcar
+                  (lambda (fr)
+                    (with-selected-frame fr
+                      (mapcar #'dirvish-parent-buffers (hash-table-values (dirvish-hash)))))
+                  (frame-list)))))
+
 (cl-defstruct (dirvish
                (:conc-name dirvish-)
                (:constructor make--dirvish))
