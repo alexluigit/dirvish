@@ -57,11 +57,11 @@
   "Get corresponding preview buffer for ENTRY.
 
 Optionally, a shell command CMD and its ARGS can be passed."
-  (let ((buf (dirvish-preview-buffer (dirvish-meta)))
+  (let ((buf (dv-preview-buffer (dirvish-curr)))
         (process-connection-type nil)
         (size (number-to-string (or (and (boundp 'dirvish-minibuf-preview--width)
                                          dirvish-minibuf-preview--width)
-                                    (dirvish-preview-pixel-width (dirvish-meta)))))
+                                    (dv-preview-pixel-width (dirvish-curr)))))
         cache)
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
@@ -99,7 +99,7 @@ Optionally, a shell command CMD and its ARGS can be passed."
                                 (< (nth 7 (file-attributes entry)) (* 1024 1024 0.5)))
                            entry target-ext)))
           (if (file-exists-p target)
-              (let ((img (create-image target nil nil :max-width (dirvish-preview-pixel-width (dirvish-meta)))))
+              (let ((img (create-image target nil nil :max-width (dv-preview-pixel-width (dirvish-curr)))))
                 (put-image img 0) (cl-return-from dirvish--preview-get-create buf))
             (make-directory (file-name-directory target-raw) t)
             (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
@@ -111,26 +111,26 @@ Optionally, a shell command CMD and its ARGS can be passed."
 
 (cl-defun dirvish-preview-build ()
   "Build dirvish preview window."
-  (when-let ((one-window-p (dirvish-one-window-p (dirvish-meta))))
+  (when-let ((one-window-p (dv-one-window-p (dirvish-curr))))
     (cl-return-from dirvish-preview-build))
   (when dirvish-enable-preview
     (let* ((inhibit-modification-hooks t)
-           (buf (dirvish-preview-buffer (dirvish-meta)))
+           (buf (dv-preview-buffer (dirvish-curr)))
            (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
            (fringe 30)
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
       (set-window-fringes new-window fringe fringe nil t)
-      (setf (dirvish-preview-pixel-width (dirvish-meta)) (window-width new-window t))
-      (setf (dirvish-preview-window (dirvish-meta)) new-window))))
+      (setf (dv-preview-pixel-width (dirvish-curr)) (window-width new-window t))
+      (setf (dv-preview-window (dirvish-curr)) new-window))))
 
 (defun dirvish--preview-process-sentinel (proc _)
   "Dirvish preview process sentinel.
 
-When PROC finishes, fill `dirvish-preview-buffer' with process
+When PROC finishes, fill `dv-preview-buffer' with process
 result string."
-  (let ((buf (dirvish-preview-buffer (dirvish-meta))))
+  (let ((buf (dv-preview-buffer (dirvish-curr))))
     (when (buffer-live-p buf)
-      (with-current-buffer (dirvish-preview-buffer (dirvish-meta))
+      (with-current-buffer (dv-preview-buffer (dirvish-curr))
         (erase-buffer) (remove-overlays)
         (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
           (insert result-str)
@@ -141,17 +141,17 @@ result string."
   "Update dirvish preview window.
 
 Only take effect when `dirvish-enable-preview' or PREVIEW-WINDOW is not nil."
-  (when (or (and (not (dirvish-one-window-p (dirvish-meta)))
+  (when (or (and (not (dv-one-window-p (dirvish-curr)))
              dirvish-enable-preview)
              preview-window)
     (let* ((orig-buffer-list (buffer-list))
-           (index (or (dirvish-index-path (dirvish-meta)) ""))
+           (index (or (dv-index-path (dirvish-curr)) ""))
            (preview-buffer (dirvish--preview-entry index))
-           (preview-window (or preview-window (dirvish-preview-window (dirvish-meta)))))
+           (preview-window (or preview-window (dv-preview-window (dirvish-curr)))))
       (when (window-live-p preview-window)
         (set-window-buffer preview-window preview-buffer))
       (unless (memq preview-buffer orig-buffer-list)
-        (push preview-buffer (dirvish-preview-buffers (dirvish-meta))))
+        (push preview-buffer (dv-preview-buffers (dirvish-curr))))
       (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook)))))
 
 (when (require 'pdf-tools nil t)

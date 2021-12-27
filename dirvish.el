@@ -63,7 +63,7 @@
 (defun dirvish-other-buffer ()
   "Replacement for `mode-line-other-buffer' in `dirvish-mode'."
   (interactive)
-  (let ((one-window (dirvish-one-window-p (dirvish-meta))))
+  (let ((one-window (dv-one-window-p (dirvish-curr))))
     (if one-window
         (switch-to-buffer (other-buffer) nil t)
       (dirvish-find-file (ring-ref dirvish-history-ring 1)))))
@@ -181,7 +181,7 @@ With optional prefix ARG, delete source files/directories."
              ((string-equal cc "s") '("size" . " -S"))))
            (name (concat (car sort-flag) (when revp " [rev]")))
            (switch (concat dired-listing-switches (cdr sort-flag) (when revp " -r"))))
-      (setf (dirvish-sort-criteria (dirvish-meta)) (cons name switch))
+      (setf (dv-sort-criteria (dirvish-curr)) (cons name switch))
       (dirvish-reset))))
 
 (defun dirvish-quit (&optional keep-frame)
@@ -190,7 +190,7 @@ With optional prefix ARG, delete source files/directories."
 Delete current frame if it's a dirvish-only frame unless KEEP-FRAME
 is not-nil."
   (interactive)
-  (dirvish-deinit)
+  (dirvish-deactivate)
   (when (and (not keep-frame)
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))
@@ -230,7 +230,7 @@ update `dirvish-history-ring'."
                 (ring-insert dirvish-history-ring hist)))
             (switch-to-buffer (dired-noselect entry))
             (setq dirvish-child-entry (or bname curr-dir))
-            (setf (dirvish-index-path (dirvish-meta))
+            (setf (dv-index-path (dirvish-curr))
                   (or (dired-get-filename nil t) entry))
             (dirvish-reset t))
         (find-file entry)))))
@@ -267,7 +267,7 @@ update `dirvish-history-ring'."
   "Convert Dired buffer to a Dirvish buffer."
   :group 'dirvish
   :interactive nil
-  (setq-local dirvish--curr-name (dirvish-name (dirvish-meta))))
+  (setq-local dirvish--curr-name (dv-name (dirvish-curr))))
 
 ;;;###autoload
 (defun dirvish-find-file-dwim (&rest args)
@@ -293,7 +293,7 @@ PATH defaults to variable `buffer-file-name'."
   (let* ((file (or path buffer-file-name))
          (dir (if file (expand-file-name (file-name-directory file))
                 (expand-file-name default-directory))))
-    (dirvish-init one-window)
+    (dirvish-activate one-window)
     (dirvish-find-file dir)))
 
 ;;;###autoload

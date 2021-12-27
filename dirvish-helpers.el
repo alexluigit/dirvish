@@ -45,9 +45,9 @@ removed or updated before update current dirvish instance."
      (let ((skip (not ,full-update)))
        (dirvish-body-update skip skip))
      (when (dired-move-to-filename nil)
-       (setf (dirvish-index-path (dirvish-meta)) (dired-get-filename nil t))
-       (when (or (dirvish-header-width (dirvish-meta))
-                 (dirvish-one-window-p (dirvish-meta)))
+       (setf (dv-index-path (dirvish-curr)) (dired-get-filename nil t))
+       (when (or (dv-header-width (dirvish-curr))
+                 (dv-one-window-p (dirvish-curr)))
          (dirvish-header-update))
        (dirvish-footer-update)
        (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
@@ -82,8 +82,8 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
 
 (defun dirvish--update-sorter ()
   "Sort files under the dirvish window.
-The sort flag is accessed from `dirvish-sort-criteria'."
-  (let ((sort-flag (cdr (dirvish-sort-criteria (dirvish-meta)))))
+The sort flag is accessed from `dv-sort-criteria'."
+  (let ((sort-flag (cdr (dv-sort-criteria (dirvish-curr)))))
     (dired-sort-other (string-join (list dired-listing-switches sort-flag) " "))))
 
 (defun dirvish--display-buffer (buffer alist)
@@ -97,7 +97,7 @@ The sort flag is accessed from `dirvish-sort-criteria'."
          (window-width (or (cdr (assq 'window-width alist)) 0.5))
          (size (ceiling (* (frame-width) window-width)))
          (split-width-threshold 0)
-         (root-win (dirvish-root-window (dirvish-meta)))
+         (root-win (dv-root-window (dirvish-curr)))
          (new-window (split-window-no-error root-win size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
@@ -220,8 +220,8 @@ This function is a helper for `dirvish--yank'."
 (defun dirvish--dired-overrider ()
   "Helper for `dirvish-override-dired-mode'."
   (interactive)
-  (unless (and (dirvish-meta)
-               (not (dirvish-one-window-p (dirvish-meta))))
+  (unless (and (dirvish-curr)
+               (not (dv-one-window-p (dirvish-curr))))
     (dirvish-dired)))
 
 ;;;###autoload
@@ -230,8 +230,8 @@ This function is a helper for `dirvish--yank'."
 
 If WIN is nil, defaults to `\\(selected-window\\)'."
   (and
-   (dirvish-meta)
-   (memq (or win (selected-window)) (dirvish-parent-windows (dirvish-meta)))))
+   (dirvish-curr)
+   (memq (or win (selected-window)) (dv-parent-windows (dirvish-curr)))))
 
 (provide 'dirvish-helpers)
 
