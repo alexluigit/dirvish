@@ -59,9 +59,7 @@
 Optionally, a shell command CMD and its ARGS can be passed."
   (let ((buf (dv-preview-buffer (dirvish-curr)))
         (process-connection-type nil)
-        (size (number-to-string (or (and (boundp 'dirvish-minibuf-preview--width)
-                                         dirvish-minibuf-preview--width)
-                                    (dv-preview-pixel-width (dirvish-curr)))))
+        (size (number-to-string (dv-preview-pixel-width (dirvish-curr))))
         cache)
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
