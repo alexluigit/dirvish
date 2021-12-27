@@ -39,9 +39,9 @@ increase header font size by 25%.  Otherwise return 0."
 
 (cl-defun dirvish-header-build ()
   "Create a posframe showing dirvish header."
-  (when-let ((one-window-p (dirvish-one-window-p (dirvish-meta))))
+  (when-let ((one-window-p (dv-one-window-p (dirvish-curr))))
     (cl-return-from dirvish-header-build))
-  (let* ((buf (dirvish-header-buffer (dirvish-meta)))
+  (let* ((buf (dv-header-buffer (dirvish-curr)))
          (min-w (floor (dirvish--get-header-width)))
          (height (if dirvish-use-large-header 2 1))
          (f-props `(:background-color
@@ -49,19 +49,19 @@ increase header font size by 25%.  Otherwise return 0."
                     :poshandler dirvish--header-poshandler
                     :min-width ,min-w
                     :min-height ,height)))
-    (setf (dirvish-header-width (dirvish-meta)) min-w)
+    (setf (dv-header-width (dirvish-curr)) min-w)
     (apply #'posframe-show buf f-props)))
 
 (defun dirvish-header-update ()
   "Update header string.
 
-Make header string shorter than variable `dirvish-header-width'."
-  (if-let ((one-window (dirvish-one-window-p (dirvish-meta))))
+Make header string shorter than variable `dv-header-width'."
+  (if-let ((one-window (dv-one-window-p (dirvish-curr))))
       (dirvish--header-setup 'one-window)
-    (with-current-buffer (dirvish-header-buffer (dirvish-meta))
+    (with-current-buffer (dv-header-buffer (dirvish-curr))
       (erase-buffer)
       (let ((str (funcall dirvish-header-text-fn))
-            (max-width (1- (floor (/ (dirvish-header-width (dirvish-meta))
+            (max-width (1- (floor (/ (dv-header-width (dirvish-curr))
                                      (1+ (dirvish--header-fontsize-increment)))))))
         (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
           (setq str (substring str 0 -1)))
@@ -92,7 +92,7 @@ Where TYPE is either `posframe' or `one-window'."
 
 (defun dirvish-header-text ()
   "Compose header string."
-  (let* ((index (dirvish-index-path (dirvish-meta)))
+  (let* ((index (dv-index-path (dirvish-curr)))
          (file-path (file-name-directory index))
          (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
          (path-regex (concat (getenv "HOME") "/\\|\\/$"))

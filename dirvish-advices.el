@@ -113,12 +113,11 @@ This variable is consumed by `dirvish--add-advices'.")
 
 (defun dirvish-update-viewport-h (win _)
   "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
-  (when-let (meta-info (dirvish-meta))
-    (let ((root-win (dirvish-root-window meta-info)))
-      (when (and (eq win root-win)
-                 (eq (selected-frame) (window-frame root-win)))
-        (with-selected-window win
-          (dirvish-body-update nil t))))))
+  (when-let (root-win (and (dirvish-curr) (dv-root-window (dirvish-curr))))
+    (when (and (eq win root-win)
+               (eq (selected-frame) (window-frame root-win)))
+      (with-selected-window win
+        (dirvish-body-update nil t)))))
 
 (defun dirvish--add-advices ()
   "Add all advice listed in `dirvish-advice-alist'."
