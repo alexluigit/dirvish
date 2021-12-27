@@ -217,13 +217,6 @@ This function is a helper for `dirvish--yank'."
           (cancel-timer (symbol-value 'dirvish--set-IO-status-timer))))
       (setcar (nth 3 (car-safe dirvish-IO-queue)) progress))))
 
-(defun dirvish--dired-overrider ()
-  "Helper for `dirvish-override-dired-mode'."
-  (interactive)
-  (unless (and (dirvish-curr)
-               (not (dv-one-window-p (dirvish-curr))))
-    (dirvish-dired)))
-
 ;;;###autoload
 (defun dirvish-live-p (&optional win)
   "Detecting if WIN is in dirvish mode.

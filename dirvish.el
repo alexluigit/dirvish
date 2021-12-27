@@ -68,10 +68,6 @@
         (switch-to-buffer (other-buffer) nil t)
       (dirvish-find-file (ring-ref dirvish-history-ring 1)))))
 
-(defun dirvish-jump (file)
-  "Replacement for `dired-jump' to FILE."
-  (interactive (list (read-file-name "Jump to: "))) (dirvish-find-file-dwim file))
-
 (defun dirvish-up-directory ()
   "Move to parent directory."
   (interactive)
@@ -153,14 +149,6 @@ With optional prefix ARG, delete source files/directories."
   (when dirvish-enable-preview
     (dired-hide-details-mode t)))
 
-(defun dirvish-insert-subdir ()
-  "Replacement for `dired-insert-subdir'."
-  (interactive)
-  (dirvish-with-update t
-    (let ((dired-after-readin-hook
-           (remove #'dirvish--dired-overrider dired-after-readin-hook)))
-      (dired-insert-subdir (dired-get-filename nil t)))))
-
 (defun dirvish-sort-by-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
   (interactive
@@ -221,8 +209,6 @@ update `dirvish-history-ring'."
     (when entry
       (if (file-directory-p entry)
           (let ((hist (directory-file-name entry))
-                (dired-after-readin-hook
-                 (remove #'dirvish--dired-overrider dired-after-readin-hook))
                 enable-dir-local-variables)
             (unless ignore-hist
               (when (or (ring-empty-p dirvish-history-ring)
@@ -238,7 +224,6 @@ update `dirvish-history-ring'."
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map [remap dired-do-copy]                'dirvish-yank)
-    (define-key map [remap dired-jump]                   'dirvish-jump)
     (define-key map [remap dired-do-redisplay]           'dirvish-change-level)
     (define-key map [remap dired-hide-details-mode]      'dirvish-toggle-preview)
     (define-key map [remap dired-find-file]              'dirvish-find-file)
@@ -255,7 +240,6 @@ update `dirvish-history-ring'."
     (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
     (define-key map [remap revert-buffer]                'dirvish-reset)
     (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
-    (define-key map [remap dired-insert-subdir]          'dirvish-insert-subdir)
     (define-key map [remap quit-window]                  'dirvish-quit)
     (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
     map)
@@ -281,8 +265,21 @@ update `dirvish-history-ring'."
   "Override Dired with `dirvish-dired' globally."
   :group 'dirvish :global t
   (if dirvish-override-dired-mode
-      (add-hook 'dired-after-readin-hook #'dirvish--dired-overrider)
-    (remove-hook 'dired-after-readin-hook #'dirvish--dired-overrider)))
+      (progn
+        (advice-add 'dired :around #'dirvish-dired-ad)
+        (advice-add 'dired-other-window :around #'dirvish-dired-ad)
+        (advice-add 'dired-other-tab :around #'dirvish-dired-ad)
+        (advice-add 'dired-other-frame :around #'dirvish-dired-ad)
+        (advice-add 'dired-jump :around #'dirvish-dired-jump-ad)
+        (setq find-directory-functions
+              (cl-substitute #'dirvish-dired #'dired-noselect find-directory-functions)))
+    (advice-remove 'dired #'dirvish-dired-ad)
+    (advice-remove 'dired-other-window #'dirvish-dired-ad)
+    (advice-remove 'dired-other-tab #'dirvish-dired-ad)
+    (advice-remove 'dired-other-frame #'dirvish-dired-ad)
+    (advice-remove 'dired-jump #'dirvish-dired-jump-ad)
+    (setq find-directory-functions
+          (cl-substitute #'dired-noselect #'dirvish-dired find-directory-functions))))
 
 ;;;###autoload
 (defun dirvish (&optional path one-window)

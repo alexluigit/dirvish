@@ -125,7 +125,9 @@ ROOT-WINDOW is the main dirvish window.
 
 INDEX-PATH is the file path under cursor in ROOT-WINDOW.
 
-SORT-CRITERIA is the sorting flag passed to `ls'."
+LS-SWITCHES is the list switches passed to `ls' command.
+
+SORT-CRITERIA is the addtional sorting flag added to LS-SWITCHES."
   (name (cl-gensym))
   one-window-p
   header-frame
@@ -143,6 +145,7 @@ SORT-CRITERIA is the sorting flag passed to `ls'."
                 (when (window-parameter nil 'window-side) (delete-window))
                 (frame-selected-window)))
   index-path
+  (ls-switches dired-listing-switches)
   (sort-criteria (cons "default" "")))
 
 (defmacro dirvish-new (&rest args)
