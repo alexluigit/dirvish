@@ -10,6 +10,8 @@
 
 ;;; Code:
 
+(declare-function dirvish-find-file "dirvish")
+(declare-function dirvish-dired "dirvish")
 (declare-function dirvish-quit "dirvish")
 (declare-function dirvish-reset "dirvish")
 (declare-function dirvish-new-frame "dirvish")
@@ -39,6 +41,7 @@
     (dired-aux     dired-create-empty-file      dirvish-reset-ad)
     (dired-aux     dired-do-create-files        dirvish-reset-ad)
     (dired-aux     dired-kill-subdir            dirvish-reset-ad)
+    (dired-aux     dired-insert-subdir          dirvish-full-update-frame-ad)
     (dired-aux     dired-do-kill-lines          dirvish-lazy-update-frame-ad)
     (dired-x       dired-omit-mode              dirvish-full-update-frame-ad)
     (dired-narrow  dired--narrow-internal       dirvish-reset-ad)
@@ -60,6 +63,29 @@ This variable is consumed by `dirvish--add-advices'.")
     (dirvish-reset t))
   (with-selected-frame (previous-frame)
     (dirvish--reclaim-current (previous-frame))))
+
+(defun dirvish-dired-ad (fn dirname &optional switches)
+  "Override `dired' command.
+FN refers to original `dired' command.
+DIRNAME and SWITCHES are same with command `dired'."
+  (interactive (dired-read-dir-and-switches ""))
+  (when (and (dirvish-curr) (not (dv-one-window-p (dirvish-curr))))
+    (dirvish-deactivate))
+  (apply fn dirname (and switches (list switches)))
+  (dirvish-activate t)
+  (when switches
+    (setf (dv-ls-switches (dirvish-curr)) switches))
+  (dirvish-find-file dirname))
+
+(defun dirvish-dired-jump-ad (fn &optional other-window file-name)
+  "Override `dired-jump' command.
+FN refers to original `dired-jump' command.
+OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
+  (interactive
+   (list nil (and current-prefix-arg
+                  (read-file-name "Dirvish jump to: "))))
+  (apply fn other-window file-name)
+  (dirvish--reclaim-current (selected-frame)))
 
 (defun dirvish-setup-dired-buffer-ad (fn &rest args)
   "Apply FN with ARGS, remove the header line in Dired buffer."

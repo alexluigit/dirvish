@@ -43,8 +43,7 @@
       (when (> depth 0)
         (let* ((remain (- 1 dirvish-preview-width dirvish-parent-max-width))
                (width (min (/ remain depth) dirvish-parent-max-width))
-               (dired-after-readin-hook
-                (remove #'dirvish--dired-overrider dired-after-readin-hook)))
+               dired-after-readin-hook)
           (cl-dolist (parent-dir parent-dirs)
             (let* ((current (car parent-dir))
                    (parent (cdr parent-dir))
