@@ -44,10 +44,11 @@ removed or updated before update current dirvish instance."
      ,@body
      (let ((skip (not ,full-update)))
        (dirvish-body-update skip skip))
-     (when (dired-move-to-filename nil)
-       (setf (dv-index-path (dirvish-curr)) (dired-get-filename nil t))
-       (when (or (dv-header-width (dirvish-curr))
-                 (dv-one-window-p (dirvish-curr)))
+     (when-let ((curr-dv (dirvish-curr))
+                (filename (dired-get-filename nil t)))
+       (setf (dv-index-path curr-dv) filename)
+       (when (or (dv-header-width curr-dv)
+                 (dv-one-window-p curr-dv))
          (dirvish-header-update))
        (dirvish-footer-update)
        (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
@@ -73,7 +74,6 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
-
 
 (defun dirvish-posframe-guard (one-window)
   "Make sure posframe workable under current env."

@@ -149,7 +149,7 @@ SORT-CRITERIA is the addtional sorting flag added to LS-SWITCHES."
   (sort-criteria (cons "default" "")))
 
 (defmacro dirvish-new (&rest args)
-  "Create a new dirvish struct and put it in `dirvish-hash'.
+  "Create a new dirvish struct and put it into `dirvish-hash'.
 
 ARGS is a list of keyword arguments followed by an optional BODY.
 The keyword arguments set the fields of the dirvish struct.
@@ -185,16 +185,20 @@ the whole frame."
 
 (defun dirvish-deactivate ()
   "Revert previous window config and deinit dirvish."
-  (setq recentf-list (dv-saved-recentf (dirvish-curr)))
-  (posframe-delete-frame (dv-header-buffer (dirvish-curr)))
-  (unless (dv-one-window-p (dirvish-curr))
-    (set-window-configuration (dv-window-conf (dirvish-curr))))
-  (mapc #'kill-buffer (dv-parent-buffers (dirvish-curr)))
-  (mapc #'kill-buffer (dv-preview-buffers (dirvish-curr)))
-  (remhash (dv-name (dirvish-curr)) (dirvish-hash))
-  (unless (dirvish-all-names) (dirvish--clean-advices))
-  (set-frame-parameter nil 'dirvish--curr nil)
-  (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
+  (when-let ((curr-dv (dirvish-curr)))
+    (setq recentf-list (dv-saved-recentf curr-dv))
+    (posframe-delete-frame (dv-header-buffer curr-dv))
+    (unless (dv-one-window-p curr-dv)
+      (set-window-configuration (dv-window-conf curr-dv)))
+    (mapc #'kill-buffer (dv-parent-buffers curr-dv))
+    (mapc #'kill-buffer (dv-preview-buffers curr-dv))
+    (remhash (dv-name curr-dv) (dirvish-hash))
+    (unless (dirvish-all-names)
+      (dirvish--clean-advices)
+      (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
+    (message "%s" (dirvish-all-names))
+    (unless (dirvish--reclaim-current (selected-frame))
+      (set-frame-parameter nil 'dirvish--curr nil))))
 
 (provide 'dirvish-structs)
 
