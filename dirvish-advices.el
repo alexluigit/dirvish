@@ -96,18 +96,20 @@ DIRNAME and SWITCHES are same with command `dired'."
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab "*scratch*")
-  (dirvish-dired dirname)
-  (when switches
-    (setf (dv-ls-switches (dirvish-curr)) switches)))
+  (dirvish-drop)
+  (dirvish-activate t)
+  (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
+  (dirvish-find-file dirname))
 
 (defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
-  (switch-to-buffer-other-frame "*scratch*")
-  (dirvish-dired dirname)
-  (when switches
-    (setf (dv-ls-switches (dirvish-curr)) switches)))
+  (let (after-focus-change-function)
+    (switch-to-buffer-other-frame "*scratch*")
+    (dirvish-activate)
+    (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
+    (dirvish-find-file dirname)))
 
 (defun dirvish-dired-jump-ad (fn &optional other-window file-name)
   "Override `dired-jump' command.
