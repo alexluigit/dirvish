@@ -55,6 +55,7 @@
 (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
 (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
 (add-hook 'window-selection-change-functions #'dirvish--reclaim-current)
+(advice-add #'switch-to-buffer-other-window :override #'dirvish-switch-buf-other-win-ad)
 
 ;;;; Commands
 
@@ -266,18 +267,10 @@ update `dirvish-history-ring'."
   :group 'dirvish :global t
   (if dirvish-override-dired-mode
       (progn
-        (advice-add 'dired :around #'dirvish-dired-ad)
-        (advice-add 'dired-other-window :around #'dirvish-dired-ad)
-        (advice-add 'dired-other-tab :around #'dirvish-dired-ad)
-        (advice-add 'dired-other-frame :around #'dirvish-dired-ad)
-        (advice-add 'dired-jump :around #'dirvish-dired-jump-ad)
+        (dirvish--add-advices)
         (setq find-directory-functions
               (cl-substitute #'dirvish-dired #'dired-noselect find-directory-functions)))
-    (advice-remove 'dired #'dirvish-dired-ad)
-    (advice-remove 'dired-other-window #'dirvish-dired-ad)
-    (advice-remove 'dired-other-tab #'dirvish-dired-ad)
-    (advice-remove 'dired-other-frame #'dirvish-dired-ad)
-    (advice-remove 'dired-jump #'dirvish-dired-jump-ad)
+    (dirvish--clean-advices)
     (setq find-directory-functions
           (cl-substitute #'dired-noselect #'dirvish-dired find-directory-functions))))
 

@@ -179,16 +179,16 @@ Usually =dirvish= takes up the whole frame, but sometimes we prefer managing fil
 inside current window, just like how dired does it. To enable a single window
 dirvish, you can either:
 
-- Enable it once ::
+- Run it once ::
 
 #+begin_src emacs-lisp
   (dirvish-dired)
 #+end_src
 
-- Enable it automatically everytime you invoke =dired-jump= ::
+- Override dired commands (=dired/dired-jump/dired-jump-other-window/...=) globally ::
 
 #+begin_src emacs-lisp
-  (dirvish-override-dired-jump)
+  (dirvish-override-dired-mode)
 #+end_src
 
 A glimpse of single-window dirvish:
