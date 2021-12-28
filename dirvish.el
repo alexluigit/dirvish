@@ -55,7 +55,6 @@
 (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
 (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
 (add-hook 'window-selection-change-functions #'dirvish--reclaim-current)
-(advice-add #'switch-to-buffer-other-window :override #'dirvish-switch-buf-other-win-ad)
 
 ;;;; Commands
 
@@ -287,9 +286,11 @@ PATH defaults to variable `buffer-file-name'."
     (dirvish-find-file dir)))
 
 ;;;###autoload
-(defun dirvish-dired (&optional path)
-  "Open a single window dirvish for PATH."
-  (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: "))))
+(defun dirvish-dired (&optional path other-window)
+  "Open a single window dirvish for PATH.
+If OTHER-WINDOW is non-nil, do it in other window."
+  (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: ")) nil))
+  (and other-window (switch-to-buffer-other-window "*scratch*")) ; avoid layered dirvish instance
   (dirvish path t))
 
 (provide 'dirvish)

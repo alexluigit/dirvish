@@ -62,14 +62,6 @@
   "A list of FILE, FUNCTION, and ADVICE FUNCTION be temporarily
 added in dirvish mode.")
 
-(defun dirvish-switch-buf-other-win-ad (buffer-or-name &optional norecord)
-  "Doc."
-  (interactive
-   (list (read-buffer-to-switch "Switch to buffer in other window: ")))
-  (let ((pop-up-windows t))
-    (pop-to-buffer "*scratch*" t norecord)
-    (switch-to-buffer buffer-or-name)))
-
 (defun dirvish-redisplay-frames-fn ()
   "Refresh dirvish frames, added to `after-focus-change-function'."
   (dolist (fr (frame-list))
