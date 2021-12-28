@@ -174,11 +174,11 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
 
 (defun dirvish--add-advices (&optional temporary)
   "Add all advice listed in `dirvish-advice-alist'."
-  (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
-    (when (require file nil t) (advice-add sym :around fn)))
+  (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
+    (when (require file nil t) (advice-add sym (or place :around) fn)))
   (when temporary
-    (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
-      (when (require file nil t) (advice-add sym :around fn)))))
+    (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-temporary-advice-alist)
+      (when (require file nil t) (advice-add sym (or place :around) fn)))))
 
 (defun dirvish--clean-advices ()
   "Remove all advice listed in `dirvish-advice-alist'."
@@ -186,7 +186,7 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
     (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
       (when (require file nil t) (advice-remove sym fn))))
   (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
-    (when (require file nil t) (advice-add sym :around fn))))
+    (when (require file nil t) (advice-remove sym fn))))
 
 (provide 'dirvish-advices)
 
