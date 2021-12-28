@@ -49,7 +49,7 @@
     (dired-x       dired-omit-mode              dirvish-full-update-frame-ad)
     (dired-narrow  dired--narrow-internal       dirvish-reset-ad)
     (find-dired    find-dired-sentinel          dirvish-reset-ad))
-  "A list of FILE, FUNCTION, and ADVICE FUNCTION for `dirvish-override-dired-mode'.")
+  "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
 
 (defvar dirvish-temporary-advice-alist
   '((isearch       isearch-repeat-backward      dirvish-reset-ad)
@@ -59,8 +59,9 @@
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
     (lsp-mode      lsp-deferred                 ignore))
-  "A list of FILE, FUNCTION, and ADVICE FUNCTION be temporarily
-added in dirvish mode.")
+  "A list of FILE, FUNCTION, and temporary ADVICE FUNCTION.
+These advices is being added during activation of first dirvish
+instance, and get removed when the last dirvish instance exits.")
 
 (defun dirvish-redisplay-frames-fn ()
   "Refresh dirvish frames, added to `after-focus-change-function'."
@@ -81,7 +82,6 @@ DIRNAME and SWITCHES are same with command `dired'."
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
-FN refers to original `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (let ((old-dv (dirvish-curr)))
@@ -89,11 +89,11 @@ DIRNAME and SWITCHES are same with command `dired'."
     (switch-to-buffer-other-window "*scratch*")
     (dirvish-activate t)
     (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
-    (dirvish-dired dirname)))
+    (dirvish-find-file dirname)))
 
 (defun dirvish-dired-other-tab-ad (dirname &optional switches)
   "Override `dired-other-tab' command.
-DIRNAME and SWITCHES are same with command `dired'."
+DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab "*scratch*")
   (dirvish-drop)
@@ -103,7 +103,7 @@ DIRNAME and SWITCHES are same with command `dired'."
 
 (defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
-DIRNAME and SWITCHES are same with command `dired'."
+DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
   (let (after-focus-change-function)
     (switch-to-buffer-other-frame "*scratch*")
@@ -112,9 +112,9 @@ DIRNAME and SWITCHES are same with command `dired'."
     (dirvish-find-file dirname)))
 
 (defun dirvish-dired-jump-ad (fn &optional other-window file-name)
-  "Override `dired-jump' command.
-FN refers to original `dired-jump' command.
-OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
+  "An advisor for `dired-jump' command.
+FN refers to original `dired-jump' command.  OTHER-WINDOW and
+FILE-NAME are the same args in `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg
                   (read-file-name "Dirvish jump to: "))))
@@ -180,7 +180,9 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
         (dirvish-body-update nil t)))))
 
 (defun dirvish--add-advices (&optional temporary)
-  "Add all advice listed in `dirvish-advice-alist'."
+  "Add all advice listed in `dirvish-advice-alist'.
+When TEMPORARY is non-nil, also add advices in
+`dirvish-temporary-advice-alist'."
   (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
     (when (require file nil t) (advice-add sym (or place :around) fn)))
   (when temporary
