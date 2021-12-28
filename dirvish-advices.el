@@ -65,14 +65,14 @@ added in dirvish mode.")
 (defun dirvish-redisplay-frames-fn ()
   "Refresh dirvish frames, added to `after-focus-change-function'."
   (dolist (fr (frame-list))
-    (with-selected-frame fr (dirvish--reclaim-current fr))))
+    (with-selected-frame fr (dirvish-reclaim fr))))
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
   "Override `dired' command.
 FN refers to original `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (and (dirvish--reclaim-current (selected-frame)) (dirvish-deactivate))
+  (and (dirvish-reclaim) (dirvish-deactivate))
   (apply fn dirname (and switches (list switches)))
   (dirvish-activate t)
   (when switches
@@ -116,7 +116,7 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg
                   (read-file-name "Dirvish jump to: "))))
-  (dirvish--reclaim-current (selected-frame))
+  (dirvish-reclaim)
   (if other-window
       (progn
         (switch-to-buffer-other-window "*scratch*")
@@ -124,7 +124,7 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
     (if (dirvish-live-p)
         (dirvish-find-file file-name)
       (apply fn other-window (and file-name (list file-name)))))
-  (dirvish--reclaim-current (selected-frame)))
+  (dirvish-reclaim))
 
 (defun dirvish-setup-dired-buffer-ad (fn &rest args)
   "Apply FN with ARGS, remove the header line in Dired buffer."
@@ -165,7 +165,7 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
 
 (defun dirvish-find-file-ad (fn &rest args)
   "Apply FN with ARGS with empty `default-directory'."
-  (when (dirvish--reclaim-current (selected-frame)) ; reclaim dirvish from minibuffer
+  (when (dirvish-reclaim) ; reclaim dirvish from minibuffer
     (dirvish-deactivate))
   (let ((default-directory "")) (apply fn args)))
 

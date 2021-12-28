@@ -21,9 +21,9 @@
 FRAME defaults to current frame."
   (frame-parameter frame 'dirvish--curr))
 
-(defun dirvish--reclaim-current (&optional frame)
-  "Reclaim `dirvish--curr' in FRAME."
-  (unless (window-minibuffer-p (frame-selected-window frame))
+(defun dirvish-reclaim (&optional frame-or-window)
+  "Reclaim current dirvish in FRAME-OR-WINDOW."
+  (unless (window-minibuffer-p (frame-selected-window frame-or-window))
     (when-let ((dv-name (buffer-local-value 'dirvish--curr-name (current-buffer))))
       (set-frame-parameter nil 'dirvish--curr (gethash dv-name (dirvish-hash)))
       (dirvish-reset t) t)))
@@ -187,7 +187,7 @@ the whole frame."
       (dirvish--clean-advices)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (message "%s" (dirvish-all-names))
-    (unless (dirvish--reclaim-current (selected-frame))
+    (unless (dirvish-reclaim)
       (set-frame-parameter nil 'dirvish--curr nil))))
 
 (provide 'dirvish-structs)
