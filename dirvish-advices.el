@@ -25,9 +25,9 @@
 (defvar dirvish-advice-alist
   '((files         find-file                    dirvish-find-file-ad)
     (dired         dired                        dirvish-dired-ad)
-    (dired         dired-other-window           dirvish-dired-ad)
-    (dired         dired-other-tab              dirvish-dired-other-tab-ad)
-    (dired         dired-other-frame            dirvish-dired-other-frame-ad)
+    (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
+    (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
+    (dired         dired-other-frame            dirvish-dired-other-frame-ad   :override)
     (dired         dired-jump                   dirvish-dired-jump-ad)
     (dired         dired-readin                 dirvish-setup-dired-buffer-ad)
     (dired         dired-mark                   dirvish-lazy-update-frame-ad)
@@ -72,15 +72,26 @@ added in dirvish mode.")
 FN refers to original `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (when (and (dirvish-curr) (not (dv-one-window-p (dirvish-curr))))
-    (dirvish-deactivate))
+  (and (dirvish--reclaim-current (selected-frame)) (dirvish-deactivate))
   (apply fn dirname (and switches (list switches)))
   (dirvish-activate t)
   (when switches
     (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
 
-(defun dirvish-dired-other-tab-ad (_ dirname &optional switches)
+(defun dirvish-dired-other-window-ad (dirname &optional switches)
+  "Override `dired-other-window' command.
+FN refers to original `dired' command.
+DIRNAME and SWITCHES are same with command `dired'."
+  (interactive (dired-read-dir-and-switches ""))
+  (let ((old-dv (dirvish-curr)))
+    (and old-dv (not (dv-one-window-p old-dv)) (dirvish-deactivate))
+    (switch-to-buffer-other-window "*scratch*")
+    (dirvish-activate t)
+    (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
+    (dirvish-dired dirname)))
+
+(defun dirvish-dired-other-tab-ad (dirname &optional switches)
   "Override `dired-other-tab' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
@@ -89,7 +100,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when switches
     (setf (dv-ls-switches (dirvish-curr)) switches)))
 
-(defun dirvish-dired-other-frame-ad (_ dirname &optional switches)
+(defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
@@ -106,11 +117,13 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
    (list nil (and current-prefix-arg
                   (read-file-name "Dirvish jump to: "))))
   (dirvish--reclaim-current (selected-frame))
-  (if (not (dirvish-live-p))
-      (apply fn other-window (and file-name (list file-name)))
-    (if other-window
-        (switch-to-buffer-other-window (dirvish-dired file-name))
-      (dirvish-find-file file-name)))
+  (if other-window
+      (progn
+        (switch-to-buffer-other-window "*scratch*")
+        (apply fn nil (and file-name (list file-name))))
+    (if (dirvish-live-p)
+        (dirvish-find-file file-name)
+      (apply fn other-window (and file-name (list file-name)))))
   (dirvish--reclaim-current (selected-frame)))
 
 (defun dirvish-setup-dired-buffer-ad (fn &rest args)
