@@ -21,7 +21,7 @@
 FRAME defaults to current frame."
   (frame-parameter frame 'dirvish--curr))
 
-(defun dirvish--reclaim-current (frame)
+(defun dirvish--reclaim-current (&optional frame)
   "Reclaim `dirvish--curr' in FRAME."
   (unless (window-minibuffer-p (frame-selected-window frame))
     (when-let ((dv-name (buffer-local-value 'dirvish--curr-name (current-buffer))))
@@ -178,7 +178,7 @@ the whole frame."
   (when (eq major-mode 'dirvish-mode) (dirvish-deactivate))
   (set-frame-parameter nil 'dirvish--curr
                        (dirvish-new :one-window-p one-window-p))
-  (dirvish--add-advices)
+  (dirvish--add-advices t)
   (when (and (dirvish--get-IO-status)
              (not one-window-p))
     (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)

@@ -23,9 +23,12 @@
 (require 'dirvish-vars)
 
 (defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-file-open-ad)
-    (files         find-file-other-window       dirvish-file-open-ad)
-    (dired         dired-find-file-other-window dirvish-other-window-ad)
+  '((files         find-file                    dirvish-find-file-ad)
+    (dired         dired                        dirvish-dired-ad)
+    (dired         dired-other-window           dirvish-dired-ad)
+    (dired         dired-other-tab              dirvish-dired-other-tab-ad)
+    (dired         dired-other-frame            dirvish-dired-other-frame-ad)
+    (dired         dired-jump                   dirvish-dired-jump-ad)
     (dired         dired-readin                 dirvish-setup-dired-buffer-ad)
     (dired         dired-mark                   dirvish-lazy-update-frame-ad)
     (dired         dired-flag-file-deletion     dirvish-lazy-update-frame-ad)
@@ -45,24 +48,32 @@
     (dired-aux     dired-do-kill-lines          dirvish-lazy-update-frame-ad)
     (dired-x       dired-omit-mode              dirvish-full-update-frame-ad)
     (dired-narrow  dired--narrow-internal       dirvish-reset-ad)
-    (isearch       isearch-repeat-backward      dirvish-reset-ad)
+    (find-dired    find-dired-sentinel          dirvish-reset-ad))
+  "A list of FILE, FUNCTION, and ADVICE FUNCTION for `dirvish-override-dired-mode'.")
+
+(defvar dirvish-temporary-advice-alist
+  '((isearch       isearch-repeat-backward      dirvish-reset-ad)
     (isearch       isearch-repeat-forward       dirvish-reset-ad)
     (isearch       isearch-exit                 dirvish-reset-ad)
-    (find-dired    find-dired-sentinel          dirvish-reset-ad)
     (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
     (lsp-mode      lsp-deferred                 ignore))
-  "A list of file, adviced function, and advice function.
+  "A list of FILE, FUNCTION, and ADVICE FUNCTION be temporarily
+added in dirvish mode.")
 
-This variable is consumed by `dirvish--add-advices'.")
+(defun dirvish-switch-buf-other-win-ad (buffer-or-name &optional norecord)
+  "Doc."
+  (interactive
+   (list (read-buffer-to-switch "Switch to buffer in other window: ")))
+  (let ((pop-up-windows t))
+    (pop-to-buffer "*scratch*" t norecord)
+    (switch-to-buffer buffer-or-name)))
 
 (defun dirvish-redisplay-frames-fn ()
   "Refresh dirvish frames, added to `after-focus-change-function'."
-  (when (eq major-mode 'dirvish-mode)
-    (dirvish-reset t))
-  (with-selected-frame (previous-frame)
-    (dirvish--reclaim-current (previous-frame))))
+  (dolist (fr (frame-list))
+    (with-selected-frame fr (dirvish--reclaim-current fr))))
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
   "Override `dired' command.
@@ -77,6 +88,24 @@ DIRNAME and SWITCHES are same with command `dired'."
     (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
 
+(defun dirvish-dired-other-tab-ad (_ dirname &optional switches)
+  "Override `dired-other-tab' command.
+DIRNAME and SWITCHES are same with command `dired'."
+  (interactive (dired-read-dir-and-switches ""))
+  (switch-to-buffer-other-tab "*scratch*")
+  (dirvish-dired dirname)
+  (when switches
+    (setf (dv-ls-switches (dirvish-curr)) switches)))
+
+(defun dirvish-dired-other-frame-ad (_ dirname &optional switches)
+  "Override `dired-other-frame' command.
+DIRNAME and SWITCHES are same with command `dired'."
+  (interactive (dired-read-dir-and-switches "in other frame "))
+  (switch-to-buffer-other-frame "*scratch*")
+  (dirvish-dired dirname)
+  (when switches
+    (setf (dv-ls-switches (dirvish-curr)) switches)))
+
 (defun dirvish-dired-jump-ad (fn &optional other-window file-name)
   "Override `dired-jump' command.
 FN refers to original `dired-jump' command.
@@ -84,7 +113,12 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg
                   (read-file-name "Dirvish jump to: "))))
-  (apply fn other-window file-name)
+  (dirvish--reclaim-current (selected-frame))
+  (if (not (dirvish-live-p))
+      (apply fn other-window (and file-name (list file-name)))
+    (if other-window
+        (switch-to-buffer-other-window (dirvish-dired file-name))
+      (dirvish-find-file file-name)))
   (dirvish--reclaim-current (selected-frame)))
 
 (defun dirvish-setup-dired-buffer-ad (fn &rest args)
@@ -124,18 +158,11 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
   (unless (dired-get-filename nil t) (dirvish-next-file 1))
   (dirvish-reset))
 
-(defun dirvish-file-open-ad (fn &rest args)
+(defun dirvish-find-file-ad (fn &rest args)
   "Apply FN with ARGS with empty `default-directory'."
-  (when (dirvish-live-p) (dirvish-quit :keep-frame))
+  (when (dirvish--reclaim-current (selected-frame)) ; reclaim dirvish from minibuffer
+    (dirvish-deactivate))
   (let ((default-directory "")) (apply fn args)))
-
-;; FIXME: it should support window when current instance is launched by `(dirvish nil t)'
-(defun dirvish-other-window-ad (fn &rest args)
-  "Apply FN with ARGS in new dirvish frame."
-  (let ((file (dired-get-file-for-visit)))
-    (if (file-directory-p file)
-        (dirvish-new-frame file)
-      (apply fn args))))
 
 (defun dirvish-update-viewport-h (win _)
   "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
@@ -145,21 +172,21 @@ OTHER-WINDOW and FILE-NAME are same with command `dired-jump'."
       (with-selected-window win
         (dirvish-body-update nil t)))))
 
-(defun dirvish--add-advices ()
+(defun dirvish--add-advices (&optional temporary)
   "Add all advice listed in `dirvish-advice-alist'."
-  (add-to-list 'display-buffer-alist
-               '("\\(\\*info\\|\\*Help\\|\\*helpful\\|magit:\\).*"
-                 (display-buffer-in-side-window)
-                 (window-height . 0.4)
-                 (side . bottom)))
   (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
-    (when (require file nil t) (advice-add sym :around fn))))
+    (when (require file nil t) (advice-add sym :around fn)))
+  (when temporary
+    (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
+      (when (require file nil t) (advice-add sym :around fn)))))
 
 (defun dirvish--clean-advices ()
   "Remove all advice listed in `dirvish-advice-alist'."
-  (setq display-buffer-alist (cdr display-buffer-alist))
-  (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
-    (when (require file nil t) (advice-remove sym fn))))
+  (unless (bound-and-true-p dirvish-override-dired-mode)
+    (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
+      (when (require file nil t) (advice-remove sym fn))))
+  (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
+    (when (require file nil t) (advice-add sym :around fn))))
 
 (provide 'dirvish-advices)
 
