@@ -91,63 +91,57 @@ FRAME defaults to the currently selected frame."
 (cl-defstruct (dirvish
                (:conc-name dv-)
                (:constructor dirvish--new))
-  "Define dirvish data type.
-
-It has following fields:
-
-NAME is the a symbol that is unique for every instance.
-
-ONE-WINDOW-P indicates if this instance only display one window.
-
-HEADER-FRAME is the frame created by `posframe-show' for header display.
-
-HEADER-BUFFER is a buffer contains dirvish header text.
-
-HEADER-WIDTH is the calculated header frame width.
-
-PARENT-BUFFERS holds all `dirvish-mode' buffers in this instance.
-
-PARENT-WINDOWS holds all `dirvish-mode' windows in this instance.
-
-PREVIEW-WINDOW is the window display file preview.
-
-PREVIEW-BUFFER is a buffer for dirvish preview content.
-
-PREVIEW-BUFFERS holds all file preview buffers in this instance.
-
-PREVIEW-PIXEL-WIDTH is the pixelwise width of preview window.
-
-SAVED-RECENTF is a backup of original `recentf-list'.
-
-WINDOW-CONF is the window configuration given by
-`current-window-configuration'.
-
-ROOT-WINDOW is the main dirvish window.
-
-INDEX-PATH is the file path under cursor in ROOT-WINDOW.
-
-LS-SWITCHES is the list switches passed to `ls' command.
-
-SORT-CRITERIA is the addtional sorting flag added to LS-SWITCHES."
-  (name (cl-gensym))
-  one-window-p
-  header-frame
-  (header-buffer (dirvish--get-buffer "header"))
-  header-width
-  (parent-buffers ())
-  parent-windows
-  preview-window
-  (preview-buffer (dirvish--get-buffer "preview"))
-  (preview-buffers ())
-  preview-pixel-width
-  (saved-recentf recentf-list)
-  (window-conf (current-window-configuration))
-  (root-window (progn
-                (when (window-parameter nil 'window-side) (delete-window))
-                (frame-selected-window)))
-  index-path
-  (ls-switches dired-listing-switches)
-  (sort-criteria (cons "default" "")))
+  "Define dirvish data type."
+  (name
+   (cl-gensym)
+   :documentation "is the a symbol that is unique for every instance.")
+  (one-window-p
+   nil
+   :documentation "indicates if this instance only display one window.")
+  (header-buffer
+   (dirvish--get-buffer "header")
+   :documentation "is a buffer contains dirvish header text.")
+  (header-width
+   nil
+   :documentation "is the calculated header frame width.")
+  (parent-buffers
+   ()
+   :documentation "holds all `dirvish-mode' buffers in this instance.")
+  (parent-windows
+   ()
+   :documentation "holds all `dirvish-mode' windows in this instance.")
+  (preview-window
+   ()
+   :documentation "holds all `dirvish-mode' windows in this instance.")
+  (preview-buffer
+   (dirvish--get-buffer "preview")
+   :documentation "is a buffer for dirvish preview content.")
+  (preview-buffers
+   ()
+   :documentation "holds all file preview buffers in this instance.")
+  (preview-pixel-width
+   nil
+   :documentation "is the pixelwise width of preview window.")
+  (saved-recentf
+   recentf-list
+   :documentation "is a backup of original `recentf-list'.")
+  (window-conf
+   (current-window-configuration)
+   :documentation "is the window configuration given by `current-window-configuration'.")
+  (root-window
+   (progn
+     (when (window-parameter nil 'window-side) (delete-window))
+     (frame-selected-window))
+   :documentation "is the main dirvish window.")
+  (index-path
+   nil
+   :documentation "is the file path under cursor in ROOT-WINDOW.")
+  (ls-switches
+   dired-listing-switches
+   :documentation "is the list switches passed to `ls' command.")
+  (sort-criteria
+   (cons "default" "")
+   :documentation "is the addtional sorting flag added to `dired-list-switches'."))
 
 (defmacro dirvish-new (&rest args)
   "Create a new dirvish struct and put it into `dirvish-hash'.
