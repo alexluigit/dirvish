@@ -21,6 +21,12 @@
 FRAME defaults to current frame."
   (frame-parameter frame 'dirvish--curr))
 
+(defun dirvish-drop (&optional frame)
+  "Drop current dirvish instance in FRAME.
+
+FRAME defaults to current frame."
+  (set-frame-parameter frame 'dirvish--curr nil))
+
 (defun dirvish-reclaim (&optional frame-or-window)
   "Reclaim current dirvish in FRAME-OR-WINDOW."
   (unless (window-minibuffer-p (frame-selected-window frame-or-window))
