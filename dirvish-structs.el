@@ -35,13 +35,8 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   `(progn
      (let* ((id (frame-parameter nil 'window-id))
             (h-name (format " *Dirvish %s-%s*" ,type id))
-            (p-name (intern (format "dirvish--%s" ,type)))
             (buf (get-buffer-create h-name)))
-       ,(if body
-            `(with-current-buffer buf
-               ,@body
-               (set-frame-parameter nil p-name buf))
-          `(frame-parameter nil p-name)))))
+       (with-current-buffer buf ,@body buf))))
 
 (defun dirvish-init-frame (&optional frame)
   "Initialize the dirvishs system in FRAME.
