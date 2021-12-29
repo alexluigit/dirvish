@@ -91,8 +91,9 @@ The sort flag is accessed from `dv-sort-criteria'."
  same format with `display-buffer-alist'."
   (let* ((side (cdr (assq 'side alist)))
          (window-configuration-change-hook nil)
-         (window-width (or (cdr (assq 'window-width alist)) 0.5))
-         (size (ceiling (* (frame-width) window-width)))
+         (width (or (cdr (assq 'window-width alist)) 0.5))
+         (height (cdr (assq 'window-height alist)))
+         (size (or height (ceiling (* (frame-width) width))))
          (split-width-threshold 0)
          (root-win (dv-root-window (dirvish-curr)))
          (new-window (split-window-no-error root-win size side)))
