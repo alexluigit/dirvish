@@ -15,7 +15,6 @@
 (declare-function all-the-icons-dired-mode "all-the-icons-dired")
 (require 'dirvish-structs)
 (require 'dirvish-vars)
-(require 'dirvish-header)
 (require 'dirvish-body)
 (require 'dirvish-helpers)
 
@@ -29,8 +28,7 @@
               (when (bound-and-true-p all-the-icons-dired-mode)
                 (all-the-icons-dired-mode -1)
                 (setq-local tab-width 2))
-              (dirvish--parent-default-config win)
-              (dirvish--header-setup (if one-w 'one-window 'posframe))))
+              (dirvish--parent-default-config win)))
     (let* ((current (expand-file-name default-directory))
            (parent (dirvish--get-parent current))
            (parent-dirs ())

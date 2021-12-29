@@ -6,7 +6,7 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (posframe "1.1.2"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;;; Commentary:
 

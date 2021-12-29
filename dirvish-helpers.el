@@ -22,7 +22,6 @@
 (require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dired-x)
-(require 'posframe)
 
 (defmacro dirvish-with-update (full-update &rest body)
   "Do necessary cleanup, execute BODY, update current dirvish.
@@ -44,9 +43,7 @@ removed or updated before update current dirvish instance."
      (when-let ((curr-dv (dirvish-curr))
                 (filename (dired-get-filename nil t)))
        (setf (dv-index-path curr-dv) filename)
-       (when (or (dv-header-width curr-dv)
-                 (dv-one-window-p curr-dv))
-         (dirvish-header-update))
+       (dirvish-header-update)
        (dirvish-footer-update)
        (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
 
@@ -71,11 +68,6 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
-
-(defun dirvish-posframe-guard (one-window)
-  "Make sure posframe workable under current env."
-  (unless (or (posframe-workable-p) one-window)
-    (user-error "Dirvish: posframe unable to initialize under current Emacs")))
 
 (defun dirvish--update-sorter ()
   "Sort files under the dirvish window.

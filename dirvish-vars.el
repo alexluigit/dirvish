@@ -90,20 +90,21 @@ directory."
   "Icon's vertical offset in dirvish body."
   :group 'dirvish :type 'float)
 
+(define-obsolete-variable-alias 'dirvish-use-large-header 'dirvish-header-style "0.8")
+
+(defcustom dirvish-header-style 'large
+  "Display STYLE used for header in a full-frame dirvish instance.
+
+STYLE should be one of these:
+- nil, which means do not show the header.
+- `large', show header in a window of 2 lines height.
+- `normal', show header in a window of 1 line height."
+  :group 'dirvish :type 'symbol
+  :options '(nil large normal))
+
 (defcustom dirvish-header-text-fn 'dirvish-header-text
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
-
-(defcustom dirvish-use-large-header t
-  "Whether use a larger dirvish header (2 lines height) or not."
-  :group 'dirvish :type 'boolean)
-
-(defcustom dirvish-header-margin 0.1
-  "The bottom margin of dirvish header.
-The value of this number represent a proportion of header line
-height in percentage.  This variable only takes effect
-in a full frame dirvish instance."
-  :group 'dirvish :type 'float)
 
 (defvar dirvish-preview-setup-hook nil
   "Hook for preview buffer initialization.")
@@ -128,6 +129,7 @@ in a full frame dirvish instance."
 
 (defconst dirvish-preview-delay 0.02)
 (defconst dirvish-footer-repeat 0.1)
+(defconst dirvish-header-wobbling-offset 2)
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-repeat-timers '())
