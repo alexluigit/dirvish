@@ -188,16 +188,24 @@ When TEMPORARY is non-nil, also add advices in
   (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
     (when (require file nil t) (advice-add sym (or place :around) fn)))
   (when temporary
+    (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
+    (add-hook 'window-selection-change-functions #'dirvish-reclaim)
+    (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
     (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-temporary-advice-alist)
       (when (require file nil t) (advice-add sym (or place :around) fn)))))
 
 (defun dirvish--clean-advices ()
-  "Remove all advice listed in `dirvish-advice-alist'."
+  "Remove most of advices added by dirvish.
+This function does not remove advices added by
+`dirvish-override-dired-mode'."
   (unless (bound-and-true-p dirvish-override-dired-mode)
     (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
       (when (require file nil t) (advice-remove sym fn))))
   (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
-    (when (require file nil t) (advice-remove sym fn))))
+    (when (require file nil t) (advice-remove sym fn)))
+  (remove-hook 'window-scroll-functions #'dirvish-update-viewport-h)
+  (remove-hook 'window-selection-change-functions #'dirvish-reclaim)
+  (remove-function after-focus-change-function #'dirvish-redisplay-frames-fn))
 
 (provide 'dirvish-advices)
 
