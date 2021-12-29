@@ -47,17 +47,13 @@ If BODY is non-nil, create the buffer and execute BODY in it."
 (defun dirvish-init-frame (&optional frame)
   "Initialize the dirvishs system in FRAME.
 By default, this uses the current frame."
-  (with-selected-frame frame
-    (modify-frame-parameters
-     frame '((dirvish--hash)
-             (dirvish--curr)))
-    ;; Don't set these variables in modify-frame-parameters
-    ;; because that won't do anything if they've already been accessed
-    (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
-    (dirvish--get-buffer "preview"
-      (setq-local mode-line-format nil))
-    (dirvish--get-buffer "header"
-      (setq-local face-font-rescale-alist nil))))
+  (unless (frame-parameter frame 'dirvish--hash)
+    (with-selected-frame (or frame (selected-frame))
+      (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
+      (dirvish--get-buffer "preview"
+        (setq-local mode-line-format nil))
+      (dirvish--get-buffer "header"
+        (setq-local face-font-rescale-alist nil)))))
 
 (defun dirvish-hash (&optional frame)
   "Return a hash containing all dirvish instance in FRAME.
@@ -169,6 +165,7 @@ restore them after."
 
 If ONE-WINDOW-P, initialize dirvish in current window rather than
 the whole frame."
+  (dirvish-init-frame)
   (dirvish-posframe-guard one-window-p)
   (when (eq major-mode 'dirvish-mode) (dirvish-deactivate))
   (set-frame-parameter nil 'dirvish--curr

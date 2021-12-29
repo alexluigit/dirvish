@@ -50,8 +50,6 @@
   (setq dirvish-show-icons (require 'all-the-icons nil t)))
 (mailcap-parse-mimetypes)
 (put 'dired-subdir-alist 'permanent-local t)
-(add-hook 'after-make-frame-functions #'dirvish-init-frame)
-(mapc #'dirvish-init-frame (frame-list))
 (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
 (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
 (add-hook 'window-selection-change-functions #'dirvish-reclaim)
