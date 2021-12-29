@@ -39,6 +39,9 @@ increase header font size by 25%.  Otherwise return 0."
            (win-alist `((side . above)
                         (window-height . ,(if (eq dirvish-header-style 'large) -2 -1))))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
+      (with-selected-window new-window
+        (set (make-local-variable 'face-remapping-alist)
+             dirvish-header-face-remap-alist))
       (setf (dv-header-window (dirvish-curr)) new-window)
       (set-window-buffer new-window buf))))
 

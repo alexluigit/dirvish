@@ -28,6 +28,8 @@
               (when (bound-and-true-p all-the-icons-dired-mode)
                 (all-the-icons-dired-mode -1)
                 (setq-local tab-width 2))
+              (set (make-local-variable 'face-remapping-alist)
+                   dirvish-parent-face-remap-alist)
               (dirvish--parent-default-config win)))
     (let* ((current (expand-file-name default-directory))
            (parent (dirvish--get-parent current))
