@@ -26,7 +26,7 @@
 (require 'dirvish-vars)
 
 (defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-find-file-ad)
+  '((files         find-file                    dirvish-find-file-ad           :before)
     (dired         dired                        dirvish-dired-ad)
     (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
     (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
@@ -168,11 +168,10 @@ FILE-NAME are the same args in `dired-jump'."
   (unless (dired-get-filename nil t) (dirvish-next-file 1))
   (dirvish-reset))
 
-(defun dirvish-find-file-ad (fn &rest args)
-  "Apply FN with ARGS with empty `default-directory'."
+(defun dirvish-find-file-ad (&rest _)
+  "When inside a dirvish instance, quit it before opening a file."
   (when (dirvish-reclaim) ; reclaim dirvish from minibuffer
-    (dirvish-deactivate))
-  (let ((default-directory "")) (apply fn args)))
+    (dirvish-deactivate)))
 
 (defun dirvish-update-viewport-h (win _)
   "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
