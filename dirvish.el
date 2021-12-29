@@ -185,9 +185,11 @@ Unless NO-REVERT, revert current buffer."
   (interactive "P")
   (dirvish-with-update t
     (when rebuild
-      (dirvish-parent-build)
+      (unless (dv-one-window-p (dirvish-curr))
+        (delete-other-windows))
       (dirvish-preview-build)
-      (dirvish-header-build))
+      (dirvish-header-build)
+      (dirvish-parent-build))
     (unless no-revert (revert-buffer))
     (dirvish--update-sorter)))
 
