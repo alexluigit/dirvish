@@ -226,17 +226,18 @@ you'd like to give this extension a try, all you need is:
 | Option                          | Type     | Description                             | default             |
 |---------------------------------+----------+-----------------------------------------+---------------------|
 | =dirvish-cache-dir=               | String   | Cache directory                         | "~/.cache/dirvish"  |
-| =dirvish-trash-dir-alist=         | Alist    | See: M-x =describe-variable=              | nil                 |
+| =dirvish-trash-dir-alist=         | Alist    | Setup multiple trash cans.              | nil                 |
 | =dirvish-history-length=          | Integer  | The length of history ring              | 30                  |
 | =dirvish-enable-preview=          | Boolean  | Enable file preview                     | t                   |
 | =dirvish-depth=                   | Integer  | Level of dirs to traverse up            | 1                   |
 | =dirvish-parent-max-width=        | Float    | Max width of parent windows             | 0.12                |
+| =dirvish-parent-face-remap-alist= | Alist    | See: M-x =describe-variable=              |                     |
 | =dirvish-preview-width=           | Float    | Width of preview window                 | 0.65                |
 | =dirvish-body-fontsize-increment= | Float    | Increase fontsize in dirvish body       | 0.1                 |
 | =dirvish-footer-format=           | String   | See: M-x =describe-variable=              |                     |
-| =dirvish-use-large-header=        | Boolean  | Enable large (2 lines height) header    | t                   |
+| =dirvish-header-style=            | Option   | Style for full-frame dirvish header     | large               |
 | =dirvish-header-text-fn=          | Function | A function for composing header text    | dirvish-header-text |
-| =dirvish-header-margin=           | Float    | Bottom margin of header                 | 0.1                 |
+| =dirvish-header-face-remap-alist= | Alist    | See: M-x =describe-variable=              |                     |
 | =dirvish-show-icons=              | Boolean  | Show icons                              | t                   |
 | =dirvish-icon-delimiter=          | String   | The delimiter between icon and filename | "\t"                |
 | =dirvish-icon-monochrome=         | Boolean  | Whether icon inherit =face-at-point=      | t                   |
@@ -271,7 +272,7 @@ And here are some specific differences between *dirvish* and *ranger.el*:
 
   Ranger uses =header-line-format= to display its header, this approach leads to
   misaligned/mismatched header string when you have multiple parent windows. In
-  contrast, dirvish uses *posframe* for that purpose.
+  contrast, dirvish uses an independent window for that purpose.
 
   + Ranger ::
 
