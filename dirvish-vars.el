@@ -102,6 +102,26 @@ STYLE should be one of these:
   :group 'dirvish :type 'symbol
   :options '(nil large normal))
 
+(defcustom dirvish-header-face-remap-alist
+  '((default :background "#303030"))
+  "Face remapping alist used in dirvish header window.
+Beware that only full-frame dirvish uses header window. To
+configure faces in dirvish parent windows, use
+`dirvish-parent-face-remap-alist' instead.
+
+See `face-remapping-alist' for more details."
+  :group 'dirvish :type 'alist)
+
+(defcustom dirvish-parent-face-remap-alist
+  '((header-line :height 1.2 :box (:line-width 4 :color "#303030")))
+  "Face remapping alist used in dirvish parent window.
+This variable doesn't take effect in a dirvish header window. To
+configure faces in dirvish header window, use
+`dirvish-header-face-remap-alist' instead.
+
+See `face-remapping-alist' for more details."
+  :group 'dirvish :type 'alist)
+
 (defcustom dirvish-header-text-fn 'dirvish-header-text
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
