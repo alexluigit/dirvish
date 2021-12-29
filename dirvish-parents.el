@@ -21,7 +21,7 @@
 
 (defun dirvish-parent-build ()
   "Create all dirvish parent windows."
-  (cl-flet ((setup (child win buf one-w)
+  (cl-flet ((setup (child win buf)
               (when child (dired-goto-file child))
               (push win (dv-parent-windows (dirvish-curr)))
               (push buf (dv-parent-buffers (dirvish-curr)))
@@ -37,8 +37,8 @@
            (one-window-p (dv-one-window-p (dirvish-curr)))
            (depth dirvish-depth)
            (i 0))
-      (if one-window-p (setq depth 0) (delete-other-windows))
-      (setup dirvish-child-entry (dv-root-window (dirvish-curr)) (current-buffer) one-window-p)
+      (and one-window-p (setq depth 0))
+      (setup dirvish-child-entry (dv-root-window (dirvish-curr)) (current-buffer))
       (while (and (< i depth) (not (string= current parent)))
         (setq i (+ i 1))
         (push (cons current parent) parent-dirs)
@@ -57,7 +57,7 @@
                    (buffer (dired-noselect parent))
                    (window (display-buffer buffer `(dirvish--display-buffer . ,win-alist))))
               (with-selected-window window
-                (setup current window buffer one-window-p)
+                (setup current window buffer)
                 (dired-hide-details-mode t)
                 (dirvish-body-update))))))
       (when dirvish-enable-preview (dired-hide-details-mode t)))))
