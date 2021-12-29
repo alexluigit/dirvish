@@ -23,7 +23,9 @@
 (defvar dirvish-minibuf-use-exist-window nil)
 
 (defun dirvish-minibuf-preview-create ()
-  "Create dirvish minibuffer preview window using `posframe'."
+  "Create dirvish minibuffer preview window.
+The window is created only when metadata in current minibuffer is
+one of categories in `dirvish-minibuf-preview-categories'."
   (when-let* ((meta (completion-metadata
                      (buffer-substring-no-properties (field-beginning) (point))
                      minibuffer-completion-table
@@ -79,7 +81,7 @@ invoked when file name under cursor in minibuffer changed."
   "Show dirvish preview when minibuffer candidates are files/dirs."
   :group 'dirvish :global t
   (if dirvish-minibuf-preview-mode
-      (when window-system
+      (progn
         (add-hook 'minibuffer-setup-hook #'dirvish-minibuf-preview-create)
         (add-hook 'minibuffer-exit-hook #'dirvish-minibuf-preview-teardown)
         (advice-add 'vertico--exhibit :around #'dirvish--minibuf-update-advice)

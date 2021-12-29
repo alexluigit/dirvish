@@ -53,6 +53,8 @@ By default, this uses the current frame."
       (dirvish--get-buffer "preview"
         (setq-local mode-line-format nil))
       (dirvish--get-buffer "header"
+        (setq-local header-line-format nil)
+        (setq-local mode-line-format nil)
         (setq-local face-font-rescale-alist nil)))))
 
 (defun dirvish-hash (&optional frame)
@@ -95,12 +97,12 @@ FRAME defaults to the currently selected frame."
   (one-window-p
    nil
    :documentation "indicates if this instance only display one window.")
+  (header-window
+   nil
+   :documentation "is the window to display `dv-header-buffer'.")
   (header-buffer
    (dirvish--get-buffer "header")
    :documentation "is a buffer contains dirvish header text.")
-  (header-width
-   nil
-   :documentation "is the calculated header frame width.")
   (parent-buffers
    ()
    :documentation "holds all `dirvish-mode' buffers in this instance.")
@@ -166,7 +168,6 @@ restore them after."
 If ONE-WINDOW-P, initialize dirvish in current window rather than
 the whole frame."
   (dirvish-init-frame)
-  (dirvish-posframe-guard one-window-p)
   (when (eq major-mode 'dirvish-mode) (dirvish-deactivate))
   (set-frame-parameter nil 'dirvish--curr
                        (dirvish-new :one-window-p one-window-p))
@@ -180,7 +181,6 @@ the whole frame."
   "Revert previous window config and deinit dirvish."
   (when-let ((curr-dv (dirvish-curr)))
     (setq recentf-list (dv-saved-recentf curr-dv))
-    (posframe-delete-frame (dv-header-buffer curr-dv))
     (unless (dv-one-window-p curr-dv)
       (set-window-configuration (dv-window-conf curr-dv)))
     (mapc #'kill-buffer (dv-parent-buffers curr-dv))
