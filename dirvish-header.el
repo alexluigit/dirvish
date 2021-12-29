@@ -6,8 +6,9 @@
 
 ;;; Commentary:
 
-;;; Setup dirvish header.  When posframe is available, use it to create a child frame, otherwise
-;;; just change the `header-line-format'.
+;;; Setup dirvish header.  When using a full-frame dirvish, create a pair of
+;;; window and buffer to display the header, otherwise just change the
+;;; `header-line-format'.
 
 ;;; Code:
 

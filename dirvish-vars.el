@@ -70,8 +70,16 @@ will be scaled to 110% (1 + 0.1)."
 (defcustom dirvish-trash-dir-alist nil
   "An alist of (DISK . TRASH-DIR).
 
-Where DISK is path to a disk and TRASH-DIR is corresponding trash
-directory."
+Where DISK is path to a disk and TRASH-DIR is its corresponding
+trash directory.
+For example, if you set it to:
+
+'((\"/mnt/HDD/\" . \".Trash/files\")
+  (\"/mnt/CloudDrive\" . \".recycle\"))
+
+Dirvish take /mnt/HDD/.Trash/files as your trash can when you are
+in /mnt/HDD directory or its child entries. This can speed up
+file deletion when you have multiple disk drives."
   :group 'dirvish :type 'alist)
 
 (defcustom dirvish-show-icons t

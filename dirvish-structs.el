@@ -93,7 +93,7 @@ FRAME defaults to the currently selected frame."
   "Define dirvish data type."
   (name
    (cl-gensym)
-   :documentation "is the a symbol that is unique for every instance.")
+   :documentation "is a symbol that is unique for every instance.")
   (one-window-p
    nil
    :documentation "indicates if this instance only display one window.")
@@ -102,7 +102,7 @@ FRAME defaults to the currently selected frame."
    :documentation "is the window to display `dv-header-buffer'.")
   (header-buffer
    (dirvish--get-buffer "header")
-   :documentation "is a buffer contains dirvish header text.")
+   :documentation "is the buffer contains dirvish header text.")
   (parent-buffers
    ()
    :documentation "holds all `dirvish-mode' buffers in this instance.")
@@ -110,11 +110,11 @@ FRAME defaults to the currently selected frame."
    ()
    :documentation "holds all `dirvish-mode' windows in this instance.")
   (preview-window
-   ()
-   :documentation "holds all `dirvish-mode' windows in this instance.")
+   nil
+   :documentation "is the window to display `dv-preview-buffer'.")
   (preview-buffer
    (dirvish--get-buffer "preview")
-   :documentation "is a buffer for dirvish preview content.")
+   :documentation "is the buffer for dirvish preview content.")
   (preview-buffers
    ()
    :documentation "holds all file preview buffers in this instance.")
@@ -123,7 +123,7 @@ FRAME defaults to the currently selected frame."
    :documentation "is the pixelwise width of preview window.")
   (saved-recentf
    recentf-list
-   :documentation "is a backup of original `recentf-list'.")
+   :documentation "is the backup of original `recentf-list'.")
   (window-conf
    (current-window-configuration)
    :documentation "is the window configuration given by `current-window-configuration'.")
