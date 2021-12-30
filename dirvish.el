@@ -58,10 +58,7 @@
 (defun dirvish-other-buffer ()
   "Replacement for `mode-line-other-buffer' in `dirvish-mode'."
   (interactive)
-  (let ((one-window (dv-one-window-p (dirvish-curr))))
-    (if one-window
-        (switch-to-buffer (other-buffer) nil t)
-      (dirvish-find-file (ring-ref dirvish-history-ring 1)))))
+  (dirvish-find-file (ring-ref dirvish-history-ring 1)))
 
 (defun dirvish-up-directory ()
   "Move to parent directory."
