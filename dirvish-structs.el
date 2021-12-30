@@ -32,7 +32,7 @@ FRAME defaults to current frame."
   (unless (window-minibuffer-p (frame-selected-window frame-or-window))
     (when-let ((dv-name (buffer-local-value 'dirvish--curr-name (current-buffer))))
       (set-frame-parameter nil 'dirvish--curr (gethash dv-name (dirvish-hash)))
-      (dirvish-reset t) t)))
+      (dirvish-reset) t)))
 
 (defmacro dirvish--get-buffer (type &rest body)
   "Return dirvish buffer with TYPE.
