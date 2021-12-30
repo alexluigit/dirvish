@@ -32,20 +32,20 @@ Some overlays such as icons, line highlighting, need to be
 removed or updated before update current dirvish instance."
   (declare (indent 1))
   `(progn
-     (remove-overlays (point-min) (point-max) 'dirvish-body t)
-     (when-let ((pos (dired-move-to-filename nil))
-                dirvish-show-icons)
-       (remove-overlays (1- pos) pos 'dirvish-icons t)
-       (dirvish--body-render-icon pos))
-     ,@body
-     (let ((skip (not ,full-update)))
-       (dirvish-body-update skip skip))
-     (when-let ((curr-dv (dirvish-curr))
-                (filename (dired-get-filename nil t)))
-       (setf (dv-index-path curr-dv) filename)
-       (dirvish-header-update)
-       (dirvish-footer-update)
-       (dirvish-debounce dirvish-preview-update dirvish-preview-delay))))
+     (when-let ((curr-dv (dirvish-curr)))
+       (remove-overlays (point-min) (point-max) 'dirvish-body t)
+       (when-let ((pos (dired-move-to-filename nil))
+                  dirvish-show-icons)
+         (remove-overlays (1- pos) pos 'dirvish-icons t)
+         (dirvish--body-render-icon pos))
+       ,@body
+       (let ((skip (not ,full-update)))
+         (dirvish-body-update skip skip))
+       (when-let ((filename (dired-get-filename nil t)))
+         (setf (dv-index-path curr-dv) filename)
+         (dirvish-header-update)
+         (dirvish-footer-update)
+         (dirvish-debounce dirvish-preview-update dirvish-preview-delay)))))
 
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
