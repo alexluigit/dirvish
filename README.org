@@ -22,7 +22,7 @@ Check out this [[https://www.youtube.com][introduction_video_NOT_UPLOADED_YET]].
 
 This package empowers dired by giving it a modern UI in a unintrusive way. Emacs
 users deserve a file manager better than those popular ones on terminal such as
-[[https://github.com/ranger/ranger][ranger]], [[https://github.com/vifm/vifm][vifm]], [[https://github.com/gokcehan/lf][lf]] since Emacs is not limited to a terminal.
+[[https://github.com/ranger/ranger][ranger]], [[https://github.com/vifm/vifm][vifm]], [[https://github.com/gokcehan/lf][lf]] since Emacs is more then a terminal emulator.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 
@@ -79,66 +79,85 @@ then add =path/to/dirvish= to your =load-path=.
 
 After installation, just =M-x= and run =dirvish=.
 
+**** "Dirvish-ish" dired
+
+Usually =dirvish= takes up the whole frame, but sometimes we prefer managing files
+inside current window, just like how dired does it. To open a single window
+dirvish, you can either:
+
+- Run it once ::
+
+#+begin_src emacs-lisp
+  (dirvish-dired)
+#+end_src
+
+- Override dired entry commands (=dired/dired-jump/dired-jump-other-window/...=) globally ::
+
+#+begin_src emacs-lisp
+  (dirvish-override-dired-mode)
+#+end_src
+
+A glimpse of single-window dirvish:
+
+[[./assets/dirvish-one-win.png]]
+
+**** Dired config
+
 Since =dirvish-mode= is just a =major-mode= derived from =dired-mode=, it respects all
 of your dired config (including keymapping) in principle.
 
 As an example, here is an excerpt from my personal dired config:
 
 #+begin_src emacs-lisp
-  (setq dired-kill-when-opening-new-dired-buffer t) ; added in emacs 28
   (setq dired-clean-confirm-killing-deleted-buffers nil)
-  (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
   (setq delete-by-moving-to-trash t)
   (setq dired-dwim-target t)
   (setq dired-listing-switches "-AGhlv --group-directories-first --time-style=long-iso")
 #+end_src
 
+/NOTICE/: You may come across issues relating to buffer killing/reverting
+mechanism inside of dirvish since this part is still very much WIP (hence
+related dired config won't work). If you found any inconsistency behaviours
+between dired and dirvish under same dired config, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
+
 ** Features
 *** File preview
 
-When =dirvish-enable-preview= is non-nil, a preview window showing the content of
-selected file/directory will be displayed at right side of dirvish frame.
+=dirvish= command places a preview window at right side of frame to show the
+content of selected file. To toggle it, use =dirvish-toggle-preview=, or set
+=dirvish-enable-preview= to nil.
 
-- Debouncing ::
-
-  Reduce unnecessary UI redraw.
-
+Some additional notes on this:
 - Native GIF support ::
-
-  Navigate to a GIF file in Dirvish and check out the preview window.
-
 - *Image cache* ::
-
   A image cache file, with small filesize that is unlikely to block Emacs when
-  rendering, is generated when the original image file is larger than 500KB.
-
+  being rendered, is generated when the original image file is larger than 500KB.
 - Highly customizable ::
-
   A preview buffer is created either by an elisp function or by the help of a
   shell command. If you don't like the way dirvish creates the preview buffer
-  for certain file types, take a look at =dirvish-preview-cmd-alist= (use
-  =describe-variable= for more details). This
+  for certain file types, take a look at =dirvish-preview-cmd-alist=. This
   variable determines how a preview buffer get generated for different file
   types, customize it to suit your need.
 
-*** Improved dired commands
+*** Multiple instances
+
+You can open multiple dirvish instance across diffent widnows / tabs /
+frames. Each one of them has their own parent/preview buffer list that are being
+killed during deactivation of this instance.
+
+*WIP*: Although every dirvish instance is independent from each other, you can mark
+files across multiple instance, and paste/move marked files to current one with
+one keystroke (=dirvish-yank=).
+
+*** Drop-in replacement commands
 
 *Dired* is superb, but from a modern file manager's (like *ranger*, *lf*) perspective,
-, some Dired commands are quite unintuitive, such as:
+, some Dired commands are quite unintuitive.
 
-- When you mark some files using =dired-mark= or similar dired commands in
-  DIRED-BUFFER-A, you don't have access to these markers in DIRED-BUFFER-B.
-- You must specify the target directory explicitly when using =dired-do-copy=
-  and its friends.
-- =dired-sort-toggle-or-edit= requires you to edit *ls* command flags manually
-- ...
-
-In dirvish, you can mark files across multiple dirvish buffers, and paste/move
-marked files/directory to current directory with one keystroke
-(=dirvish-yank=). Besides, it provides a few drop-in replacement commands for
-those not-so-modern dired commands, such as =dirvish-sort-by-criteria= is a better
-version of =dired-sort-toggle-or-edit=.
+Dirvish provides a few drop-in replacement commands for those not-so-modern
+dired commands, such as =dirvish-sort-by-criteria= is a more user friendly version
+of =dired-sort-toggle-or-edit=. 
 
 *** Asynchronous I/O
 
@@ -172,28 +191,6 @@ support. This native icon solution has several advantages over
 Dirvish doesn't render icons for all the files in a directory eagerly, instead
 it only render icons that are displayed within the viewport. Visiting =/usr/bin=
 (or any directory with over 1000 files) will no longer freeze your Emacs.
-
-*** "Dirvish-ish" dired
-
-Usually =dirvish= takes up the whole frame, but sometimes we prefer managing files
-inside current window, just like how dired does it. To enable a single window
-dirvish, you can either:
-
-- Run it once ::
-
-#+begin_src emacs-lisp
-  (dirvish-dired)
-#+end_src
-
-- Override dired commands (=dired/dired-jump/dired-jump-other-window/...=) globally ::
-
-#+begin_src emacs-lisp
-  (dirvish-override-dired-mode)
-#+end_src
-
-A glimpse of single-window dirvish:
-
-[[./assets/dirvish-one-win.png]]
 
 *** Minibuffer file preview (extension)
 
@@ -254,65 +251,27 @@ you'd like to give this extension a try, all you need is:
 ** Similar projects
 *** Ranger.el
 
-This package is inspired a lot by [[https://github.com/ralesi/ranger.el][ranger.el]], thanks @ralesi for bringing in
-*ranger* to emacs!
-
 Although these 2 packages have something in common, unlike *ranger.el*, which
 tries to become an all-around emulation of ranger, *dirvish* is more bare-bone,
 meaning it does *NOT* try to port all "goodness" from ranger. Instead, it only
 aims to:
 
-- provides a better dired UI
-- support preview for directory and common file types.
-- improve some dired commands, make them more intuitive and accesible.
-
-And here are some specific differences between *dirvish* and *ranger.el*:
-
-- Header display
-
-  Ranger uses =header-line-format= to display its header, this approach leads to
-  misaligned/mismatched header string when you have multiple parent windows. In
-  contrast, dirvish uses an independent window for that purpose.
-
-  + Ranger ::
-
-  [[./assets/ranger-header.png]]
-
-  + Dirvish ::
-
-  [[./assets/dirvish-header.png]]
-
-- Preview buffer
-
-  Ranger uses dired for creating both parent buffers and directory preview
-  buffer, which causes a lot of undesirable behaviours. Because when you have
-  multiple ranger instance running, a ranger buffer can be both a parent buffer
-  in INSTANCE-1 and a preview buffer in INSTANCE-2. In this case, update
-  INSTANCE-1 inevitably mutate the state of INSTANCE-2, which is definitely not
-  what we want.
-
-  In ranger, it's quite difficult to customize the setup of a preview
-  buffer. The reason is, again, a preview buffer can either be a dired buffer or
-  Non-dired buffer.
-
-  To avoid this confusion, dirvish use external shell command (=exa= by default)
-  for directory preview, so a preview buffer would never be a dired
-  buffer. Also, you can customize the setup for preview buffer with
-  =dirvish-preview-setup-hook= and =dirvish-preview-cmd-alist=.
-
-- Keybindings
-
-  Dirvish does not introduce any keybindings by default, see =dirvish-mode-map=
-  for more details.
+- Provides a better dired UI
+- Integrates all sensible dired commands
 
 ** Issues
 
 - Bugs are expected on Windows since dirvish has not been tested on it.
 - It might have conflicts with packages that controls window placement.
-- *WIP*: multiple dirvish instances across tabs (=tab-bar-mode=) and frames.
-- *WIP*: mouse support.
+- *WIP*: there are still some issues relating to buffer (auto)reverting.
+- *WIP*: marks does not display correctly when revisit the same dirvish buffer.
 
 Feel free to report issues.
+
+** Acknowledgements
+
+This package is inspired a lot by [[https://github.com/ralesi/ranger.el][ranger.el]], thanks @ralesi for creating and
+maintaining it.
 
 ** Copying
 

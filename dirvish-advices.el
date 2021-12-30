@@ -63,7 +63,7 @@
     (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
     (lsp-mode      lsp-deferred                 ignore))
   "A list of FILE, FUNCTION, and temporary ADVICE FUNCTION.
-These advices is being added during activation of first dirvish
+These advices are being added during activation of first dirvish
 instance, and get removed when the last dirvish instance exits.")
 
 (defun dirvish-redisplay-frames-fn ()
