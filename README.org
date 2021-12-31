@@ -125,7 +125,7 @@ between dired and dirvish under same dired config, please report an [[https://gi
 *** File preview
 
 =dirvish= command places a preview window at right side of frame to show the
-content of selected file. To toggle it, use =dirvish-toggle-preview=, or set
+content of selected file. To toggle it, use =dired-hide-details-mode=, or set
 =dirvish-enable-preview= to nil.
 
 Some additional notes on this:

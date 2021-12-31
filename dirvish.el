@@ -217,7 +217,6 @@ update `dirvish-history-ring'."
 
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
-    ;; (define-key map [remap dired-do-copy]                'dirvish-yank)
     (define-key map [remap dired-do-redisplay]           'dirvish-change-level)
     (define-key map [remap dired-hide-details-mode]      'dirvish-toggle-preview)
     (define-key map [remap dired-find-file]              'dirvish-find-file)
