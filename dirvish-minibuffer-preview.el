@@ -20,7 +20,6 @@
 (defvar dirvish-minibuf-preview--category nil)
 (defvar selectrum--current-candidate-index)
 (defvar dirvish-preview-update-timer)
-(defvar dirvish-minibuf-use-exist-window nil)
 
 (defun dirvish-minibuf-preview-create ()
   "Create dirvish minibuffer preview window.
@@ -34,21 +33,17 @@ one of categories in `dirvish-minibuf-preview-categories'."
               (show-preview (memq category dirvish-minibuf-preview-categories)))
     (setq dirvish-minibuf-preview--category category)
     (if-let ((preview-win (and (dirvish-curr) (dv-preview-window (dirvish-curr)))))
-        (progn
-          (setq dirvish-minibuf-use-exist-window t)
-          (setq dirvish-minibuf-preview-window preview-win))
-      (dirvish-activate t)
+        (setq dirvish-minibuf-preview-window preview-win)
+      (set-frame-parameter nil 'dirvish--minibuf (dirvish-activate t))
       (let ((next-win (next-window)))
         (setq dirvish-minibuf-preview-window next-win)
         (setf (dv-preview-pixel-width (dirvish-curr)) (window-width next-win t))))))
 
 (defun dirvish-minibuf-preview-teardown ()
   "Teardown dirvish minibuffer preview window."
-  (when (and dirvish-minibuf-preview--category
-             (not dirvish-minibuf-use-exist-window))
-    (dirvish-deactivate))
-  (setq dirvish-minibuf-preview--category nil)
-  (setq dirvish-minibuf-use-exist-window nil))
+  (when-let (dv (frame-parameter nil 'dirvish--minibuf))
+    (dirvish-deactivate dv))
+  (setq dirvish-minibuf-preview--category nil))
 
 (defun dirvish--minibuf-update-advice (fn &rest args)
   "Apply FN with ARGS, then update dirvish minibuffer preview window.
