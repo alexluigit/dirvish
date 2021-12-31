@@ -41,9 +41,9 @@ non-nil, do not update padding."
               (ol (make-overlay beg end)))
     (when dirvish-show-icons
       (remove-overlays beg end 'dirvish-icons t)
-      (dirvish--body-render-icon pos 'dirvish-body-face))
+      (dirvish--body-render-icon pos 'highlight))
     (overlay-put ol 'dirvish-body t)
-    (overlay-put ol 'face 'dirvish-body-face)))
+    (overlay-put ol 'face 'highlight)))
 
 (defun dirvish--body-update-icons ()
   "Update icon in current dirvish line."

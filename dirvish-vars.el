@@ -121,7 +121,8 @@ See `face-remapping-alist' for more details."
   :group 'dirvish :type 'alist)
 
 (defcustom dirvish-parent-face-remap-alist
-  '((header-line :height 1.2 :box (:line-width 4 :color "#303030")))
+  '((header-line :height 1.2 :box (:line-width 4 :color "#303030"))
+    (highlight :inherit (highlight) :extend t))
   "Face remapping alist used in dirvish parent window.
 This variable doesn't take effect in a dirvish header window. To
 configure faces in dirvish header window, use
@@ -136,22 +137,6 @@ See `face-remapping-alist' for more details."
 
 (defvar dirvish-preview-setup-hook nil
   "Hook for preview buffer initialization.")
-
-;;;; Faces
-
-(defgroup dirvish-faces nil
-  "Faces used by Dirvish."
-  :group 'dirvish :group 'faces)
-
-(defface dirvish-body-face
-  '((default :extend t)
-    (((class color) (min-colors 88) (background light))
-     :background "#8eecf4")
-    (((class color) (min-colors 88) (background dark))
-     :background "#004065")
-    (t :inverse-video t))
-  "Face used for `dirvish-body-update'."
-  :group 'dirvish-faces)
 
 ;;;; Internal variables
 
