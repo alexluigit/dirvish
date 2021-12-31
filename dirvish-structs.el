@@ -162,6 +162,22 @@ restore them after."
        ,(when args `(save-excursion ,@args)) ; Body form given
        dv)))
 
+(defmacro dirvish-kill (&optional dv &rest body)
+  "Kill a dirvish instance DV and remove it from `dirvish-hash'.
+
+DV defaults to current dirvish instance if not given.  If BODY is
+given, it is executed to unset the window configuration brought
+by this instance."
+  (declare (indent defun))
+  `(when-let ((kill-dv (or ,dv (dirvish-curr))))
+    (setq recentf-list (dv-saved-recentf kill-dv))
+    (unless (dv-one-window-p kill-dv)
+      (set-window-configuration (dv-window-conf kill-dv)))
+    (mapc #'kill-buffer (dv-parent-buffers kill-dv))
+    (mapc #'kill-buffer (dv-preview-buffers kill-dv))
+    (remhash (dv-name kill-dv) (dirvish-hash))
+    ,@body))
+
 (defun dirvish-activate (&optional one-window-p)
   "Save previous window config and initialize dirvish.
 
@@ -169,28 +185,22 @@ If ONE-WINDOW-P, initialize dirvish in current window rather than
 the whole frame."
   (dirvish-init-frame)
   (when (eq major-mode 'dirvish-mode) (dirvish-deactivate))
-  (set-frame-parameter nil 'dirvish--curr
-                       (dirvish-new :one-window-p one-window-p))
-  (dirvish--add-advices t)
-  (when (and (dirvish--get-IO-status)
-             (not one-window-p))
-    (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
-    (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat)))
+  (let ((dv-new (dirvish-new :one-window-p one-window-p)))
+    (set-frame-parameter nil 'dirvish--curr dv-new)
+    (dirvish--add-advices t)
+    (when (and (dirvish--get-IO-status)
+               (not one-window-p))
+      (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
+      (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat))
+    dv-new))
 
-(defun dirvish-deactivate ()
+(defun dirvish-deactivate (&optional dv)
   "Revert previous window config and deinit dirvish."
-  (when-let ((curr-dv (dirvish-curr)))
-    (setq recentf-list (dv-saved-recentf curr-dv))
-    (unless (dv-one-window-p curr-dv)
-      (set-window-configuration (dv-window-conf curr-dv)))
-    (mapc #'kill-buffer (dv-parent-buffers curr-dv))
-    (mapc #'kill-buffer (dv-preview-buffers curr-dv))
-    (remhash (dv-name curr-dv) (dirvish-hash))
+  (dirvish-kill dv
     (unless (dirvish-all-names)
       (dirvish--clean-advices)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
-    (message "%s" (dirvish-all-names))
-    (unless (dirvish-reclaim)
+    (unless (or (dirvish-reclaim) (window-minibuffer-p))
       (set-frame-parameter nil 'dirvish--curr nil))))
 
 (provide 'dirvish-structs)
