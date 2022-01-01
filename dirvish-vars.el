@@ -63,7 +63,7 @@ For example, if this value is 0.1, the font size in dirvish body
 will be scaled to 110% (1 + 0.1)."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-footer-format "Sort: %S  Omit: %f  %d  %p%w%t %i"
+(defcustom dirvish-footer-format "Sort: %S  Omit: %f  %d  %w%x%y%z %i"
   "Format for footer display."
   :group 'dirvish :type 'string)
 
@@ -133,6 +133,18 @@ See `face-remapping-alist' for more details."
 
 (defcustom dirvish-header-text-fn 'dirvish-header-text
   "Function used to output a string that will show up as header."
+  :group 'dirvish :type 'function)
+
+(defcustom dirvish-footer-slot-x-fn nil
+  "Function outputs a string displayed at dirvish footer slot-x."
+  :group 'dirvish :type 'function)
+
+(defcustom dirvish-footer-slot-y-fn nil
+  "Function outputs a string displayed at dirvish footer slot-y."
+  :group 'dirvish :type 'function)
+
+(defcustom dirvish-footer-slot-z-fn nil
+  "Function outputs a string displayed at dirvish footer slot-z."
   :group 'dirvish :type 'function)
 
 (defvar dirvish-preview-setup-hook nil

@@ -34,6 +34,12 @@
            (msg (format (format "%%s%%%ds" space) lhs rhs)))
       (message "%s" msg))))
 
+(defun dirvish-footer-slot (slot-fn entry)
+  "Call SLOT-FN with ENTRY, return the result string.
+If SLOT-FN is nil or its return value is nil, return an empty
+string."
+  (or (and slot-fn (funcall slot-fn entry)) ""))
+
 (defun dirvish--footer-spec ()
   "File specs for current file that will be sent to `format-spec'."
   (let* ((entry (dired-get-filename nil t))
@@ -47,11 +53,13 @@
          (final-pos (- (line-number-at-pos (point-max)) 3))
          (index (format "%3d/%-3d" cur-pos final-pos))
          (sorting (car (dv-sort-criteria (dirvish-curr))))
-         (i/o-task (or (dirvish--get-IO-status) ""))
+         (slot-x (dirvish-footer-slot dirvish-footer-slot-x-fn entry))
+         (slot-y (dirvish-footer-slot dirvish-footer-slot-y-fn entry))
+         (slot-z (dirvish-footer-slot dirvish-footer-slot-z-fn entry))
          (filter (if dired-omit-mode "ON" "OFF"))
          (space "&&&"))
     `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)
-      (?s . ,file-size) (?S . ,sorting) (?w . ,space) (?t . ,i/o-task))))
+      (?s . ,file-size) (?S . ,sorting) (?w . ,space) (?x . ,slot-x) (?y . ,slot-y) (?z . ,slot-z))))
 
 (provide 'dirvish-footer)
 
