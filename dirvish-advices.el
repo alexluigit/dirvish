@@ -173,11 +173,11 @@ the header line in a dired buffer."
 
 (defun dirvish-update-viewport-h (win _)
   "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
-  (when-let (root-win (and (dirvish-curr) (dv-root-window (dirvish-curr))))
-    (when (and (eq win root-win)
-               (eq (selected-frame) (window-frame root-win)))
-      (with-selected-window win
-        (dirvish-body-update nil t)))))
+  (let ((buf (current-buffer)))
+    (when (and (dirvish-live-p win)
+               ;; Do not update when current buffer exists in multiple windows
+               (< (cl-count-if (lambda (w) (eq (window-buffer w) buf)) (window-list)) 2))
+      (dirvish-body-update nil t))))
 
 (defun dirvish--add-advices (&optional temporary)
   "Add all advice listed in `dirvish-advice-alist'.
