@@ -1,4 +1,4 @@
-;;; dirvish-parents.el --- Parent windows for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-parents.el --- Parent windows for Dirvish -*- lexical-binding: t -*-
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 

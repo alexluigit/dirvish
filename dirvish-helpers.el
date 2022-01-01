@@ -1,4 +1,4 @@
-;;; dirvish-helpers.el --- Helper functions for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-helpers.el --- Helper functions for Dirvish -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 

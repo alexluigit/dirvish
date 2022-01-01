@@ -1,4 +1,4 @@
-;;; dirvish-vars.el --- Variables defined in dirvish. -*- lexical-binding: t -*-
+;;; dirvish-vars.el --- Variables defined in dirvish -*- lexical-binding: t -*-
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 

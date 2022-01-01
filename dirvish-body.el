@@ -1,4 +1,4 @@
-;;; dirvish-body.el --- Setup/update body for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-body.el --- Setup/update body for Dirvish -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 

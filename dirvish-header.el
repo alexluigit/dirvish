@@ -1,4 +1,4 @@
-;;; dirvish-header.el --- Header for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-header.el --- Header for Dirvish -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
