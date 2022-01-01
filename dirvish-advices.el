@@ -26,7 +26,7 @@
 (require 'dirvish-vars)
 
 (defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-find-file-ad           :before)
+  '((files         find-file                    dirvish-deactivate-ad          :before)
     (dired         dired                        dirvish-dired-ad)
     (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
     (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
@@ -120,15 +120,13 @@ FILE-NAME are the same args in `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg
                   (read-file-name "Dirvish jump to: "))))
-  (dirvish-reclaim)
   (if other-window
       (progn
         (switch-to-buffer-other-window "*scratch*")
         (apply fn nil (and file-name (list file-name))))
     (if (dirvish-live-p)
         (dirvish-find-file file-name)
-      (apply fn other-window (and file-name (list file-name)))))
-  (dirvish-reclaim))
+      (apply fn other-window (and file-name (list file-name))))))
 
 (defun dirvish-reset-ad (fn &rest args)
   "Apply FN with ARGS, rebuild dirvish frame when necessary."
@@ -160,10 +158,10 @@ FILE-NAME are the same args in `dired-jump'."
   (unless (dired-get-filename nil t) (dirvish-next-file 1))
   (dirvish-reset))
 
-(defun dirvish-find-file-ad (&rest _)
-  "When inside a dirvish instance, quit it before opening a file."
-  (when (dirvish-reclaim) ; reclaim dirvish from minibuffer
-    (dirvish-deactivate)))
+(defun dirvish-deactivate-ad (&rest _)
+  "Quit current dirvish instance if inside one.
+Use it as a `:before' advisor to target function."
+  (dirvish-deactivate))
 
 (defun dirvish-setup-dired-buffer-h ()
   "Setup dired buffer for dirvish.
