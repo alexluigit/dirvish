@@ -126,14 +126,14 @@ Optionally, a shell command CMD and its ARGS can be passed."
 
 When PROC finishes, fill `dv-preview-buffer' with process
 result string."
-  (let ((buf (dv-preview-buffer (dirvish-curr))))
-    (when (buffer-live-p buf)
-      (with-current-buffer (dv-preview-buffer (dirvish-curr))
-        (erase-buffer) (remove-overlays)
-        (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
-          (insert result-str)
-          (ansi-color-apply-on-region
-           (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))))))
+  (when-let ((buf (and (dirvish-curr)
+                       (dv-preview-buffer (dirvish-curr)))))
+    (with-current-buffer buf
+      (erase-buffer) (remove-overlays)
+      (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
+        (insert result-str)
+        (ansi-color-apply-on-region
+         (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point)))))))
 
 (defun dirvish-preview-update (&optional preview-window)
   "Update dirvish preview window.
