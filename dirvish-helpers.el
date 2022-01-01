@@ -10,15 +10,6 @@
 
 ;;; Code:
 
-(declare-function dirvish "dirvish")
-(declare-function dirvish-dired "dirvish")
-(declare-function dirvish-reset "dirvish")
-(declare-function dirvish-quit "dirvish")
-(declare-function dirvish-body-update "dirvish-body")
-(declare-function dirvish--body-render-icon "dirvish-body")
-(declare-function dirvish--body-render-icon "dirvish-body")
-(declare-function dirvish--add-advices "dirvish-advices")
-(declare-function dirvish--clean-advices "dirvish-advices")
 (require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dired-x)
@@ -91,69 +82,6 @@ The sort flag is accessed from `dv-sort-criteria'."
          (new-window (split-window-no-error root-win size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--yank (&optional mode)
-  "Paste marked files/directory to current directory according to MODE.
-
-MODE can be `'copy', `'move', `symlink', or `relalink'."
-  (interactive)
-  (let* ((regexp (dired-marker-regexp))
-         (yanked-files ())
-         (mode (or mode 'copy))
-         case-fold-search)
-    (cl-dolist (buf (seq-filter #'buffer-live-p (dirvish-all-parent-buffers)))
-      (with-current-buffer buf
-        (when (save-excursion (goto-char (point-min))
-                              (re-search-forward regexp nil t))
-          (setq yanked-files
-                (append yanked-files (dired-map-over-marks (dired-get-filename) nil))))))
-    (unless yanked-files (user-error "No files marked for pasting"))
-    (dirvish--do-yank yanked-files mode)))
-
-(defun dirvish--do-yank (fileset mode)
-  "Run paste-mode MODE on FILESET.
-This function is a helper for `dirvish--yank'."
-  (let* ((target (dired-current-directory))
-         (process-connection-type nil)
-         (io-buffer (generate-new-buffer " *Dirvish I/O*"))
-         (paste-func
-          (cl-case mode
-            ('copy (lambda (fr to) (start-process "" io-buffer "cp" "-f" "-r" "-v" fr to)))
-            ('move (lambda (fr to) (start-process "" io-buffer "mv" "-f" "-v" fr to)))
-            ('symlink (lambda (fr to) (make-symbolic-link fr to)))
-            ('relalink (lambda (fr to) (dired-make-relative-symlink fr to)))))
-         (new-fileset ())
-         overwrite abort)
-    (cl-dolist (file fileset)
-      (when (and (not abort) (file-exists-p file))
-        (let* ((base-name (file-name-nondirectory file))
-               (paste-name (concat target base-name))
-               (prompt (concat base-name " exists, overwrite?: (y)es (n)o (a)ll (q)uit"))
-               choice)
-          (if overwrite
-              (push (cons file paste-name) new-fileset)
-            (if (file-exists-p paste-name)
-                (let ((name~ paste-name)
-                      (idx 1))
-                  (setq choice (read-char-choice prompt '(?y ?n ?a ?q)))
-                  (when (eq choice ?n)
-                    (while (file-exists-p name~)
-                      (setq name~ (concat paste-name (number-to-string idx) "~"))
-                      (setq idx (1+ idx))))
-                  (cl-case choice
-                    ((?y ?n) (push (cons file name~) new-fileset))
-                    (?a (setq overwrite t) (push (cons file name~) new-fileset))
-                    (?q (setq abort t) (setq new-fileset ()))))
-              (push (cons file paste-name) new-fileset))))))
-    (let ((size (dirvish--get-filesize (mapcar #'car new-fileset)))
-          (leng (length new-fileset)))
-      (add-to-list 'dirvish-IO-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
-    (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
-    (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat)
-    (cl-dolist (file new-fileset)
-      (funcall paste-func (car file) (cdr file)))
-    (cl-dolist (buf (dirvish-all-parent-buffers))
-      (with-current-buffer buf (dired-unmark-all-marks)))))
-
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
@@ -171,41 +99,6 @@ This function is a helper for `dirvish--yank'."
   (cl-dolist (dir dirvish-trash-dir-alist)
     (when (string-prefix-p (car dir) (dired-current-directory))
       (cl-return (concat (car dir) (cdr dir))))))
-
-(defun dirvish--get-IO-status ()
-  "Get current disk I/O task."
-  (when-let* ((task (car-safe dirvish-IO-queue)))
-    (let ((finished (car task))
-          (size (nth 2 task))
-          (index (car (nth 3 task)))
-          (length (cdr (nth 3 task))))
-      (when finished
-        (setq dirvish-IO-queue (cdr dirvish-IO-queue))
-        (unless dirvish-IO-queue
-          (cancel-timer (symbol-value 'dirvish-footer-update-timer))))
-      (format "%s: %s total size: %s"
-              (if finished "Success" "Progress")
-              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
-              (propertize size 'face 'font-lock-builtin-face)))))
-
-(defun dirvish--set-IO-status ()
-  "Set current disk I/O task."
-  (when-let* ((task (car-safe dirvish-IO-queue)))
-    (let ((io-buf (nth 1 task))
-          (progress (car (nth 3 task)))
-          (length (cdr (nth 3 task)))
-          (mode (nth 4 task))
-          (proc-exit "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"))
-      (if (or (eq mode 'copy) (eq mode 'move))
-          (setq progress (with-current-buffer io-buf
-                           (how-many proc-exit (point-min) (point-max))))
-        (setq progress length))
-      (when (eq progress length)
-        (when (dirvish-live-p) (dirvish-reset))
-        (setf (nth 0 (car-safe dirvish-IO-queue)) t)
-        (when (eq (length dirvish-IO-queue) 1)
-          (cancel-timer (symbol-value 'dirvish--set-IO-status-timer))))
-      (setcar (nth 3 (car-safe dirvish-IO-queue)) progress))))
 
 ;;;###autoload
 (defun dirvish-live-p (&optional win)

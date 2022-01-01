@@ -161,7 +161,6 @@ See `face-remapping-alist' for more details."
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-repeat-timers '())
-(defvar dirvish-IO-queue '())
 (defvar-local dirvish-child-entry nil)
 (defvar-local dirvish--curr-name nil)
 
