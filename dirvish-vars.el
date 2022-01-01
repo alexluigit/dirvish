@@ -138,6 +138,9 @@ See `face-remapping-alist' for more details."
 (defvar dirvish-preview-setup-hook nil
   "Hook for preview buffer initialization.")
 
+(defvar dirvish-activation-hook nil
+  "Hook runs after activation of dirvish instance.")
+
 ;;;; Internal variables
 
 (defconst dirvish-preview-delay 0.02)

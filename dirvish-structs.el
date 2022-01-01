@@ -188,14 +188,12 @@ the whole frame."
   (let ((dv-new (dirvish-new :one-window-p one-window-p)))
     (set-frame-parameter nil 'dirvish--curr dv-new)
     (dirvish--add-advices t)
-    (when (and (dirvish--get-IO-status)
-               (not one-window-p))
-      (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
-      (dirvish-repeat dirvish--set-IO-status 0 dirvish-footer-repeat))
+    (run-hooks 'dirvish-activation-hook)
     dv-new))
 
 (defun dirvish-deactivate (&optional dv)
-  "Revert previous window config and deinit dirvish."
+  "Deactivate dirvish instance DV.
+If DV is not given, default to current dirvish instance."
   (dirvish-kill dv
     (unless (dirvish-all-names)
       (dirvish--clean-advices)
