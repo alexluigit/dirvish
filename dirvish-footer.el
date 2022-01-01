@@ -1,4 +1,4 @@
-;;; dirvish-footer.el --- Footer for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-footer.el --- Footer for Dirvish -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 

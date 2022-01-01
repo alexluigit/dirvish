@@ -1,4 +1,4 @@
-;;; dirvish-preview.el --- File preview for Dirvish. -*- lexical-binding: t -*-
+;;; dirvish-preview.el --- File preview for Dirvish -*- lexical-binding: t -*-
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
