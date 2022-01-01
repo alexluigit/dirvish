@@ -29,10 +29,10 @@ FRAME defaults to current frame."
 
 (defun dirvish-reclaim (&optional frame-or-window)
   "Reclaim current dirvish in FRAME-OR-WINDOW."
-  (unless (window-minibuffer-p (frame-selected-window frame-or-window))
+  (with-selected-window (frame-selected-window frame-or-window)
     (when-let ((dv-name (buffer-local-value 'dirvish--curr-name (current-buffer))))
       (set-frame-parameter nil 'dirvish--curr (gethash dv-name (dirvish-hash)))
-      (dirvish-reset) t)))
+      t)))
 
 (defmacro dirvish--get-buffer (type &rest body)
   "Return dirvish buffer with TYPE.

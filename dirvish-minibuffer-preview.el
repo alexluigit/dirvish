@@ -42,7 +42,9 @@ one of categories in `dirvish-minibuf-preview-categories'."
 (defun dirvish-minibuf-preview-teardown ()
   "Teardown dirvish minibuffer preview window."
   (when-let (dv (frame-parameter nil 'dirvish--minibuf))
-    (dirvish-deactivate dv))
+    (dirvish-deactivate dv)
+    (with-selected-window (minibuffer-selected-window)
+      (dirvish-reclaim)))
   (setq dirvish-minibuf-preview--category nil))
 
 (defun dirvish--minibuf-update-advice (fn &rest args)
