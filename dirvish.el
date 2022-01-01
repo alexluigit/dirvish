@@ -121,13 +121,6 @@ lines."
       (switch-to-buffer (get-buffer-create "*scratch*"))
       (dirvish path))))
 
-(defun dirvish-yank (&optional arg)
-  "Paste marked files/directory to current directory.
-
-With optional prefix ARG, delete source files/directories."
-  (interactive "P")
-  (if arg (dirvish--yank 'move) (dirvish--yank)))
-
 (defun dirvish-change-level (&optional arg)
   "Change `dirvish-depth' to ARG."
   (interactive "p")
