@@ -1,6 +1,6 @@
 #+AUTHOR: Alex Lu
 #+EMAIL: alexluigit@gmail.com
-#+startup: inlineimages content
+#+startup: content
 
 * *Dirvish*
 
@@ -12,9 +12,12 @@ Wish you a better dired.
 #+end_quote
 
 #+ATTR_ORG: :width 1024
-[[./assets/multi-win.png]]
+[[./assets/dirvish.png]]
 
-Check out this [[https://www.youtube.com][introduction_video_NOT_UPLOADED_YET]].
+| Asynchronous preview       | Multiple instance              | Toggle maximize       |
+|----------------------------+--------------------------------+-----------------------|
+| [[./assets/async-preview.gif]] | [[./assets/multiple-instance.gif]] | [[./assets/maximize.gif]] |
+
 
 ** Introduction
 
@@ -76,50 +79,36 @@ then add =path/to/dirvish= to your =load-path=.
 #+end_src
 
 *** Quickstart
+**** =dirvish= && =dirvish-dired=
 
 After installation, just =M-x= and run =dirvish=.
 
-**** "Dirvish-ish" dired
+=dirvish= command takes up the whole frame, but sometimes we prefer managing files
+inside current window, just like how dired does it. To get a "dirvish-ish"
+dired, use =dirvish-dired=.
 
-Usually =dirvish= takes up the whole frame, but sometimes we prefer managing files
-inside current window, just like how dired does it. To open a single window
-dirvish, you can either:
+In either case, you have access to all your Dired commands *except* a few remapped
+ones in =dirvish-mode-map=.
 
-- Run it once ::
+/NOTICE/: if some dired command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
 
-#+begin_src emacs-lisp
-  (dirvish-dired)
-#+end_src
+**** Override Dired
 
-- Override dired entry commands (=dired/dired-jump/dired-jump-other-window/...=) globally ::
+When you feel like to replace *Dired* with *Dirvish* completely (highly
+recommended!), all you need is enable =dirvish-override-dired-mode=.
 
-#+begin_src emacs-lisp
-  (dirvish-override-dired-mode)
-#+end_src
+Now all your Dired entry commands incluing =dired=, =dired-other-window/tab/frame=,
+=dired-jump[-other-window]= will do its job in a "dirvish" way.
 
-A glimpse of single-window dirvish:
+**** In relation to Dired config
 
-[[./assets/dirvish-one-win.png]]
+Dirvish respects all of your dired options *except* following ones:
 
-**** Dired config
-
-Since =dirvish-mode= is just a =major-mode= derived from =dired-mode=, it respects all
-of your dired config (including keymapping) in principle.
-
-As an example, here is an excerpt from my personal dired config:
-
-#+begin_src emacs-lisp
-  (setq dired-clean-confirm-killing-deleted-buffers nil)
-  (setq dired-recursive-deletes 'always)
-  (setq delete-by-moving-to-trash t)
-  (setq dired-dwim-target t)
-  (setq dired-listing-switches "-AGhlv --group-directories-first --time-style=long-iso")
-#+end_src
-
-/NOTICE/: You may come across issues relating to buffer killing/reverting
-mechanism inside of dirvish since this part is still very much WIP (hence
-related dired config won't work). If you found any inconsistency behaviours
-between dired and dirvish under same dired config, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
+| Option                                   | Reason                                                  |
+|------------------------------------------+---------------------------------------------------------|
+| =dired-kill-when-opening-new-dired-buffer= | Dirvish kill all buffers this instance holds when exits |
+| =dired-auto-revert-buffer=                 | WIP                                                     |
+| =dired-switches-in-mode-line=              | Dirvish buffer doesn't come with a mode line by default |
 
 ** Features
 *** File preview
@@ -146,9 +135,13 @@ You can open multiple dirvish instance across diffent widnows / tabs /
 frames. Each one of them has their own parent/preview buffer list that are being
 killed during deactivation of this instance.
 
-*WIP*: Although every dirvish instance is independent from each other, you can mark
+Although every dirvish instance is independent from each other, you can mark
 files across multiple instance, and paste/move marked files to current one with
-one keystroke (=dirvish-yank=).
+=dirvish-yank=.
+
+NOTE: =dirvish-yank= command is included in the =dirvish-yank.el= extension, which
+is not being loaded by default, you need to require it in your config before
+using it.
 
 *** Drop-in replacement commands
 
@@ -180,7 +173,7 @@ support. This native icon solution has several advantages over
 
   + hl-line-mode + all-the-icons-dired-mode ::
 
-  [[./assets/ranger-line.png]]
+  [[./assets/dired-line.png]]
 
   + dirvish ::
 
@@ -208,16 +201,13 @@ file/directory candidates using minibuffer.
   have to configure file preview for dirvish and for minibuffer separately, they
   will always /display the same thing./
 
-For *selectrum* or *vertico* users (only support these 2 completion UIs for now), if
-you'd like to give this extension a try, all you need is:
+This extension only support *vertico/selectrum* for now.
 
-#+begin_src emacs-lisp
-  (require 'dirvish-minibuffer-preview)
-  (dirvish-minibuf-preview-mode)
-#+end_src
+NOTE: =dirvish-minibuf-preview-mode= command is included in the
+=dirvish-minibuffer-preview.el= extension, which is not being loaded by default,
+you need to require it in your config before using it.
 
 ** Configuration
-
 *** Options
 
 | Option                          | Type     | Description                             | default             |
@@ -243,10 +233,54 @@ you'd like to give this extension a try, all you need is:
 
 *** Hooks
 
-| Hook                       | Description                             |
-|----------------------------+-----------------------------------------|
-| =dirvish-mode-hook=          | Hook for parent buffer initialization.  |
-| =dirvish-preview-setup-hook= | Hook for preview buffer initialization. |
+| Hook                       | Description                               |
+|----------------------------+-------------------------------------------|
+| =dirvish-activation-hook=    | Hook for dirvish instance initialization. |
+| =dirvish-mode-hook=          | Hook for parent buffer initialization.    |
+| =dirvish-preview-setup-hook= | Hook for preview buffer initialization.   |
+
+*** Example config
+
+Here is an example Dired/Dirvish config.
+
+#+begin_src emacs-lisp
+  (use-package dired
+    :config
+    (setq dired-recursive-deletes 'always)
+    (setq delete-by-moving-to-trash t)
+    (setq dired-dwim-target t)
+    (setq dired-listing-switches "-AGhlv --group-directories-first --time-style=long-iso"))
+
+  (use-package dired-x
+    ;; Enable dired-omit-mode by default
+    ;; :hook
+    ;; (dired-mode . dired-omit-mode)
+    :config
+    ;; Make dired-omit-mode hide all "dotfiles"
+    (setq dired-omit-files
+          (concat dired-omit-files "\\|^\\..*$")))
+
+  (use-package dirvish
+    :config
+    ;; Override dired with dirvish globally
+    (dirvish-override-dired-mode)
+
+    ;; Load `dirvish-yank' command
+    (require 'dirvish-yank)
+
+    ;; Enable file preview when narrowing files in minibuffer.
+    ;; This feature only support `vertico/selectrum' for now.
+    ;; (require 'dirvish-minibuffer-preview)
+    ;; (dirvish-minibuf-preview-mode)
+
+    :bind
+    (nil
+     :map dirvish-mode-map
+     ("SPC" . dirvish-show-history)
+     ;; need to require it first, see above
+     ;; ([remap dired-do-copy] . dirvish-yank)
+     ("^" . dirvish-other-buffer)))
+#+end_src
 
 ** Similar projects
 *** Ranger.el
@@ -262,7 +296,6 @@ aims to:
 ** Issues
 
 - Bugs are expected on Windows since dirvish has not been tested on it.
-- It might have conflicts with packages that controls window placement.
 - *WIP*: there are still some issues relating to buffer (auto)reverting.
 - *WIP*: marks does not display correctly when revisit the same dirvish buffer.
 
