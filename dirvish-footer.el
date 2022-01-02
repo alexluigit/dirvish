@@ -19,7 +19,8 @@
 
 (cl-defun dirvish-footer-update ()
   "Show file details in echo area."
-  (when-let ((one-window-p (dv-one-window-p (dirvish-curr))))
+  (when-let ((one-window-p (and (dirvish-curr)
+                                (dv-one-window-p (dirvish-curr)))))
     (cl-return-from dirvish-footer-update))
   (when (and (dired-get-filename nil t)
              (dirvish-live-p))
