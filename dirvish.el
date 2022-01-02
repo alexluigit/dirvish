@@ -1,8 +1,8 @@
 ;;; dirvish.el --- A modern file manager based on dired mode -*- lexical-binding: t -*-
-;; Copyright (C) 2021 Alex Lu
+;; Copyright (C) 2021-2022 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 0.9.0
+;; Version: 0.9.5
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
