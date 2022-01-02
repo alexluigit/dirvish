@@ -240,13 +240,6 @@ update `dirvish-history-ring'."
   (setq-local dirvish--curr-name (dv-name (dirvish-curr))))
 
 ;;;###autoload
-(defun dirvish-find-file-dwim (&rest args)
-  "Apply `dirvish-find-file' or `dired-find-file' with ARGS."
-  (if (derived-mode-p 'dirvish-mode)
-      (apply #'dirvish-find-file args)
-    (apply #'find-alternate-file args)))
-
-;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
   "Override Dired with `dirvish-dired' globally."
   :group 'dirvish :global t
