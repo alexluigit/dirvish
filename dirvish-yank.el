@@ -78,7 +78,7 @@ This function is a helper for `dirvish--yank'."
                         (setq new-fileset (dirvish--yank-push-task file target name~ new-fileset)))
                     (?q (setq abort t) (setq new-fileset ()))))
               (setq new-fileset (dirvish--yank-push-task file target paste-name new-fileset)))))))
-    (and abort (user-error "Dirvish: yank aborted."))
+    (and abort (user-error "Dirvish: yank aborted"))
     (let ((size (dirvish--get-filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
       (add-to-list 'dirvish-yank-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
@@ -146,3 +146,5 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
   (add-hook 'dirvish-activation-hook #'dirvish-yank-display-progress))
 
 (provide 'dirvish-yank)
+
+;;; dirvish-yank.el ends here
