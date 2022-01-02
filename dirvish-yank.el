@@ -87,7 +87,8 @@ This function is a helper for `dirvish--yank'."
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf (dirvish-all-parent-buffers))
-      (with-current-buffer buf (dired-unmark-all-marks)))))
+      (with-current-buffer buf (dired-unmark-all-marks)))
+    (message "Dirvish: yank completed.")))
 
 (defun dirvish--yank-push-task (file dir name place)
   "Push (FILE . DIR or NAME) cons to PLACE.
