@@ -279,7 +279,7 @@ Here is an example Dired/Dirvish config.
      ("SPC" . dirvish-show-history)
      ;; need to require it first, see above
      ;; ([remap dired-do-copy] . dirvish-yank)
-     ("^" . dirvish-other-buffer)))
+     ("o" . dirvish-other-buffer)))
 #+end_src
 
 ** Similar projects
