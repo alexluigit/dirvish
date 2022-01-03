@@ -14,10 +14,9 @@ Wish you a better dired.
 #+ATTR_ORG: :width 1024
 [[./assets/dirvish.png]]
 
-| Asynchronous preview       | Multiple instance              | Toggle maximize       |
+| Preview                    | Layout1                        | Layout2               |
 |----------------------------+--------------------------------+-----------------------|
 | [[./assets/async-preview.gif]] | [[./assets/multiple-instance.gif]] | [[./assets/maximize.gif]] |
-
 
 ** Introduction
 
@@ -266,7 +265,7 @@ Here is an example Dired/Dirvish config.
     (dirvish-override-dired-mode)
 
     ;; Load `dirvish-yank' command
-    (require 'dirvish-yank)
+    ;; (require 'dirvish-yank)
 
     ;; Enable file preview when narrowing files in minibuffer.
     ;; This feature only support `vertico/selectrum' for now.
