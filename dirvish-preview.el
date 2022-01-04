@@ -16,95 +16,185 @@
 (require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))
 
-(defvar dirvish-preview-update-timer)
+(defun dirvish--get-image-cache-for-file (file size &optional ext)
+  "Get image cache filepath for FILE.
+SIZE is window pixelwise width of current dirvish preview window.
+A optional extension EXT, such as \".jpg\", can be given to the
+cache image."
+  (let ((cache (concat dirvish-cache-dir (number-to-string size) file)))
+    (unless (file-exists-p cache)
+      (make-directory (file-name-directory cache) t))
+    (concat cache ext)))
 
-(cl-defun dirvish-preview-match-mime (file)
-  "To determine if FILE can be matched by `dirvish-preview-cmd-alist'."
-  (pcase-dolist (`(,re-or-exts ,cmd) dirvish-preview-cmd-alist)
-    (if (listp re-or-exts)
-        (let ((ext (file-name-extension file)))
-          (when (member ext re-or-exts)
-            (cl-return-from dirvish-preview-match-mime cmd)))
-      (when (string-match re-or-exts (or (mailcap-file-name-to-mime-type file) ""))
-        (cl-return-from dirvish-preview-match-mime cmd)))))
+(defun dirvish--preview-process-fill-str-sentinel (proc _exitcode)
+  "A sentinel for dirvish preview process.
 
-(cl-defun dirvish--preview-entry (entry)
-  "Create the preview buffer for ENTRY."
-  (unless (file-readable-p entry)
-    (cl-return-from dirvish--preview-entry
-      (dirvish--preview-get-create "File Not Readable")))
-  (when (file-directory-p entry)
-    (cl-return-from dirvish--preview-entry
-      (dirvish--preview-get-create "directory" "exa" (list "--color=always" "-al" entry))))
-  (let ((match (dirvish-preview-match-mime entry))
+When PROC finishes, fill `dv-preview-buffer' with process
+result string."
+  (when-let ((buf (and (dirvish-curr)
+                       (dv-preview-buffer (dirvish-curr)))))
+    (with-current-buffer buf
+      (erase-buffer) (remove-overlays)
+      (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
+        (insert result-str)
+        (ansi-color-apply-on-region
+         (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point)))))))
+
+(defun dirvish--preview-process-update-sentinel (_proc _exitcode)
+  "A process sentinel for updating dirvish preview window."
+  (dirvish-preview-update))
+
+(defun dirvish-preview-disable-dispatcher (file _dv)
+  (when (or (not (file-exists-p file))
+            (not (file-readable-p file))
+            (member (file-name-extension file)
+                    '("iso" "bin" "exe" "gpg" "elc" "eln")))
+    `(info . ,(concat "File " file " is not readable or in the preview blacklist."))))
+
+(defun dirvish-preview-directory-exa-dispatcher (file _dv)
+  (when (file-directory-p file)
+    `(shell . ("exa" "--color=always" "-al" ,file))))
+
+(defun dirvish-preview-directory-dired-dispatcher (file _dv)
+  (when (file-directory-p file)
+    `(buffer . (dired-noselect ,file))))
+
+(defun dirvish-preview-text-dispatcher (file _dv)
+  (when (string-match "text/" (or (mailcap-file-name-to-mime-type file) ""))
+    `(buffer . (find-file-noselect ,file t nil))))
+
+(defun dirvish-preview-gif-dispatcher (file _dv)
+  ;; FIXME: a better way to deal with gif?
+  (when (string= (mailcap-file-name-to-mime-type file) "image/gif")
+    (let ((gif-buf (find-file-noselect file t nil))
+          (callback (lambda (buf)
+                      (when (buffer-live-p buf)
+                        (with-current-buffer buf
+                          (image-animate (image-get-display-property)))))))
+      (run-with-idle-timer 1 nil callback gif-buf)
+      `(buffer . (get-buffer ,gif-buf)))))
+
+(defun dirvish-preview-image-dispatcher (file dv)
+  (when (string-match "image/" (or (mailcap-file-name-to-mime-type file) ""))
+    (let* ((size (dv-preview-pixel-width dv))
+           (cache (dirvish--get-image-cache-for-file file size ".jpg")))
+      (cond ((file-exists-p cache)
+             `(image . (put-image ,(create-image cache nil nil :max-width size) 0)))
+            ((< (nth 7 (file-attributes file)) dirvish-preview-image-threshold)
+             `(image . (put-image ,(create-image file nil nil :max-width size) 0)))
+            (t `(image-cache . ("convert" "-resize" ,(number-to-string size) ,file ,cache)))))))
+
+(defun dirvish-preview-video-dispatcher (file dv)
+  (when (string-match "video/" (or (mailcap-file-name-to-mime-type file) ""))
+    (let* ((size (dv-preview-pixel-width dv))
+           (cache (dirvish--get-image-cache-for-file file size ".jpg")))
+      (if (file-exists-p cache)
+          `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
+        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
+
+(defun dirvish-preview-epub-dispatcher (file dv)
+  (when (string= (file-name-extension file) "epub")
+    (let* ((size (dv-preview-pixel-width dv))
+           (cache (dirvish--get-image-cache-for-file file size ".jpg")))
+      (if (file-exists-p cache)
+          `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
+        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
+
+(defun dirvish-preview-pdf-preface-dispatcher (file dv)
+  (when (string= (file-name-extension file) "pdf")
+    (let* ((size (dv-preview-pixel-width dv))
+           (cache (dirvish--get-image-cache-for-file file size))
+           (cache-jpg (concat cache ".jpg")))
+      (if (file-exists-p cache-jpg)
+          `(image . (put-image ,(create-image cache-jpg nil nil :max-width size) 0))
+        `(image-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
+
+(defun dirvish-preview-pdf-tools-dispatcher (file _dv)
+  (when (string= (file-name-extension file) "pdf")
+    `(buffer . (find-file-noselect ,file t nil))))
+
+(defun dirvish-preview-archive-dispatcher (file _dv)
+  (cond ((string= (file-name-extension file) "zip")
+         `(shell . ("zipinfo" ,file)))
+        ((member (file-name-extension file) '("tar" "zst"))
+         `(shell . ("tar" "-tvf" ,file)))))
+
+(defun dirvish-preview-default-dispatcher (file _dv)
+  (let ((threshold (or large-file-warning-threshold 10000000))
+        (filesize (file-attribute-size (file-attributes file))))
+    (if (> filesize threshold)
+        `(info ,(concat "File " file " is too big for literal preview."))
+    `(buffer . (find-file-noselect ,file t nil)))))
+
+(defun dirvish-get-preview-buffer (file &optional dispatchers)
+  "Create the preview buffer for FILE.
+If DISPATCHERS is not given, defaults to
+`dirvish-preview-dispatchers'."
+  (unless dispatchers (setq dispatchers dirvish-preview-dispatchers))
+  (cl-loop for dispatcher in dispatchers
+           for (dv-type . instruction) = (funcall dispatcher file (dirvish-curr))
+           for buffer = (dirvish-preview-dispatch dv-type instruction)
+           until dv-type
+           finally return buffer))
+
+(defun dirvish-preview-dispatch (preview-type instruction)
+  "Execute dispatcher INSTRUCTION according to PREVIEW-TYPE.
+This function apply the instructions provided by the first
+matched preview dispatcher to the preview buffer, and finally
+return the buffer.
+A INSTRUCTION is can be either:
+
+- a (CMD . ARGS) cons where CMD can be a elisp function or a
+shell command. In either case, ARGS holds a list of arguments for
+them.
+
+- a string which is displayed directly in preview buffer. Need to
+  use in conjunction with `info' PREVIEW-TYPE.
+
+A PREVIEW-TYPE can be one of following values:
+
+- `info', which means insert INSTRUCTION string to preview buffer.
+
+- `buffer', meaning `(apply CMD ARGS)' should return a buffer
+  directly as preview buffer.
+
+- `image', meaning `(apply CMD ARGS)' should return a image to be
+  inserted to preview buffer.
+
+- `shell', indicates CMD is a shell command, the result of CMD
+  and ARGS will be inserted in preview buffer as content when the
+  shell process exits successfully.
+
+- `image-cache', similar to `shell', but the CMD should generate
+  a cache image, and when the process exits, it fires up a
+  preview update."
+  (let ((buf (dv-preview-buffer (dirvish-curr)))
+        (cmd (car-safe instruction))
+        (args (cdr-safe instruction))
+        (process-connection-type nil)
         (enable-local-variables nil)
         (inhibit-modification-hooks t)
         (auto-save-default nil)
         (delay-mode-hooks t)
-        (inhibit-message t))
-    (if match
-        (let ((cmd (car match)) (args (cdr match)))
-          (when (functionp cmd)
-            (cl-return-from dirvish--preview-entry (apply cmd entry args)))
-          (dirvish--preview-get-create entry cmd args))
-      (let ((threshold (or large-file-warning-threshold 10000000))
-            (filesize (file-attribute-size (file-attributes entry))))
-        (if (> filesize threshold)
-            (dirvish--preview-get-create (concat entry " too big for literal preview"))
-          (find-file-noselect entry t nil))))))
-
-(cl-defun dirvish--preview-get-create (entry &optional cmd args)
-  "Get corresponding preview buffer for ENTRY.
-
-Optionally, a shell command CMD and its ARGS can be passed."
-  (let ((buf (dv-preview-buffer (dirvish-curr)))
-        (process-connection-type nil)
-        (size (number-to-string (dv-preview-pixel-width (dirvish-curr))))
-        cache)
+        (dirvish-show-icons nil))
+    (when (and (stringp cmd) (not (executable-find cmd)))
+      (setq preview-type 'info
+            instruction (format "Install `%s' to preview this file." cmd)))
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
-      (unless cmd (insert entry) (cl-return-from dirvish--preview-get-create buf))
-      (when (string= cmd "*Preview Disable*")
-        (insert (format "Preview Disabled for %s." entry))
-        (cl-return-from dirvish--preview-get-create buf))
-      (unless (executable-find cmd)
-        (insert (format "Install `%s' to preview %s" cmd entry))
-        (cl-return-from dirvish--preview-get-create buf))
-      (when (or (member "%T" args) (member "%t" args)) (setq cache t))
-      (cl-dolist (fmt `((,entry . "%i") (,size . "%s")))
-        (setq args (cl-substitute (car fmt) (cdr fmt) args :test 'string=)))
-      (unless cache
-        (let* ((process-connection-type nil)
-               (default-directory "~") ; Avoid "Setting current directory" error after deleting dir
-               (res-buf (get-buffer-create " *Dirvish preview result*"))
-               (proc (apply #'start-process "dirvish-preview-process" res-buf cmd args)))
-          (with-current-buffer res-buf (erase-buffer) (remove-overlays))
-          (set-process-sentinel proc 'dirvish--preview-process-sentinel))
-        (cl-return-from dirvish--preview-get-create buf))
-      (save-excursion
-        ;; FIXME: a better way to deal with gif?
-        (when (string= (mailcap-file-name-to-mime-type entry) "image/gif")
-          (let ((gif-buf (find-file-noselect entry t nil))
-                (callback (lambda (buf)
-                            (when (buffer-live-p buf)
-                              (with-current-buffer buf
-                                (image-animate (image-get-display-property)))))))
-            (run-with-idle-timer 1 nil callback gif-buf)
-            (cl-return-from dirvish--preview-get-create gif-buf)))
-        (let* ((target-raw (concat dirvish-cache-dir size entry))
-               (target-ext (concat target-raw ".jpg"))
-               (target (if (and (string= cmd "convert")
-                                (< (nth 7 (file-attributes entry)) (* 1024 1024 0.5)))
-                           entry target-ext)))
-          (if (file-exists-p target)
-              (let ((img (create-image target nil nil :max-width (dv-preview-pixel-width (dirvish-curr)))))
-                (put-image img 0) (cl-return-from dirvish--preview-get-create buf))
-            (make-directory (file-name-directory target-raw) t)
-            (cl-dolist (format `((,target-raw . "%t") (,target-ext . "%T")))
-              (setq args (cl-substitute (car format) (cdr format) args :test 'string=)))
-            (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
-              (set-process-sentinel proc (lambda (_p _e) (dirvish-preview-update))))
-            (insert "[Cache] Generating thumbnail..."))))
+      (cl-case preview-type
+        ('info (insert instruction))
+        ('buffer (setq buf (apply cmd args)))
+        ('image (apply cmd args))
+        ('image-cache
+         (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
+           (set-process-sentinel proc #'dirvish--preview-process-update-sentinel)
+           (insert " [Dirvish] Generating image cache...")))
+        ('shell
+         (let* ((res-buf (get-buffer-create " *Dirvish preview result*"))
+                (proc (apply #'start-process "dirvish-preview-process" res-buf cmd args)))
+           (with-current-buffer res-buf (erase-buffer) (remove-overlays))
+           (set-process-sentinel proc 'dirvish--preview-process-fill-str-sentinel))))
       buf)))
 
 (cl-defun dirvish-preview-build ()
@@ -121,20 +211,6 @@ Optionally, a shell command CMD and its ARGS can be passed."
       (setf (dv-preview-pixel-width (dirvish-curr)) (window-width new-window t))
       (setf (dv-preview-window (dirvish-curr)) new-window))))
 
-(defun dirvish--preview-process-sentinel (proc _)
-  "Dirvish preview process sentinel.
-
-When PROC finishes, fill `dv-preview-buffer' with process
-result string."
-  (when-let ((buf (and (dirvish-curr)
-                       (dv-preview-buffer (dirvish-curr)))))
-    (with-current-buffer buf
-      (erase-buffer) (remove-overlays)
-      (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
-        (insert result-str)
-        (ansi-color-apply-on-region
-         (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point)))))))
-
 (defun dirvish-preview-update (&optional preview-window)
   "Update dirvish preview window.
 
@@ -145,7 +221,7 @@ Only take effect when `dirvish-enable-preview' or PREVIEW-WINDOW is not nil."
               preview-window)
       (let* ((orig-buffer-list (buffer-list))
              (index (or (dv-index-path curr-dv) ""))
-             (preview-buffer (dirvish--preview-entry index))
+             (preview-buffer (dirvish-get-preview-buffer index))
              (preview-window (or preview-window (dv-preview-window curr-dv))))
         (when (window-live-p preview-window)
           (set-window-buffer preview-window preview-buffer))
@@ -153,9 +229,6 @@ Only take effect when `dirvish-enable-preview' or PREVIEW-WINDOW is not nil."
           (push preview-buffer (dv-preview-buffers curr-dv)))
         (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook))))))
 
-(when (require 'pdf-tools nil t)
-  (custom-reevaluate-setting 'dirvish-preview-cmd-alist))
-  
 (provide 'dirvish-preview)
 
 ;;; dirvish-preview.el ends here
