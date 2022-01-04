@@ -2,7 +2,7 @@
 ;; Copyright (C) 2021-2022 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 0.9.5
+;; Version: 0.9.6
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
