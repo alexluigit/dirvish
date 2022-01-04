@@ -24,22 +24,22 @@ Wish you a better dired.
 
 This package empowers dired by giving it a modern UI in a unintrusive way. Emacs
 users deserve a file manager better than those popular ones on terminal such as
-[[https://github.com/ranger/ranger][ranger]], [[https://github.com/vifm/vifm][vifm]], [[https://github.com/gokcehan/lf][lf]] since Emacs is more then a terminal emulator.
+[[https://github.com/ranger/ranger][ranger]], [[https://github.com/vifm/vifm][vifm]], [[https://github.com/gokcehan/lf][lf]] since Emacs is more than a terminal emulator.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 
 *** Dependencies
 
-| Package           | Description                      | Required |
-|-------------------+----------------------------------+----------|
-| =exa=               | For directory preview            | Yes      |
-| =all-the-icons.el=  | Icon support                     | Optional |
-| =pdftoppm=          | Generate pdf preface image       | Optional |
-| =imagemagick=       | Generate image cache             | Optional |
-| =ffmpegthumbnailer= | Generate video thumbnailer       | Optional |
-| =epub-thumbnailer=  | Generate epub thumbnailer        | Optional |
-| =zipinfo=           | Preview zip files                | Optional |
-| =mediainfo=         | Show information for audio files | Optional |
+| Package           | Description                | Required |
+|-------------------+----------------------------+----------|
+| =exa=               | Generate directory preview | Optional |
+| =all-the-icons.el=  | Icon support               | Optional |
+| =pdftoppm=          | Generate pdf preface image | Optional |
+| =imagemagick=       | Generate image cache       | Optional |
+| =ffmpegthumbnailer= | Generate video thumbnailer | Optional |
+| =epub-thumbnailer=  | Generate epub thumbnailer  | Optional |
+| =zipinfo=           | Preview zip files          | Optional |
+| =mediainfo=         | Display media metadata     | Optional |
 
 *** Installation
 
@@ -97,7 +97,8 @@ When you feel like to replace *Dired* with *Dirvish* completely (highly
 recommended!), all you need is enable =dirvish-override-dired-mode=.
 
 Now all your Dired entry commands incluing =dired=, =dired-other-window/tab/frame=,
-=dired-jump[-other-window]= will do its job in a "dirvish" way.
+
+=dired-jump[-other-window]= do its job in a "dirvish" way.
 
 **** In relation to Dired config
 
@@ -116,17 +117,9 @@ Dirvish respects all of your dired options *except* following ones:
 content of selected file. To toggle it, use =dired-hide-details-mode=, or set
 =dirvish-enable-preview= to nil.
 
-Some additional notes on this:
-- Native GIF support ::
-- *Image cache* ::
-  A image cache file, with small filesize that is unlikely to block Emacs when
-  being rendered, is generated when the original image file is larger than 500KB.
-- Highly customizable ::
-  A preview buffer is created either by an elisp function or by the help of a
-  shell command. If you don't like the way dirvish creates the preview buffer
-  for certain file types, take a look at =dirvish-preview-cmd-alist=. This
-  variable determines how a preview buffer get generated for different file
-  types, customize it to suit your need.
+The preview in Dirvish can be generated either directly from some elisp
+function, or by a shell command. See =dirvish-preview-dispatchers= for more
+details. TODO: better doc on this, maybe a wiki article.
 
 *** Multiple instances
 
@@ -228,7 +221,7 @@ you need to require it in your config before using it.
 | =dirvish-icon-delimiter=          | String   | The delimiter between icon and filename | "\t"                |
 | =dirvish-icon-monochrome=         | Boolean  | Whether icon inherit =face-at-point=      | t                   |
 | =dirvish-icon-v-offset=           | Float    | Icon's vertical offset                  | 0.01                |
-| =dirvish-preview-cmd-alist=       | Alist    | See: M-x =describe-variable=              |                     |
+| =dirvish-preview-dispatchers=     | Hook     | See: M-x =describe-variable=              |                     |
 
 *** Hooks
 

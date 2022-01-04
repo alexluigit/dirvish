@@ -17,20 +17,30 @@
   "A better Dired."
   :group 'dired)
 
-(defcustom dirvish-preview-cmd-alist
-  `(("text/"                   (find-file-noselect . (t nil)))
-    ("image/"                  ("convert" "-resize" "%s" "%i" "%T"))
-    ("audio/"                  ("mediainfo" "%i"))
-    ("video/"                  ("ffmpegthumbnailer" "-i" "%i" "-o" "%T" "-s 0"))
-    (("iso" "bin" "exe" "gpg") ("*Preview Disable*"))
-    (("zip")                   ("zipinfo" "%i"))
-    (("zst" "tar")             ("tar" "-tvf" "%i"))
-    (("epub")                  ("epub-thumbnailer" "%i" "%T" "1024"))
-    (("pdf")                   ,(if (featurep 'pdf-tools)
-                                    '(find-file-noselect '(t nil))
-                                  '("pdftoppm" "-jpeg" "-f" "1" "-singlefile" "%i" "%t"))))
-  "Determine how dirvish show preview for different MIME types."
-  :group 'dirvish :type '(alist :value-type ((choice list string) list)))
+(define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
+
+(defcustom dirvish-preview-dispatchers
+  '(dirvish-preview-disable-dispatcher
+    dirvish-preview-directory-exa-dispatcher
+    dirvish-preview-text-dispatcher
+    dirvish-preview-gif-dispatcher
+    dirvish-preview-image-dispatcher
+    dirvish-preview-video-dispatcher
+    dirvish-preview-epub-dispatcher
+    dirvish-preview-pdf-preface-dispatcher
+    dirvish-preview-archive-dispatcher
+    dirvish-preview-default-dispatcher)
+  "List of preview dispatchers.
+Preview dispatchers are used to determine how dirvish show
+preview for different MIME or file extensions. A preview
+dispatcher is a function that takes current filename and dirvish
+instance as arguments, it gets called at runtime when preview
+window is available. It can decide what elisp function or shell
+command to use when generating the content in preview buffer for
+certain filetypes, or it can decline to handle the filename
+leaving it for future dispatchers.  For details see
+`dirvish-preview-dispatch'."
+  :group 'dirvish :type 'hook)
 
 (defcustom dirvish-cache-dir
   (concat (or (getenv "XDG_CACHE_HOME") (concat (getenv "HOME") "/.cache")) "/dirvish/")
@@ -156,6 +166,7 @@ See `face-remapping-alist' for more details."
 ;;;; Internal variables
 
 (defconst dirvish-preview-delay 0.02)
+(defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-header-wobbling-offset 2)
 (defvar dirvish-history-ring (make-ring dirvish-history-length))

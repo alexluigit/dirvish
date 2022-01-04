@@ -50,6 +50,16 @@
   (setq dirvish-show-icons (require 'all-the-icons nil t)))
 (mailcap-parse-mimetypes)
 (put 'dired-subdir-alist 'permanent-local t)
+(when (require 'pdf-tools nil t)
+  (setq dirvish-preview-dispatchers
+        (cl-substitute #'dirvish-preview-pdf-tools-dispatcher
+                       #'dirvish-preview-pdf-preface-dispatcher
+                       dirvish-preview-dispatchers)))
+(when (memq system-type '(windows-nt ms-dos))
+  (setq dirvish-preview-dispatchers
+        (cl-substitute #'dirvish-preview-directory-dired-dispatcher
+                       #'dirvish-preview-directory-exa-dispatcher
+                       dirvish-preview-dispatchers)))
 
 ;;;; Commands
 
