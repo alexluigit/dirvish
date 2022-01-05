@@ -10,6 +10,7 @@
 
 (declare-function image-get-display-property "image-mode")
 (require 'ansi-color)
+(require 'so-long)
 (require 'mailcap)
 (require 'dirvish-structs)
 (require 'dirvish-vars)
@@ -49,7 +50,7 @@ result string."
             (not (file-readable-p file))
             (member (file-name-extension file)
                     '("iso" "bin" "exe" "gpg" "elc" "eln")))
-    `(info . ,(concat "File " file " is not readable or in the preview blacklist."))))
+    `(info . ,(format "File %s is not readable or in the preview blacklist." file))))
 
 (defun dirvish-preview-directory-exa-dispatcher (file _dv)
   (when (file-directory-p file)
@@ -124,7 +125,13 @@ result string."
         (filesize (file-attribute-size (file-attributes file))))
     (if (> filesize threshold)
         `(info ,(concat "File " file " is too big for literal preview."))
-    `(buffer . (find-file-noselect ,file t nil)))))
+      (let ((buf (find-file-noselect file t nil)))
+        (with-current-buffer buf
+          (if (so-long-detected-long-line-p)
+              (progn
+                (kill-buffer buf)
+                `(info . ,(format "File %s contains very long lines, preview skipped." file)))
+            `(buffer . ,buf)))))))
 
 (defun dirvish-get-preview-buffer (file &optional dispatchers)
   "Create the preview buffer for FILE.
