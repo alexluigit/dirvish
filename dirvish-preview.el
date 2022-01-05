@@ -46,6 +46,8 @@ result string."
   (dirvish-preview-update))
 
 (defun dirvish-preview-disable-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this dispatcher do not display a preview."
   (when (or (not (file-exists-p file))
             (not (file-readable-p file))
             (member (file-name-extension file)
@@ -53,19 +55,26 @@ result string."
     `(info . ,(format "File %s is not readable or in the preview blacklist." file))))
 
 (defun dirvish-preview-directory-exa-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this uses `exa' to generate directory preview."
   (when (file-directory-p file)
     `(shell . ("exa" "--color=always" "-al" ,file))))
 
 (defun dirvish-preview-directory-dired-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this returns a Dired buffer as preview."
   (when (file-directory-p file)
     `(buffer . (dired-noselect ,file))))
 
 (defun dirvish-preview-text-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this returns a regular file buffer as preview."
   (when (string-match "text/" (or (mailcap-file-name-to-mime-type file) ""))
     `(buffer . (find-file-noselect ,file t nil))))
 
 (defun dirvish-preview-gif-dispatcher (file _dv)
-  ;; FIXME: a better way to deal with gif?
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this display an animated image as preview."
   (when (string= (mailcap-file-name-to-mime-type file) "image/gif")
     (let ((gif-buf (find-file-noselect file t nil))
           (callback (lambda (buf)
@@ -76,6 +85,9 @@ result string."
       `(buffer . ,gif-buf))))
 
 (defun dirvish-preview-image-dispatcher (file dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this dispatcher display a image with its width
+less than `dv-preview-pixel-width' of instance DV."
   (when (string-match "image/" (or (mailcap-file-name-to-mime-type file) ""))
     (let* ((size (dv-preview-pixel-width dv))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
@@ -86,6 +98,9 @@ result string."
             (t `(image-cache . ("convert" "-resize" ,(number-to-string size) ,file ,cache)))))))
 
 (defun dirvish-preview-video-dispatcher (file dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this dispatcher display a video thumbnail with
+its width less than `dv-preview-pixel-width' of instance DV."
   (when (string-match "video/" (or (mailcap-file-name-to-mime-type file) ""))
     (let* ((size (dv-preview-pixel-width dv))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
@@ -94,6 +109,9 @@ result string."
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
 
 (defun dirvish-preview-epub-dispatcher (file dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this dispatcher display a epub thumbnail with its
+width less than `dv-preview-pixel-width' of instance DV."
   (when (string= (file-name-extension file) "epub")
     (let* ((size (dv-preview-pixel-width dv))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
@@ -102,6 +120,9 @@ result string."
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
 
 (defun dirvish-preview-pdf-preface-dispatcher (file dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this dispatcher display a pdf thumbnail with its
+width less than `dv-preview-pixel-width' of instance DV."
   (when (string= (file-name-extension file) "pdf")
     (let* ((size (dv-preview-pixel-width dv))
            (cache (dirvish--get-image-cache-for-file file size))
@@ -111,16 +132,24 @@ result string."
         `(image-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
 
 (defun dirvish-preview-pdf-tools-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this returns a regular file buffer as preview."
   (when (string= (file-name-extension file) "pdf")
     `(buffer . (find-file-noselect ,file t nil))))
 
 (defun dirvish-preview-archive-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this returns a regular file buffer as preview."
   (cond ((string= (file-name-extension file) "zip")
          `(shell . ("zipinfo" ,file)))
         ((member (file-name-extension file) '("tar" "zst"))
          `(shell . ("tar" "-tvf" ,file)))))
 
 (defun dirvish-preview-default-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+FILE matched by this either display a regular file buffer or a
+warning as preview depending on whether this file is too large or
+containing very long lines."
   (let ((threshold (or large-file-warning-threshold 10000000))
         (filesize (file-attribute-size (file-attributes file))))
     (if (> filesize threshold)

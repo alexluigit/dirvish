@@ -32,10 +32,10 @@
     dirvish-preview-default-dispatcher)
   "List of preview dispatchers.
 Preview dispatchers are used to determine how dirvish show
-preview for different MIME or file extensions. A preview
+preview for different MIME or file extensions.  A preview
 dispatcher is a function that takes current filename and dirvish
 instance as arguments, it gets called at runtime when preview
-window is available. It can decide what elisp function or shell
+window is available.  It can decide what elisp function or shell
 command to use when generating the content in preview buffer for
 certain filetypes, or it can decline to handle the filename
 leaving it for future dispatchers.  For details see
@@ -123,7 +123,7 @@ STYLE should be one of these:
 (defcustom dirvish-header-face-remap-alist
   '((default :background "#303030"))
   "Face remapping alist used in dirvish header window.
-Beware that only full-frame dirvish uses header window. To
+Beware that only full-frame dirvish uses header window.  To
 configure faces in dirvish parent windows, use
 `dirvish-parent-face-remap-alist' instead.
 
@@ -134,7 +134,7 @@ See `face-remapping-alist' for more details."
   '((header-line :height 1.2 :box (:line-width 4 :color "#303030"))
     (highlight :inherit (highlight) :extend t))
   "Face remapping alist used in dirvish parent window.
-This variable doesn't take effect in a dirvish header window. To
+This variable doesn't take effect in a dirvish header window.  To
 configure faces in dirvish header window, use
 `dirvish-header-face-remap-alist' instead.
 
