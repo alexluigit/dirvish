@@ -72,7 +72,7 @@ result string."
                         (with-current-buffer buf
                           (image-animate (image-get-display-property)))))))
       (run-with-idle-timer 1 nil callback gif-buf)
-      `(buffer . (get-buffer ,gif-buf)))))
+      `(buffer . ,gif-buf))))
 
 (defun dirvish-preview-image-dispatcher (file dv)
   (when (string-match "image/" (or (mailcap-file-name-to-mime-type file) ""))
@@ -144,19 +144,22 @@ matched preview dispatcher to the preview buffer, and finally
 return the buffer.
 A INSTRUCTION is can be either:
 
-- a (CMD . ARGS) cons where CMD can be a elisp function or a
-shell command. In either case, ARGS holds a list of arguments for
-them.
+- a buffer which is displayed inside of preview window.
 
-- a string which is displayed directly in preview buffer. Need to
-  use in conjunction with `info' PREVIEW-TYPE.
+- a (CMD . ARGS) cons where CMD can be a elisp function or a
+shell command.  In either case, ARGS holds a list of arguments
+for them.
+
+- a string which is displayed directly in preview buffer.  Need
+  to use in conjunction with `info' PREVIEW-TYPE.
 
 A PREVIEW-TYPE can be one of following values:
 
 - `info', which means insert INSTRUCTION string to preview buffer.
 
-- `buffer', meaning `(apply CMD ARGS)' should return a buffer
-  directly as preview buffer.
+- `buffer', meaning either INSTRUCTION itself is a buffer
+  or `(apply CMD ARGS)' return a buffer directly as preview
+  buffer.
 
 - `image', meaning `(apply CMD ARGS)' should return a image to be
   inserted to preview buffer.
@@ -184,7 +187,7 @@ A PREVIEW-TYPE can be one of following values:
       (erase-buffer) (remove-overlays)
       (cl-case preview-type
         ('info (insert instruction))
-        ('buffer (setq buf (apply cmd args)))
+        ('buffer (setq buf (if cmd (apply cmd args) instruction)))
         ('image (apply cmd args))
         ('image-cache
          (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
