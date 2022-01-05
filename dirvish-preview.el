@@ -211,23 +211,19 @@ A PREVIEW-TYPE can be one of following values:
       (setf (dv-preview-pixel-width (dirvish-curr)) (window-width new-window t))
       (setf (dv-preview-window (dirvish-curr)) new-window))))
 
-(defun dirvish-preview-update (&optional preview-window)
-  "Update dirvish preview window.
-
-Only take effect when `dirvish-enable-preview' or PREVIEW-WINDOW is not nil."
-  (when-let ((curr-dv (dirvish-curr)))
-    (when (or (and (not (dv-one-window-p curr-dv))
-                   dirvish-enable-preview)
-              preview-window)
+(defun dirvish-preview-update ()
+  "Update dirvish preview."
+  (when-let* ((curr-dv (dirvish-curr))
+              (preview-window (dv-preview-window curr-dv))
+              dirvish-enable-preview)
       (let* ((orig-buffer-list (buffer-list))
              (index (or (dv-index-path curr-dv) ""))
-             (preview-buffer (dirvish-get-preview-buffer index))
-             (preview-window (or preview-window (dv-preview-window curr-dv))))
+             (preview-buffer (dirvish-get-preview-buffer index)))
         (when (window-live-p preview-window)
           (set-window-buffer preview-window preview-buffer))
         (unless (memq preview-buffer orig-buffer-list)
           (push preview-buffer (dv-preview-buffers curr-dv)))
-        (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook))))))
+        (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook)))))
 
 (provide 'dirvish-preview)
 

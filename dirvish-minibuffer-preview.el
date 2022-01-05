@@ -16,10 +16,8 @@
 (require 'find-func)
 
 (defvar dirvish-minibuf-preview-categories '(file project-file library))
-(defvar dirvish-minibuf-preview-window nil)
 (defvar dirvish-minibuf-preview--category nil)
 (defvar selectrum--current-candidate-index)
-(defvar dirvish-preview-update-timer)
 
 (defun dirvish-minibuf-preview-create ()
   "Create dirvish minibuffer preview window.
@@ -32,11 +30,10 @@ one of categories in `dirvish-minibuf-preview-categories'."
               (category (completion-metadata-get meta 'category))
               (show-preview (memq category dirvish-minibuf-preview-categories)))
     (setq dirvish-minibuf-preview--category category)
-    (if-let ((preview-win (and (dirvish-curr) (dv-preview-window (dirvish-curr)))))
-        (setq dirvish-minibuf-preview-window preview-win)
+    (unless (and (dirvish-curr) (dv-preview-window (dirvish-curr)))
       (set-frame-parameter nil 'dirvish--minibuf (dirvish-activate t))
       (let ((next-win (next-window)))
-        (setq dirvish-minibuf-preview-window next-win)
+        (setf (dv-preview-window (dirvish-curr)) next-win)
         (setf (dv-preview-pixel-width (dirvish-curr)) (window-width next-win t))))))
 
 (defun dirvish-minibuf-preview-teardown ()
@@ -69,9 +66,7 @@ invoked when file name under cursor in minibuffer changed."
       ('library
        (setq cand (file-truename (or (ignore-errors (find-library-name cand)) "")))))
     (setf (dv-index-path (dirvish-curr)) cand)
-    (dirvish-debounce dirvish-preview-update
-                      dirvish-preview-delay
-                      dirvish-minibuf-preview-window)))
+    (dirvish-debounce dirvish-preview-update dirvish-preview-delay)))
 
 ;;;###autoload
 (define-minor-mode dirvish-minibuf-preview-mode
