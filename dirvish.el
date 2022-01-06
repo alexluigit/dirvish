@@ -144,7 +144,8 @@ If REVERSE is non-nil, move to bottom instead."
            (order (concat (cdr sort-flag) (when revp " -r")))
            (dv (dirvish-curr)))
       (setf (dv-sort-criteria dv) (cons name order))
-      (dired-sort-other (string-join (list (dv-ls-switches dv) (cdr sort-flag)) " ")))))
+      (dirvish-with-update t
+        (dired-sort-other (string-join (list (dv-ls-switches dv) order) " "))))))
 
 (defun dirvish-quit (&optional keep-frame)
   "Revert dirvish settings and disable dirvish.
