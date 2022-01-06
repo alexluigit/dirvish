@@ -176,10 +176,9 @@ is not-nil."
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))
 
-(defun dirvish-reset (&optional rebuild no-revert)
+(defun dirvish-reset (&optional rebuild)
   "Reset dirvish.
-If REBUILD is not-nil, rebuild dirvish layout.
-Unless NO-REVERT, revert current buffer."
+If REBUILD is not-nil, rebuild dirvish layout."
   (interactive "P")
   (dirvish-with-update t
     (when rebuild
@@ -188,7 +187,6 @@ Unless NO-REVERT, revert current buffer."
       (dirvish-preview-build)
       (dirvish-header-build)
       (dirvish-parent-build))
-    (unless no-revert (revert-buffer))
     (dirvish--update-sorter)))
 
 (defun dirvish-find-file (&optional file ignore-hist)
@@ -232,7 +230,6 @@ update `dirvish-history-ring'."
     (define-key map [remap end-of-buffer]                'dirvish-go-bottom)
     (define-key map [remap beginning-of-buffer]          'dirvish-go-top)
     (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
-    (define-key map [remap revert-buffer]                'dirvish-reset)
     (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
     (define-key map [remap quit-window]                  'dirvish-quit)
     (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
@@ -250,6 +247,7 @@ update `dirvish-history-ring'."
     (push (selected-window) (dv-parent-windows dv))
     (push (current-buffer) (dv-parent-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
+    (setq-local revert-buffer-function #'dirvish-revert)
     (when (bound-and-true-p all-the-icons-dired-mode)
       (all-the-icons-dired-mode -1)
       (setq-local tab-width 2))

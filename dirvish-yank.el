@@ -128,7 +128,7 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
                            (how-many proc-exit (point-min) (point-max))))
         (setq progress length))
       (when (eq progress length)
-        (when (dirvish-live-p) (dirvish-reset))
+        (when (dirvish-live-p) (revert-buffer))
         (setf (nth 0 (car-safe dirvish-yank-queue)) t)
         (when (eq (length dirvish-yank-queue) 1)
           (cancel-timer (symbol-value 'dirvish--yank-status-update-timer))))
