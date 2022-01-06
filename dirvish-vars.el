@@ -174,6 +174,8 @@ See `face-remapping-alist' for more details."
 (defvar dirvish-repeat-timers '())
 (defvar-local dirvish-child-entry nil)
 (defvar-local dirvish--curr-name nil)
+(put 'dired-subdir-alist 'permanent-local t)
+(put 'dirvish-child-entry 'permanent-local t)
 
 (provide 'dirvish-vars)
 
