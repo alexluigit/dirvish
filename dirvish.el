@@ -143,11 +143,11 @@ lines."
   (dirvish-reset t))
 
 (defun dirvish-sort-by-criteria (criteria)
-  "Call sort-dired by different `CRITERIA'."
+  "Call `dired-sort-other' by different `CRITERIA'."
   (interactive
    (list
     (read-char-choice
-     "Sort by criteria [capital for reverse]: (d/D)efault (e/E)xt (s/S)ize (t/T)ime (c/C)time "
+     "Sort by [capital for reverse, q to quit]: (d/D)efault (e/E)xt (s/S)ize (t/T)ime (c/C)time "
      '(?q ?d ?D ?e ?E ?s ?S ?t ?T ?c ?C))))
   (unless (eq criteria ?q)
     (let* ((c (char-to-string criteria))
@@ -161,9 +161,10 @@ lines."
              ((string-equal cc "t") '("time" . " -t"))
              ((string-equal cc "s") '("size" . " -S"))))
            (name (concat (car sort-flag) (when revp " [rev]")))
-           (switch (concat dired-listing-switches (cdr sort-flag) (when revp " -r"))))
-      (setf (dv-sort-criteria (dirvish-curr)) (cons name switch))
-      (dirvish-reset))))
+           (order (concat (cdr sort-flag) (when revp " -r")))
+           (dv (dirvish-curr)))
+      (setf (dv-sort-criteria dv) (cons name order))
+      (dired-sort-other (string-join (list (dv-ls-switches dv) (cdr sort-flag)) " ")))))
 
 (defun dirvish-quit (&optional keep-frame)
   "Revert dirvish settings and disable dirvish.
@@ -186,8 +187,7 @@ If REBUILD is not-nil, rebuild dirvish layout."
         (delete-other-windows))
       (dirvish-preview-build)
       (dirvish-header-build)
-      (dirvish-parent-build))
-    (dirvish--update-sorter)))
+      (dirvish-parent-build))))
 
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
@@ -207,7 +207,7 @@ update `dirvish-history-ring'."
               (when (or (ring-empty-p dirvish-history-ring)
                         (not (eq hist (ring-ref dirvish-history-ring 0))))
                 (ring-insert dirvish-history-ring hist)))
-            (switch-to-buffer (dired-noselect entry))
+            (switch-to-buffer (dired-noselect entry (dv-ls-switches (dirvish-curr))))
             (setq dirvish-child-entry (or bname curr-dir))
             (setf (dv-index-path (dirvish-curr))
                   (or (dired-get-filename nil t) entry))

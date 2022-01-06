@@ -60,11 +60,6 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
 
-(defun dirvish--update-sorter ()
-  "Sort files under the dirvish window.
-The sort flag is accessed from `dv-sort-criteria'."
-  (let ((sort-flag (cdr (dv-sort-criteria (dirvish-curr)))))
-    (dired-sort-other (string-join (list dired-listing-switches sort-flag) " "))))
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function.  See
