@@ -65,6 +65,11 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
 The sort flag is accessed from `dv-sort-criteria'."
   (let ((sort-flag (cdr (dv-sort-criteria (dirvish-curr)))))
     (dired-sort-other (string-join (list dired-listing-switches sort-flag) " "))))
+(defun dirvish-revert (&optional _arg _noconfirm)
+  "Reread the Dirvish buffer.
+Dirvish sets `revert-buffer-function' to this function.  See
+`dired-revert'."
+  (dirvish-with-update t (dired-revert _arg _noconfirm)))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.
