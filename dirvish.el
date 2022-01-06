@@ -83,37 +83,18 @@
             (when drive (dirvish-find-file drive))))
       (dirvish-find-file parent t))))
 
-(defun dirvish-go-top ()
-  "Move to top of file list."
+(defun dirvish-go-top (&optional reverse)
+  "Move to top of dirvish buffer.
+If REVERSE is non-nil, move to bottom instead."
   (interactive)
   (dirvish-with-update nil
-    (goto-char (point-min))
-    (dired-next-line 1)
-    (dirvish-next-file -1)))
+    (goto-char (if reverse (point-max) (point-min)))
+    (forward-line (if reverse -1 1))))
 
 (defun dirvish-go-bottom ()
-  "Move to bottom of file list."
+  "Move to bottom of dirvish buffer."
   (interactive)
-  (dirvish-with-update nil
-    (goto-char (point-max))
-    (dirvish-next-file 1)))
-
-(defun dirvish-next-file (arg)
-  "Move cursor to next line in dirvish and update to preview window.
-
-With optional prefix ARG (\\[universal-argument]), forward ARG
-lines."
-  (interactive "^p")
-  (dirvish-with-update nil
-    (dired-next-line arg)
-    (cond
-     ((eobp) (unless (region-active-p) (forward-line -1)))
-     ((bobp) (dired-next-line 1)))))
-
-(defun dirvish-prev-file (arg)
-  "Do `dirvish-next-file' in opposite direction with ARG."
-  (interactive "^p")
-  (dirvish-next-file (- 0 arg)))
+  (dirvish-go-top t))
 
 (defun dirvish-show-history (history)
   "Prompt for a target directory from HISTORY and goto it."
@@ -223,10 +204,6 @@ update `dirvish-history-ring'."
     (define-key map [remap right-char]                   'dirvish-find-file)
     (define-key map [remap dired-up-directory]           'dirvish-up-directory)
     (define-key map [remap left-char]                    'dirvish-up-directory)
-    (define-key map [remap next-line]                    'dirvish-next-file)
-    (define-key map [remap dired-next-line]              'dirvish-next-file)
-    (define-key map [remap previous-line]                'dirvish-prev-file)
-    (define-key map [remap dired-previous-line]          'dirvish-prev-file)
     (define-key map [remap end-of-buffer]                'dirvish-go-bottom)
     (define-key map [remap beginning-of-buffer]          'dirvish-go-top)
     (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
