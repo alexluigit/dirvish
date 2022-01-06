@@ -10,10 +10,10 @@
 
 ;;; Code:
 
+(declare-function dirvish-mode "dirvish")
 (declare-function dirvish-find-file "dirvish")
 (declare-function dirvish-dired "dirvish")
 (declare-function dirvish-quit "dirvish")
-(declare-function dirvish-reset "dirvish")
 (declare-function dirvish-header-update "dirvish-header")
 (declare-function dirvish-footer-update "dirvish-footer")
 (declare-function dirvish-preview-update "dirvish-preview")
@@ -27,37 +27,32 @@
   '((files         find-file                    dirvish-deactivate-ad          :before)
     (dired         dired-readin                 dirvish-setup-dired-buffer     :after)
     (dired         dired                        dirvish-dired-ad)
+    (dired         dired-jump                   dirvish-dired-jump-ad)
     (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
     (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
     (dired         dired-other-frame            dirvish-dired-other-frame-ad   :override)
-    (dired         dired-jump                   dirvish-dired-jump-ad)
     (dired         dired-next-line              dirvish-dired-next-line-ad     :override)
-    (dired         dired-mark                   dirvish-lazy-update-frame-ad)
-    (dired         dired-flag-file-deletion     dirvish-lazy-update-frame-ad)
-    (dired         dired-goto-file              dirvish-lazy-update-frame-ad)
+    (dired         dired-next-dirline           dirvish-lazy-update-ad)
+    (dired         dired-mark                   dirvish-lazy-update-ad)
+    (dired         dired-flag-file-deletion     dirvish-lazy-update-ad)
+    (dired         dired-goto-file              dirvish-lazy-update-ad)
     (dired         dired-internal-do-deletions  dirvish-deletion-ad)
-    (dired         dired-next-dirline           dirvish-reset-ad)
-    (wdired        wdired-change-to-wdired-mode dirvish-recover-cursor-ad)
-    (wdired        wdired-exit                  dirvish-reset-ad)
-    (wdired        wdired-finish-edit           dirvish-reset-ad)
-    (wdired        wdired-abort-changes         dirvish-reset-ad)
-    (dired-aux     dired-kill-line              dirvish-reset-ad)
-    (dired-aux     dired-create-directory       dirvish-reset-ad)
-    (dired-aux     dired-create-empty-file      dirvish-reset-ad)
-    (dired-aux     dired-do-create-files        dirvish-reset-ad)
-    (dired-aux     dired-kill-subdir            dirvish-reset-ad)
-    (dired-aux     dired-insert-subdir          dirvish-full-update-frame-ad)
-    (dired-aux     dired-do-kill-lines          dirvish-lazy-update-frame-ad)
-    (dired-x       dired-omit-mode              dirvish-full-update-frame-ad)
-    (dired-narrow  dired--narrow-internal       dirvish-reset-ad)
-    (find-dired    find-dired-sentinel          dirvish-reset-ad))
+    (wdired        wdired-change-to-wdired-mode dirvish-recover-cursor-ad      :after)
+    (wdired        wdired-exit                  dirvish-mode-ad                :after)
+    (wdired        wdired-finish-edit           dirvish-mode-ad                :after)
+    (wdired        wdired-abort-changes         dirvish-mode-ad                :after)
+    (dired-x       dired-omit-mode              dirvish-full-update-ad)
+    (dired-aux     dired-insert-subdir          dirvish-full-update-ad)
+    (dired-aux     dired-kill-subdir            dirvish-full-update-ad)
+    (dired-aux     dired-add-entry              dirvish-lazy-update-ad)
+    (dired-aux     dired-remove-entry           dirvish-lazy-update-ad)
+    (dired-aux     dired-kill-line              dirvish-lazy-update-ad)
+    (dired-aux     dired-do-kill-lines          dirvish-lazy-update-ad)
+    (dired-narrow  dired-narrow--internal       dirvish-full-update-ad))
   "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
 
 (defvar dirvish-temporary-advice-alist
-  '((isearch       isearch-repeat-backward      dirvish-reset-ad)
-    (isearch       isearch-repeat-forward       dirvish-reset-ad)
-    (isearch       isearch-exit                 dirvish-reset-ad)
-    (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
+  '((evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
     (lsp-mode      lsp-deferred                 ignore))
@@ -135,15 +130,12 @@ FILE-NAME are the same args in `dired-jump'."
     (apply fn other-window (list (or file-name default-directory)))
     (dirvish-setup-dired-buffer)))
 
-(defun dirvish-reset-ad (fn &rest args)
-  "Apply FN with ARGS, rebuild dirvish frame when necessary."
-  (apply fn args)
-  (let ((rebuild (not (eq major-mode 'dirvish-mode))))
-    (dirvish-reset rebuild 'no-revert)))
+(defun dirvish-mode-ad (&rest _)
+  "An advisor to enable `dirvish-mode'."
+  (dirvish-with-update t (dirvish-mode)))
 
-(defun dirvish-recover-cursor-ad (fn &rest args)
-  "Apply FN with ARGS then show cursor."
-  (apply fn args)
+(defun dirvish-recover-cursor-ad (&rest _)
+  "An advisor to recover cursor in current buffer."
   (setq-local cursor-type 'bar))
 
 (defun dirvish-refresh-cursor-ad (fn &rest args)
@@ -151,19 +143,19 @@ FILE-NAME are the same args in `dired-jump'."
   (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
     (apply fn args)))
 
-(defun dirvish-lazy-update-frame-ad (fn &rest args)
-  "Apply FN with ARGS while lazily updating dirvish frame."
+(defun dirvish-lazy-update-ad (fn &rest args)
+  "Apply FN with ARGS while lazily updating current dirvish."
   (dirvish-with-update nil (apply fn args)))
 
-(defun dirvish-full-update-frame-ad (fn &rest args)
-  "Apply FN with ARGS while fully updating dirvish frame."
-  (dirvish-with-update t (apply fn args)))
+(defun dirvish-full-update-ad (fn &rest args)
+  "Apply FN with ARGS while fully updating current dirvish."
+    (dirvish-with-update t (apply fn args)))
 
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN with ARGS."
-  (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
-  (unless (dired-get-filename nil t) (dirvish-next-file 1))
-  (dirvish-reset))
+  (dirvish-with-update t
+    (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
+    (unless (dired-get-filename nil t) (dired-next-line 1))))
 
 (defun dirvish-deactivate-ad (&rest _)
   "Quit current dirvish instance if inside one.
