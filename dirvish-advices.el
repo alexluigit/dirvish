@@ -14,8 +14,6 @@
 (declare-function dirvish-dired "dirvish")
 (declare-function dirvish-quit "dirvish")
 (declare-function dirvish-reset "dirvish")
-(declare-function dirvish-new-frame "dirvish")
-(declare-function dirvish-next-file "dirvish")
 (declare-function dirvish-header-update "dirvish-header")
 (declare-function dirvish-footer-update "dirvish-footer")
 (declare-function dirvish-preview-update "dirvish-preview")
@@ -33,6 +31,7 @@
     (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
     (dired         dired-other-frame            dirvish-dired-other-frame-ad   :override)
     (dired         dired-jump                   dirvish-dired-jump-ad)
+    (dired         dired-next-line              dirvish-dired-next-line-ad     :override)
     (dired         dired-mark                   dirvish-lazy-update-frame-ad)
     (dired         dired-flag-file-deletion     dirvish-lazy-update-frame-ad)
     (dired         dired-goto-file              dirvish-lazy-update-frame-ad)
@@ -77,6 +76,21 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when switches
     (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
+
+(defun dirvish-dired-next-line-ad (arg)
+  "Override `dired-next-line' command.
+FN refers to original `dired-next-line' command.
+ARG is same with command `dired-next-line'."
+  (interactive "^p")
+  (dirvish-with-update nil
+    (let ((line-move-visual)
+	        (goal-column))
+      (line-move arg t))
+    (while (and (invisible-p (point))
+	              (not (if (and arg (< arg 0)) (bobp) (eobp))))
+      (forward-char (if (and arg (< arg 0)) -1 1)))
+    (and (eobp) (forward-char -1))
+    (dired-move-to-filename)))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
