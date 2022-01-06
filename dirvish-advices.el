@@ -116,13 +116,10 @@ FILE-NAME are the same args in `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg
                   (read-file-name "Dirvish jump to: "))))
-  (if other-window
-      (progn
-        (switch-to-buffer-other-window "*scratch*")
-        (apply fn nil (and file-name (list file-name))))
-    (if (dirvish-live-p)
-        (dirvish-find-file file-name)
-      (apply fn other-window (and file-name (list file-name))))))
+  (if (and (dirvish-live-p) (not other-window))
+      (dirvish-find-file file-name)
+    (apply fn other-window (list (or file-name default-directory)))
+    (dirvish-setup-dired-buffer)))
 
 (defun dirvish-reset-ad (fn &rest args)
   "Apply FN with ARGS, rebuild dirvish frame when necessary."
