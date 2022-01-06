@@ -32,6 +32,7 @@
 
 (require 'ring)
 (require 'recentf)
+(declare-function all-the-icons-dired-mode "all-the-icons-dired")
 
 ;;;; Modules
 
@@ -49,7 +50,6 @@
 (when dirvish-show-icons
   (setq dirvish-show-icons (require 'all-the-icons nil t)))
 (mailcap-parse-mimetypes)
-(put 'dired-subdir-alist 'permanent-local t)
 (when (require 'pdf-tools nil t)
   (setq dirvish-preview-dispatchers
         (cl-substitute #'dirvish-preview-pdf-tools-dispatcher
@@ -140,9 +140,7 @@ lines."
   "Show/hide preview window."
   (interactive)
   (setq dirvish-enable-preview (not dirvish-enable-preview))
-  (dirvish-reset t)
-  (when dirvish-enable-preview
-    (dired-hide-details-mode t)))
+  (dirvish-reset t))
 
 (defun dirvish-sort-by-criteria (criteria)
   "Call sort-dired by different `CRITERIA'."
@@ -247,7 +245,24 @@ update `dirvish-history-ring'."
   "Convert Dired buffer to a Dirvish buffer."
   :group 'dirvish
   :interactive nil
-  (setq-local dirvish--curr-name (dv-name (dirvish-curr))))
+  (let ((dv (dirvish-curr)))
+    (when dirvish-child-entry (dired-goto-file dirvish-child-entry))
+    (push (selected-window) (dv-parent-windows dv))
+    (push (current-buffer) (dv-parent-buffers dv))
+    (setq-local dirvish--curr-name (dv-name dv))
+    (when (bound-and-true-p all-the-icons-dired-mode)
+      (all-the-icons-dired-mode -1)
+      (setq-local tab-width 2))
+    (set (make-local-variable 'face-remapping-alist)
+         dirvish-parent-face-remap-alist)
+    (setq cursor-type nil)
+    (setq mode-line-format nil)
+    (setq-local face-font-rescale-alist nil)
+    (set-window-fringes nil 1 1)
+    (dirvish-body-update)
+    (if (eq (dv-root-window dv) (selected-window))
+        (and dirvish-enable-preview (dired-hide-details-mode t))
+      (dired-hide-details-mode t))))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
