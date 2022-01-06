@@ -48,7 +48,9 @@
     (dired-aux     dired-remove-entry           dirvish-lazy-update-ad)
     (dired-aux     dired-kill-line              dirvish-lazy-update-ad)
     (dired-aux     dired-do-kill-lines          dirvish-lazy-update-ad)
-    (dired-narrow  dired-narrow--internal       dirvish-full-update-ad))
+    (dired-narrow  dired-narrow--internal       dirvish-full-update-ad)
+    (dired-subtree dired-subtree-insert         dirvish-full-update-save-pos-ad)
+    (dired-subtree dired-subtree-remove         dirvish-full-update-ad))
   "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
 
 (defvar dirvish-temporary-advice-alist
@@ -150,6 +152,10 @@ FILE-NAME are the same args in `dired-jump'."
 (defun dirvish-full-update-ad (fn &rest args)
   "Apply FN with ARGS while fully updating current dirvish."
     (dirvish-with-update t (apply fn args)))
+
+(defun dirvish-full-update-save-pos-ad (fn &rest args)
+  "Apply FN with ARGS, restore point, then update dirvish frame."
+  (dirvish-with-update t (save-excursion (apply fn args))))
 
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN with ARGS."
