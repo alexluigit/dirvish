@@ -107,7 +107,6 @@ Dirvish respects all of your dired options *except* following ones:
 | Option                                   | Reason                                                  |
 |------------------------------------------+---------------------------------------------------------|
 | =dired-kill-when-opening-new-dired-buffer= | Dirvish kill all buffers this instance holds when exits |
-| =dired-auto-revert-buffer=                 | WIP                                                     |
 | =dired-switches-in-mode-line=              | Dirvish buffer doesn't come with a mode line by default |
 
 ** Features
@@ -233,7 +232,9 @@ you need to require it in your config before using it.
 
 *** Example config
 
-Here is an example Dired/Dirvish config.
+Here is an example config. There are several optional third-party packages in
+this section, enable them if you want. The compatibility with other packages
+still needs work, but generally Dirvish works fine with Dired ecosystem.
 
 #+begin_src emacs-lisp
   (use-package dired
@@ -252,26 +253,36 @@ Here is an example Dired/Dirvish config.
     (setq dired-omit-files
           (concat dired-omit-files "\\|^\\..*$")))
 
+  ;; Addtional syntax highlighting for dired
+  (use-package diredfl
+    :hook
+    (dired-mode . diredfl-mode))
+
+  ;; Narrow a dired buffer to the files matching a string.
+  (use-package dired-narrow
+    :config
+    (bind-key "C-c C-n" 'dired-narrow dired-mode-map))
+
+  ;; A poor man's treemacs
+  (use-package dired-subtree
+    :config
+    (bind-key "TAB" 'dired-subtree-toggle dired-mode-map))
+
   (use-package dirvish
     :config
     ;; Override dired with dirvish globally
     (dirvish-override-dired-mode)
-
-    ;; Load `dirvish-yank' command
-    ;; (require 'dirvish-yank)
-
+    ;; (require 'dirvish-yank) ; Load `dirvish-yank' command
     ;; Enable file preview when narrowing files in minibuffer.
     ;; This feature only support `vertico/selectrum' for now.
     ;; (require 'dirvish-minibuffer-preview)
     ;; (dirvish-minibuf-preview-mode)
-
     :bind
-    (nil
-     :map dirvish-mode-map
-     ("SPC" . dirvish-show-history)
-     ;; need to require it first, see above
-     ;; ([remap dired-do-copy] . dirvish-yank)
-     ("o" . dirvish-other-buffer)))
+    (:map dirvish-mode-map
+          ("SPC" . dirvish-show-history)
+          ;; need to require it first, see above
+          ;; ([remap dired-do-copy] . dirvish-yank)
+          ("o" . dirvish-other-buffer)))
 #+end_src
 
 ** Similar projects
@@ -288,7 +299,7 @@ aims to:
 ** Issues
 
 - Bugs are expected on Windows since dirvish has not been tested on it.
-- *WIP*: there are still some issues relating to buffer (auto)reverting.
+- *WIP*: compatibility issues with some third-party dired related packages.
 - *WIP*: marks does not display correctly when revisit the same dirvish buffer.
 
 Feel free to report issues.
