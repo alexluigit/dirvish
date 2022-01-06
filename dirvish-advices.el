@@ -56,7 +56,6 @@
 (defvar dirvish-temporary-advice-alist
   '((evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
-    (autorevert    doom-auto-revert-buffer-h    ignore) ; For doom-emacs
     (lsp-mode      lsp-deferred                 ignore))
   "A list of FILE, FUNCTION, and temporary ADVICE FUNCTION.
 These advices are being added during activation of first dirvish
