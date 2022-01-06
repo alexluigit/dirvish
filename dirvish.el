@@ -32,7 +32,6 @@
 
 (require 'ring)
 (require 'recentf)
-(declare-function all-the-icons-dired-mode "all-the-icons-dired")
 
 ;;;; Modules
 
@@ -225,13 +224,9 @@ update `dirvish-history-ring'."
     (push (current-buffer) (dv-parent-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
     (setq-local revert-buffer-function #'dirvish-revert)
-    (when (bound-and-true-p all-the-icons-dired-mode)
-      (all-the-icons-dired-mode -1)
-      (setq-local tab-width 2))
     (set (make-local-variable 'face-remapping-alist)
          dirvish-parent-face-remap-alist)
     (setq cursor-type nil)
-    (setq mode-line-format nil)
     (setq-local face-font-rescale-alist nil)
     (set-window-fringes nil 1 1)
     (dirvish-body-update)

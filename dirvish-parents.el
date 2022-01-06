@@ -9,6 +9,7 @@
 
 ;;; Code:
 
+(declare-function all-the-icons-dired-mode "all-the-icons-dired")
 (declare-function dirvish-mode "dirvish")
 (require 'dirvish-structs)
 (require 'dirvish-vars)
@@ -24,6 +25,7 @@
          (i 0))
     (and one-window-p (setq depth 0))
     (dirvish-mode)
+    (dirvish-parent-config)
     (while (and (< i depth) (not (string= current parent)))
       (setq i (+ i 1))
       (push (cons current parent) parent-dirs)
@@ -43,7 +45,15 @@
                  (window (display-buffer buffer `(dirvish--display-buffer . ,win-alist))))
             (with-selected-window window
               (setq-local dirvish-child-entry current)
-              (dirvish-mode))))))))
+              (dirvish-mode)
+              (dirvish-parent-config))))))))
+
+(defun dirvish-parent-config ()
+  "Default config for dirvish parent windows."
+  (when (bound-and-true-p all-the-icons-dired-mode)
+    (all-the-icons-dired-mode -1)
+    (setq-local tab-width 2))
+  (setq mode-line-format nil))
 
 (provide 'dirvish-parents)
 
