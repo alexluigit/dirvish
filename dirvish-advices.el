@@ -27,6 +27,7 @@
 
 (defvar dirvish-advice-alist
   '((files         find-file                    dirvish-deactivate-ad          :before)
+    (dired         dired-readin                 dirvish-setup-dired-buffer     :after)
     (dired         dired                        dirvish-dired-ad)
     (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
     (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
@@ -64,11 +65,6 @@
   "A list of FILE, FUNCTION, and temporary ADVICE FUNCTION.
 These advices are being added during activation of first dirvish
 instance, and get removed when the last dirvish instance exits.")
-
-(defun dirvish-redisplay-frames-fn ()
-  "Refresh dirvish frames, added to `after-focus-change-function'."
-  (dolist (fr (frame-list))
-    (with-selected-frame fr (dirvish-reclaim fr))))
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
   "Override `dired' command.
@@ -163,12 +159,13 @@ FILE-NAME are the same args in `dired-jump'."
 Use it as a `:before' advisor to target function."
   (dirvish-deactivate))
 
-(defun dirvish-setup-dired-buffer-h ()
-  "Setup dired buffer for dirvish.
-This function is added to `dired-after-readin-hook', it removes
-the header line in a dired buffer."
+(defun dirvish-setup-dired-buffer (&rest _)
+  "Setup Dired buffer for dirvish.
+This function removes the header line in a Dired buffer."
   (save-excursion
-    (let ((o (make-overlay (point-min) (progn (forward-line 1) (point)))))
+    (let ((o (make-overlay
+              (point-min)
+              (progn (goto-char (point-min)) (forward-line 1) (point)))))
       (overlay-put o 'invisible t))))
 
 (defun dirvish-update-viewport-h (win _)
@@ -185,11 +182,9 @@ When TEMPORARY is non-nil, also add advices in
 `dirvish-temporary-advice-alist'."
   (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
     (when (require file nil t) (advice-add sym (or place :around) fn)))
-  (add-hook 'dired-after-readin-hook #'dirvish-setup-dired-buffer-h)
   (when temporary
     (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
     (add-hook 'window-selection-change-functions #'dirvish-reclaim)
-    (add-function :after after-focus-change-function #'dirvish-redisplay-frames-fn)
     (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-temporary-advice-alist)
       (when (require file nil t) (advice-add sym (or place :around) fn)))))
 
@@ -202,10 +197,8 @@ This function does not remove advices added by
       (when (require file nil t) (advice-remove sym fn))))
   (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
     (when (require file nil t) (advice-remove sym fn)))
-  (remove-hook 'dired-after-readin-hook #'dirvish-setup-dired-buffer-h)
   (remove-hook 'window-scroll-functions #'dirvish-update-viewport-h)
-  (remove-hook 'window-selection-change-functions #'dirvish-reclaim)
-  (remove-function after-focus-change-function #'dirvish-redisplay-frames-fn))
+  (remove-hook 'window-selection-change-functions #'dirvish-reclaim))
 
 (provide 'dirvish-advices)
 
