@@ -176,10 +176,9 @@ Dirvish doesn't render icons for all the files in a directory eagerly, instead
 it only render icons that are displayed within the viewport. Visiting =/usr/bin=
 (or any directory with over 1000 files) will no longer freeze your Emacs.
 
-*** Minibuffer file preview (extension)
+*** Minibuffer file preview
 
-*dirvish-minibuffer-preview.el* is an extension for dirvish, it provides
-=dirvish-minibuf-preview-mode=, which is a feature to preview file when narrowing
+=dirvish-minibuf-preview-mode= is a feature to preview file when narrowing
 file/directory candidates using minibuffer.
 
 - Why does this feature exist? ::
@@ -192,11 +191,7 @@ file/directory candidates using minibuffer.
   have to configure file preview for dirvish and for minibuffer separately, they
   will always /display the same thing./
 
-This extension only support *vertico/selectrum* for now.
-
-NOTE: =dirvish-minibuf-preview-mode= command is included in the
-=dirvish-minibuffer-preview.el= extension, which is not being loaded by default,
-you need to require it in your config before using it.
+This feature only available for *vertico/selectrum*.
 
 ** Configuration
 *** Options
@@ -272,15 +267,12 @@ still needs work, but generally Dirvish works fine with Dired ecosystem.
     :config
     ;; Override dired with dirvish globally
     (dirvish-override-dired-mode)
-    ;; (require 'dirvish-yank) ; Load `dirvish-yank' command
     ;; Enable file preview when narrowing files in minibuffer.
     ;; This feature only support `vertico/selectrum' for now.
-    ;; (require 'dirvish-minibuffer-preview)
     ;; (dirvish-minibuf-preview-mode)
     :bind
     (:map dirvish-mode-map
           ("SPC" . dirvish-show-history)
-          ;; need to require it first, see above
           ;; ([remap dired-do-copy] . dirvish-yank)
           ("o" . dirvish-other-buffer)))
 #+end_src
