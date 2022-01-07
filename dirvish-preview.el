@@ -168,17 +168,17 @@ If DISPATCHERS is not given, defaults to
 `dirvish-preview-dispatchers'."
   (unless dispatchers (setq dispatchers dirvish-preview-dispatchers))
   (cl-loop for dispatcher in dispatchers
-           for (dv-type . instruction) = (funcall dispatcher file (dirvish-curr))
-           for buffer = (dirvish-preview-dispatch dv-type instruction)
+           for (dv-type . payload) = (funcall dispatcher file (dirvish-curr))
+           for buffer = (dirvish-preview-dispatch dv-type payload)
            until dv-type
            finally return buffer))
 
-(defun dirvish-preview-dispatch (preview-type instruction)
-  "Execute dispatcher INSTRUCTION according to PREVIEW-TYPE.
-This function apply the instructions provided by the first
+(defun dirvish-preview-dispatch (preview-type payload)
+  "Execute dispatcher PAYLOAD according to PREVIEW-TYPE.
+This function apply the payloads provided by the first
 matched preview dispatcher to the preview buffer, and finally
 return the buffer.
-A INSTRUCTION is can be either:
+A PAYLOAD is can be either:
 
 - a buffer which is displayed inside of preview window.
 
@@ -191,9 +191,9 @@ for them.
 
 A PREVIEW-TYPE can be one of following values:
 
-- `info', which means insert INSTRUCTION string to preview buffer.
+- `info', which means insert PAYLOAD string to preview buffer.
 
-- `buffer', meaning either INSTRUCTION itself is a buffer
+- `buffer', meaning either PAYLOAD itself is a buffer
   or `(apply CMD ARGS)' return a buffer directly as preview
   buffer.
 
@@ -208,8 +208,8 @@ A PREVIEW-TYPE can be one of following values:
   a cache image, and when the process exits, it fires up a
   preview update."
   (let ((buf (dv-preview-buffer (dirvish-curr)))
-        (cmd (car-safe instruction))
-        (args (cdr-safe instruction))
+        (cmd (car-safe payload))
+        (args (cdr-safe payload))
         (process-connection-type nil)
         (enable-local-variables nil)
         (inhibit-modification-hooks t)
@@ -218,12 +218,12 @@ A PREVIEW-TYPE can be one of following values:
         (dirvish-show-icons nil))
     (when (and (stringp cmd) (not (executable-find cmd)))
       (setq preview-type 'info
-            instruction (format "Install `%s' to preview this file." cmd)))
+            payload (format "Install `%s' to preview this file." cmd)))
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
       (cl-case preview-type
-        ('info (insert instruction))
-        ('buffer (setq buf (if cmd (apply cmd args) instruction)))
+        ('info (insert payload))
+        ('buffer (setq buf (if cmd (apply cmd args) payload)))
         ('image (apply cmd args))
         ('image-cache
          (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
