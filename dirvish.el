@@ -236,6 +236,7 @@ update `dirvish-history-ring'."
     (setq cursor-type nil)
     (setq-local face-font-rescale-alist nil)
     (set-window-fringes nil 1 1)
+    (dirvish-setup-dired-buffer)
     (dirvish-body-update)
     (if (eq (dv-root-window dv) (selected-window))
         (and dirvish-enable-preview (dired-hide-details-mode t))
