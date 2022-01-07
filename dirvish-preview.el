@@ -151,7 +151,8 @@ FILE matched by this either display a regular file buffer or a
 warning as preview depending on whether this file is too large or
 containing very long lines."
   (let ((threshold (or large-file-warning-threshold 10000000))
-        (filesize (file-attribute-size (file-attributes file))))
+        (filesize (file-attribute-size (file-attributes file)))
+        (enable-local-variables nil))
     (if (> filesize threshold)
         `(info ,(concat "File " file " is too big for literal preview."))
       (let ((buf (find-file-noselect file t nil)))
