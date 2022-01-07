@@ -78,14 +78,31 @@ FRAME defaults to the currently selected frame."
                              (mapcar #'dv-name (hash-table-values (dirvish-hash)))))
                          (frame-list))))
 
+(defun dirvish-all-root-windows ()
+  "Return a list of dirvish root windows for all frames."
+  (cl-reduce #'cl-union (mapcar
+                         (lambda (fr)
+                           (with-selected-frame fr
+                             (mapcar #'dv-root-window (hash-table-values (dirvish-hash)))))
+                         (frame-list))))
+
 (defun dirvish-all-parent-buffers ()
-  "Return a list of the dirvish parent buffers for all frames."
+  "Return a list of dirvish parent buffers for all frames."
   (delete-dups
    (flatten-tree (mapcar
                   (lambda (fr)
                     (with-selected-frame fr
                       (mapcar #'dv-parent-buffers (hash-table-values (dirvish-hash)))))
                   (frame-list)))))
+
+(defun dirvish-dwim-target-next (&optional all-frames)
+  "Replacement for `dired-dwim-target-next'.
+If ALL-FRAMES, search target directories in all frames."
+  (mapcan (lambda (w)
+            (when (or all-frames (eq (window-frame w) (selected-frame)))
+              (with-current-buffer (window-buffer w)
+                (list (dired-current-directory)))))
+          (dirvish-all-root-windows)))
 
 (cl-defstruct (dirvish
                (:conc-name dv-)
