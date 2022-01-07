@@ -166,7 +166,7 @@ FILE-NAME are the same args in `dired-jump'."
 (defun dirvish-deactivate-ad (&rest _)
   "Quit current dirvish instance if inside one.
 Use it as a `:before' advisor to target function."
-  (dirvish-deactivate))
+  (and (dirvish-live-p) (dirvish-deactivate)))
 
 (defun dirvish-setup-dired-buffer (&rest _)
   "Setup Dired buffer for dirvish.
