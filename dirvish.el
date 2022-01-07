@@ -158,6 +158,12 @@ is not-nil."
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))
 
+(defun dirvish-revert (&optional _arg _noconfirm)
+  "Reread the Dirvish buffer.
+Dirvish sets `revert-buffer-function' to this function.  See
+`dired-revert'."
+  (dirvish-with-update t (dired-revert)))
+
 (defun dirvish-reset (&optional rebuild)
   "Reset dirvish.
 If REBUILD is not-nil, rebuild dirvish layout."
