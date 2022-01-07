@@ -37,6 +37,7 @@
     (wdired        wdired-finish-edit           dirvish-mode-ad                :after)
     (wdired        wdired-abort-changes         dirvish-mode-ad                :after)
     (dired-x       dired-omit-mode              dirvish-full-update-ad)
+    (dired-aux     dired-dwim-target-next       dirvish-dwim-target-next       :override)
     (dired-aux     dired-insert-subdir          dirvish-full-update-ad)
     (dired-aux     dired-kill-subdir            dirvish-full-update-ad)
     (dired-aux     dired-add-entry              dirvish-lazy-update-ad)
