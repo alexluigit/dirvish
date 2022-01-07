@@ -10,11 +10,6 @@
 
 ;;; Code:
 
-(declare-function dirvish-body-update "dirvish-body")
-(declare-function dirvish--body-render-icon "dirvish-body")
-(declare-function dirvish-header-update "dirvish-header")
-(declare-function dirvish-footer-update "dirvish-footer")
-(declare-function dirvish-preview-update "dirvish-preview")
 (require 'dirvish-structs)
 (require 'dirvish-vars)
 (require 'dired-x)
@@ -64,12 +59,6 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
-
-(defun dirvish-revert (&optional _arg _noconfirm)
-  "Reread the Dirvish buffer.
-Dirvish sets `revert-buffer-function' to this function.  See
-`dired-revert'."
-  (dirvish-with-update t (dired-revert)))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.

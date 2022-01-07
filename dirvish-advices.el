@@ -12,10 +12,14 @@
 
 (declare-function dirvish-mode "dirvish")
 (declare-function dirvish-find-file "dirvish")
+(declare-function dirvish-body-update "dirvish-body")
+(declare-function dirvish--body-render-icon "dirvish-body")
+(declare-function dirvish-header-update "dirvish-header")
+(declare-function dirvish-footer-update "dirvish-footer")
+(declare-function dirvish-preview-update "dirvish-preview")
 (require 'cl-lib)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
-(require 'dirvish-body)
 (require 'dirvish-vars)
 
 (defvar dirvish-advice-alist
