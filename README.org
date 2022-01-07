@@ -20,11 +20,11 @@ Wish you a better dired.
 
 ** Introduction
 
-*Dirvish* is a minimalistic file manager based on *dired*.
+*Dirvish* is a minimalistic file manager based on *Dired*.
 
-This package empowers dired by giving it a modern UI in a unintrusive way. Emacs
-users deserve a file manager better than those popular ones on terminal such as
-[[https://github.com/ranger/ranger][ranger]], [[https://github.com/vifm/vifm][vifm]], [[https://github.com/gokcehan/lf][lf]] since Emacs is more than a terminal emulator.
+This package empowers dired by giving it a modern UI in an unintrusive
+way. Emacs users deserve a file manager better than those popular ones in
+terminal such as [[https://github.com/ranger/ranger][ranger]], [[https://github.com/vifm/vifm][vifm]], [[https://github.com/gokcehan/lf][lf]] since Emacs is more than a terminal emulator.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 
