@@ -158,8 +158,9 @@ FILE-NAME are the same args in `dired-jump'."
 
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN with ARGS."
+  (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
   (dirvish-with-update t
-    (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
+    (revert-buffer)
     (unless (dired-get-filename nil t) (dired-next-line 1))))
 
 (defun dirvish-deactivate-ad (&rest _)
