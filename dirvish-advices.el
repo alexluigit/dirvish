@@ -12,11 +12,6 @@
 
 (declare-function dirvish-mode "dirvish")
 (declare-function dirvish-find-file "dirvish")
-(declare-function dirvish-dired "dirvish")
-(declare-function dirvish-quit "dirvish")
-(declare-function dirvish-header-update "dirvish-header")
-(declare-function dirvish-footer-update "dirvish-footer")
-(declare-function dirvish-preview-update "dirvish-preview")
 (require 'cl-lib)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
