@@ -98,11 +98,11 @@ recommended!), all you need is enable =dirvish-override-dired-mode=.
 
 Now all your Dired entry commands incluing =dired=, =dired-other-window/tab/frame=,
 
-=dired-jump[-other-window]= do its job in a "dirvish" way.
+=dired-jump[-other-window]= do their job in a "dirvish" way.
 
 **** In relation to Dired config
 
-Dirvish respects all of your dired options *except* following ones:
+Dirvish respects all of your dired options *except* the following ones:
 
 | Option                                   | Reason                                                  |
 |------------------------------------------+---------------------------------------------------------|
@@ -122,7 +122,7 @@ details. TODO: better doc on this, maybe a wiki article.
 
 *** Multiple instances
 
-You can open multiple dirvish instance across diffent widnows / tabs /
+You can open multiple dirvish instance across different widnows / tabs /
 frames. Each one of them has their own parent/preview buffer list that are being
 killed during deactivation of this instance.
 
@@ -187,7 +187,7 @@ file/directory candidates using minibuffer.
   have to configure file preview for dirvish and for minibuffer separately, they
   will always /display the same thing./
 
-This feature only available for *vertico/selectrum*.
+This feature is currently only available for *vertico/selectrum*.
 
 ** Configuration
 *** Options
