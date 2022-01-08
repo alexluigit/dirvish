@@ -114,13 +114,13 @@ If REVERSE is non-nil, move to bottom instead."
 (defun dirvish-change-level (&optional arg)
   "Change `dirvish-depth' to ARG."
   (interactive "p")
-  (setq dirvish-depth (or arg 1)) (dirvish-reset t))
+  (setq dirvish-depth (or arg 1)) (dirvish-build))
 
 (defun dirvish-toggle-preview ()
   "Show/hide preview window."
   (interactive)
   (setq dirvish-enable-preview (not dirvish-enable-preview))
-  (dirvish-reset t))
+  (dirvish-build))
 
 (defun dirvish-sort-by-criteria (criteria)
   "Call `dired-sort-other' by different `CRITERIA'."
@@ -164,17 +164,14 @@ Dirvish sets `revert-buffer-function' to this function.  See
 `dired-revert'."
   (dirvish-with-update t (dired-revert)))
 
-(defun dirvish-reset (&optional rebuild)
-  "Reset dirvish.
-If REBUILD is not-nil, rebuild dirvish layout."
-  (interactive "P")
+(defun dirvish-build ()
+  "Build dirvish layout."
   (dirvish-with-update t
-    (when rebuild
-      (unless (dv-one-window-p (dirvish-curr))
-        (delete-other-windows))
-      (dirvish-preview-build)
-      (dirvish-header-build)
-      (dirvish-parent-build))))
+    (unless (dv-one-window-p (dirvish-curr))
+      (delete-other-windows))
+    (dirvish-preview-build)
+    (dirvish-header-build)
+    (dirvish-parent-build)))
 
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
@@ -198,7 +195,7 @@ update `dirvish-history-ring'."
             (setq dirvish-child-entry (or bname curr-dir))
             (setf (dv-index-path (dirvish-curr))
                   (or (dired-get-filename nil t) entry))
-            (dirvish-reset t))
+            (dirvish-build))
         (find-file entry)))))
 
 (defvar dirvish-mode-map
