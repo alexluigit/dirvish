@@ -169,6 +169,7 @@ See `face-remapping-alist' for more details."
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-header-wobbling-offset 2)
+(defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-repeat-timers '())
