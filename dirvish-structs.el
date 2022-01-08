@@ -47,6 +47,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
 (defun dirvish-init-frame (&optional frame)
   "Initialize the dirvishs system in FRAME.
 By default, this uses the current frame."
+  (setq tab-bar-new-tab-choice "*scratch*")
   (unless (frame-parameter frame 'dirvish--hash)
     (with-selected-frame (or frame (selected-frame))
       (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
@@ -214,6 +215,7 @@ If DV is not given, default to current dirvish instance."
   (dirvish-kill dv
     (unless (dirvish-all-names)
       (dirvish--clean-advices)
+      (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (unless (or (dirvish-reclaim) (window-minibuffer-p))
       (set-frame-parameter nil 'dirvish--curr nil))))
