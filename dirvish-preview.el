@@ -153,21 +153,25 @@ containing very long lines."
   (let ((threshold (or large-file-warning-threshold 10000000))
         (filesize (file-attribute-size (file-attributes file)))
         (enable-local-variables nil))
-    (if (> filesize threshold)
-        `(info ,(concat "File " file " is too big for literal preview."))
-      (let ((buf (find-file-noselect file t nil)))
-        (with-current-buffer buf
-          (if (so-long-detected-long-line-p)
-              (progn
-                (kill-buffer buf)
-                `(info . ,(format "File %s contains very long lines, preview skipped." file)))
-            `(buffer . ,buf)))))))
+    (cond ((file-directory-p file) ; in case user did not specify a directory dispatcher
+           (dirvish-preview-directory-dired-dispatcher file nil))
+          ((> filesize threshold)
+           `(info ,(concat "File " file " is too big for literal preview.")))
+          (t
+           (let ((buf (find-file-noselect file t nil)))
+             (with-current-buffer buf
+               (if (so-long-detected-long-line-p)
+                   (progn
+                     (kill-buffer buf)
+                     `(info . ,(format "File %s contains very long lines, preview skipped." file)))
+                 `(buffer . ,buf))))))))
 
 (defun dirvish-get-preview-buffer (file &optional dispatchers)
   "Create the preview buffer for FILE.
 If DISPATCHERS is not given, defaults to
 `dirvish-preview-dispatchers'."
   (unless dispatchers (setq dispatchers dirvish-preview-dispatchers))
+  (and (file-directory-p file) (setq file (file-name-as-directory file)))
   (cl-loop for dispatcher in dispatchers
            for (dv-type . payload) = (funcall dispatcher file (dirvish-curr))
            for buffer = (dirvish-preview-dispatch dv-type payload)
