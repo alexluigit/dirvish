@@ -56,7 +56,12 @@ By default, this uses the current frame."
       (dirvish--get-buffer "header"
         (setq-local header-line-format nil)
         (setq-local mode-line-format nil)
-        (setq-local face-font-rescale-alist nil)))))
+        (setq-local face-font-rescale-alist nil))
+      (dirvish--get-buffer "footer"
+        (setq-local header-line-format nil)
+        (setq-local mode-line-format '((:eval (dirvish-format-mode-line))))
+        (set (make-local-variable 'face-remapping-alist)
+             '((mode-line-inactive mode-line-active)))))))
 
 (defun dirvish-hash (&optional frame)
   "Return a hash containing all dirvish instance in FRAME.
@@ -117,10 +122,16 @@ If ALL-FRAMES, search target directories in all frames."
    :documentation "indicates if this instance only display one window.")
   (header-window
    nil
-   :documentation "is the window to display `dv-header-buffer'.")
+   :documentation "is the window to place `dv-header-buffer'.")
   (header-buffer
    (dirvish--get-buffer "header")
    :documentation "is the buffer contains dirvish header text.")
+  (footer-window
+   nil
+   :documentation "is the window to place `dv-footer-buffer'.")
+  (footer-buffer
+   (dirvish--get-buffer "footer")
+   :documentation "is the buffer contains dirvish footer text.")
   (parent-buffers
    ()
    :documentation "holds all `dirvish-mode' buffers in this instance.")
