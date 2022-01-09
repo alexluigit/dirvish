@@ -17,19 +17,7 @@
 
 (require 'dirvish)
 
-(defcustom dirvish-yank-display-progress t
-  "Whether display file I/O progress in dirvish footer."
-  :group 'dirvish :type 'boolean)
-
 (defvar dirvish-yank-queue '())
-
-;;;###autoload
-(defun dirvish-yank (&optional arg)
-  "Paste marked files/directory to current directory.
-
-With optional prefix ARG, delete source files/directories."
-  (interactive "P")
-  (if arg (dirvish--yank 'move) (dirvish--yank)))
 
 (defun dirvish--yank (&optional mode)
   "Paste marked files/directory to current directory according to MODE.
@@ -95,7 +83,7 @@ This function is a helper for `dirvish--yank'."
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf (dirvish-all-parent-buffers))
       (with-current-buffer buf (dired-unmark-all-marks)))
-    (message "Dirvish: yank completed.")))
+    (message "Dirvish: task started.")))
 
 (defun dirvish--yank-push-task (file dir name place)
   "Push (FILE . DIR or NAME) cons to PLACE.
@@ -117,7 +105,7 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
         (setq dirvish-yank-queue (cdr dirvish-yank-queue))
         (unless dirvish-yank-queue
           (cancel-timer (symbol-value 'dirvish-footer-update-timer))))
-      (format "%s: %s total size: %s"
+      (format " %s: %s total size: %s "
               (if finished "Success" "Progress")
               (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
               (propertize size 'face 'font-lock-builtin-face)))))
@@ -141,17 +129,29 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
           (cancel-timer (symbol-value 'dirvish--yank-status-update-timer))))
       (setcar (nth 3 (car-safe dirvish-yank-queue)) progress))))
 
-(defun dirvish-yank-display-progress ()
+(defun dirvish-yank-progress-activate ()
   "Display file IO progress in dirvish footer."
   (when (and (dirvish--yank-status)
              (not (and (dirvish-curr) (dv-one-window-p (dirvish-curr)))))
     (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
     (dirvish-repeat dirvish--yank-status-update 0 dirvish-footer-repeat)))
 
-(when dirvish-yank-display-progress
-  (setq dirvish-footer-slot-x-fn #'dirvish--yank-status)
-  (add-hook 'dirvish-activation-hook #'dirvish-yank-display-progress))
+;;;###autoload
+(defun dirvish-yank-display-progress ()
+  "Display yank progress in dirvish footer."
+  (let ((right-seg (cdr-safe dirvish-mode-line-format)))
+    (setq dirvish-mode-line-format
+          (cons (car-safe dirvish-mode-line-format)
+                (push '(:eval (dirvish--yank-status)) right-seg)))
+    (add-hook 'dirvish-activation-hook #'dirvish-yank-progress-activate)))
+
+;;;###autoload
+(defun dirvish-yank (&optional arg)
+  "Paste marked files/directory to current directory.
+
+With optional prefix ARG, delete source files/directories."
+  (interactive "P")
+  (if arg (dirvish--yank 'move) (dirvish--yank)))
 
 (provide 'dirvish-yank)
-
 ;;; dirvish-yank.el ends here
