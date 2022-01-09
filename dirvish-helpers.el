@@ -35,7 +35,7 @@ removed or updated before update current dirvish instance."
        (when-let ((filename (dired-get-filename nil t)))
          (setf (dv-index-path curr-dv) filename)
          (dirvish-header-update)
-         (dirvish-footer-update)
+         (dirvish-debounce dirvish-footer-update dirvish-preview-delay)
          (dirvish-debounce dirvish-preview-update dirvish-preview-delay)))))
 
 (defmacro dirvish-repeat (func delay interval &rest args)
@@ -56,7 +56,6 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
          (do-once `(lambda (&rest args)
                      (unwind-protect (apply #',func args) (setq ,timer nil)))))
     `(progn
-       (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
 
