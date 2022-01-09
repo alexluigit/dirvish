@@ -6,13 +6,13 @@
 
 ;;; Commentary:
 
-;;; This file contains data structures for dirvish.
+;;; This library contains data structures for Dirvish.
 
 ;;; Code:
 
 (declare-function dirvish--add-advices "dirvish-advices")
 (declare-function dirvish--clean-advices "dirvish-advices")
-(require 'dirvish-vars)
+(require 'dirvish-options)
 (require 'recentf)
 
 (defun dirvish-curr (&optional frame)
@@ -220,6 +220,14 @@ If DV is not given, default to current dirvish instance."
     (unless (or (dirvish-reclaim) (window-minibuffer-p))
       (set-frame-parameter nil 'dirvish--curr nil))))
 
-(provide 'dirvish-structs)
+;;;###autoload
+(defun dirvish-live-p (&optional win)
+  "Detecting if WIN is in dirvish mode.
 
+If WIN is nil, defaults to `\\(selected-window\\)'."
+  (and
+   (dirvish-curr)
+   (memq (or win (selected-window)) (dv-parent-windows (dirvish-curr)))))
+
+(provide 'dirvish-structs)
 ;;; dirvish-structs.el ends here

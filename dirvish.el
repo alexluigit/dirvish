@@ -10,7 +10,7 @@
 
 ;;; Commentary:
 
-;; `dirvish.el' is a minimalistic file manager based on `dired-mode'.  It is
+;; `dirvish' is a minimalistic file manager based on `dired-mode'.  It is
 ;; inspired by ranger (see https://github.com/ranger/ranger), which is a
 ;; terminal file manager that shows a stack of the parent directories, and
 ;; updates its parent buffers while navigating the file system with an optional
@@ -28,20 +28,12 @@
 
 ;;; Code:
 
-;;;; Deps
+;;;; Deps / Modules
 
 (require 'ring)
-(require 'recentf)
-
-;;;; Modules
-
-(require 'dirvish-vars)
-(require 'dirvish-helpers)
+(require 'dirvish-options)
 (require 'dirvish-structs)
-(require 'dirvish-header)
-(require 'dirvish-footer)
-(require 'dirvish-parents)
-(require 'dirvish-preview)
+(require 'dirvish-builder)
 (require 'dirvish-advices)
 
 ;;;; Setup
@@ -158,21 +150,6 @@ is not-nil."
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))
 
-(defun dirvish-revert (&optional _arg _noconfirm)
-  "Reread the Dirvish buffer.
-Dirvish sets `revert-buffer-function' to this function.  See
-`dired-revert'."
-  (dirvish-with-update t (dired-revert)))
-
-(defun dirvish-build ()
-  "Build dirvish layout."
-  (dirvish-with-update t
-    (unless (dv-one-window-p (dirvish-curr))
-      (delete-other-windows))
-    (dirvish-preview-build)
-    (dirvish-header-build)
-    (dirvish-parent-build)))
-
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
 
@@ -198,46 +175,7 @@ update `dirvish-history-ring'."
             (dirvish-build))
         (find-file entry)))))
 
-(defvar dirvish-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [remap dired-do-redisplay]           'dirvish-change-level)
-    (define-key map [remap dired-hide-details-mode]      'dirvish-toggle-preview)
-    (define-key map [remap dired-find-file]              'dirvish-find-file)
-    (define-key map [remap dired-find-alternate-file]    'dirvish-find-file)
-    (define-key map [remap right-char]                   'dirvish-find-file)
-    (define-key map [remap dired-up-directory]           'dirvish-up-directory)
-    (define-key map [remap left-char]                    'dirvish-up-directory)
-    (define-key map [remap end-of-buffer]                'dirvish-go-bottom)
-    (define-key map [remap beginning-of-buffer]          'dirvish-go-top)
-    (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
-    (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
-    (define-key map [remap quit-window]                  'dirvish-quit)
-    (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
-    map)
-  "Dirvish mode map.")
-
 ;;;;; Global commands
-
-(define-derived-mode dirvish-mode dired-mode "Dirvish"
-  "Convert Dired buffer to a Dirvish buffer."
-  :group 'dirvish
-  :interactive nil
-  (let ((dv (dirvish-curr)))
-    (when dirvish-child-entry (dired-goto-file dirvish-child-entry))
-    (push (selected-window) (dv-parent-windows dv))
-    (push (current-buffer) (dv-parent-buffers dv))
-    (setq-local dirvish--curr-name (dv-name dv))
-    (setq-local revert-buffer-function #'dirvish-revert)
-    (set (make-local-variable 'face-remapping-alist)
-         dirvish-parent-face-remap-alist)
-    (setq cursor-type nil)
-    (setq-local face-font-rescale-alist nil)
-    (set-window-fringes nil 1 1)
-    (dirvish-setup-dired-buffer)
-    (dirvish-body-update)
-    (if (eq (dv-root-window dv) (selected-window))
-        (and dirvish-enable-preview (dired-hide-details-mode t))
-      (dired-hide-details-mode t))))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
@@ -273,5 +211,4 @@ If OTHER-WINDOW is non-nil, do it in other window."
   (dirvish path t))
 
 (provide 'dirvish)
-
 ;;; dirvish.el ends here

@@ -11,7 +11,7 @@
 ;;; Code:
 
 (require 'dirvish-structs)
-(require 'dirvish-vars)
+(require 'dirvish-options)
 (require 'dired-x)
 
 (defmacro dirvish-with-update (full-update &rest body)
@@ -28,7 +28,7 @@ removed or updated before update current dirvish instance."
        (when-let ((pos (dired-move-to-filename nil))
                   dirvish-show-icons)
          (remove-overlays (1- pos) pos 'dirvish-icons t)
-         (dirvish--body-render-icon pos))
+         (dirvish--render-icon pos))
        ,@body
        (let ((skip (not ,full-update)))
          (dirvish-body-update skip skip))
@@ -59,6 +59,31 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
        (unless (boundp ',timer) (defvar ,timer nil))
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
+
+(defun dirvish-setup-dired-buffer (&rest _)
+  "Setup Dired buffer for dirvish.
+This function removes the header line in a Dired buffer."
+  (save-excursion
+    (let ((o (make-overlay
+              (point-min)
+              (progn (goto-char (point-min)) (forward-line 1) (point)))))
+      (overlay-put o 'invisible t))))
+
+(defun dirvish-render (renderer &optional range)
+  "Call RENDERER on RANGE in viewport.
+
+Where RENDERER is a function which takes a position (point in
+current line) and optional face as args.  RANGE is a beginning
+and end position cons, default to buffer start and end position
+within the viewport."
+  (save-excursion
+    (let ((beg (or (car range) (- 0 (frame-height))))
+          (end (or (cdr range) (+ (line-number-at-pos) (frame-height)))))
+      (forward-line beg)
+      (while (and (not (eobp)) (< (line-number-at-pos) end))
+        (when-let ((pos (dired-move-to-filename nil)))
+          (funcall renderer pos))
+        (forward-line 1)))))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.
@@ -94,15 +119,5 @@ the idle timer fires are ignored.  ARGS is arguments for FUNC."
     (when (string-prefix-p (car dir) (dired-current-directory))
       (cl-return (concat (car dir) (cdr dir))))))
 
-;;;###autoload
-(defun dirvish-live-p (&optional win)
-  "Detecting if WIN is in dirvish mode.
-
-If WIN is nil, defaults to `\\(selected-window\\)'."
-  (and
-   (dirvish-curr)
-   (memq (or win (selected-window)) (dv-parent-windows (dirvish-curr)))))
-
 (provide 'dirvish-helpers)
-
 ;;; dirvish-helpers.el ends here

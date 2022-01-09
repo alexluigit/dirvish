@@ -90,5 +90,4 @@ invoked when file name under cursor in minibuffer changed."
     (advice-remove 'selectrum--update #'dirvish--minibuf-update-advice)))
 
 (provide 'dirvish-minibuffer-preview)
-
 ;;; dirvish-minibuffer-preview.el ends here

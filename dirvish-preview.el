@@ -4,7 +4,7 @@
 
 ;;; Commentary:
 
-;;; Create a file preview window in dirvish.
+;;; This library provides utilities for managing file preview in Dirvish.
 
 ;;; Code:
 
@@ -13,7 +13,7 @@
 (require 'so-long)
 (require 'mailcap)
 (require 'dirvish-structs)
-(require 'dirvish-vars)
+(require 'dirvish-options)
 (require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))
 
@@ -166,18 +166,6 @@ containing very long lines."
                      `(info . ,(format "File %s contains very long lines, preview skipped." file)))
                  `(buffer . ,buf))))))))
 
-(defun dirvish-get-preview-buffer (file &optional dispatchers)
-  "Create the preview buffer for FILE.
-If DISPATCHERS is not given, defaults to
-`dirvish-preview-dispatchers'."
-  (unless dispatchers (setq dispatchers dirvish-preview-dispatchers))
-  (and (file-directory-p file) (setq file (file-name-as-directory file)))
-  (cl-loop for dispatcher in dispatchers
-           for (dv-type . payload) = (funcall dispatcher file (dirvish-curr))
-           for buffer = (dirvish-preview-dispatch dv-type payload)
-           until dv-type
-           finally return buffer))
-
 (defun dirvish-preview-dispatch (preview-type payload)
   "Execute dispatcher PAYLOAD according to PREVIEW-TYPE.
 This function apply the payloads provided by the first
@@ -241,34 +229,31 @@ A PREVIEW-TYPE can be one of following values:
            (set-process-sentinel proc 'dirvish--preview-process-fill-str-sentinel))))
       buf)))
 
-(cl-defun dirvish-preview-build ()
-  "Build dirvish preview window."
-  (when-let ((one-window-p (dv-one-window-p (dirvish-curr))))
-    (cl-return-from dirvish-preview-build))
-  (when dirvish-enable-preview
-    (let* ((inhibit-modification-hooks t)
-           (buf (dv-preview-buffer (dirvish-curr)))
-           (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
-           (fringe 30)
-           (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (set-window-fringes new-window fringe fringe nil t)
-      (setf (dv-preview-pixel-width (dirvish-curr)) (window-width new-window t))
-      (setf (dv-preview-window (dirvish-curr)) new-window))))
+(defun dirvish-get-preview-buffer (file &optional dispatchers)
+  "Create the preview buffer for FILE.
+If DISPATCHERS is not given, defaults to
+`dirvish-preview-dispatchers'."
+  (unless dispatchers (setq dispatchers dirvish-preview-dispatchers))
+  (and (file-directory-p file) (setq file (file-name-as-directory file)))
+  (cl-loop for dispatcher in dispatchers
+           for (dv-type . payload) = (funcall dispatcher file (dirvish-curr))
+           for buffer = (dirvish-preview-dispatch dv-type payload)
+           until dv-type
+           finally return buffer))
 
 (defun dirvish-preview-update ()
   "Update dirvish preview."
   (when-let* ((curr-dv (dirvish-curr))
               (preview-window (dv-preview-window curr-dv))
               dirvish-enable-preview)
-      (let* ((orig-buffer-list (buffer-list))
-             (index (or (dv-index-path curr-dv) ""))
-             (preview-buffer (dirvish-get-preview-buffer index)))
-        (when (window-live-p preview-window)
-          (set-window-buffer preview-window preview-buffer))
-        (unless (memq preview-buffer orig-buffer-list)
-          (push preview-buffer (dv-preview-buffers curr-dv)))
-        (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook)))))
+    (let* ((orig-buffer-list (buffer-list))
+           (index (or (dv-index-path curr-dv) ""))
+           (preview-buffer (dirvish-get-preview-buffer index)))
+      (when (window-live-p preview-window)
+        (set-window-buffer preview-window preview-buffer))
+      (unless (memq preview-buffer orig-buffer-list)
+        (push preview-buffer (dv-preview-buffers curr-dv)))
+      (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook)))))
 
 (provide 'dirvish-preview)
-
 ;;; dirvish-preview.el ends here

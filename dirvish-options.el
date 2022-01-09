@@ -1,10 +1,11 @@
-;;; dirvish-vars.el --- Variables defined in dirvish -*- lexical-binding: t -*-
+;;; dirvish-options.el --- Custom options and internal variables in dirvish -*- lexical-binding: t -*-
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
 
-;;; User custom options / internal variables defined in dirvish.
+;;; This file contains all user custom options, internal variables/constants and
+;;; dirvish mode keymap for Dirvish.
 
 ;;; Code:
 
@@ -141,7 +142,7 @@ configure faces in dirvish header window, use
 See `face-remapping-alist' for more details."
   :group 'dirvish :type 'alist)
 
-(defcustom dirvish-header-text-fn 'dirvish-header-text
+(defcustom dirvish-header-text-fn 'dirvish--header-text
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
 
@@ -178,6 +179,25 @@ See `face-remapping-alist' for more details."
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish-child-entry 'permanent-local t)
 
-(provide 'dirvish-vars)
+;;;; Mode keymap
 
-;;; dirvish-vars.el ends here
+(defvar dirvish-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [remap dired-do-redisplay]           'dirvish-change-level)
+    (define-key map [remap dired-hide-details-mode]      'dirvish-toggle-preview)
+    (define-key map [remap dired-find-file]              'dirvish-find-file)
+    (define-key map [remap dired-find-alternate-file]    'dirvish-find-file)
+    (define-key map [remap right-char]                   'dirvish-find-file)
+    (define-key map [remap dired-up-directory]           'dirvish-up-directory)
+    (define-key map [remap left-char]                    'dirvish-up-directory)
+    (define-key map [remap end-of-buffer]                'dirvish-go-bottom)
+    (define-key map [remap beginning-of-buffer]          'dirvish-go-top)
+    (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
+    (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
+    (define-key map [remap quit-window]                  'dirvish-quit)
+    (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
+    map)
+  "Dirvish mode map.")
+
+(provide 'dirvish-options)
+;;; dirvish-options.el ends here
