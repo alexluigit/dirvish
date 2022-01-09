@@ -13,11 +13,8 @@
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
 (require 'dirvish-structs)
-(require 'dirvish-options)
 (require 'dirvish-helpers)
-(require 'dirvish-preview)
-(require 'format-spec)
-(require 'cl-lib)
+(require 'dirvish-options)
 (eval-when-compile (require 'subr-x))
 
 (defun dirvish--header-text ()
@@ -48,32 +45,26 @@
     (overlay-put ov 'dirvish-icons t)
     (overlay-put ov 'after-string icon-str)))
 
-(defun dirvish--footer-slot (slot-fn entry)
-  "Call SLOT-FN with ENTRY, return the result string.
-If SLOT-FN is nil or its return value is nil, return an empty
-string."
-  (or (and slot-fn (funcall slot-fn entry)) ""))
+(defun dirvish--mode-line-sorter ()
+  "Return a string showing current Dired file sort criteria."
+  (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
+    (format " %s %s "
+            (propertize "Sorter:" 'face 'bold)
+            (propertize (car (dv-sort-criteria (dirvish-curr))) 'face 'font-lock-type-face))))
 
-(defun dirvish--footer-spec ()
-  "File specs for current file that will be sent to `format-spec'."
-  (let* ((entry (dired-get-filename nil t))
-         (fattr (file-attributes entry))
-         (file-size (format "%6s" (file-size-human-readable (or (nth 7 fattr) 0))))
-         (user (nth 2 fattr))
-         (file-date (propertize (format-time-string "%Y-%m-%d %H:%m" (nth 5 fattr))
-                                'face 'font-lock-warning-face))
-         (file-perm (nth 8 fattr))
-         (cur-pos (- (line-number-at-pos (point)) 2))
-         (final-pos (- (line-number-at-pos (point-max)) 3))
-         (index (format "%3d/%-3d" cur-pos final-pos))
-         (sorting (car (dv-sort-criteria (dirvish-curr))))
-         (slot-x (dirvish--footer-slot dirvish-footer-slot-x-fn entry))
-         (slot-y (dirvish--footer-slot dirvish-footer-slot-y-fn entry))
-         (slot-z (dirvish--footer-slot dirvish-footer-slot-z-fn entry))
-         (filter (if dired-omit-mode "ON" "OFF"))
-         (space "&&&"))
-    `((?u . ,user) (?d . ,file-date) (?p . ,file-perm) (?i . ,index) (?f . ,filter)
-      (?s . ,file-size) (?S . ,sorting) (?w . ,space) (?x . ,slot-x) (?y . ,slot-y) (?z . ,slot-z))))
+(defun dirvish--mode-line-filter ()
+  "Return a string showing active Dired file filter."
+  (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
+    (format " %s %s "
+            (propertize "Filter:" 'face 'bold)
+            (propertize (if dired-omit-mode "ON" "OFF") 'face 'font-lock-doc-face))))
+
+(defun dirvish--mode-line-index ()
+  "Return a string showing index in a Dirvish buffer."
+  (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
+    (let ((cur-pos (- (line-number-at-pos (point)) 1))
+          (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
+      (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold)))))
 
 (defun dirvish-header-update ()
   "Update header string.
@@ -124,23 +115,15 @@ non-nil, do not update padding."
     (overlay-put ol 'dirvish-body t)
     (overlay-put ol 'face 'highlight)))
 
-(cl-defun dirvish-footer-update ()
+(defun dirvish-footer-update ()
   "Show file details in echo area."
-  (when-let ((one-window-p (and (dirvish-curr)
-                                (dv-one-window-p (dirvish-curr)))))
-    (cl-return-from dirvish-footer-update))
-  (when (and (dired-get-filename nil t)
-             (dirvish-live-p))
-    (let* ((fwidth (frame-width))
-           (footer (format-spec dirvish-footer-format (dirvish--footer-spec)))
-           (parts (split-string footer "&&&"))
-           (lhs (nth 0 parts))
-           (rhs (and (> (length parts) 1) (nth 1 parts)))
-           (fringe-gap (if (eq fringe-mode 0) 4 2))
-           (space (- fwidth fringe-gap (length lhs)))
-           (message-log-max nil)
-           (msg (format (format "%%s%%%ds" space) lhs rhs)))
-      (message "%s" msg))))
+  (cond
+   ((not dirvish-header-style) nil)
+   ((dv-one-window-p (dirvish-curr))
+    (force-mode-line-update))
+   (t
+    (with-current-buffer (dv-footer-buffer (dirvish-curr))
+      (force-mode-line-update)))))
 
 (provide 'dirvish-updater)
 ;;; dirvish-updater.el ends here

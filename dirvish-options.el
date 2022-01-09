@@ -74,10 +74,6 @@ For example, if this value is 0.1, the font size in dirvish body
 will be scaled to 110% (1 + 0.1)."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-footer-format "Sort: %S  Omit: %f  %d  %w%x%y%z %i"
-  "Format for footer display."
-  :group 'dirvish :type 'string)
-
 (defcustom dirvish-trash-dir-alist nil
   "An alist of (DISK . TRASH-DIR).
 
@@ -146,17 +142,31 @@ See `face-remapping-alist' for more details."
   "Function used to output a string that will show up as header."
   :group 'dirvish :type 'function)
 
-(defcustom dirvish-footer-slot-x-fn nil
-  "Function outputs a string displayed at dirvish footer slot-x."
-  :group 'dirvish :type 'function)
+(define-obsolete-variable-alias 'dirvish-footer-format 'dirvish-mode-line-format "0.9.9")
 
-(defcustom dirvish-footer-slot-y-fn nil
-  "Function outputs a string displayed at dirvish footer slot-y."
-  :group 'dirvish :type 'function)
+(defcustom dirvish-mode-line-format
+  '(((:eval (dirvish--mode-line-sorter))
+     (:eval (dirvish--mode-line-filter)))
+    .
+    ((:eval (dirvish--mode-line-index))))
+  "Template for displaying mode line in Dirvish instance.
 
-(defcustom dirvish-footer-slot-z-fn nil
-  "Function outputs a string displayed at dirvish footer slot-z."
-  :group 'dirvish :type 'function)
+The value is a (FORMAT-LEFT . FORMAT-RIGHT) cons where
+FORMAT-LEFT/RIGHT has the same format as `mode-line-format'.
+Set it to nil disables Dirvish footer."
+  :group 'dirvish :type '(choice nil cons))
+
+(defun dirvish-format-mode-line ()
+  "Generate Dirvish mode line string."
+  (let* ((left (car dirvish-mode-line-format))
+         (right (cdr dirvish-mode-line-format))
+         (fmt-left (format-mode-line left))
+         (fmt-right (format-mode-line right))
+         (reserve (string-width fmt-right)))
+    (concat fmt-left
+            (propertize " " 'display
+                        `((space :align-to (- (+ right right-fringe right-margin) ,reserve))))
+            fmt-right)))
 
 (defvar dirvish-preview-setup-hook nil
   "Hook for preview buffer initialization.")

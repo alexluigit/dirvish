@@ -32,7 +32,6 @@ Dirvish sets `revert-buffer-function' to this function.  See
        dirvish-parent-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
   (setq cursor-type nil)
-  (setq mode-line-format nil)
   (set-window-fringes nil 1 1)
   (when (bound-and-true-p all-the-icons-dired-mode)
     (all-the-icons-dired-mode -1)
@@ -43,6 +42,7 @@ Dirvish sets `revert-buffer-function' to this function.  See
     (push (selected-window) (dv-parent-windows dv))
     (push (current-buffer) (dv-parent-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
+    (setq mode-line-format (and (dv-one-window-p dv) '((:eval (dirvish-format-mode-line)))))
     (if (eq (dv-root-window dv) (selected-window))
         (and dirvish-enable-preview (dired-hide-details-mode t))
       (dired-hide-details-mode t))))
@@ -52,10 +52,13 @@ Dirvish sets `revert-buffer-function' to this function.  See
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current))
          (parent-dirs ())
-         (one-window-p (dv-one-window-p (dirvish-curr)))
+         (dv (dirvish-curr))
+         (one-window-p (dv-one-window-p dv))
          (depth dirvish-depth)
          (i 0))
-    (and one-window-p (setq depth 0))
+    (when one-window-p
+      (setq depth 0)
+      (setq mode-line-format '((:eval (dirvish-format-mode-line)))))
     (dirvish-setup)
     (while (and (< i depth) (not (string= current parent)))
       (setq i (+ i 1))
@@ -108,6 +111,18 @@ Dirvish sets `revert-buffer-function' to this function.  See
       (setf (dv-header-window (dirvish-curr)) new-window)
       (set-window-buffer new-window buf))))
 
+(defun dirvish-build-footer ()
+  "Create a window showing dirvish footer."
+  (when (and dirvish-mode-line-format
+             (not (dv-one-window-p (dirvish-curr))))
+    (let* ((inhibit-modification-hooks t)
+           (buf (dv-footer-buffer (dirvish-curr)))
+           (win-alist `((side . below) (window-height . -2)))
+           (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
+      (with-selected-window new-window (setq-local window-size-fixed 'height))
+      (setf (dv-footer-window (dirvish-curr)) new-window)
+      (set-window-buffer new-window buf))))
+
 (defun dirvish-build ()
   "Build dirvish layout."
   (dirvish-with-update nil
@@ -115,6 +130,7 @@ Dirvish sets `revert-buffer-function' to this function.  See
       (delete-other-windows))
     (dirvish-build-preview)
     (dirvish-build-header)
+    (dirvish-build-footer)
     (dirvish-build-parents)))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
