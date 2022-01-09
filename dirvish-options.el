@@ -183,6 +183,7 @@ Set it to nil disables Dirvish footer."
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
+(defvar dirvish-footer-update-timer nil)
 (defvar dirvish-repeat-timers '())
 (defvar-local dirvish-child-entry nil)
 (defvar-local dirvish--curr-name nil)
