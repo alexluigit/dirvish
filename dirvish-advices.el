@@ -10,21 +10,15 @@
 
 ;;; Code:
 
-(declare-function dirvish-mode "dirvish")
 (declare-function dirvish-find-file "dirvish")
-(declare-function dirvish-body-update "dirvish-body")
-(declare-function dirvish--body-render-icon "dirvish-body")
-(declare-function dirvish-header-update "dirvish-header")
-(declare-function dirvish-footer-update "dirvish-footer")
-(declare-function dirvish-preview-update "dirvish-preview")
 (require 'cl-lib)
+(require 'dirvish-builder)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
-(require 'dirvish-vars)
+(require 'dirvish-options)
 
 (defvar dirvish-advice-alist
   '((files         find-file                    dirvish-deactivate-ad          :before)
-    (dired         dired-readin                 dirvish-setup-dired-buffer     :after)
     (dired         dired                        dirvish-dired-ad)
     (dired         dired-jump                   dirvish-dired-jump-ad)
     (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
@@ -132,8 +126,8 @@ FILE-NAME are the same args in `dired-jump'."
     (dirvish-setup-dired-buffer)))
 
 (defun dirvish-mode-ad (&rest _)
-  "An advisor to enable `dirvish-mode'."
-  (dirvish-with-update t (dirvish-mode)))
+  "An advisor to enable `dirvish-mode' and apply its setup."
+  (dirvish-with-update t (dirvish-setup)))
 
 (defun dirvish-recover-cursor-ad (&rest _)
   "An advisor to recover cursor in current buffer."
@@ -168,15 +162,6 @@ FILE-NAME are the same args in `dired-jump'."
 Use it as a `:before' advisor to target function."
   (and (dirvish-live-p) (dirvish-deactivate)))
 
-(defun dirvish-setup-dired-buffer (&rest _)
-  "Setup Dired buffer for dirvish.
-This function removes the header line in a Dired buffer."
-  (save-excursion
-    (let ((o (make-overlay
-              (point-min)
-              (progn (goto-char (point-min)) (forward-line 1) (point)))))
-      (overlay-put o 'invisible t))))
-
 (defun dirvish-update-viewport-h (win _)
   "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
   (let ((buf (current-buffer)))
@@ -210,5 +195,4 @@ This function does not remove advices added by
   (remove-hook 'window-selection-change-functions #'dirvish-reclaim))
 
 (provide 'dirvish-advices)
-
 ;;; dirvish-advices.el ends here
