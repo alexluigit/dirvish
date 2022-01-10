@@ -108,6 +108,13 @@ its width less than `dv-preview-pixel-width' of instance DV."
           `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
 
+(defun dirvish-preview-audio-dispatcher (file _dv)
+  "A dispatcher function for `dirvish-preview-dispatchers'.
+If FILE can be matched by this dispatcher, Dirvish use output of
+`mediainfo' shell command as preview."
+  (when (string-match "audio/" (or (mailcap-file-name-to-mime-type file) ""))
+    `(shell . ("mediainfo" ,file))))
+
 (defun dirvish-preview-epub-dispatcher (file dv)
   "A dispatcher function for `dirvish-preview-dispatchers'.
 FILE matched by this dispatcher display a epub thumbnail with its

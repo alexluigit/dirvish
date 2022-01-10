@@ -27,6 +27,7 @@
     dirvish-preview-gif-dispatcher
     dirvish-preview-image-dispatcher
     dirvish-preview-video-dispatcher
+    dirvish-preview-audio-dispatcher
     dirvish-preview-epub-dispatcher
     dirvish-preview-pdf-preface-dispatcher
     dirvish-preview-archive-dispatcher
