@@ -55,10 +55,16 @@ By default, this uses the current frame."
         (setq-local mode-line-format nil))
       (dirvish--get-buffer "header"
         (setq-local header-line-format nil)
-        (setq-local mode-line-format nil)
-        (setq-local face-font-rescale-alist nil))
+        (setq-local window-size-fixed 'height)
+        (setq-local face-font-rescale-alist nil)
+        (setq-local mode-line-format (and dirvish-header-line-format
+                                          '((:eval (dirvish-format-header-line)))))
+        (set (make-local-variable 'face-remapping-alist)
+             dirvish-header-face-remap-alist))
       (dirvish--get-buffer "footer"
         (setq-local header-line-format nil)
+        (setq-local window-size-fixed 'height)
+        (setq-local face-font-rescale-alist nil)
         (setq-local mode-line-format '((:eval (dirvish-format-mode-line))))
         (set (make-local-variable 'face-remapping-alist)
              '((mode-line-inactive mode-line-active)))))))

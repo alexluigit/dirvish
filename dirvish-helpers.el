@@ -23,7 +23,7 @@ Some overlays such as icons, line highlighting, need to be
 removed or updated before update current dirvish instance."
   (declare (indent 1))
   `(progn
-     (when-let ((curr-dv (dirvish-curr)))
+     (when-let ((dv (dirvish-curr)))
        (remove-overlays (point-min) (point-max) 'dirvish-body t)
        (when-let ((pos (dired-move-to-filename nil))
                   dirvish-show-icons)
@@ -33,10 +33,9 @@ removed or updated before update current dirvish instance."
        (let ((skip (not ,full-update)))
          (dirvish-body-update skip skip))
        (when-let ((filename (dired-get-filename nil t)))
-         (setf (dv-index-path curr-dv) filename)
-         (dirvish-header-update)
-         (dirvish-debounce dirvish-footer-update dirvish-preview-delay)
-         (dirvish-debounce dirvish-preview-update dirvish-preview-delay)))))
+         (setf (dv-index-path dv) filename)
+         (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
+         (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay)))))
 
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
@@ -83,6 +82,28 @@ within the viewport."
         (when-let ((pos (dired-move-to-filename nil)))
           (funcall renderer pos))
         (forward-line 1)))))
+
+(defun dirvish-format-header-line ()
+  "Generate Dirvish header line string."
+  (let* ((str (format-mode-line dirvish-header-line-format))
+         (ht (1+ (if (eq dirvish-header-style 'large) 0.25 dirvish-body-fontsize-increment)))
+         (win-width (if dirvish-enable-preview
+                    (1- (* (frame-width) (- 1 dirvish-preview-width)))
+                  (frame-width)))
+         (max-width (floor (/ win-width ht))))
+    (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
+      (setq str (substring str 0 -1)))
+    (propertize str 'display `((height ,ht) (raise ,(/ 0.16 ht))))))
+
+(defun dirvish-format-mode-line ()
+  "Generate Dirvish mode line string."
+  (cl-destructuring-bind (left . right) dirvish-mode-line-format
+    (let ((fmt-right (format-mode-line right)))
+      (concat (format-mode-line left)
+              (propertize " " 'display
+                          `((space :align-to (- (+ right right-fringe right-margin)
+                                                ,(string-width fmt-right)))))
+              fmt-right))))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.

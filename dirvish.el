@@ -132,7 +132,7 @@ If REVERSE is non-nil, move to bottom instead."
              ((string-equal cc "e") '("ext" . " -X"))
              ((string-equal cc "t") '("time" . " -t"))
              ((string-equal cc "s") '("size" . " -S"))))
-           (name (concat (car sort-flag) (when revp " [rev]")))
+           (name (concat (car sort-flag) (when revp " [R]")))
            (order (concat (cdr sort-flag) (when revp " -r")))
            (dv (dirvish-curr)))
       (setf (dv-sort-criteria dv) (cons name order))
