@@ -107,7 +107,7 @@ Dirvish respects all of your dired options *except* the following ones:
 | Option                                   | Reason                                                  |
 |------------------------------------------+---------------------------------------------------------|
 | =dired-kill-when-opening-new-dired-buffer= | Dirvish kill all buffers this instance holds when exits |
-| =dired-switches-in-mode-line=              | Dirvish buffer doesn't come with a mode line by default |
+| =dired-switches-in-mode-line=              | Customize =dirvish-mode-line-format= instead            |
 
 ** Features
 *** File preview
