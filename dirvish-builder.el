@@ -38,11 +38,15 @@ Dirvish sets `revert-buffer-function' to this function.  See
     (setq-local tab-width 2))
   (when dirvish-child-entry (dired-goto-file dirvish-child-entry))
   (dirvish-body-update)
-  (let ((dv (dirvish-curr)))
+  (let* ((dv (dirvish-curr))
+         (owp (dv-one-window-p dv)))
     (push (selected-window) (dv-parent-windows dv))
     (push (current-buffer) (dv-parent-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
-    (setq mode-line-format (and (dv-one-window-p dv) '((:eval (dirvish-format-mode-line)))))
+    (setq mode-line-format (and owp dirvish-mode-line-format
+                                '((:eval (dirvish-format-mode-line)))))
+    (setq header-line-format (and owp dirvish-header-line-format
+                                  '((:eval (format-mode-line dirvish-header-line-format)))))
     (if (eq (dv-root-window dv) (selected-window))
         (and dirvish-enable-preview (dired-hide-details-mode t))
       (dired-hide-details-mode t))))
@@ -56,9 +60,7 @@ Dirvish sets `revert-buffer-function' to this function.  See
          (one-window-p (dv-one-window-p dv))
          (depth dirvish-depth)
          (i 0))
-    (when one-window-p
-      (setq depth 0)
-      (setq mode-line-format '((:eval (dirvish-format-mode-line)))))
+    (when one-window-p (setq depth 0))
     (dirvish-setup)
     (while (and (< i depth) (not (string= current parent)))
       (setq i (+ i 1))
@@ -98,16 +100,12 @@ Dirvish sets `revert-buffer-function' to this function.  See
 (defun dirvish-build-header ()
   "Create a window showing dirvish header."
   (when (and dirvish-header-style
+             dirvish-header-line-format
              (not (dv-one-window-p (dirvish-curr))))
     (let* ((inhibit-modification-hooks t)
            (buf (dv-header-buffer (dirvish-curr)))
-           (win-alist `((side . above)
-                        (window-height . ,(if (eq dirvish-header-style 'large) -2 -1))))
+           (win-alist `((side . above) (window-height . -2)))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (with-selected-window new-window
-        (set (make-local-variable 'face-remapping-alist)
-             dirvish-header-face-remap-alist)
-        (setq-local window-size-fixed 'height))
       (setf (dv-header-window (dirvish-curr)) new-window)
       (set-window-buffer new-window buf))))
 
@@ -119,7 +117,6 @@ Dirvish sets `revert-buffer-function' to this function.  See
            (buf (dv-footer-buffer (dirvish-curr)))
            (win-alist `((side . below) (window-height . -2)))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (with-selected-window new-window (setq-local window-size-fixed 'height))
       (setf (dv-footer-window (dirvish-curr)) new-window)
       (set-window-buffer new-window buf))))
 

@@ -106,6 +106,13 @@ file deletion when you have multiple disk drives."
   "Icon's vertical offset in dirvish body."
   :group 'dirvish :type 'float)
 
+(defcustom dirvish-header-line-format
+  '((:eval (dirvish--header-line-path)))
+  "Template for displaying header line in Dirvish instance.
+
+The variable has the same format as `mode-line-format'."
+  :group 'dirvish :type 'list)
+
 (define-obsolete-variable-alias 'dirvish-use-large-header 'dirvish-header-style "0.8")
 
 (defcustom dirvish-header-style 'large
@@ -113,13 +120,13 @@ file deletion when you have multiple disk drives."
 
 STYLE should be one of these:
 - nil, which means do not show the header.
-- `large', show header in a window of 2 lines height.
-- `normal', show header in a window of 1 line height."
+- `normal', header has the same fontsize as body.
+- `large', scale fontsize in header with 125%."
   :group 'dirvish :type 'symbol
   :options '(nil large normal))
 
 (defcustom dirvish-header-face-remap-alist
-  '((default :background "#303030"))
+  '((mode-line-inactive :inherit (mode-line-active) :height 1.8))
   "Face remapping alist used in dirvish header window.
 Beware that only full-frame dirvish uses header window.  To
 configure faces in dirvish parent windows, use
@@ -139,10 +146,6 @@ configure faces in dirvish header window, use
 See `face-remapping-alist' for more details."
   :group 'dirvish :type 'alist)
 
-(defcustom dirvish-header-text-fn 'dirvish--header-text
-  "Function used to output a string that will show up as header."
-  :group 'dirvish :type 'function)
-
 (define-obsolete-variable-alias 'dirvish-footer-format 'dirvish-mode-line-format "0.9.9")
 
 (defcustom dirvish-mode-line-format
@@ -152,22 +155,10 @@ See `face-remapping-alist' for more details."
     ((:eval (dirvish--mode-line-index))))
   "Template for displaying mode line in Dirvish instance.
 
-The value is a (FORMAT-LEFT . FORMAT-RIGHT) cons where
-FORMAT-LEFT/RIGHT has the same format as `mode-line-format'.
-Set it to nil disables Dirvish footer."
+The value is a (LEFT . RIGHT) cons where LEFT/RIGHT has the same
+format as `mode-line-format'.  Set it to nil disables Dirvish
+footer."
   :group 'dirvish :type '(choice nil cons))
-
-(defun dirvish-format-mode-line ()
-  "Generate Dirvish mode line string."
-  (let* ((left (car dirvish-mode-line-format))
-         (right (cdr dirvish-mode-line-format))
-         (fmt-left (format-mode-line left))
-         (fmt-right (format-mode-line right))
-         (reserve (string-width fmt-right)))
-    (concat fmt-left
-            (propertize " " 'display
-                        `((space :align-to (- (+ right right-fringe right-margin) ,reserve))))
-            fmt-right)))
 
 (defvar dirvish-preview-setup-hook nil
   "Hook for preview buffer initialization.")
@@ -177,14 +168,13 @@ Set it to nil disables Dirvish footer."
 
 ;;;; Internal variables
 
-(defconst dirvish-preview-delay 0.02)
+(defconst dirvish-debouncing-delay 0.02)
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
-(defconst dirvish-header-wobbling-offset 2)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
-(defvar dirvish-footer-update-timer nil)
+(defvar dirvish-mode-line-update-timer nil)
 (defvar dirvish-repeat-timers '())
 (defvar-local dirvish-child-entry nil)
 (defvar-local dirvish--curr-name nil)

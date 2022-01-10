@@ -192,26 +192,26 @@ This feature is currently only available for *vertico/selectrum*.
 ** Configuration
 *** Options
 
-| Option                          | Type     | Description                             | default             |
-|---------------------------------+----------+-----------------------------------------+---------------------|
-| =dirvish-cache-dir=               | String   | Cache directory                         | "~/.cache/dirvish"  |
-| =dirvish-trash-dir-alist=         | Alist    | Setup multiple trash cans.              | nil                 |
-| =dirvish-history-length=          | Integer  | The length of history ring              | 30                  |
-| =dirvish-enable-preview=          | Boolean  | Enable file preview                     | t                   |
-| =dirvish-depth=                   | Integer  | Level of dirs to traverse up            | 1                   |
-| =dirvish-parent-max-width=        | Float    | Max width of parent windows             | 0.12                |
-| =dirvish-parent-face-remap-alist= | Alist    | See: M-x =describe-variable=              |                     |
-| =dirvish-preview-width=           | Float    | Width of preview window                 | 0.65                |
-| =dirvish-body-fontsize-increment= | Float    | Increase fontsize in dirvish body       | 0.1                 |
-| =dirvish-mode-line-format=        | Cons     | See: M-x =describe-variable=              |                     |
-| =dirvish-header-style=            | Option   | Style for full-frame dirvish header     | large               |
-| =dirvish-header-text-fn=          | Function | A function for composing header text    | dirvish-header-text |
-| =dirvish-header-face-remap-alist= | Alist    | See: M-x =describe-variable=              |                     |
-| =dirvish-show-icons=              | Boolean  | Show icons                              | t                   |
-| =dirvish-icon-delimiter=          | String   | The delimiter between icon and filename | "\t"                |
-| =dirvish-icon-monochrome=         | Boolean  | Whether icon inherit =face-at-point=      | t                   |
-| =dirvish-icon-v-offset=           | Float    | Icon's vertical offset                  | 0.01                |
-| =dirvish-preview-dispatchers=     | Hook     | See: M-x =describe-variable=              |                     |
+| Option                          | Type    | Description                             | default            |
+|---------------------------------+---------+-----------------------------------------+--------------------|
+| =dirvish-cache-dir=               | String  | Cache directory                         | "~/.cache/dirvish" |
+| =dirvish-trash-dir-alist=         | Alist   | Setup multiple trash cans.              | nil                |
+| =dirvish-history-length=          | Integer | The length of history ring              | 30                 |
+| =dirvish-enable-preview=          | Boolean | Enable file preview                     | t                  |
+| =dirvish-depth=                   | Integer | Level of dirs to traverse up            | 1                  |
+| =dirvish-parent-max-width=        | Float   | Max width of parent windows             | 0.12               |
+| =dirvish-parent-face-remap-alist= | Alist   | See: M-x =describe-variable=              |                    |
+| =dirvish-preview-width=           | Float   | Width of preview window                 | 0.65               |
+| =dirvish-body-fontsize-increment= | Float   | Increase fontsize in dirvish body       | 0.1                |
+| =dirvish-mode-line-format=        | Cons    | See: M-x =describe-variable=              |                    |
+| =dirvish-header-line-format=      | List    | See: M-x =describe-variable=              |                    |
+| =dirvish-header-style=            | Option  | Style for full-frame dirvish header     | large              |
+| =dirvish-header-face-remap-alist= | Alist   | See: M-x =describe-variable=              |                    |
+| =dirvish-show-icons=              | Boolean | Show icons                              | t                  |
+| =dirvish-icon-delimiter=          | String  | The delimiter between icon and filename | "\t"               |
+| =dirvish-icon-monochrome=         | Boolean | Whether icon inherit =face-at-point=      | t                  |
+| =dirvish-icon-v-offset=           | Float   | Icon's vertical offset                  | 0.01               |
+| =dirvish-preview-dispatchers=     | Hook    | See: M-x =describe-variable=              |                    |
 
 *** Hooks
 
