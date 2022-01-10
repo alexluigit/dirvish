@@ -156,7 +156,7 @@ containing very long lines."
     (cond ((file-directory-p file) ; in case user did not specify a directory dispatcher
            (dirvish-preview-directory-dired-dispatcher file nil))
           ((> filesize threshold)
-           `(info ,(concat "File " file " is too big for literal preview.")))
+           `(info . ,(format "File %s is too big for literal preview." file)))
           (t
            (let ((buf (find-file-noselect file t nil)))
              (with-current-buffer buf
@@ -209,7 +209,8 @@ A PREVIEW-TYPE can be one of following values:
         (auto-save-default nil)
         (delay-mode-hooks t)
         (dirvish-show-icons nil))
-    (when (and (stringp cmd) (not (executable-find cmd)))
+    (when (and (memq preview-type '(shell image-cache))
+               (not (executable-find cmd)))
       (setq preview-type 'info
             payload (format "Install `%s' to preview this file." cmd)))
     (with-current-buffer buf
