@@ -116,14 +116,15 @@ non-nil, do not update padding."
     (overlay-put ol 'face 'highlight)))
 
 (defun dirvish-footer-update ()
-  "Show file details in echo area."
-  (cond
-   ((not dirvish-header-style) nil)
-   ((dv-one-window-p (dirvish-curr))
-    (force-mode-line-update))
-   (t
-    (with-current-buffer (dv-footer-buffer (dirvish-curr))
-      (force-mode-line-update)))))
+  "Show file details in mode line."
+  (when-let ((dv (dirvish-curr)))
+    (cond
+     ((not dirvish-mode-line-format) nil)
+     ((dv-one-window-p dv)
+      (force-mode-line-update))
+     (t
+      (with-current-buffer (dv-footer-buffer dv)
+        (force-mode-line-update))))))
 
 (provide 'dirvish-updater)
 ;;; dirvish-updater.el ends here
