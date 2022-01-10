@@ -17,7 +17,7 @@
 (require 'dirvish-options)
 (eval-when-compile (require 'subr-x))
 
-(defun dirvish--header-text ()
+(defun dirvish--header-line-path ()
   "Compose header string."
   (let* ((index (dv-index-path (dirvish-curr)))
          (file-path (file-name-directory index))
@@ -66,30 +66,6 @@
           (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold)))))
 
-(defun dirvish-header-update ()
-  "Update header string.
-
-This function trims header string to avoid vertical wobbling."
-  (cond
-   ((not dirvish-header-style) nil)
-   ((dv-one-window-p (dirvish-curr))
-    (setq header-line-format (funcall dirvish-header-text-fn)))
-   (t
-    (with-current-buffer (dv-header-buffer (dirvish-curr))
-      (erase-buffer)
-      (let* ((str (funcall dirvish-header-text-fn))
-             (incr (if (eq dirvish-header-style 'large) 0.25 0.0))
-             (max-width (floor (/ (if dirvish-enable-preview
-                                      (1- (* (frame-width) (- 1 dirvish-preview-width)))
-                                    (- (frame-width) dirvish-header-wobbling-offset))
-                                  (1+ incr)))))
-        (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) max-width)
-          (setq str (substring str 0 -1)))
-        (insert str (if (eq dirvish-header-style 'large) "\n" ""))
-      (add-text-properties
-       (point-min) (point-max)
-       `(display '(height ,(1+ incr)) line-height ,(1+ (* 2 incr)))))))))
-
 (defun dirvish-body-update (&optional skip-icons skip-padding)
   "Update attributes in dirvish body.
 
@@ -115,16 +91,11 @@ non-nil, do not update padding."
     (overlay-put ol 'dirvish-body t)
     (overlay-put ol 'face 'highlight)))
 
-(defun dirvish-footer-update ()
+(defun dirvish-mode-line-update ()
   "Show file details in mode line."
   (when-let ((dv (dirvish-curr)))
-    (cond
-     ((not dirvish-mode-line-format) nil)
-     ((dv-one-window-p dv)
-      (force-mode-line-update))
-     (t
-      (with-current-buffer (dv-footer-buffer dv)
-        (force-mode-line-update))))))
+    (with-current-buffer (dv-footer-buffer dv) (force-mode-line-update))
+    (with-current-buffer (dv-header-buffer dv) (force-mode-line-update))))
 
 (provide 'dirvish-updater)
 ;;; dirvish-updater.el ends here
