@@ -53,10 +53,6 @@ leaving it for future dispatchers.  For details see
   "Length of history dirvish will track."
   :group 'dirvish :type 'integer)
 
-(defcustom dirvish-enable-preview t
-  "When not-nil preview the selected file."
-  :group 'dirvish :type 'boolean)
-
 (defcustom dirvish-depth 1
   "Level of directories to traverse up."
   :group 'dirvish :type 'integer)
@@ -186,7 +182,6 @@ footer."
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map [remap dired-do-redisplay]           'dirvish-change-level)
-    (define-key map [remap dired-hide-details-mode]      'dirvish-toggle-preview)
     (define-key map [remap dired-find-file]              'dirvish-find-file)
     (define-key map [remap dired-find-alternate-file]    'dirvish-find-file)
     (define-key map [remap right-char]                   'dirvish-find-file)
@@ -195,7 +190,6 @@ footer."
     (define-key map [remap end-of-buffer]                'dirvish-go-bottom)
     (define-key map [remap beginning-of-buffer]          'dirvish-go-top)
     (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
-    (define-key map [remap dired-view-file]              'dirvish-toggle-preview)
     (define-key map [remap quit-window]                  'dirvish-quit)
     (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
     map)
