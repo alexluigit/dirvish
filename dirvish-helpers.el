@@ -96,9 +96,7 @@ within the viewport."
   "Generate Dirvish header line string."
   (let* ((str (format-mode-line dirvish-header-line-format))
          (ht (1+ (if (eq dirvish-header-style 'large) 0.25 dirvish-body-fontsize-increment)))
-         (win-width (if dirvish-enable-preview
-                    (1- (* (frame-width) (- 1 dirvish-preview-width)))
-                  (frame-width)))
+         (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
          (max-width (floor (/ win-width ht))))
     (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
       (setq str (substring str 0 -1)))

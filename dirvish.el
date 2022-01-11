@@ -108,12 +108,6 @@ If REVERSE is non-nil, move to bottom instead."
   (interactive "p")
   (setq dirvish-depth (or arg 1)) (dirvish-build))
 
-(defun dirvish-toggle-preview ()
-  "Show/hide preview window."
-  (interactive)
-  (setq dirvish-enable-preview (not dirvish-enable-preview))
-  (dirvish-build))
-
 (defun dirvish-sort-by-criteria (criteria)
   "Call `dired-sort-other' by different `CRITERIA'."
   (interactive

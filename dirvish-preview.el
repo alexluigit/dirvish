@@ -263,8 +263,7 @@ If DISPATCHERS is not given, defaults to
 (defun dirvish-preview-update ()
   "Update dirvish preview."
   (when-let* ((curr-dv (dirvish-curr))
-              (preview-window (dv-preview-window curr-dv))
-              dirvish-enable-preview)
+              (preview-window (dv-preview-window curr-dv)))
     (let* ((orig-buffer-list (buffer-list))
            (index (or (dv-index-path curr-dv) ""))
            (preview-buffer (dirvish-get-preview-buffer index)))
