@@ -46,8 +46,9 @@ Dirvish sets `revert-buffer-function' to this function.  See
     (setq mode-line-format (and owp dirvish-mode-line-format
                                 '((:eval (dirvish-format-mode-line)))))
     (setq header-line-format (and owp dirvish-header-line-format
-                                  '((:eval (format-mode-line dirvish-header-line-format)))))
-    (dired-hide-details-mode t)))
+                                  '((:eval (format-mode-line dirvish-header-line-format))))))
+  (dired-hide-details-mode t)
+  (run-hooks 'dirvish-mode-hook))
 
 (defun dirvish-build-parents ()
   "Create all dirvish parent windows."
@@ -55,10 +56,9 @@ Dirvish sets `revert-buffer-function' to this function.  See
          (parent (dirvish--get-parent current))
          (parent-dirs ())
          (dv (dirvish-curr))
-         (one-window-p (dv-one-window-p dv))
          (depth dirvish-depth)
          (i 0))
-    (when one-window-p (setq depth 0))
+    (when (dv-one-window-p dv) (setq depth 0))
     (dirvish-setup)
     (while (and (< i depth) (not (string= current parent)))
       (setq i (+ i 1))
