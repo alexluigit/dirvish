@@ -113,8 +113,8 @@ If REVERSE is non-nil, move to bottom instead."
   (interactive
    (list
     (read-char-choice
-     "Sort by [capital for reverse, q to quit]: (d/D)efault (e/E)xt (s/S)ize (t/T)ime (c/C)time "
-     '(?q ?d ?D ?e ?E ?s ?S ?t ?T ?c ?C))))
+     "Sort by (d/D)efault (e/E)xt (s/S)ize (t/T)ime (m/M)odified: "
+     '(?q ?d ?D ?e ?E ?s ?S ?t ?T ?m ?M))))
   (unless (eq criteria ?q)
     (let* ((c (char-to-string criteria))
            (revp (string-equal c (upcase c)))
@@ -122,7 +122,7 @@ If REVERSE is non-nil, move to bottom instead."
            (sort-flag
             (cond
              ((string-equal cc "d") '("default" . ""))
-             ((string-equal cc "c") '("modified" . " -c"))
+             ((string-equal cc "m") '("modified" . " -c"))
              ((string-equal cc "e") '("ext" . " -X"))
              ((string-equal cc "t") '("time" . " -t"))
              ((string-equal cc "s") '("size" . " -S"))))
