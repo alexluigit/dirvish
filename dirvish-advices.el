@@ -161,14 +161,6 @@ FILE-NAME are the same args in `dired-jump'."
 Use it as a `:before' advisor to target function."
   (and (dirvish-live-p) (dirvish-deactivate)))
 
-(defun dirvish-update-viewport-h (win _)
-  "Refresh attributes in viewport within WIN, added to `window-scroll-functions'."
-  (let ((buf (current-buffer)))
-    (when (and (dirvish-live-p win)
-               ;; Do not update when current buffer exists in multiple windows
-               (< (cl-count-if (lambda (w) (eq (window-buffer w) buf)) (window-list)) 2))
-      (dirvish-body-update nil t))))
-
 (defun dirvish--add-advices (&optional temporary)
   "Add all advice listed in `dirvish-advice-alist'.
 When TEMPORARY is non-nil, also add advices in
@@ -176,8 +168,6 @@ When TEMPORARY is non-nil, also add advices in
   (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
     (when (require file nil t) (advice-add sym (or place :around) fn)))
   (when temporary
-    (add-hook 'window-scroll-functions #'dirvish-update-viewport-h)
-    (add-hook 'window-selection-change-functions #'dirvish-reclaim)
     (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-temporary-advice-alist)
       (when (require file nil t) (advice-add sym (or place :around) fn)))))
 
@@ -189,9 +179,7 @@ This function does not remove advices added by
     (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
       (when (require file nil t) (advice-remove sym fn))))
   (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
-    (when (require file nil t) (advice-remove sym fn)))
-  (remove-hook 'window-scroll-functions #'dirvish-update-viewport-h)
-  (remove-hook 'window-selection-change-functions #'dirvish-reclaim))
+    (when (require file nil t) (advice-remove sym fn))))
 
 (provide 'dirvish-advices)
 ;;; dirvish-advices.el ends here

@@ -15,6 +15,18 @@
 (require 'dirvish-options)
 (require 'dirvish-helpers)
 
+(defun dirvish-update-viewport-h (_win _pos)
+  "Refresh dirvish body attributes within viewport."
+  (let ((buf (current-buffer)))
+    ;; Do not update when current buffer exists in multiple windows
+    (when (< (cl-count-if (lambda (w) (eq (window-buffer w) buf)) (window-list)) 2)
+      (dirvish-body-update nil t))))
+
+(defun dirvish-rebuild-parents-h (frame)
+  "Rebuild dirvish layout in FRAME."
+  (dirvish-reclaim frame)
+  (dirvish-build))
+
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function.  See
@@ -48,6 +60,9 @@ Dirvish sets `revert-buffer-function' to this function.  See
     (setq header-line-format (and owp dirvish-header-line-format
                                   '((:eval (format-mode-line dirvish-header-line-format))))))
   (dired-hide-details-mode t)
+  (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
+  (add-hook 'window-scroll-functions #'dirvish-update-viewport-h nil :local)
+  (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
   (run-hooks 'dirvish-mode-hook))
 
 (defun dirvish-build-parents ()
