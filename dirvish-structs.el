@@ -112,9 +112,12 @@ FRAME defaults to the currently selected frame."
   (name
    (cl-gensym)
    :documentation "is a symbol that is unique for every instance.")
-  (one-window-p
-   nil
-   :documentation "indicates if this instance only display one window.")
+  (depth
+   dirvish-depth
+   :documentation "TODO.")
+  (actual-depth
+   dirvish-depth
+   :documentation "TODO.")
   (header-window
    nil
    :documentation "is the window to place `dv-header-buffer'.")
@@ -195,21 +198,21 @@ by this instance."
   (declare (indent defun))
   `(when-let ((kill-dv (or ,dv (dirvish-curr))))
     (setq recentf-list (dv-saved-recentf kill-dv))
-    (unless (dv-one-window-p kill-dv)
+    (unless (dirvish-dired-p kill-dv)
       (set-window-configuration (dv-window-conf kill-dv)))
     (mapc #'kill-buffer (dv-parent-buffers kill-dv))
     (mapc #'kill-buffer (dv-preview-buffers kill-dv))
     (remhash (dv-name kill-dv) (dirvish-hash))
     ,@body))
 
-(defun dirvish-activate (&optional one-window-p)
+(defun dirvish-activate (&optional depth)
   "Save previous window config and initialize dirvish.
-
-If ONE-WINDOW-P, initialize dirvish in current window rather than
+TODO
+If DEPTH, initialize dirvish in current window rather than
 the whole frame."
   (dirvish-init-frame)
   (when (eq major-mode 'dirvish-mode) (dirvish-deactivate))
-  (let ((dv-new (dirvish-new :one-window-p one-window-p)))
+  (let ((dv-new (dirvish-new :depth (or depth dirvish-depth))))
     (set-frame-parameter nil 'dirvish--curr dv-new)
     (dirvish--add-advices t)
     (run-hooks 'dirvish-activation-hook)
@@ -227,14 +230,17 @@ If DV is not given, default to current dirvish instance."
       (set-frame-parameter nil 'dirvish--curr nil)))
   (and dirvish-debug-p (message "leftover: %s" (dirvish-all-names))))
 
+(defun dirvish-dired-p (&optional dv)
+  "Return t if DV only occupies 1 window.
+DV defaults to the current dirvish instance if not provided."
+  (when-let ((dv (or dv (dirvish-curr)))) (eq (dv-depth dv) 0)))
+
 ;;;###autoload
 (defun dirvish-live-p (&optional win)
-  "Detecting if WIN is in dirvish mode.
-
-If WIN is nil, defaults to `\\(selected-window\\)'."
-  (and
-   (dirvish-curr)
-   (memq (or win (selected-window)) (dv-parent-windows (dirvish-curr)))))
+  "Return t if WIN is occupied by a dirvish instance.
+WIN defaults to `selected-window' if not provided."
+  (when-let ((dv (dirvish-curr)))
+   (memq (or win (selected-window)) (dv-parent-windows dv))))
 
 (provide 'dirvish-structs)
 ;;; dirvish-structs.el ends here

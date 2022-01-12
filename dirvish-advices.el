@@ -62,7 +62,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (and (dirvish-reclaim) (dirvish-deactivate))
   (apply fn dirname (and switches (list switches)))
-  (dirvish-activate t)
+  (dirvish-activate 0)
   (when switches
     (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
@@ -86,12 +86,11 @@ ARG is same with command `dired-next-line'."
   "Override `dired-other-window' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (let ((old-dv (dirvish-curr)))
-    (and old-dv (not (dv-one-window-p old-dv)) (dirvish-deactivate))
-    (switch-to-buffer-other-window "*scratch*")
-    (dirvish-activate t)
-    (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
-    (dirvish-find-file dirname)))
+  (unless (dirvish-dired-p) (dirvish-deactivate))
+  (switch-to-buffer-other-window "*scratch*")
+  (dirvish-activate 0)
+  (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
+  (dirvish-find-file dirname))
 
 (defun dirvish-dired-other-tab-ad (dirname &optional switches)
   "Override `dired-other-tab' command.
@@ -99,7 +98,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab "*scratch*")
   (dirvish-drop)
-  (dirvish-activate t)
+  (dirvish-activate 0)
   (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
 

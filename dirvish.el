@@ -188,15 +188,16 @@ update `dirvish-history-ring'."
           (cl-substitute #'dired-noselect #'dirvish-dired find-directory-functions))))
 
 ;;;###autoload
-(defun dirvish (&optional path one-window)
-  "Open dirvish in PATH, optionally in single-window if ONE-WINDOW is not-nil.
+(defun dirvish (&optional path depth)
+  "Open a dirvish instance.
 
-PATH defaults to variable `buffer-file-name'."
+PATH defaults to variable `buffer-file-name'.
+DEPTH defaults to `dirvish-depth'."
   (interactive)
   (let* ((file (or path buffer-file-name))
          (dir (if file (expand-file-name (file-name-directory file))
                 (expand-file-name default-directory))))
-    (dirvish-activate one-window)
+    (dirvish-activate depth)
     (dirvish-find-file dir)))
 
 ;;;###autoload
@@ -205,7 +206,7 @@ PATH defaults to variable `buffer-file-name'."
 If OTHER-WINDOW is non-nil, do it in other window."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: ")) nil))
   (and other-window (switch-to-buffer-other-window "*scratch*")) ; avoid layered dirvish instance
-  (dirvish path t))
+  (dirvish path 0))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
