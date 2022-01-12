@@ -39,7 +39,7 @@ Dirvish sets `revert-buffer-function' to this function.  See
   (when dirvish-child-entry (dired-goto-file dirvish-child-entry))
   (dirvish-body-update)
   (let* ((dv (dirvish-curr))
-         (owp (dv-one-window-p dv)))
+         (owp (dirvish-dired-p dv)))
     (push (selected-window) (dv-parent-windows dv))
     (push (current-buffer) (dv-parent-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
@@ -55,13 +55,11 @@ Dirvish sets `revert-buffer-function' to this function.  See
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current))
          (parent-dirs ())
-         (dv (dirvish-curr))
-         (depth dirvish-depth)
+         (depth (dv-depth (dirvish-curr)))
          (i 0))
-    (when (dv-one-window-p dv) (setq depth 0))
     (dirvish-setup)
     (while (and (< i depth) (not (string= current parent)))
-      (setq i (+ i 1))
+      (setq i (1+ i))
       (push (cons current parent) parent-dirs)
       (setq current (dirvish--get-parent current))
       (setq parent (dirvish--get-parent parent)))
@@ -84,7 +82,7 @@ Dirvish sets `revert-buffer-function' to this function.  See
 (defun dirvish-build-preview ()
   "Build dirvish preview window."
   (when-let* ((dv (dirvish-curr))
-              (one-window-p (not (dv-one-window-p dv))))
+              (full-frame (not (dirvish-dired-p dv))))
     (let* ((inhibit-modification-hooks t)
            (buf (dv-preview-buffer dv))
            (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
@@ -96,32 +94,33 @@ Dirvish sets `revert-buffer-function' to this function.  See
 
 (defun dirvish-build-header ()
   "Create a window showing dirvish header."
-  (when (and dirvish-header-style
-             dirvish-header-line-format
-             (not (dv-one-window-p (dirvish-curr))))
+  (when-let* ((dv (dirvish-curr))
+              (full-frame (not (dirvish-dired-p dv)))
+              dirvish-header-style
+              dirvish-header-line-format)
     (let* ((inhibit-modification-hooks t)
-           (buf (dv-header-buffer (dirvish-curr)))
+           (buf (dv-header-buffer dv))
            (win-alist `((side . above) (window-height . -2)))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (setf (dv-header-window (dirvish-curr)) new-window)
+      (setf (dv-header-window dv) new-window)
       (set-window-buffer new-window buf))))
 
 (defun dirvish-build-footer ()
   "Create a window showing dirvish footer."
-  (when (and dirvish-mode-line-format
-             (not (dv-one-window-p (dirvish-curr))))
+  (when-let* ((dv (dirvish-curr))
+              (full-frame (not (dirvish-dired-p dv)))
+              dirvish-mode-line-format)
     (let* ((inhibit-modification-hooks t)
-           (buf (dv-footer-buffer (dirvish-curr)))
+           (buf (dv-footer-buffer dv))
            (win-alist `((side . below) (window-height . -2)))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (setf (dv-footer-window (dirvish-curr)) new-window)
+      (setf (dv-footer-window dv) new-window)
       (set-window-buffer new-window buf))))
 
 (defun dirvish-build ()
   "Build dirvish layout."
   (dirvish-with-update nil
-    (unless (dv-one-window-p (dirvish-curr))
-      (delete-other-windows))
+    (unless (dirvish-dired-p) (delete-other-windows))
     (dirvish-build-preview)
     (dirvish-build-header)
     (dirvish-build-footer)

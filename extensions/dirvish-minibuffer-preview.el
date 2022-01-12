@@ -37,7 +37,7 @@ one of categories in `dirvish-minibuf-preview-categories'."
               (show-preview (memq category dirvish-minibuf-preview-categories)))
     (setq dirvish-minibuf-preview--category category)
     (unless (and (dirvish-curr) (dv-preview-window (dirvish-curr)))
-      (set-frame-parameter nil 'dirvish--minibuf (dirvish-activate t))
+      (set-frame-parameter nil 'dirvish--minibuf (dirvish-activate 0))
       (let ((next-win (next-window)))
         (setf (dv-preview-window (dirvish-curr)) next-win)
         (setf (dv-preview-pixel-width (dirvish-curr)) (window-width next-win t))))))

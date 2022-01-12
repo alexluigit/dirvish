@@ -131,8 +131,7 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
 
 (defun dirvish-yank-progress-activate ()
   "Display file IO progress in dirvish footer."
-  (when (and (dirvish--yank-status)
-             (not (and (dirvish-curr) (dv-one-window-p (dirvish-curr)))))
+  (when (dirvish--yank-status)
     (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
     (dirvish-repeat dirvish--yank-status-update 0 dirvish-footer-repeat)))
 
