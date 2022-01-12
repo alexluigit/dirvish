@@ -224,7 +224,8 @@ If DV is not given, default to current dirvish instance."
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (unless (or (dirvish-reclaim) (window-minibuffer-p))
-      (set-frame-parameter nil 'dirvish--curr nil))))
+      (set-frame-parameter nil 'dirvish--curr nil)))
+  (and dirvish-debug-p (message "leftover: %s" (dirvish-all-names))))
 
 ;;;###autoload
 (defun dirvish-live-p (&optional win)
