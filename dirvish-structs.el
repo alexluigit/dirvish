@@ -19,7 +19,9 @@
   "Get current dirvish instance in FRAME.
 
 FRAME defaults to current frame."
-  (frame-parameter frame 'dirvish--curr))
+  (if dirvish--curr-name
+      (gethash dirvish--curr-name (dirvish-hash))
+    (frame-parameter frame 'dirvish--curr)))
 
 (defun dirvish-drop (&optional frame)
   "Drop current dirvish instance in FRAME.
@@ -27,12 +29,11 @@ FRAME defaults to current frame."
 FRAME defaults to current frame."
   (set-frame-parameter frame 'dirvish--curr nil))
 
-(defun dirvish-reclaim (&optional frame-or-window)
-  "Reclaim current dirvish in FRAME-OR-WINDOW."
-  (with-selected-window (frame-selected-window frame-or-window)
-    (when-let ((dv-name (buffer-local-value 'dirvish--curr-name (current-buffer))))
-      (set-frame-parameter nil 'dirvish--curr (gethash dv-name (dirvish-hash)))
-      t)))
+(defun dirvish-reclaim (&optional _window)
+  "Reclaim current dirvish."
+  (unless (active-minibuffer-window)
+    (let ((name dirvish--curr-name))
+      (set-frame-parameter nil 'dirvish--curr (and name (gethash name (dirvish-hash)))))))
 
 (defmacro dirvish--get-buffer (type &rest body)
   "Return dirvish buffer with TYPE.
@@ -226,8 +227,7 @@ If DV is not given, default to current dirvish instance."
       (dirvish--clean-advices)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
-    (unless (or (dirvish-reclaim) (window-minibuffer-p))
-      (set-frame-parameter nil 'dirvish--curr nil)))
+    (dirvish-reclaim))
   (and dirvish-debug-p (message "leftover: %s" (dirvish-all-names))))
 
 (defun dirvish-dired-p (&optional dv)
