@@ -11,6 +11,7 @@
 ;;; Code:
 
 (declare-function dirvish-find-file "dirvish")
+(defalias 'dirvish-enlarge-ad #'dirvish--enlarge)
 (require 'cl-lib)
 (require 'dirvish-builder)
 (require 'dirvish-structs)
@@ -29,6 +30,7 @@
     (dired         dired-mark                   dirvish-lazy-update-ad)
     (dired         dired-flag-file-deletion     dirvish-lazy-update-ad)
     (dired         dired-goto-file              dirvish-lazy-update-ad)
+    (dired         dired-view-file              dirvish-enlarge-ad             :before)
     (dired         dired-internal-do-deletions  dirvish-deletion-ad)
     (wdired        wdired-change-to-wdired-mode dirvish-recover-cursor-ad      :after)
     (wdired        wdired-exit                  dirvish-mode-ad                :after)

@@ -128,6 +128,14 @@ within the viewport."
          (new-window (split-window-no-error root-win size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
+(defun dirvish--enlarge (&rest _)
+  "Kill all dirvish parent windows except the root one."
+  (when (dirvish-live-p)
+    (cl-dolist (win (dv-parent-windows (dirvish-curr)))
+      (and (not (eq win (dv-root-window (dirvish-curr))))
+           (window-live-p win)
+           (delete-window win)))))
+
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))

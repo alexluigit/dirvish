@@ -27,6 +27,10 @@
   (dirvish-reclaim frame)
   (dirvish-build))
 
+(defun dirvish-hide-details-h ()
+  "Hide other parent windows when showing Dired details."
+  (if dired-hide-details-mode (dirvish-build) (dirvish--enlarge)))
+
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function.  See
@@ -70,9 +74,12 @@ Dirvish sets `revert-buffer-function' to this function.  See
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current))
          (parent-dirs ())
-         (depth (dv-depth (dirvish-curr)))
+         (dv (dirvish-curr))
+         (depth (dv-depth dv))
          (i 0))
     (dirvish-setup)
+    (unless (dirvish-dired-p dv)
+      (add-hook 'dired-hide-details-mode-hook #'dirvish-hide-details-h nil :local))
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)
