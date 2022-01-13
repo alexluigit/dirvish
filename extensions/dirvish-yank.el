@@ -77,7 +77,6 @@ This function is a helper for `dirvish--yank'."
     (let ((size (dirvish--get-filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
       (add-to-list 'dirvish-yank-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
-    (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
     (dirvish-repeat dirvish--yank-status-update 0 dirvish-footer-repeat)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
@@ -132,7 +131,6 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
 (defun dirvish-yank-progress-activate ()
   "Display file IO progress in dirvish footer."
   (when (dirvish--yank-status)
-    (dirvish-repeat dirvish-footer-update 0 dirvish-footer-repeat)
     (dirvish-repeat dirvish--yank-status-update 0 dirvish-footer-repeat)))
 
 ;;;###autoload
