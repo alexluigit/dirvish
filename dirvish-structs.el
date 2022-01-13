@@ -161,7 +161,7 @@ FRAME defaults to the currently selected frame."
      (frame-selected-window))
    :documentation "is the main dirvish window.")
   (index-path
-   nil
+   ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
   (ls-switches
    dired-listing-switches

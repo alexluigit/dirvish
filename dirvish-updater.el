@@ -20,7 +20,7 @@
 (defun dirvish--header-line-path ()
   "Compose header string."
   (let* ((index (dv-index-path (dirvish-curr)))
-         (file-path (file-name-directory index))
+         (file-path (or (file-name-directory index) ""))
          (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
          (path-regex (concat (getenv "HOME") "/\\|\\/$"))
          (path-tail (replace-regexp-in-string path-regex "" file-path))
