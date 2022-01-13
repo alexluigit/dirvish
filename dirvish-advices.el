@@ -1,4 +1,4 @@
-;;; dirvish-advices.el --- Shims for other packages -*- lexical-binding: t -*-
+;;; dirvish-advices.el --- Accommodations for other packages -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
