@@ -38,6 +38,7 @@
     (wdired        wdired-exit                  dirvish-mode-ad                :after)
     (wdired        wdired-finish-edit           dirvish-mode-ad                :after)
     (wdired        wdired-abort-changes         dirvish-mode-ad                :after)
+    (find-dired    find-dired-sentinel          dirvish-fd-ad)
     (dired-x       dired-omit-mode              dirvish-full-update-ad)
     (dired-aux     dired-dwim-target-next       dirvish-dwim-target-next       :override)
     (dired-aux     dired-insert-subdir          dirvish-full-update-ad)
@@ -54,6 +55,7 @@
 (defvar dirvish-temporary-advice-alist
   '((evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
+    (magit         magit-status-setup-buffer    dirvish-enlarge-ad             :before)
     (lsp-mode      lsp-deferred                 ignore))
   "A list of FILE, FUNCTION, and temporary ADVICE FUNCTION.
 These advices are being added during activation of first dirvish
@@ -131,6 +133,19 @@ FILE-NAME are the same args in `dired-jump'."
 (defun dirvish-mode-ad (&rest _)
   "An advisor to enable `dirvish-mode' and apply its setup."
   (dirvish-with-update t (dirvish-setup)))
+
+(defun dirvish-fd-ad (fn &rest args)
+  "Doc."
+  (let* ((old-dv (dirvish-curr))
+         (p-win (dv-preview-window old-dv)))
+    (dirvish--enlarge)
+    (apply fn args)
+    (let ((new-dv (dirvish-activate (dv-depth old-dv))))
+      (dirvish-setup 'keep-dired)
+      (unless (dirvish-dired-p)
+        (setf (dv-preview-window new-dv) p-win))
+      (setf (dv-transient new-dv) t)
+      (dirvish--remap (current-local-map)))))
 
 (defun dirvish-recover-cursor-ad (&rest _)
   "An advisor to recover cursor in current buffer."

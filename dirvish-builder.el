@@ -39,11 +39,12 @@ Dirvish sets `revert-buffer-function' to this function.  See
     (dired-revert)
     (dirvish-setup-dired-buffer)))
 
-(defun dirvish-setup ()
+(defun dirvish-setup (&optional keep-dired)
   "Default config for dirvish parent windows."
-  (dirvish-mode)
-  (dirvish-setup-dired-buffer)
-  (setq-local revert-buffer-function #'dirvish-revert)
+  (unless keep-dired
+    (dirvish-mode)
+    (setq-local revert-buffer-function #'dirvish-revert)
+    (dirvish-setup-dired-buffer))
   (set (make-local-variable 'face-remapping-alist)
        dirvish-parent-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
@@ -148,6 +149,7 @@ Dirvish sets `revert-buffer-function' to this function.  See
     (dirvish-build-footer)
     (dirvish-build-parents)))
 
+;; TODO: maybe we can remove this
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
   :group 'dirvish
