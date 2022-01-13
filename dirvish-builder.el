@@ -112,7 +112,6 @@ Dirvish sets `revert-buffer-function' to this function.  See
            (fringe 30)
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
       (set-window-fringes new-window fringe fringe nil t)
-      (setf (dv-preview-pixel-width (dirvish-curr)) (window-width new-window t))
       (setf (dv-preview-window (dirvish-curr)) new-window))))
 
 (defun dirvish-build-header ()

@@ -92,10 +92,9 @@ animated image as preview."
 (defun dirvish-preview-image-dispatcher (file dv)
   "A dispatcher function for `dirvish-preview-dispatchers'.
 If FILE can be matched by this dispatcher, Dirvish displays a
-image with its width less than `dv-preview-pixel-width' of
-instance DV as preview."
+image with width of DV's preview window as preview."
   (when (string-match "image/" (or (mailcap-file-name-to-mime-type file) ""))
-    (let* ((size (dv-preview-pixel-width dv))
+    (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
       (cond ((file-exists-p cache)
              `(image . (put-image ,(create-image cache nil nil :max-width size) 0)))
@@ -106,10 +105,9 @@ instance DV as preview."
 (defun dirvish-preview-video-dispatcher (file dv)
   "A dispatcher function for `dirvish-preview-dispatchers'.
 If FILE can be matched by this dispatcher, Dirvish displays a
-video thumbnail with its width less than `dv-preview-pixel-width'
-of instance DV as preview."
+video thumbnail with width of DV's preview window as preview."
   (when (string-match "video/" (or (mailcap-file-name-to-mime-type file) ""))
-    (let* ((size (dv-preview-pixel-width dv))
+    (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
       (if (file-exists-p cache)
           `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
@@ -124,11 +122,10 @@ If FILE can be matched by this dispatcher, Dirvish use output of
 
 (defun dirvish-preview-epub-dispatcher (file dv)
   "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish displays an
-epub thumbnail with its width less than `dv-preview-pixel-width'
-of instance DV as preview."
+If FILE can be matched by this dispatcher, Dirvish displays a
+epub thumbnail with width of DV's preview window as preview."
   (when (string= (file-name-extension file) "epub")
-    (let* ((size (dv-preview-pixel-width dv))
+    (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
       (if (file-exists-p cache)
           `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
@@ -137,10 +134,9 @@ of instance DV as preview."
 (defun dirvish-preview-pdf-preface-dispatcher (file dv)
   "A dispatcher function for `dirvish-preview-dispatchers'.
 If FILE can be matched by this dispatcher, Dirvish displays a pdf
-thumbnail with its width less than `dv-preview-pixel-width' of
-instance DV as preview."
+thumbnail with width of DV's preview window as preview."
   (when (string= (file-name-extension file) "pdf")
-    (let* ((size (dv-preview-pixel-width dv))
+    (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size))
            (cache-jpg (concat cache ".jpg")))
       (if (file-exists-p cache-jpg)
