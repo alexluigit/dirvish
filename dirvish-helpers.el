@@ -94,23 +94,25 @@ within the viewport."
 
 (defun dirvish-format-header-line ()
   "Generate Dirvish header line string."
-  (let* ((str (format-mode-line dirvish-header-line-format))
-         (ht (1+ (if (eq dirvish-header-style 'large) 0.25 dirvish-body-fontsize-increment)))
-         (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
-         (max-width (floor (/ win-width ht))))
-    (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
-      (setq str (substring str 0 -1)))
-    (propertize str 'display `((height ,ht) (raise ,(/ 0.16 ht))))))
+  (when (dirvish-curr)
+    (let* ((str (format-mode-line dirvish-header-line-format))
+           (ht (1+ (if (eq dirvish-header-style 'large) 0.25 dirvish-body-fontsize-increment)))
+           (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
+           (max-width (floor (/ win-width ht))))
+      (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
+        (setq str (substring str 0 -1)))
+      (propertize str 'display `((height ,ht) (raise ,(/ 0.16 ht)))))))
 
 (defun dirvish-format-mode-line ()
   "Generate Dirvish mode line string."
-  (cl-destructuring-bind (left . right) dirvish-mode-line-format
-    (let ((fmt-right (format-mode-line right)))
-      (concat (format-mode-line left)
-              (propertize " " 'display
-                          `((space :align-to (- (+ right right-fringe right-margin)
-                                                ,(string-width fmt-right)))))
-              fmt-right))))
+  (when (dirvish-curr)
+    (cl-destructuring-bind (left . right) dirvish-mode-line-format
+      (let ((fmt-right (format-mode-line right)))
+        (concat (format-mode-line left)
+                (propertize " " 'display
+                            `((space :align-to (- (+ right right-fringe right-margin)
+                                                  ,(string-width fmt-right)))))
+                fmt-right)))))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.
