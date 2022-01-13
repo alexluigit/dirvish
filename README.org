@@ -86,10 +86,10 @@ After installation, just =M-x= and run =dirvish=.
 inside current window, just like how dired does it. To get a "dirvish-ish"
 dired, use =dirvish-dired=.
 
-In either case, you have access to all your Dired commands *except* a few remapped
-ones in =dirvish-mode-map=.
+Since Dirvish is derived from Dired, you have access to all your Dired
+commands in =dired-mode-map=.
 
-/NOTICE/: if some dired command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
+If you find some Dired command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
 
 **** Override Dired
 
@@ -215,9 +215,14 @@ This feature is currently only available for *vertico/selectrum*.
 
 *** Example config
 
-Here is an example config. There are several optional third-party packages in
-this section, enable them if you want. The compatibility with other packages
-still needs work, but generally Dirvish works fine with Dired ecosystem.
+Here is an example config.  Note that although we have =dirvish-mode-map=, it's
+recommended to bind your desired commands to =dired-mode-map= because I may remove
+=dirvish-mode-map= in the future. There are several third-party packages that are
+listed in this section, all of these tools are independent to each other yet can
+operate in tandem.  I highly suggest you trying them out and see if they can
+improve your workflow. [TODO: a video demo] The compatibilities with other
+packages still needs work, but generally Dirvish works fine with the Dired
+ecosystem.
 
 #+begin_src emacs-lisp
   (use-package dired
@@ -251,6 +256,11 @@ still needs work, but generally Dirvish works fine with Dired ecosystem.
     :config
     (bind-key "TAB" 'dired-subtree-toggle dired-mode-map))
 
+  ;; Drop-in replacement for find-dired
+  (use-package fd-dired
+    :config
+    (bind-key "C-c C-f" 'fd-dired dired-mode-map))
+
   (use-package dirvish
     :config
     ;; Override dired with dirvish globally
@@ -259,7 +269,7 @@ still needs work, but generally Dirvish works fine with Dired ecosystem.
     ;; This feature only support `vertico/selectrum' for now.
     (dirvish-minibuf-preview-mode)
     :bind
-    (:map dirvish-mode-map
+    (:map dired-mode-map
           ("SPC" . dirvish-show-history)
           ([remap dired-do-copy] . dirvish-yank)
           ("o" . dirvish-other-buffer)))
