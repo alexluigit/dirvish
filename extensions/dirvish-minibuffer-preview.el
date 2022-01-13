@@ -39,8 +39,7 @@ one of categories in `dirvish-minibuf-preview-categories'."
     (unless (and (dirvish-curr) (dv-preview-window (dirvish-curr)))
       (set-frame-parameter nil 'dirvish--minibuf (dirvish-activate 0))
       (let ((next-win (next-window)))
-        (setf (dv-preview-window (dirvish-curr)) next-win)
-        (setf (dv-preview-pixel-width (dirvish-curr)) (window-width next-win t))))))
+        (setf (dv-preview-window (dirvish-curr)) next-win)))))
 
 (defun dirvish-minibuf-preview-teardown ()
   "Teardown dirvish minibuffer preview window."

@@ -148,9 +148,6 @@ FRAME defaults to the currently selected frame."
   (preview-buffers
    ()
    :documentation "holds all file preview buffers in this instance.")
-  (preview-pixel-width
-   nil
-   :documentation "is the pixelwise width of preview window.")
   (saved-recentf
    recentf-list
    :documentation "is the backup of original `recentf-list'.")
