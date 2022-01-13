@@ -157,13 +157,7 @@ support. This native icon solution has several advantages over
   =all-the-icons-dired-mode= due to conflict overlays. Dirvish handles line
   highlighting and icon rendering on its own.
 
-  + hl-line-mode + all-the-icons-dired-mode ::
-
-  [[./assets/dired-line.png]]
-
-  + dirvish ::
-
-  [[./assets/dirvish-line.png]]
+  [[./assets/line-comparison.png]]
 
 **** Lazy rendering
 
