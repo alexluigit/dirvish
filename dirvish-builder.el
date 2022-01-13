@@ -25,7 +25,7 @@
 (defun dirvish-rebuild-parents-h (frame)
   "Rebuild dirvish layout in FRAME."
   (dirvish-reclaim frame)
-  (dirvish-build))
+  (unless (dv-transient (dirvish-curr)) (dirvish-build)))
 
 (defun dirvish-hide-details-h ()
   "Hide other parent windows when showing Dired details."

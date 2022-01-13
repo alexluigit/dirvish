@@ -118,8 +118,8 @@ FRAME defaults to the currently selected frame."
   (depth
    dirvish-depth
    :documentation "TODO.")
-  (actual-depth
-   dirvish-depth
+  (transient
+   nil
    :documentation "TODO.")
   (header-window
    nil

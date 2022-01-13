@@ -169,6 +169,7 @@ update `dirvish-history-ring'."
             (setq dirvish-child-entry (or bname curr-dir))
             (setf (dv-index-path (dirvish-curr))
                   (or (dired-get-filename nil t) entry))
+            (and (dv-transient dv) (dirvish-activate (dv-depth dv)))
             (dirvish-build))
         (find-file entry)))))
 
