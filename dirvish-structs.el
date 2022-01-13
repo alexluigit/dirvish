@@ -49,6 +49,8 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   "Initialize the dirvishs system in FRAME.
 By default, this uses the current frame."
   (setq tab-bar-new-tab-choice "*scratch*")
+  (setq display-buffer-alist
+        (append dirvish-dis-buf-alist dirvish-saved-dis-buf-alist))
   (unless (frame-parameter frame 'dirvish--hash)
     (with-selected-frame (or frame (selected-frame))
       (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
@@ -226,18 +228,19 @@ If DV is not given, default to current dirvish instance."
     (unless (dirvish-all-names)
       (dirvish--clean-advices)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
+      (setq display-buffer-alist dirvish-saved-dis-buf-alist)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (dirvish-reclaim))
   (and dirvish-debug-p (message "leftover: %s" (dirvish-all-names))))
 
 (defun dirvish-dired-p (&optional dv)
-  "Return t if DV only occupies 1 window.
+  "Return t if DV is a `dirvish-dired' instance.
 DV defaults to the current dirvish instance if not provided."
   (when-let ((dv (or dv (dirvish-curr)))) (eq (dv-depth dv) 0)))
 
 ;;;###autoload
 (defun dirvish-live-p (&optional win)
-  "Return t if WIN is occupied by a dirvish instance.
+  "Return t if WIN is occupied by a `dirvish' instance.
 WIN defaults to `selected-window' if not provided."
   (when-let ((dv (dirvish-curr)))
    (memq (or win (selected-window)) (dv-parent-windows dv))))

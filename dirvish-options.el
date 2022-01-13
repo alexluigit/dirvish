@@ -169,6 +169,9 @@ footer."
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defvar dirvish-debug-p nil)
+(defconst dirvish-saved-dis-buf-alist display-buffer-alist)
+(defconst dirvish-dis-buf-alist
+  '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window))))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-mode-line-update-timer nil)
