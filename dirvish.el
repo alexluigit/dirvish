@@ -115,6 +115,7 @@ If REVERSE is non-nil, move to bottom instead."
     (read-char-choice
      "Sort by (d/D)efault (e/E)xt (s/S)ize (t/T)ime (m/M)odified: "
      '(?q ?d ?D ?e ?E ?s ?S ?t ?T ?m ?M))))
+  (when dired-sort-inhibit (user-error "Dirvish: cannot sort this buffer"))
   (unless (eq criteria ?q)
     (let* ((c (char-to-string criteria))
            (revp (string-equal c (upcase c)))
