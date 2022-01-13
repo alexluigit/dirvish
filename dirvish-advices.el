@@ -22,6 +22,8 @@
   '((files         find-file                    dirvish-deactivate-ad          :before)
     (dired         dired                        dirvish-dired-ad)
     (dired         dired-jump                   dirvish-dired-jump-ad)
+    (dired         dired-find-file              dirvish-find-file              :override)
+    (dired         dired-find-alternate-file    dirvish-find-file              :override)
     (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
     (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
     (dired         dired-other-frame            dirvish-dired-other-frame-ad   :override)
