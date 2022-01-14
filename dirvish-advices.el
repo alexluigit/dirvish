@@ -75,16 +75,12 @@ DIRNAME and SWITCHES are same with command `dired'."
 
 (defun dirvish-dired-next-line-ad (arg)
   "Override `dired-next-line' command.
-FN refers to original `dired-next-line' command.
 ARG is same with command `dired-next-line'."
   (interactive "^p")
   (dirvish-with-update nil
     (let ((line-move-visual)
 	        (goal-column))
       (line-move arg t))
-    (while (and (invisible-p (point))
-	              (not (if (and arg (< arg 0)) (bobp) (eobp))))
-      (forward-char (if (and arg (< arg 0)) -1 1)))
     (and (eobp) (forward-char -1))
     (dired-move-to-filename)))
 
