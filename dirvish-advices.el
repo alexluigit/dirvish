@@ -135,13 +135,20 @@ FILE-NAME are the same args in `dired-jump'."
   (dirvish-with-update t (dirvish-setup)))
 
 (defun dirvish-fd-ad (fn &rest args)
-  "Doc."
+  "Advisor function for `find-dired' and `fd-dired'.
+FN and ARGS refers to `fd/find-dired' and their args."
   (let* ((old-dv (dirvish-curr))
-         (p-win (dv-preview-window old-dv)))
+         (p-win (dv-preview-window old-dv))
+         (pt-min (point-min))
+         buffer-read-only)
     (dirvish--enlarge)
     (apply fn args)
     (let ((new-dv (dirvish-activate (dv-depth old-dv))))
       (dirvish-setup 'keep-dired)
+      (delete-matching-lines "find finished at.*\\|^ +$")
+      ;;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
+      (delete-and-extract-region
+       pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
       (unless (dirvish-dired-p)
         (setf (dv-preview-window new-dv) p-win))
       (setf (dv-transient new-dv) t)

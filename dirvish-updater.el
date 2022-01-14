@@ -12,22 +12,27 @@
 
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
+(defvar fd-dired-input-fd-args)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
 (require 'dirvish-options)
-(eval-when-compile (require 'subr-x))
+(eval-when-compile
+  (require 'subr-x)
+  (require 'find-dired))
 
 (defun dirvish--header-line-path ()
   "Compose header string."
-  (let* ((index (dv-index-path (dirvish-curr)))
-         (file-path (or (file-name-directory index) ""))
-         (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
-         (path-regex (concat (getenv "HOME") "/\\|\\/$"))
-         (path-tail (replace-regexp-in-string path-regex "" file-path))
-         (file-name (file-name-nondirectory index)))
-    (format "  %s %s %s" (propertize (if path-prefix-home "~" ":"))
-            (propertize path-tail 'face 'dired-mark)
-            (propertize file-name 'face 'font-lock-constant-face))))
+  (when-let ((dv (dirvish-curr)))
+    (let* ((index (dv-index-path dv))
+           (file-path (or (file-name-directory index) ""))
+           (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
+           (path-regex (concat (getenv "HOME") "/\\|\\/$"))
+           (path-tail (replace-regexp-in-string path-regex "" file-path))
+           (file-name (file-name-nondirectory index)))
+      (format "  %s %s %s"
+              (propertize (if path-prefix-home "~" ":"))
+              (propertize path-tail 'face 'dired-mark)
+              (propertize file-name 'face 'font-lock-constant-face)))))
 
 (defun dirvish--render-icon (pos &optional face)
   "Render icon in POS with optional FACE."
@@ -58,6 +63,15 @@
     (format " %s %s "
             (propertize "Filter:" 'face 'bold)
             (propertize (if dired-omit-mode "ON" "OFF") 'face 'font-lock-doc-face))))
+
+(defun dirvish--mode-line-fd-args ()
+  "Return a string showing current `find/fd' command args."
+  (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
+    (when (string-match "^\\*F\\(?:d\\|ind\\)\\*$" (buffer-name))
+      (format " %s [%s] "
+              (propertize "FD:" 'face 'bold)
+              (propertize (or (bound-and-true-p fd-dired-input-fd-args) find-args)
+                          'face 'font-lock-string-face)))))
 
 (defun dirvish--mode-line-index ()
   "Return a string showing index in a Dirvish buffer."
