@@ -80,25 +80,25 @@ then add =path/to/dirvish= to your =load-path=.
 *** Quickstart
 **** =dirvish= && =dirvish-dired=
 
-After installation, just =M-x= and run =dirvish=.
+After installation, just =M-x= =dirvish=.
+
+Since Dirvish is derived from Dired, all Dired commands stay the same as in
+=Dired-mode=, try pressing "(" to toggle =dired-hide-details-mode=, or =q= to quit
+this instance.
 
 =dirvish= command takes up the whole frame, but sometimes we prefer managing files
-inside current window, just like how dired does it. To get a "dirvish-ish"
+inside of current window, just like how dired does it. To get a "dirvish-ish"
 dired, use =dirvish-dired=.
 
-Since Dirvish is derived from Dired, you have access to all your Dired
-commands in =dired-mode-map=.
-
-If you find some Dired command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
+If you find some any command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
 
 **** Override Dired
 
 When you feel like to replace *Dired* with *Dirvish* completely (highly
 recommended!), all you need is enable =dirvish-override-dired-mode=.
 
-Now all your Dired entry commands incluing =dired=, =dired-other-window/tab/frame=,
-
-=dired-jump[-other-window]= do their job in a "dirvish" way.
+Now all Dired entry commands incluing =dired[-other-window/tab/frame]=,
+=dired-jump[-other-window]= do their jobs in a "dirvish" way.
 
 **** In relation to Dired config
 
@@ -115,19 +115,19 @@ Dirvish respects all of your dired options *except* the following ones:
 =dirvish= command places a preview window at right side of frame to show the
 content of selected file.
 
-The preview in Dirvish can be generated either directly from some elisp
-function, or by a shell command. See =dirvish-preview-dispatchers= for more
-details. TODO: better doc on this, maybe a wiki article.
+The preview in Dirvish can be generated either directly from elisp or by the
+help of shell commands. See =dirvish-preview-dispatchers= for more details. TODO:
+better doc on this, maybe a wiki article.
 
 *** Multiple instances
 
-You can open multiple dirvish instance across different widnows / tabs /
-frames. Each one of them has their own parent/preview buffer list that are being
-killed during deactivation of this instance.
+You can open multiple dirvish instance across different windows / tabs /
+frames. Each one of them have private attributes such as parent buffer
+list, depth, =ls= command switches and so on.
 
-Although every dirvish instance is independent from each other, you can mark
-files across multiple instance, and paste/move marked files to current one with
-=dirvish-yank=.
+Although the independence of Dirvish instance, there are commands that operate
+on multiple instances such as =dirvish-yank=, you can take it as an example to
+create your own cross-instance commands when you need to.
 
 *** Drop-in replacement commands
 
@@ -299,16 +299,3 @@ Feel free to report issues.
 This package is inspired a lot by [[https://github.com/ralesi/ranger.el][ranger.el]], thanks @ralesi for creating and
 maintaining it.
 
-** Copying
-
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program. If not, see http://www.gnu.org/licenses/.
