@@ -148,7 +148,8 @@ See `face-remapping-alist' for more details."
   '(((:eval (dirvish--mode-line-sorter))
      (:eval (dirvish--mode-line-filter)))
     .
-    ((:eval (dirvish--mode-line-index))))
+    ((:eval (dirvish--mode-line-fd-args))
+     (:eval (dirvish--mode-line-index))))
   "Template for displaying mode line in Dirvish instance.
 
 The value is a (LEFT . RIGHT) cons where LEFT/RIGHT has the same
@@ -180,6 +181,7 @@ footer."
 (defvar-local dirvish--curr-name nil)
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish-child-entry 'permanent-local t)
+(put 'fd-dired-input-fd-args 'permanent-local t)
 
 ;;;; Mode keymap
 
