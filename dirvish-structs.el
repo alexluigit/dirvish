@@ -53,6 +53,7 @@ By default, this uses the current frame."
         (append dirvish-dis-buf-alist dirvish-saved-dis-buf-alist))
   (unless (frame-parameter frame 'dirvish--hash)
     (with-selected-frame (or frame (selected-frame))
+      (set-frame-parameter frame 'dirvish--transient '())
       (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
       (dirvish--get-buffer "preview"
         (setq-local mode-line-format nil))
@@ -205,6 +206,29 @@ by this instance."
     (mapc #'kill-buffer (dv-preview-buffers ,dv))
     (remhash (dv-name ,dv) (dirvish-hash))
     ,@body))
+
+(defun dirvish-start-transient (old-dv new-dv)
+  "Doc."
+  (setf (dv-transient new-dv) old-dv)
+  (let ((tran-list (frame-parameter nil 'dirvish--transient)))
+    (set-frame-parameter nil 'dirvish--transient (push old-dv tran-list))))
+
+(defun dirvish-end-transient (tran)
+  "Doc."
+  (cl-loop
+   with tran-list = (frame-parameter nil 'dirvish--transient)
+   with hash = (dirvish-hash)
+   with tran-dv = (if (dirvish-p tran) tran (gethash tran hash))
+   for dv-name in (mapcar #'dv-name (hash-table-values hash))
+   for dv = (gethash dv-name hash)
+   for dv-tran = (dv-transient dv) do
+   (when (or (eq dv-tran tran) (eq dv-tran tran-dv))
+     (dirvish-kill dv))
+   finally
+   (progn
+     (set-frame-parameter nil 'dirvish--transient
+                          (remove tran-dv tran-list))
+     (dirvish-deactivate tran-dv))))
 
 (defun dirvish-activate (&optional depth)
   "Save previous window config and initialize dirvish.

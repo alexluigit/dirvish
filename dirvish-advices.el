@@ -132,15 +132,15 @@ FILE-NAME are the same args in `dired-jump'."
   (dirvish-with-update t (dirvish-setup)))
 
 (defun dirvish-fd-ad (fn &rest args)
-  "Advisor function for `find-dired' and `fd-dired'.
-FN and ARGS refers to `fd/find-dired' and their args."
+  "Advisor function for `find-dired-sentinel'.
+FN and ARGS refers to `find-dired-sentinel' and its args."
   (let* ((old-dv (dirvish-curr))
          (p-win (dv-preview-window old-dv))
          (pt-min (point-min))
          buffer-read-only)
     (dirvish--enlarge)
     (apply fn args)
-    (let ((new-dv (dirvish-activate (dv-depth old-dv))))
+    (let ((new-dv (dirvish-new :depth (dv-depth old-dv))))
       (dirvish-setup 'keep-dired)
       (delete-matching-lines "find finished at.*\\|^ +$")
       ;;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
@@ -148,7 +148,7 @@ FN and ARGS refers to `fd/find-dired' and their args."
        pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
       (unless (dirvish-dired-p)
         (setf (dv-preview-window new-dv) p-win))
-      (setf (dv-transient new-dv) t)
+      (dirvish-start-transient old-dv new-dv)
       (dirvish--remap (current-local-map)))))
 
 (defun dirvish-recover-cursor-ad (&rest _)
@@ -182,7 +182,9 @@ FN and ARGS refers to `fd/find-dired' and their args."
 (defun dirvish-deactivate-ad (&rest _)
   "Quit current dirvish instance if inside one.
 Use it as a `:before' advisor to target function."
-  (and (dirvish-live-p) (dirvish-deactivate)))
+  (let* ((dv (dirvish-live-p))
+         (dv-tran (and dv (dv-transient dv))))
+    (if dv-tran (dirvish-end-transient dv-tran) (dirvish-deactivate dv))))
 
 (defun dirvish--add-advices (&optional temporary)
   "Add all advice listed in `dirvish-advice-alist'.
