@@ -140,7 +140,9 @@ If REVERSE is non-nil, move to bottom instead."
 Delete current frame if it's a dirvish-only frame unless KEEP-FRAME
 is not-nil."
   (interactive)
-  (dirvish-deactivate)
+  (if-let ((dv (dirvish-live-p)))
+      (dirvish-deactivate dv)
+    (user-error "Not a Dirvish buffer"))
   (when (and (not keep-frame)
              (string= (frame-parameter nil 'name) "dirvish-emacs"))
     (delete-frame)))

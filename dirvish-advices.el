@@ -66,7 +66,7 @@ instance, and get removed when the last dirvish instance exits.")
 FN refers to original `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (and (dirvish-reclaim) (dirvish-deactivate))
+  (when-let ((dv (dirvish-live-p))) (dirvish-deactivate dv))
   (apply fn dirname (and switches (list switches)))
   (dirvish-activate 0)
   (when switches
@@ -88,7 +88,8 @@ ARG is same with command `dired-next-line'."
   "Override `dired-other-window' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (unless (dirvish-dired-p) (dirvish-deactivate))
+  (when-let ((dv (dirvish-live-p)))
+    (unless (dirvish-dired-p dv) (dirvish-deactivate dv)))
   (switch-to-buffer-other-window "*scratch*")
   (dirvish-activate 0)
   (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
