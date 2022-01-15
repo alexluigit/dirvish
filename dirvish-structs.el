@@ -237,10 +237,10 @@ DV defaults to the current dirvish instance if not provided."
 
 ;;;###autoload
 (defun dirvish-live-p (&optional win)
-  "Return t if WIN is occupied by a `dirvish' instance.
+  "If WIN is occupied by a `dirvish' instance, return this instance.
 WIN defaults to `selected-window' if not provided."
   (when-let ((dv (dirvish-curr)))
-   (memq (or win (selected-window)) (dv-parent-windows dv))))
+    (and (memq (or win (selected-window)) (dv-parent-windows dv)) dv)))
 
 (provide 'dirvish-structs)
 ;;; dirvish-structs.el ends here
