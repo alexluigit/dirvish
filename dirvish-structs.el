@@ -187,22 +187,23 @@ restore them after."
     `(let ((dv (make-dirvish ,@keywords)))
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given
+       (set-frame-parameter nil 'dirvish--curr dv)
        dv)))
 
-(defmacro dirvish-kill (&optional dv &rest body)
+(defmacro dirvish-kill (dv &rest body)
   "Kill a dirvish instance DV and remove it from `dirvish-hash'.
 
 DV defaults to current dirvish instance if not given.  If BODY is
 given, it is executed to unset the window configuration brought
 by this instance."
   (declare (indent defun))
-  `(when-let ((kill-dv (or ,dv (dirvish-curr))))
-    (setq recentf-list (dv-saved-recentf kill-dv))
-    (unless (dirvish-dired-p kill-dv)
-      (set-window-configuration (dv-window-conf kill-dv)))
-    (mapc #'kill-buffer (dv-parent-buffers kill-dv))
-    (mapc #'kill-buffer (dv-preview-buffers kill-dv))
-    (remhash (dv-name kill-dv) (dirvish-hash))
+  `(progn
+    (setq recentf-list (dv-saved-recentf ,dv))
+    (unless (dirvish-dired-p ,dv)
+      (set-window-configuration (dv-window-conf ,dv)))
+    (mapc #'kill-buffer (dv-parent-buffers ,dv))
+    (mapc #'kill-buffer (dv-preview-buffers ,dv))
+    (remhash (dv-name ,dv) (dirvish-hash))
     ,@body))
 
 (defun dirvish-activate (&optional depth)
@@ -211,16 +212,14 @@ TODO
 If DEPTH, initialize dirvish in current window rather than
 the whole frame."
   (dirvish-init-frame)
-  (when (eq major-mode 'dirvish-mode) (dirvish-deactivate))
+  (when (eq major-mode 'dirvish-mode) (dirvish-deactivate (dirvish-curr)))
   (let ((dv-new (dirvish-new :depth (or depth dirvish-depth))))
-    (set-frame-parameter nil 'dirvish--curr dv-new)
     (dirvish--add-advices t)
     (run-hooks 'dirvish-activation-hook)
     dv-new))
 
-(defun dirvish-deactivate (&optional dv)
-  "Deactivate dirvish instance DV.
-If DV is not given, default to current dirvish instance."
+(defun dirvish-deactivate (dv)
+  "Deactivate dirvish instance DV."
   (dirvish-kill dv
     (unless (dirvish-all-names)
       (dirvish--clean-advices)
