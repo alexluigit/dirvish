@@ -55,24 +55,13 @@ You can install it directly via =package-install= if you have melpa in your =pac
   (straight-use-package 'dirvish)
 #+end_src
 
-Alternatively, install it by using *use-package* and *straight* in tandem.
-
-#+begin_src emacs-lisp
-  (use-package dirvish
-    :straight t)
-#+end_src
-
 **** Manual install
 
-To install it manually, first clone this repository,
-
-#+begin_src bash
-  git clone https://github.com/alexluigit/dirvish
-#+end_src
-
-then add =path/to/dirvish= to your =load-path=.
+To install it manually, first clone this repository, then add =path/to/dirvish= to your =load-path=.
 
 #+begin_src emacs-lisp
+  git clone https://github.com/alexluigit/dirvish
+
   (add-to-list 'load-path "/path/to/dirvish")
   (require 'dirvish)
 #+end_src
@@ -83,14 +72,14 @@ then add =path/to/dirvish= to your =load-path=.
 After installation, just =M-x= =dirvish=.
 
 Since Dirvish is derived from Dired, all Dired commands stay the same as in
-=Dired-mode=, try pressing "(" to toggle =dired-hide-details-mode=, or =q= to quit
+=dired-mode=, try pressing "(" to toggle =dired-hide-details-mode=, or =q= to quit
 this instance.
 
 =dirvish= command takes up the whole frame, but sometimes we prefer managing files
 inside of current window, just like how dired does it. To get a "dirvish-ish"
 dired, use =dirvish-dired=.
 
-If you find some any command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
+If you find some any Dired command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
 
 **** Override Dired
 
@@ -215,14 +204,11 @@ This feature is currently only available for *vertico/selectrum*.
 
 *** Example config
 
-Here is an example config.  Note that although we have =dirvish-mode-map=, it's
-recommended to bind your desired commands to =dired-mode-map= because I may remove
-=dirvish-mode-map= in the future. There are several third-party packages that are
-listed in this section, all of these tools are independent to each other yet can
-operate in tandem.  I highly suggest you trying them out and see if they can
-improve your workflow. [TODO: a video demo] The compatibilities with other
-packages still needs work, but generally Dirvish works fine with the Dired
-ecosystem.
+Here is an example config.  There are several third-party packages listed in
+this section, all of these tools are independent to each other yet can operate
+in tandem.  I highly suggest you trying them out and see if they can improve
+your workflow. [TODO: a video demo] The compatibilities with other packages
+still needs work, but generally Dirvish works fine with the Dired ecosystem.
 
 #+begin_src emacs-lisp
   (use-package dired
@@ -230,7 +216,8 @@ ecosystem.
     (setq dired-recursive-deletes 'always)
     (setq delete-by-moving-to-trash t)
     (setq dired-dwim-target t)
-    (setq dired-listing-switches "-AGhlv --group-directories-first --time-style=long-iso"))
+    (setq dired-listing-switches
+          "-AGhlv --group-directories-first --time-style=long-iso"))
 
   (use-package dired-x
     ;; Enable dired-omit-mode by default
