@@ -19,7 +19,7 @@
 (require 'dirvish-options)
 
 (defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-find-file-ad          :before)
+  '((files         find-file                    dirvish-find-file-ad           :before)
     (dired         dired                        dirvish-dired-ad)
     (dired         dired-jump                   dirvish-dired-jump-ad)
     (dired         dired-find-file              dirvish-find-file              :override)
@@ -38,7 +38,7 @@
     (wdired        wdired-exit                  dirvish-mode-ad                :after)
     (wdired        wdired-finish-edit           dirvish-mode-ad                :after)
     (wdired        wdired-abort-changes         dirvish-mode-ad                :after)
-    (find-dired    find-dired-sentinel          dirvish-fd-ad)
+    (find-dired    find-dired-sentinel          dirvish-fd-ad                  :after)
     (dired-x       dired-omit-mode              dirvish-full-update-ad)
     (dired-aux     dired-dwim-target-next       dirvish-dwim-target-next       :override)
     (dired-aux     dired-insert-subdir          dirvish-full-update-ad)
@@ -131,25 +131,23 @@ FILE-NAME are the same args in `dired-jump'."
   "An advisor to enable `dirvish-mode' and apply its setup."
   (dirvish-with-update t (dirvish-setup)))
 
-(defun dirvish-fd-ad (fn &rest args)
-  "Advisor function for `find-dired-sentinel'.
-FN and ARGS refers to `find-dired-sentinel' and its args."
+(defun dirvish-fd-ad (&rest _)
+  "Advisor function for `find-dired-sentinel'."
   (let* ((old-dv (dirvish-curr))
          (p-win (dv-preview-window old-dv))
          (pt-min (point-min))
          buffer-read-only)
     (dirvish--enlarge)
-    (apply fn args)
-    (let ((new-dv (dirvish-new :depth (dv-depth old-dv))))
-      (dirvish-setup 'keep-dired)
-      (delete-matching-lines "find finished at.*\\|^ +$")
+    (delete-matching-lines "find finished at.*\\|^ +$")
       ;;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
-      (delete-and-extract-region
-       pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
-      (unless (dirvish-dired-p)
-        (setf (dv-preview-window new-dv) p-win))
-      (dirvish-start-transient old-dv new-dv)
-      (dirvish--remap (current-local-map)))))
+    (delete-region pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
+    (unless (memq (dv-transient old-dv) (frame-parameter nil 'dirvish--transient))
+      (let ((new-dv (dirvish-new :depth (dv-depth old-dv))))
+        (unless (dirvish-dired-p old-dv)
+          (setf (dv-preview-window new-dv) p-win))
+        (dirvish-start-transient old-dv new-dv)))
+    (dirvish-setup 'keep-dired)
+    (dirvish--remap (current-local-map))))
 
 (defun dirvish-recover-cursor-ad (&rest _)
   "An advisor to recover cursor in current buffer."
