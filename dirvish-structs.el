@@ -202,6 +202,8 @@ by this instance."
     (setq recentf-list (dv-saved-recentf ,dv))
     (unless (dirvish-dired-p ,dv)
       (set-window-configuration (dv-window-conf ,dv)))
+    (let ((tran-list (frame-parameter nil 'dirvish--transient)))
+      (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
     (mapc #'kill-buffer (dv-parent-buffers ,dv))
     (mapc #'kill-buffer (dv-preview-buffers ,dv))
     (remhash (dv-name ,dv) (dirvish-hash))
@@ -216,7 +218,6 @@ by this instance."
 (defun dirvish-end-transient (tran)
   "Doc."
   (cl-loop
-   with tran-list = (frame-parameter nil 'dirvish--transient)
    with hash = (dirvish-hash)
    with tran-dv = (if (dirvish-p tran) tran (gethash tran hash))
    for dv-name in (mapcar #'dv-name (hash-table-values hash))
@@ -224,11 +225,7 @@ by this instance."
    for dv-tran = (dv-transient dv) do
    (when (or (eq dv-tran tran) (eq dv-tran tran-dv))
      (dirvish-kill dv))
-   finally
-   (progn
-     (set-frame-parameter nil 'dirvish--transient
-                          (remove tran-dv tran-list))
-     (dirvish-deactivate tran-dv))))
+   finally (dirvish-deactivate tran-dv)))
 
 (defun dirvish-activate (&optional depth)
   "Save previous window config and initialize dirvish.
