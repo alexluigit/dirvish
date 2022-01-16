@@ -19,7 +19,7 @@
 (require 'dirvish-options)
 
 (defvar dirvish-advice-alist
-  '((files         find-file                    dirvish-deactivate-ad          :before)
+  '((files         find-file                    dirvish-find-file-ad          :before)
     (dired         dired                        dirvish-dired-ad)
     (dired         dired-jump                   dirvish-dired-jump-ad)
     (dired         dired-find-file              dirvish-find-file              :override)
@@ -179,12 +179,14 @@ FN and ARGS refers to `find-dired-sentinel' and its args."
     (revert-buffer)
     (unless (dired-get-filename nil t) (dired-next-line 1))))
 
-(defun dirvish-deactivate-ad (&rest _)
+(defun dirvish-find-file-ad (&rest _)
   "Quit current dirvish instance if inside one.
 Use it as a `:before' advisor to target function."
   (let* ((dv (dirvish-live-p))
          (dv-tran (and dv (dv-transient dv))))
-    (if dv-tran (dirvish-end-transient dv-tran) (dirvish-deactivate dv))))
+    (if dv-tran
+        (dirvish-end-transient dv-tran)
+      (and dv (dirvish-deactivate dv)))))
 
 (defun dirvish--add-advices (&optional temporary)
   "Add all advice listed in `dirvish-advice-alist'.
