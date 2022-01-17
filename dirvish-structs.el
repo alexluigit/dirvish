@@ -48,9 +48,6 @@ If BODY is non-nil, create the buffer and execute BODY in it."
 (defun dirvish-init-frame (&optional frame)
   "Initialize the dirvishs system in FRAME.
 By default, this uses the current frame."
-  (setq tab-bar-new-tab-choice "*scratch*")
-  (setq display-buffer-alist
-        (append dirvish-dis-buf-alist dirvish-saved-dis-buf-alist))
   (unless (frame-parameter frame 'dirvish--hash)
     (with-selected-frame (or frame (selected-frame))
       (set-frame-parameter frame 'dirvish--transient '())
@@ -173,9 +170,9 @@ restore them after."
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
     `(let ((dv (make-dirvish ,@keywords)))
+       (dirvish-init-frame)
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given
-       (set-frame-parameter nil 'dirvish--curr dv)
        dv)))
 
 (defmacro dirvish-kill (dv &rest body)
@@ -214,17 +211,15 @@ by this instance."
      (dirvish-kill dv))
    finally (dirvish-deactivate tran-dv)))
 
-(defun dirvish-activate (&optional depth)
-  "Save previous window config and initialize dirvish.
-TODO
-If DEPTH, initialize dirvish in current window rather than
-the whole frame."
-  (dirvish-init-frame)
+(defun dirvish-activate (dv)
+  "Activate dirvish instance DV."
+  (setq tab-bar-new-tab-choice "*scratch*")
+  (setq display-buffer-alist dirvish-display-buffer-alist)
+  (dirvish--add-advices t)
   (when (eq major-mode 'dirvish-mode) (dirvish-deactivate (dirvish-curr)))
-  (let ((dv-new (dirvish-new :depth (or depth dirvish-depth))))
-    (dirvish--add-advices t)
-    (run-hooks 'dirvish-activation-hook)
-    dv-new))
+  (set-frame-parameter nil 'dirvish--curr dv)
+  (run-hooks 'dirvish-activation-hook)
+  dv)
 
 (defun dirvish-deactivate (dv)
   "Deactivate dirvish instance DV."
@@ -232,7 +227,7 @@ the whole frame."
     (unless (dirvish-get-all 'name t)
       (dirvish--clean-advices)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
-      (setq display-buffer-alist dirvish-saved-dis-buf-alist)
+      (setq display-buffer-alist dirvish-saved-display-buffer-alist)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (dirvish-reclaim))
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t))))

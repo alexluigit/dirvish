@@ -45,7 +45,7 @@ one of categories in `dirvish-minibuf-preview-categories'."
          new-dv)
     (when (and preview-category
                (not (and old-dv (dv-preview-window old-dv))))
-      (setq new-dv (dirvish-activate 0))
+      (setq new-dv (dirvish-activate (dirvish-new :depth 0)))
       (let ((next-win (next-window)))
         (setf (dv-preview-window new-dv) next-win)))
     (set-frame-parameter nil 'dirvish--minibuf

@@ -174,7 +174,8 @@ update `dirvish-history-ring'."
             (setq dirvish-child-entry (or bname curr-dir))
             (setf (dv-index-path dv) (or (dired-get-filename nil t) entry))
             (when (dirvish-p dv-tran)
-              (dirvish-new :depth dv-depth :transient (dv-name dv-tran)))
+              (dirvish-activate
+               (dirvish-new :depth dv-depth :transient (dv-name dv-tran))))
             (dirvish-build))
         (find-file entry)))))
 
@@ -203,7 +204,7 @@ DEPTH defaults to `dirvish-depth'."
   (let* ((file (or path buffer-file-name))
          (dir (if file (expand-file-name (file-name-directory file))
                 (expand-file-name default-directory))))
-    (dirvish-activate depth)
+    (dirvish-activate (dirvish-new :depth (or depth dirvish-depth)))
     (dirvish-find-file dir)))
 
 ;;;###autoload

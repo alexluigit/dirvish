@@ -68,7 +68,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (when-let ((dv (dirvish-live-p))) (dirvish-deactivate dv))
   (apply fn dirname (and switches (list switches)))
-  (dirvish-activate 0)
+  (dirvish-activate (dirvish-new :depth 0))
   (when switches
     (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
@@ -79,7 +79,7 @@ ARG is same with command `dired-next-line'."
   (interactive "^p")
   (dirvish-with-update nil
     (let ((line-move-visual)
-	        (goal-column))
+          (goal-column))
       (line-move arg t))
     (and (eobp) (forward-char -1))
     (dired-move-to-filename)))
@@ -91,7 +91,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when-let ((dv (dirvish-live-p)))
     (unless (dirvish-dired-p dv) (dirvish-deactivate dv)))
   (switch-to-buffer-other-window "*scratch*")
-  (dirvish-activate 0)
+  (dirvish-activate (dirvish-new :depth 0))
   (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
 
@@ -101,7 +101,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab "*scratch*")
   (dirvish-drop)
-  (dirvish-activate 0)
+  (dirvish-activate (dirvish-new :depth 0))
   (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
 
@@ -111,7 +111,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
   (let (after-focus-change-function)
     (switch-to-buffer-other-frame "*scratch*")
-    (dirvish-activate)
+    (dirvish-activate (dirvish-new :depth dirvish-depth))
     (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
     (dirvish-find-file dirname)))
 
@@ -143,6 +143,7 @@ FILE-NAME are the same args in `dired-jump'."
     (delete-region pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
     (unless (memq (dv-transient old-dv) (frame-parameter nil 'dirvish--transient))
       (let ((new-dv (dirvish-new :depth (dv-depth old-dv))))
+        (dirvish-activate new-dv)
         (unless (dirvish-dired-p old-dv)
           (setf (dv-preview-window new-dv) p-win))
         (dirvish-start-transient old-dv new-dv)))
