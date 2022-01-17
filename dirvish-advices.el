@@ -49,17 +49,12 @@
     (dired-aux     dired-do-kill-lines          dirvish-lazy-update-ad)
     (dired-narrow  dired-narrow--internal       dirvish-full-update-ad)
     (dired-subtree dired-subtree-insert         dirvish-full-update-save-pos-ad)
-    (dired-subtree dired-subtree-remove         dirvish-full-update-ad))
-  "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
-
-(defvar dirvish-temporary-advice-alist
-  '((evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
+    (dired-subtree dired-subtree-remove         dirvish-full-update-ad)
+    (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer    dirvish-enlarge-ad             :before)
     (lsp-mode      lsp-deferred                 ignore))
-  "A list of FILE, FUNCTION, and temporary ADVICE FUNCTION.
-These advices are being added during activation of first dirvish
-instance, and get removed when the last dirvish instance exits.")
+  "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
   "Override `dired' command.
@@ -187,25 +182,14 @@ Use it as a `:before' advisor to target function."
         (dirvish-end-transient dv-tran)
       (and dv (dirvish-deactivate dv)))))
 
-(defun dirvish--add-advices (&optional temporary)
-  "Add all advice listed in `dirvish-advice-alist'.
-When TEMPORARY is non-nil, also add advices in
-`dirvish-temporary-advice-alist'."
+(defun dirvish--add-advices ()
+  "Add all advices listed in `dirvish-advice-alist'."
   (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
-    (when (require file nil t) (advice-add sym (or place :around) fn)))
-  (when temporary
-    (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-temporary-advice-alist)
-      (when (require file nil t) (advice-add sym (or place :around) fn)))))
+    (with-eval-after-load file (advice-add sym (or place :around) fn))))
 
-(defun dirvish--clean-advices ()
-  "Remove most of advices added by dirvish.
-This function does not remove advices added by
-`dirvish-override-dired-mode'."
-  (unless (bound-and-true-p dirvish-override-dired-mode)
-    (pcase-dolist (`(,file ,sym ,fn) dirvish-advice-alist)
-      (when (require file nil t) (advice-remove sym fn))))
-  (pcase-dolist (`(,file ,sym ,fn) dirvish-temporary-advice-alist)
-    (when (require file nil t) (advice-remove sym fn))))
+(defun dirvish--remove-advices ()
+  "Remove all advices listed in `dirvish-advice-alist'."
+  (pcase-dolist (`(,_ ,sym ,fn) dirvish-advice-alist) (advice-remove sym fn)))
 
 (provide 'dirvish-advices)
 ;;; dirvish-advices.el ends here
