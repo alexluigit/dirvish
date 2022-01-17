@@ -93,15 +93,16 @@ within the viewport."
         (forward-line 1)))))
 
 (defun dirvish-format-header-line ()
-  "Generate Dirvish header line string."
+  "Format Dirvish header line."
   (when (dirvish-curr)
     (let* ((str (format-mode-line dirvish-header-line-format))
-           (ht (1+ (if (eq dirvish-header-style 'large) 0.25 dirvish-body-fontsize-increment)))
+           (scale (if (eq dirvish-header-style 'large) 2 1))
+           (ht (1+ (* scale (max dirvish-body-fontsize-increment 0.1))))
            (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
            (max-width (floor (/ win-width ht))))
       (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
         (setq str (substring str 0 -1)))
-      (propertize str 'display `((height ,ht) (raise ,(/ 0.16 ht)))))))
+      (propertize str 'display `((height ,ht) (raise ,(/ ht 10)))))))
 
 (defun dirvish-format-mode-line ()
   "Generate Dirvish mode line string."
