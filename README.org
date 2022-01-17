@@ -156,7 +156,7 @@ it only render icons that are displayed within the viewport. Visiting =/usr/bin=
 
 *** Minibuffer file preview
 
-=dirvish-minibuf-preview-mode= is a feature to preview file when narrowing
+=dirvish-peek-mode= is a feature to preview file when narrowing
 file/directory candidates using minibuffer.
 
 - Why does this feature exist? ::
@@ -254,7 +254,7 @@ still needs work, but generally Dirvish works fine with the Dired ecosystem.
     (dirvish-override-dired-mode)
     ;; Enable file preview when narrowing files in minibuffer.
     ;; This feature only support `vertico/selectrum' for now.
-    (dirvish-minibuf-preview-mode)
+    (dirvish-peek-mode)
     :bind
     (:map dired-mode-map
           ("SPC" . dirvish-show-history)
