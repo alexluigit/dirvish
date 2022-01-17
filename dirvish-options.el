@@ -122,7 +122,7 @@ STYLE should be one of these:
   :options '(nil large normal))
 
 (defcustom dirvish-header-face-remap-alist
-  '((mode-line-inactive :inherit (mode-line-active) :height 1.8))
+  '((mode-line-inactive :inherit (mode-line-active) :height 1.99))
   "Face remapping alist used in dirvish header window.
 Beware that only full-frame dirvish uses header window.  To
 configure faces in dirvish parent windows, use

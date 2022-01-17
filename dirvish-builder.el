@@ -106,52 +106,44 @@ Dirvish sets `revert-buffer-function' to this function.  See
 
 (defun dirvish-build-preview ()
   "Build dirvish preview window."
-  (when-let* ((dv (dirvish-curr))
-              (full-frame (not (dirvish-dired-p dv))))
-    (let* ((inhibit-modification-hooks t)
-           (buf (dv-preview-buffer dv))
-           (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
-           (fringe 30)
-           (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (set-window-fringes new-window fringe fringe nil t)
-      (setf (dv-preview-window (dirvish-curr)) new-window))))
+  (let* ((inhibit-modification-hooks t)
+         (buf (dirvish--get-buffer 'preview))
+         (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
+         (fringe 30)
+         (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
+    (set-window-fringes new-window fringe fringe nil t)
+    (setf (dv-preview-window (dirvish-curr)) new-window)))
 
 (defun dirvish-build-header ()
   "Create a window showing dirvish header."
-  (when-let* ((dv (dirvish-curr))
-              (full-frame (not (dirvish-dired-p dv)))
-              dirvish-header-style
-              dirvish-header-line-format)
+  (when (and dirvish-header-style dirvish-header-line-format)
     (let* ((inhibit-modification-hooks t)
-           (buf (dv-header-buffer dv))
+           (buf (dirvish--get-buffer 'header))
            (win-alist `((side . above)
                         (window-height . -2)
                         (window-parameters . ((no-other-window . t)))))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (setf (dv-header-window dv) new-window)
       (set-window-buffer new-window buf))))
 
 (defun dirvish-build-footer ()
   "Create a window showing dirvish footer."
-  (when-let* ((dv (dirvish-curr))
-              (full-frame (not (dirvish-dired-p dv)))
-              dirvish-mode-line-format)
+  (when dirvish-mode-line-format
     (let* ((inhibit-modification-hooks t)
-           (buf (dv-footer-buffer dv))
+           (buf (dirvish--get-buffer 'footer))
            (win-alist `((side . below)
                         (window-height . -2)
                         (window-parameters . ((no-other-window . t)))))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (setf (dv-footer-window dv) new-window)
       (set-window-buffer new-window buf))))
 
 (defun dirvish-build ()
   "Build dirvish layout."
   (dirvish-with-update nil
-    (unless (dirvish-dired-p) (delete-other-windows))
-    (dirvish-build-preview)
-    (dirvish-build-header)
-    (dirvish-build-footer)
+    (unless (dirvish-dired-p)
+      (delete-other-windows)
+      (dirvish-build-preview)
+      (dirvish-build-header)
+      (dirvish-build-footer))
     (dirvish-build-parents)))
 
 ;; TODO: maybe we can remove this

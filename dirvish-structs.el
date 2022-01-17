@@ -54,9 +54,9 @@ By default, this uses the current frame."
     (with-selected-frame (or frame (selected-frame))
       (set-frame-parameter frame 'dirvish--transient '())
       (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
-      (dirvish--get-buffer "preview"
+      (dirvish--get-buffer 'preview
         (setq-local mode-line-format nil))
-      (dirvish--get-buffer "header"
+      (dirvish--get-buffer 'header
         (setq-local header-line-format nil)
         (setq-local window-size-fixed 'height)
         (setq-local face-font-rescale-alist nil)
@@ -64,7 +64,7 @@ By default, this uses the current frame."
                                           '((:eval (dirvish-format-header-line)))))
         (set (make-local-variable 'face-remapping-alist)
              dirvish-header-face-remap-alist))
-      (dirvish--get-buffer "footer"
+      (dirvish--get-buffer 'footer
         (setq-local header-line-format nil)
         (setq-local window-size-fixed 'height)
         (setq-local face-font-rescale-alist nil)
@@ -108,18 +108,6 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (transient
    nil
    :documentation "TODO.")
-  (header-window
-   nil
-   :documentation "is the window to place `dv-header-buffer'.")
-  (header-buffer
-   (dirvish--get-buffer "header")
-   :documentation "is the buffer contains dirvish header text.")
-  (footer-window
-   nil
-   :documentation "is the window to place `dv-footer-buffer'.")
-  (footer-buffer
-   (dirvish--get-buffer "footer")
-   :documentation "is the buffer contains dirvish footer text.")
   (parent-buffers
    ()
    :documentation "holds all `dirvish-mode' buffers in this instance.")
@@ -128,10 +116,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
    :documentation "holds all `dirvish-mode' windows in this instance.")
   (preview-window
    nil
-   :documentation "is the window to display `dv-preview-buffer'.")
-  (preview-buffer
-   (dirvish--get-buffer "preview")
-   :documentation "is the buffer for dirvish preview content.")
+   :documentation "is the window to display preview buffer.")
   (preview-buffers
    ()
    :documentation "holds all file preview buffers in this instance.")
