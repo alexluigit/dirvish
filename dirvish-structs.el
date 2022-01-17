@@ -86,30 +86,17 @@ FRAME defaults to the currently selected frame."
   (or (frame-parameter frame 'dirvish--hash)
       (make-hash-table)))
 
-(defun dirvish-all-names ()
-  "Return a list of the dirvish names for all frames."
-  (cl-reduce #'cl-union (mapcar
-                         (lambda (fr)
-                           (with-selected-frame fr
-                             (mapcar #'dv-name (hash-table-values (dirvish-hash)))))
-                         (frame-list))))
-
-(defun dirvish-all-root-windows ()
-  "Return a list of dirvish root windows for all frames."
-  (cl-reduce #'cl-union (mapcar
-                         (lambda (fr)
-                           (with-selected-frame fr
-                             (mapcar #'dv-root-window (hash-table-values (dirvish-hash)))))
-                         (frame-list))))
-
-(defun dirvish-all-parent-buffers ()
-  "Return a list of dirvish parent buffers for all frames."
-  (delete-dups
-   (flatten-tree (mapcar
-                  (lambda (fr)
-                    (with-selected-frame fr
-                      (mapcar #'dv-parent-buffers (hash-table-values (dirvish-hash)))))
-                  (frame-list)))))
+(defun dirvish-get-all (slot &optional all-frame)
+  "Gather slot value SLOT of all Dirvish in `dirvish-hash' as a flattened list.
+If optional ALL-FRAME is non-nil, collect SLOT for all frames."
+  (let* ((dv-slot (intern (format "dv-%s" slot)))
+         (all-vals (if all-frame
+                       (mapcar (lambda (fr)
+                                 (with-selected-frame fr
+                                   (mapcar dv-slot (hash-table-values (dirvish-hash)))))
+                               (frame-list))
+                     (mapcar dv-slot (hash-table-values (dirvish-hash))))))
+    (delete-dups (flatten-tree all-vals))))
 
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
@@ -242,13 +229,13 @@ the whole frame."
 (defun dirvish-deactivate (dv)
   "Deactivate dirvish instance DV."
   (dirvish-kill dv
-    (unless (dirvish-all-names)
+    (unless (dirvish-get-all 'name t)
       (dirvish--clean-advices)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (setq display-buffer-alist dirvish-saved-dis-buf-alist)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (dirvish-reclaim))
-  (and dirvish-debug-p (message "leftover: %s" (dirvish-all-names))))
+  (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t))))
 
 (defun dirvish-dired-p (&optional dv)
   "Return t if DV is a `dirvish-dired' instance.
