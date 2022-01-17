@@ -176,6 +176,7 @@ footer."
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-mode-line-update-timer nil)
 (defvar dirvish-debug-p nil)
+(defvar dirvish-override-dired-mode nil)
 (defvar dirvish-repeat-timers '())
 (defvar-local dirvish-child-entry nil)
 (defvar-local dirvish--curr-name nil)

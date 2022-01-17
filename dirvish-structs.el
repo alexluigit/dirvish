@@ -11,7 +11,7 @@
 ;;; Code:
 
 (declare-function dirvish--add-advices "dirvish-advices")
-(declare-function dirvish--clean-advices "dirvish-advices")
+(declare-function dirvish--remove-advices "dirvish-advices")
 (require 'dirvish-options)
 (require 'recentf)
 
@@ -32,8 +32,10 @@ FRAME defaults to current frame."
 (defun dirvish-reclaim (&optional _window)
   "Reclaim current dirvish."
   (unless (active-minibuffer-window)
-    (let ((name dirvish--curr-name))
-      (set-frame-parameter nil 'dirvish--curr (and name (gethash name (dirvish-hash)))))))
+    (if dirvish--curr-name
+        (or dirvish-override-dired-mode (dirvish--add-advices))
+      (or dirvish-override-dired-mode (dirvish--remove-advices)))
+    (set-frame-parameter nil 'dirvish--curr (gethash dirvish--curr-name (dirvish-hash)))))
 
 (defmacro dirvish--get-buffer (type &rest body)
   "Return dirvish buffer with TYPE.
@@ -215,7 +217,6 @@ by this instance."
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
   (setq display-buffer-alist dirvish-display-buffer-alist)
-  (dirvish--add-advices t)
   (when (eq major-mode 'dirvish-mode) (dirvish-deactivate (dirvish-curr)))
   (set-frame-parameter nil 'dirvish--curr dv)
   (run-hooks 'dirvish-activation-hook)
@@ -225,7 +226,6 @@ by this instance."
   "Deactivate dirvish instance DV."
   (dirvish-kill dv
     (unless (dirvish-get-all 'name t)
-      (dirvish--clean-advices)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (setq display-buffer-alist dirvish-saved-display-buffer-alist)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))

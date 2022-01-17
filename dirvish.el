@@ -190,7 +190,7 @@ update `dirvish-history-ring'."
         (dirvish--add-advices)
         (setq find-directory-functions
               (cl-substitute #'dirvish-dired #'dired-noselect find-directory-functions)))
-    (dirvish--clean-advices)
+    (dirvish--remove-advices)
     (setq find-directory-functions
           (cl-substitute #'dired-noselect #'dirvish-dired find-directory-functions))))
 
