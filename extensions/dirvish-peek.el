@@ -10,7 +10,8 @@
 
 ;;; Commentary:
 
-;; This package is a Dirvish extension, which provides minibuffer file preview in a `dirvish' style.
+;; This package is a Dirvish extension, which provides minibuffer file preview
+;; in a `dirvish' style.
 
 ;;; Code:
 

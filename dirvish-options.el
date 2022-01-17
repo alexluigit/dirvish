@@ -87,15 +87,15 @@ file deletion when you have multiple disk drives."
   :group 'dirvish :type 'alist)
 
 (defcustom dirvish-show-icons t
-  "When not-nil show file / dir icon."
+  "When not-nil show icons in Dirvish."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-icon-delimiter "\t"
-  "A string attached to a dirvish icon."
+  "A string attached to the icon."
   :group 'dirvish :type 'string)
 
 (defcustom dirvish-icon-monochrome t
-  "Whether icon face use `face-at-point'."
+  "Whether icon face uses `face-at-point'."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-icon-v-offset 0.01
