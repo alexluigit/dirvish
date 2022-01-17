@@ -188,9 +188,7 @@ footer."
 
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap dired-do-redisplay]           'dirvish-change-level)
     (define-key map [remap dired-up-directory]           'dirvish-up-directory)
-    (define-key map [remap left-char]                    'dirvish-up-directory)
     (define-key map [remap end-of-buffer]                'dirvish-go-bottom)
     (define-key map [remap beginning-of-buffer]          'dirvish-go-top)
     (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
