@@ -169,13 +169,13 @@ footer."
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
-(defvar dirvish-debug-p nil)
-(defconst dirvish-saved-dis-buf-alist display-buffer-alist)
-(defconst dirvish-dis-buf-alist
-  '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window))))
+(defconst dirvish-saved-display-buffer-alist display-buffer-alist)
+(defconst dirvish-display-buffer-alist
+  (append '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window))) display-buffer-alist))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-mode-line-update-timer nil)
+(defvar dirvish-debug-p nil)
 (defvar dirvish-repeat-timers '())
 (defvar-local dirvish-child-entry nil)
 (defvar-local dirvish--curr-name nil)
