@@ -53,7 +53,7 @@
     (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer    dirvish-enlarge-ad             :before)
-    (lsp-mode      lsp-deferred                 ignore))
+    (lsp-mode      lsp-deferred                 dirvish-ignore-ad))
   "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
@@ -181,6 +181,10 @@ Use it as a `:before' advisor to target function."
     (if dv-tran
         (dirvish-end-transient dv-tran)
       (and dv (dirvish-deactivate dv)))))
+
+(defun dirvish-ignore-ad (fn &rest args)
+  "Only apply FN with ARGS outside of Dirvish."
+  (unless (dirvish-live-p) (apply fn args)))
 
 (defun dirvish--add-advices ()
   "Add all advices listed in `dirvish-advice-alist'."
