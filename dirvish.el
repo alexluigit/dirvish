@@ -103,11 +103,6 @@ If REVERSE is non-nil, move to bottom instead."
       (switch-to-buffer (get-buffer-create "*scratch*"))
       (dirvish path))))
 
-(defun dirvish-change-level (&optional arg)
-  "Change `dirvish-depth' to ARG."
-  (interactive "p")
-  (setq dirvish-depth (or arg 1)) (dirvish-build))
-
 (defun dirvish-sort-by-criteria (criteria)
   "Call `dired-sort-other' by different `CRITERIA'."
   (interactive
