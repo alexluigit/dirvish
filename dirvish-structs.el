@@ -13,7 +13,6 @@
 (declare-function dirvish--add-advices "dirvish-advices")
 (declare-function dirvish--remove-advices "dirvish-advices")
 (require 'dirvish-options)
-(require 'recentf)
 
 (defun dirvish-curr (&optional frame)
   "Get current dirvish instance in FRAME.
@@ -120,9 +119,6 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (preview-buffers
    ()
    :documentation "holds all file preview buffers in this instance.")
-  (saved-recentf
-   recentf-list
-   :documentation "is the backup of original `recentf-list'.")
   (window-conf
    (current-window-configuration)
    :documentation "is the window configuration given by `current-window-configuration'.")
@@ -170,7 +166,6 @@ given, it is executed to unset the window configuration brought
 by this instance."
   (declare (indent defun))
   `(progn
-    (setq recentf-list (dv-saved-recentf ,dv))
     (unless (dirvish-dired-p ,dv)
       (set-window-configuration (dv-window-conf ,dv)))
     (let ((tran-list (frame-parameter nil 'dirvish--transient)))

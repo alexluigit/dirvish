@@ -53,7 +53,9 @@
     (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer    dirvish-enlarge-ad             :before)
-    (lsp-mode      lsp-deferred                 dirvish-ignore-ad))
+    (lsp-mode      lsp-deferred                 dirvish-ignore-ad)
+    (recentf       recentf-track-opened-file    dirvish-ignore-ad)
+    (recentf       recentf-track-closed-file    dirvish-ignore-ad))
   "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
