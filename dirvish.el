@@ -134,17 +134,15 @@ If REVERSE is non-nil, move to bottom instead."
       (dirvish-with-update t
         (dired-sort-other (string-join (list (dv-ls-switches dv) order) " "))))))
 
-(defun dirvish-quit (&optional keep-frame)
-  "Revert dirvish settings and disable dirvish.
+(defun dirvish-quit ()
+  "Quit current Dirvish.
 
-Delete current frame if it's a dirvish-only frame unless KEEP-FRAME
-is not-nil."
+Delete the frame as well if it's created by `dirvish-new-frame'."
   (interactive)
   (if-let ((dv (dirvish-live-p)))
       (dirvish-deactivate dv)
     (user-error "Not a Dirvish buffer"))
-  (when (and (not keep-frame)
-             (string= (frame-parameter nil 'name) "dirvish-emacs"))
+  (when (string= (frame-parameter nil 'name) "dirvish-emacs")
     (delete-frame)))
 
 (defun dirvish-find-file (&optional file ignore-hist)
