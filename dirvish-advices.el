@@ -191,7 +191,7 @@ Use it as a `:before' advisor to target function."
 (defun dirvish--add-advices ()
   "Add all advices listed in `dirvish-advice-alist'."
   (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
-    (with-eval-after-load file (advice-add sym (or place :around) fn))))
+    (when (require file nil t) (advice-add sym (or place :around) fn))))
 
 (defun dirvish--remove-advices ()
   "Remove all advices listed in `dirvish-advice-alist'."
