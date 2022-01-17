@@ -30,16 +30,13 @@ cache image."
 (defun dirvish--preview-process-fill-str-sentinel (proc _exitcode)
   "A sentinel for dirvish preview process.
 
-When PROC finishes, fill `dv-preview-buffer' with process
-result string."
-  (when-let ((buf (and (dirvish-curr)
-                       (dv-preview-buffer (dirvish-curr)))))
-    (with-current-buffer buf
-      (erase-buffer) (remove-overlays)
-      (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
-        (insert result-str)
-        (ansi-color-apply-on-region
-         (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point)))))))
+When PROC finishes, fill preview buffer with process result."
+  (with-current-buffer (dirvish--get-buffer 'preview)
+    (erase-buffer) (remove-overlays)
+    (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
+      (insert result-str)
+      (ansi-color-apply-on-region
+       (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))))
 
 (defun dirvish--preview-process-update-sentinel (_proc _exitcode)
   "A process sentinel for updating dirvish preview window."
@@ -214,7 +211,7 @@ A PREVIEW-TYPE can be one of following values:
 - `image-cache', similar to `shell', but the CMD should generate
   a cache image, and when the process exits, it fires up a
   preview update."
-  (let ((buf (dv-preview-buffer (dirvish-curr)))
+  (let ((buf (dirvish--get-buffer 'preview))
         (cmd (car-safe payload))
         (args (cdr-safe payload))
         (process-connection-type nil)
