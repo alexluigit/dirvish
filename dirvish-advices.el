@@ -50,6 +50,7 @@
     (dired-narrow  dired-narrow--internal       dirvish-full-update-ad)
     (dired-subtree dired-subtree-insert         dirvish-full-update-save-pos-ad)
     (dired-subtree dired-subtree-remove         dirvish-full-update-ad)
+    (dired-subtree dired-subtree--after-readin  dirvish-ignore-ad)
     (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer    dirvish-enlarge-ad             :before)
