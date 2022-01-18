@@ -130,6 +130,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (index-path
    ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
+  (preview-dispatchers
+   dirvish-preview-dispatchers
+   :documentation "Preview dispatchers used for preview in this instance.")
   (ls-switches
    dired-listing-switches
    :documentation "is the list switches passed to `ls' command.")
