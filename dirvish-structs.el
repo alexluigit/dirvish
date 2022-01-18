@@ -109,10 +109,10 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
    :documentation "TODO.")
   (parent-buffers
    ()
-   :documentation "holds all `dirvish-mode' buffers in this instance.")
+   :documentation "holds all parent buffers in this instance.")
   (parent-windows
    ()
-   :documentation "holds all `dirvish-mode' windows in this instance.")
+   :documentation "holds all parent windows in this instance.")
   (preview-window
    nil
    :documentation "is the window to display preview buffer.")
@@ -200,7 +200,7 @@ by this instance."
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
   (setq display-buffer-alist dirvish-display-buffer-alist)
-  (when (eq major-mode 'dirvish-mode) (dirvish-deactivate (dirvish-curr)))
+  (when-let (dv (dirvish-live-p)) (dirvish-deactivate dv))
   (set-frame-parameter nil 'dirvish--curr dv)
   (run-hooks 'dirvish-activation-hook)
   dv)

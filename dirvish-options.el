@@ -158,7 +158,7 @@ footer."
   :group 'dirvish :type '(choice nil cons))
 
 (defvar dirvish-preview-setup-hook nil
-  "Hook for preview buffer initialization.")
+  "Hook functions for preview buffer initialization.")
 
 (defvar dirvish-activation-hook nil
   "Hook runs after activation of dirvish instance.")
@@ -183,19 +183,6 @@ footer."
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish-child-entry 'permanent-local t)
 (put 'fd-dired-input-fd-args 'permanent-local t)
-
-;;;; Mode keymap
-
-(defvar dirvish-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [remap dired-up-directory]           'dirvish-up-directory)
-    (define-key map [remap end-of-buffer]                'dirvish-go-bottom)
-    (define-key map [remap beginning-of-buffer]          'dirvish-go-top)
-    (define-key map [remap dired-sort-toggle-or-edit]    'dirvish-sort-by-criteria)
-    (define-key map [remap quit-window]                  'dirvish-quit)
-    (define-key map [remap +dired/quit-all]              'dirvish-quit) ; For doom-emacs
-    map)
-  "Dirvish mode map.")
 
 (provide 'dirvish-options)
 ;;; dirvish-options.el ends here

@@ -41,9 +41,10 @@ Dirvish sets `revert-buffer-function' to this function.  See
     (dirvish-setup-dired-buffer)))
 
 (defun dirvish-setup (&optional keep-dired)
-  "Default config for dirvish parent windows."
+  "Default config for dirvish parent windows.
+If KEEP-DIRED is specified, reuse the old Dired buffer."
   (unless keep-dired
-    (dirvish-mode)
+    (dired-mode)
     (setq-local revert-buffer-function #'dirvish-revert)
     (dirvish-setup-dired-buffer))
   (set (make-local-variable 'face-remapping-alist)
@@ -69,7 +70,7 @@ Dirvish sets `revert-buffer-function' to this function.  See
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'window-scroll-functions #'dirvish-update-viewport-h nil :local)
   (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
-  (run-hooks 'dirvish-mode-hook))
+  (dirvish-mode))
 
 (defun dirvish-build-parents ()
   "Create all dirvish parent windows."
@@ -146,9 +147,21 @@ Dirvish sets `revert-buffer-function' to this function.  See
       (dirvish-build-footer))
     (dirvish-build-parents)))
 
-;; TODO: maybe we can remove this
-(define-derived-mode dirvish-mode dired-mode "Dirvish"
-  "Convert Dired buffer to a Dirvish buffer."
+(defvar dirvish-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map dired-mode-map)
+    (define-key map [remap dired-up-directory]        'dirvish-up-directory)
+    (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
+    (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
+    (define-key map [remap dired-sort-toggle-or-edit] 'dirvish-sort-by-criteria)
+    (define-key map [remap quit-window]               'dirvish-quit)
+    (define-key map [remap +dired/quit-all]           'dirvish-quit)
+    map)
+  "Dirvish mode map.")
+
+(define-minor-mode dirvish-mode
+  "For keymap only, it is not a command for users."
+  :keymap dirvish-mode-map
   :group 'dirvish
   :interactive nil)
 

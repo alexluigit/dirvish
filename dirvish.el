@@ -57,7 +57,7 @@
 ;;;;; Dirvish commands
 
 (defun dirvish-other-buffer ()
-  "Replacement for `mode-line-other-buffer' in `dirvish-mode'."
+  "Replacement for `mode-line-other-buffer' in Dirvish."
   (interactive)
   (dirvish-find-file (ring-ref dirvish-history-ring 1)))
 
