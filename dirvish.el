@@ -190,16 +190,18 @@ update `dirvish-history-ring'."
 
 ;;;###autoload
 (defun dirvish (&optional path)
-  "Open Dirvish with PATH in full frame.
-
-PATH defaults to variable `buffer-file-name' if not given."
-  (interactive)
+  "Open Dirvish with optional PATH in full frame.
+If called with \\[universal-arguments], prompt for PATH,
+otherwise it defaults to variable `buffer-file-name'."
+  (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
   (dirvish-here path :depth dirvish-depth))
 
 ;;;###autoload
 (defun dirvish-dired (&optional path other-window)
-  "Open a single window dirvish for PATH.
-If OTHER-WINDOW is non-nil, do it in other window."
+  "Open a single window dirvish with optional PATH.
+If called with \\[universal-arguments], prompt for PATH,
+otherwise it defaults to variable `buffer-file-name'.  Execute it
+in other window when OTHER-WINDOW is non-nil."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: ")) nil))
   (and other-window (switch-to-buffer-other-window "*scratch*")) ; avoid layered dirvish instance
   (dirvish-here path :depth 0))
