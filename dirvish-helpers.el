@@ -139,16 +139,6 @@ within the viewport."
            (window-live-p win)
            (delete-window win)))))
 
-(defun dirvish--remap (map)
-  "Doc."
-    (define-key map [remap dired-up-directory]        'dirvish-up-directory)
-    (define-key map [remap left-char]                 'dirvish-up-directory)
-    (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
-    (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
-    (define-key map [remap dired-sort-toggle-or-edit] 'dirvish-sort-by-criteria)
-    (define-key map [remap quit-window]               'dirvish-quit)
-    (define-key map [remap +dired/quit-all]           'dirvish-quit))
-
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))

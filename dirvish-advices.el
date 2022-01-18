@@ -125,7 +125,7 @@ FILE-NAME are the same args in `dired-jump'."
     (dirvish-setup-dired-buffer)))
 
 (defun dirvish-mode-ad (&rest _)
-  "An advisor to enable `dirvish-mode' and apply its setup."
+  "Apply `dirvish-setup' to current buffer."
   (dirvish-with-update t (dirvish-setup)))
 
 (defun dirvish-fd-ad (&rest _)
@@ -144,8 +144,7 @@ FILE-NAME are the same args in `dired-jump'."
         (unless (dirvish-dired-p old-dv)
           (setf (dv-preview-window new-dv) p-win))
         (dirvish-start-transient old-dv new-dv)))
-    (dirvish-setup 'keep-dired)
-    (dirvish--remap (current-local-map))))
+    (dirvish-setup 'keep-dired)))
 
 (defun dirvish-recover-cursor-ad (&rest _)
   "An advisor to recover cursor in current buffer."
