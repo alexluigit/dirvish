@@ -200,7 +200,10 @@ by this instance."
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
   (setq display-buffer-alist dirvish-display-buffer-alist)
-  (when-let (dv (dirvish-live-p)) (dirvish-deactivate dv))
+  (when-let (old-dv (dirvish-live-p))
+    (unless (dirvish-dired-p old-dv)
+      (setf (dv-window-conf dv) (dv-window-conf old-dv)))
+    (dirvish-deactivate old-dv))
   (set-frame-parameter nil 'dirvish--curr dv)
   (run-hooks 'dirvish-activation-hook)
   dv)
