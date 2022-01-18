@@ -14,6 +14,19 @@
 (require 'dirvish-options)
 (require 'dired-x)
 
+(defmacro dirvish-here (&optional path &rest keywords)
+  "Open Dirvish with PATH and KEYWORDS.
+
+PATH defaults to variable `buffer-file-name'.
+KEYWORDS are slot key-values for `dirvish-new'."
+  (declare (indent defun))
+  (interactive)
+  `(let* ((file (or ,path buffer-file-name))
+          (dir (if file (expand-file-name (file-name-directory file))
+                 (expand-file-name default-directory))))
+     (dirvish-activate (dirvish-new ,@keywords))
+     (dirvish-find-file dir)))
+
 (defmacro dirvish-with-update (full-update &rest body)
   "Do necessary cleanup, execute BODY, update current dirvish.
 

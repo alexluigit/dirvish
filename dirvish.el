@@ -35,6 +35,7 @@
 (require 'dirvish-structs)
 (require 'dirvish-builder)
 (require 'dirvish-advices)
+(require 'dirvish-helpers)
 
 ;;;; Setup
 
@@ -188,17 +189,12 @@ update `dirvish-history-ring'."
           (cl-substitute #'dired-noselect #'dirvish-dired find-directory-functions))))
 
 ;;;###autoload
-(defun dirvish (&optional path depth)
-  "Open a dirvish instance.
+(defun dirvish (&optional path)
+  "Open Dirvish with PATH in full frame.
 
-PATH defaults to variable `buffer-file-name'.
-DEPTH defaults to `dirvish-depth'."
+PATH defaults to variable `buffer-file-name' if not given."
   (interactive)
-  (let* ((file (or path buffer-file-name))
-         (dir (if file (expand-file-name (file-name-directory file))
-                (expand-file-name default-directory))))
-    (dirvish-activate (dirvish-new :depth (or depth dirvish-depth)))
-    (dirvish-find-file dir)))
+  (dirvish-here path :depth dirvish-depth))
 
 ;;;###autoload
 (defun dirvish-dired (&optional path other-window)
@@ -206,7 +202,7 @@ DEPTH defaults to `dirvish-depth'."
 If OTHER-WINDOW is non-nil, do it in other window."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: ")) nil))
   (and other-window (switch-to-buffer-other-window "*scratch*")) ; avoid layered dirvish instance
-  (dirvish path 0))
+  (dirvish-here path :depth 0))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
