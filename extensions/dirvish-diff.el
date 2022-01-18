@@ -14,6 +14,8 @@
 
 ;;; Code:
 
+(declare-function magit-stage-file "magit-apply")
+(declare-function magit-unstage-file "magit-apply")
 (require 'dirvish)
 
 (defvar dirvish-diff-dispatchers
@@ -26,6 +28,24 @@
   "Doc."
   (when (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)) (vc-diff))
     '(buffer . "*vc-diff*")))
+
+(defun dirvish--magit-on-files (fn &optional fileset)
+  "Execute magit function FN to FILESET."
+  (unless (featurep 'magit) (user-error "Dirvish: install magit.el to use this command"))
+  (setq fileset (or fileset (dired-get-marked-files)))
+  (cl-dolist (file fileset) (funcall fn file))
+  (dired-unmark-all-marks)
+  (revert-buffer))
+
+(defun dirvish-magit-stage-files (&optional fileset)
+  "Stage vc diffs of FILESET using `magit-stage-file'."
+  (interactive)
+  (dirvish--magit-on-files #'magit-stage-file fileset))
+
+(defun dirvish-magit-unstage-files (&optional fileset)
+  "Unstage vc diffs of FILESET using `magit-unstage-file'."
+  (interactive)
+  (dirvish--magit-on-files #'magit-unstage-file fileset))
 
 ;;;###autoload
 (defun dirvish-diff (&optional path)
