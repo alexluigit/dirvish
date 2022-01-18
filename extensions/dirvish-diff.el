@@ -25,8 +25,11 @@
     dirvish-preview-default-dispatcher))
 
 (defun dirvish-vc-diff-dispatcher (_file _dv)
-  "Doc."
-  (when (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)) (vc-diff))
+  "A dispatcher function for `dirvish-diff-dispatchers'.
+If `vc-diff' returns t, then show its result buffer as preview."
+  (when (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
+                  ((symbol-function 'message) #'ignore))
+          (vc-diff))
     '(buffer . "*vc-diff*")))
 
 (defun dirvish--magit-on-files (fn &optional fileset)
