@@ -34,8 +34,7 @@
 
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
-Dirvish sets `revert-buffer-function' to this function.  See
-`dired-revert'."
+Dirvish sets `revert-buffer-function' to this function."
   (dirvish-with-update t
     (dired-revert)
     (dirvish-setup-dired-buffer)))
