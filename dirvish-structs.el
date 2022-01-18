@@ -173,8 +173,9 @@ by this instance."
       (set-window-configuration (dv-window-conf ,dv)))
     (let ((tran-list (frame-parameter nil 'dirvish--transient)))
       (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
-    (mapc #'kill-buffer (dv-parent-buffers ,dv))
-    (mapc #'kill-buffer (dv-preview-buffers ,dv))
+    (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
+      (mapc #'kill-when-live (dv-parent-buffers ,dv))
+      (mapc #'kill-when-live (dv-preview-buffers ,dv)))
     (remhash (dv-name ,dv) (dirvish-hash))
     ,@body))
 
