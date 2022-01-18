@@ -241,13 +241,10 @@ A PREVIEW-TYPE can be one of following values:
            (set-process-sentinel proc 'dirvish--preview-process-fill-str-sentinel))))
       buf)))
 
-(defun dirvish-get-preview-buffer (file &optional dispatchers)
-  "Create the preview buffer for FILE.
-If DISPATCHERS is not given, defaults to
-`dirvish-preview-dispatchers'."
-  (unless dispatchers (setq dispatchers dirvish-preview-dispatchers))
+(defun dirvish-get-preview-buffer (file)
+  "Create the preview buffer for FILE."
   (and (file-directory-p file) (setq file (file-name-as-directory file)))
-  (cl-loop for dispatcher in dispatchers
+  (cl-loop for dispatcher in (dv-preview-dispatchers (dirvish-curr))
            for (dv-type . payload) = (funcall dispatcher file (dirvish-curr))
            for buffer = (dirvish-preview-dispatch dv-type payload)
            until dv-type
