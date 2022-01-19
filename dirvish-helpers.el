@@ -110,7 +110,7 @@ within the viewport."
   (when (dirvish-curr)
     (let* ((str (format-mode-line dirvish-header-line-format))
            (scale (if (eq dirvish-header-style 'large) 2 1))
-           (ht (1+ (* scale (max dirvish-body-fontsize-increment 0.1))))
+           (ht (1+ (* scale (max dirvish-body-zoom 0.1))))
            (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
            (max-width (floor (/ win-width ht))))
       (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))

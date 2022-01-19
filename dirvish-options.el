@@ -65,7 +65,9 @@ leaving it for future dispatchers.  For details see
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-body-fontsize-increment 0.1
+(define-obsolete-variable-alias 'dirvish-body-fontsize-increment 'dirvish-body-zoom "0.9.9")
+
+(defcustom dirvish-body-zoom 0.1
   "Font size increment in dirvish body.
 For example, if this value is 0.1, the font size in dirvish body
 will be scaled to 110% (1 + 0.1)."

@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 
-;;; Shims for other packages.
+;;; Accommodations for other packages.
 
 ;;; Code:
 
