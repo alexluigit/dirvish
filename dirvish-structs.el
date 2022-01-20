@@ -232,7 +232,7 @@ by this instance."
 (defun dirvish-dired-p (&optional dv)
   "Return t if DV is a `dirvish-dired' instance.
 DV defaults to the current dirvish instance if not provided."
-  (when-let ((dv (or dv (dirvish-curr)))) (eq (dv-depth dv) 0)))
+  (when-let ((dv (or dv (dirvish-curr)))) (eq (dv-depth dv) -1)))
 
 ;;;###autoload
 (defun dirvish-live-p (&optional win)

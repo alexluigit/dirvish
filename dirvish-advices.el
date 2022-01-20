@@ -65,7 +65,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (when-let ((dv (dirvish-live-p))) (dirvish-deactivate dv))
   (apply fn dirname (and switches (list switches)))
-  (dirvish-activate (dirvish-new :depth 0))
+  (dirvish-activate (dirvish-new :depth -1))
   (when switches
     (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
@@ -88,7 +88,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when-let ((dv (dirvish-live-p)))
     (unless (dirvish-dired-p dv) (dirvish-deactivate dv)))
   (switch-to-buffer-other-window "*scratch*")
-  (dirvish-activate (dirvish-new :depth 0))
+  (dirvish-activate (dirvish-new :depth -1))
   (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
 
@@ -98,7 +98,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab "*scratch*")
   (dirvish-drop)
-  (dirvish-activate (dirvish-new :depth 0))
+  (dirvish-activate (dirvish-new :depth -1))
   (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
 

@@ -46,7 +46,7 @@ one of categories in `dirvish-peek-categories'."
          new-dv)
     (when (and preview-category
                (not (and old-dv (dv-preview-window old-dv))))
-      (setq new-dv (dirvish-activate (dirvish-new :depth 0)))
+      (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
       (push (selected-window) (dv-parent-windows new-dv))
       (let ((next-win (next-window)))
         (setf (dv-preview-window new-dv) next-win)))
