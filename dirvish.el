@@ -204,7 +204,7 @@ otherwise it defaults to variable `buffer-file-name'.  Execute it
 in other window when OTHER-WINDOW is non-nil."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish-dired: ")) nil))
   (and other-window (switch-to-buffer-other-window "*scratch*")) ; avoid layered dirvish instance
-  (dirvish-here path :depth 0))
+  (dirvish-here path :depth -1))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
