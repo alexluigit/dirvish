@@ -14,6 +14,7 @@
 (declare-function dirvish--remove-advices "dirvish-advices")
 (require 'dirvish-options)
 (require 'ansi-color)
+(require 'cl-lib)
 
 (defun dirvish-curr (&optional frame)
   "Get current dirvish instance in FRAME.

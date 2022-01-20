@@ -12,7 +12,6 @@
 
 (declare-function dirvish-find-file "dirvish")
 (defalias 'dirvish-enlarge-ad #'dirvish--enlarge)
-(require 'cl-lib)
 (require 'dirvish-builder)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
