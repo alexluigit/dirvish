@@ -9,7 +9,6 @@
 ;;; Code:
 
 (declare-function image-get-display-property "image-mode")
-(require 'ansi-color)
 (require 'so-long)
 (require 'mailcap)
 (require 'dirvish-structs)
@@ -33,10 +32,11 @@ cache image."
 When PROC finishes, fill preview buffer with process result."
   (with-current-buffer (dirvish--get-buffer 'preview)
     (erase-buffer) (remove-overlays)
-    (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string))))
+    (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string)))
+          (p-min (point-min)))
       (insert result-str)
       (ansi-color-apply-on-region
-       (point-min) (progn (goto-char (point-min)) (forward-line (frame-height)) (point))))))
+       p-min (progn (goto-char p-min) (forward-line (frame-height)) (point))))))
 
 (defun dirvish--preview-process-update-sentinel (_proc _exitcode)
   "A process sentinel for updating dirvish preview window."

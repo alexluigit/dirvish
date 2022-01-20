@@ -13,6 +13,7 @@
 (declare-function dirvish--add-advices "dirvish-advices")
 (declare-function dirvish--remove-advices "dirvish-advices")
 (require 'dirvish-options)
+(require 'ansi-color)
 
 (defun dirvish-curr (&optional frame)
   "Get current dirvish instance in FRAME.
@@ -46,6 +47,12 @@ If BODY is non-nil, create the buffer and execute BODY in it."
             (buf (get-buffer-create h-name)))
        (with-current-buffer buf ,@body buf))))
 
+(defun dirvish-update-ansicolor-h (_win pos)
+  "Update dirvish ansicolor in preview window from POS."
+  (with-current-buffer (current-buffer)
+    (ansi-color-apply-on-region
+     pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
+
 (defun dirvish-init-frame (&optional frame)
   "Initialize the dirvishs system in FRAME.
 By default, this uses the current frame."
@@ -54,7 +61,8 @@ By default, this uses the current frame."
       (set-frame-parameter frame 'dirvish--transient '())
       (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
       (dirvish--get-buffer 'preview
-        (setq-local mode-line-format nil))
+        (setq-local mode-line-format nil)
+        (add-hook 'window-scroll-functions #'dirvish-update-ansicolor-h nil :local))
       (dirvish--get-buffer 'header
         (setq-local header-line-format nil)
         (setq-local window-size-fixed 'height)
