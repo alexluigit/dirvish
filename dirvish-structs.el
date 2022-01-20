@@ -221,6 +221,7 @@ by this instance."
   "Deactivate dirvish instance DV."
   (dirvish-kill dv
     (unless (dirvish-get-all 'name t)
+      (setq other-window-scroll-buffer nil)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (setq display-buffer-alist dirvish-saved-display-buffer-alist)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))

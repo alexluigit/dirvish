@@ -258,6 +258,7 @@ A PREVIEW-TYPE can be one of following values:
            (index (or (dv-index-path curr-dv) ""))
            (preview-buffer (dirvish-get-preview-buffer index)))
       (when (window-live-p preview-window)
+        (setq other-window-scroll-buffer preview-buffer)
         (set-window-buffer preview-window preview-buffer))
       (unless (memq preview-buffer orig-buffer-list)
         (push preview-buffer (dv-preview-buffers curr-dv)))
