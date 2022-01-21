@@ -139,11 +139,12 @@ FILE-NAME are the same args in `dired-jump'."
       ;;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-region pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
     (unless (memq (dv-transient old-dv) (frame-parameter nil 'dirvish--transient))
-      (let ((new-dv (dirvish-new :depth (dv-depth old-dv))))
-        (dirvish-activate new-dv)
+      (let ((new-dv (dirvish-new
+                      :depth (dv-depth old-dv)
+                      :window-conf (current-window-configuration))))
+        (dirvish-start-transient old-dv new-dv)
         (unless (dirvish-dired-p old-dv)
-          (setf (dv-preview-window new-dv) p-win))
-        (dirvish-start-transient old-dv new-dv)))
+          (setf (dv-preview-window new-dv) p-win))))
     (dirvish-setup 'keep-dired)))
 
 (defun dirvish-recover-cursor-ad (&rest _)

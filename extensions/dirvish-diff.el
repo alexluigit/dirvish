@@ -58,6 +58,7 @@ otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish-diff: "))))
   (dirvish-here path
     :depth dirvish-depth
+    :window-conf (current-window-configuration)
     :preview-dispatchers dirvish-diff-dispatchers))
 
 (provide 'dirvish-diff)

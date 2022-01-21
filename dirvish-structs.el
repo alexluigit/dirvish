@@ -129,7 +129,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
    ()
    :documentation "holds all file preview buffers in this instance.")
   (window-conf
-   (current-window-configuration)
+   nil
    :documentation "is the window configuration given by `current-window-configuration'.")
   (root-window
    (progn
@@ -178,21 +178,22 @@ given, it is executed to unset the window configuration brought
 by this instance."
   (declare (indent defun))
   `(progn
-    (unless (dirvish-dired-p ,dv)
-      (set-window-configuration (dv-window-conf ,dv)))
-    (let ((tran-list (frame-parameter nil 'dirvish--transient)))
-      (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
-    (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
-      (mapc #'kill-when-live (dv-parent-buffers ,dv))
-      (mapc #'kill-when-live (dv-preview-buffers ,dv)))
-    (remhash (dv-name ,dv) (dirvish-hash))
-    ,@body))
+     (when-let ((win-conf (dv-window-conf ,dv)))
+       (set-window-configuration win-conf))
+     (let ((tran-list (frame-parameter nil 'dirvish--transient)))
+       (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
+     (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
+       (mapc #'kill-when-live (dv-parent-buffers ,dv))
+       (mapc #'kill-when-live (dv-preview-buffers ,dv)))
+     (remhash (dv-name ,dv) (dirvish-hash))
+     ,@body))
 
 (defun dirvish-start-transient (old-dv new-dv)
   "Doc."
   (setf (dv-transient new-dv) old-dv)
   (let ((tran-list (frame-parameter nil 'dirvish--transient)))
-    (set-frame-parameter nil 'dirvish--transient (push old-dv tran-list))))
+    (set-frame-parameter nil 'dirvish--transient (push old-dv tran-list)))
+  (dirvish-activate new-dv))
 
 (defun dirvish-end-transient (tran)
   "Doc."
@@ -211,9 +212,13 @@ by this instance."
   (setq tab-bar-new-tab-choice "*scratch*")
   (setq display-buffer-alist dirvish-display-buffer-alist)
   (when-let (old-dv (dirvish-live-p))
-    (unless (dirvish-dired-p old-dv)
-      (setf (dv-window-conf dv) (dv-window-conf old-dv)))
-    (dirvish-deactivate old-dv))
+    (cond ((dv-transient dv) nil)
+          ((and (not (dirvish-dired-p old-dv))
+                (not (dirvish-dired-p dv)))
+           (setf (dv-window-conf dv) (dv-window-conf old-dv))
+           (setf (dv-window-conf old-dv) nil)
+           (dirvish-deactivate old-dv))
+          (t (dirvish-deactivate old-dv))))
   (set-frame-parameter nil 'dirvish--curr dv)
   (run-hooks 'dirvish-activation-hook)
   dv)

@@ -43,7 +43,7 @@ The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vi
 
 *** Installation
 
-Dirvish is available from [[https://melpa.org][Melpa]].
+Dirvish is available on [[https://melpa.org][Melpa]].
 
 **** For =package.el= user
 
