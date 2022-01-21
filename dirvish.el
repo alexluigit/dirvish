@@ -169,7 +169,10 @@ update `dirvish-history-ring'."
             (setf (dv-index-path dv) (or (dired-get-filename nil t) entry))
             (when (dirvish-p dv-tran)
               (dirvish-activate
-               (dirvish-new :depth dv-depth :transient (dv-name dv-tran))))
+               (dirvish-new
+                 :depth dv-depth
+                 :transient (dv-name dv-tran)
+                 :window-conf (current-window-configuration))))
             (dirvish-build))
         (find-file entry)))))
 
@@ -194,7 +197,7 @@ update `dirvish-history-ring'."
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-here path :depth dirvish-depth))
+  (dirvish-here path :depth dirvish-depth :window-conf (current-window-configuration)))
 
 ;;;###autoload
 (defun dirvish-dired (&optional path other-window)
