@@ -31,11 +31,7 @@
 ;;;; Deps / Modules
 
 (require 'ring)
-(require 'dirvish-options)
-(require 'dirvish-structs)
-(require 'dirvish-builder)
 (require 'dirvish-advices)
-(require 'dirvish-helpers)
 
 ;;;; Setup
 

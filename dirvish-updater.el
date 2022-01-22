@@ -54,7 +54,7 @@
   "Return a string showing current Dired file sort criteria."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
     (format " %s %s "
-            (propertize "Sorter:" 'face 'bold)
+            (propertize "Sort:" 'face 'bold)
             (propertize (car (dv-sort-criteria (dirvish-curr))) 'face 'font-lock-type-face))))
 
 (defun dirvish--mode-line-filter ()

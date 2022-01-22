@@ -69,7 +69,15 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'window-scroll-functions #'dirvish-update-viewport-h nil :local)
   (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
-  (dirvish-mode))
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map (current-local-map))
+    (define-key map [remap dired-up-directory]        'dirvish-up-directory)
+    (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
+    (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
+    (define-key map [remap dired-sort-toggle-or-edit] 'dirvish-sort-by-criteria)
+    (define-key map [remap quit-window]               'dirvish-quit)
+    (define-key map [remap +dired/quit-all]           'dirvish-quit)
+    (use-local-map map)))
 
 (defun dirvish-build-parents ()
   "Create all dirvish parent windows."
@@ -145,24 +153,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
       (dirvish-build-header)
       (dirvish-build-footer))
     (dirvish-build-parents)))
-
-(defvar dirvish-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map dired-mode-map)
-    (define-key map [remap dired-up-directory]        'dirvish-up-directory)
-    (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
-    (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
-    (define-key map [remap dired-sort-toggle-or-edit] 'dirvish-sort-by-criteria)
-    (define-key map [remap quit-window]               'dirvish-quit)
-    (define-key map [remap +dired/quit-all]           'dirvish-quit)
-    map)
-  "Dirvish mode map.")
-
-(define-minor-mode dirvish-mode
-  "For keymap only, it is not a command for users."
-  :keymap dirvish-mode-map
-  :group 'dirvish
-  :interactive nil)
 
 (provide 'dirvish-builder)
 ;;; dirvish-builder.el ends here
