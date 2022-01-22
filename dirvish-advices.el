@@ -45,7 +45,7 @@
     (dired-aux     dired-add-entry              dirvish-lazy-update-ad)
     (dired-aux     dired-remove-entry           dirvish-lazy-update-ad)
     (dired-aux     dired-kill-line              dirvish-lazy-update-ad)
-    (dired-aux     dired-do-kill-lines          dirvish-lazy-update-ad)
+    (dired-aux     dired-do-kill-lines          dirvish-full-update-ad)
     (dired-narrow  dired-narrow--internal       dirvish-full-update-ad)
     (dired-subtree dired-subtree-insert         dirvish-full-update-save-pos-ad)
     (dired-subtree dired-subtree-remove         dirvish-full-update-ad)
