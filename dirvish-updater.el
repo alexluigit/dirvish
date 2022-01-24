@@ -12,6 +12,10 @@
 
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
+(declare-function dired-filter--describe-filters "dired-filter")
+(defvar dired-filter-mode)
+(defvar dired-filter-show-filters)
+(defvar dired-filter-revert)
 (defvar fd-dired-input-fd-args)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
@@ -19,6 +23,10 @@
 (eval-when-compile
   (require 'subr-x)
   (require 'find-dired))
+
+(when (require 'dired-filter nil t)
+  (setq dired-filter-show-filters nil)
+  (setq dired-filter-revert 'always))
 
 (defun dirvish--header-line-path ()
   "Compose header string."
@@ -60,9 +68,10 @@
 (defun dirvish--mode-line-filter ()
   "Return a string showing active Dired file filter."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
-    (format " %s %s "
-            (propertize "Filter:" 'face 'bold)
-            (propertize (if dired-omit-mode "ON" "OFF") 'face 'font-lock-doc-face))))
+    (cond (dired-filter-mode
+           (format " %s %s " (propertize "Filters:" 'face 'bold)
+                   (dired-filter--describe-filters)))
+          (dired-omit-mode (propertize "[Omit]" 'face 'bold)))))
 
 (defun dirvish--mode-line-fd-args ()
   "Return a string showing current `find/fd' command args."
