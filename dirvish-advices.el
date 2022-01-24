@@ -49,7 +49,7 @@
     (dired-narrow  dired-narrow--internal       dirvish-full-update-ad)
     (dired-subtree dired-subtree-insert         dirvish-full-update-save-pos-ad)
     (dired-subtree dired-subtree-remove         dirvish-full-update-ad)
-    (dired-subtree dired-subtree--after-readin  dirvish-ignore-ad)
+    (dired-subtree dired-subtree--after-readin  dirvish-subtree-recover-ad)
     (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer    dirvish-enlarge-ad             :before)
@@ -167,6 +167,12 @@ FILE-NAME are the same args in `dired-jump'."
 (defun dirvish-full-update-save-pos-ad (fn &rest args)
   "Apply FN with ARGS, restore point, then update dirvish frame."
   (dirvish-with-update t (save-excursion (apply fn args))))
+
+(defun dirvish-subtree-recover-ad (fn &rest args)
+  "An advisor for FN `dired--subtree-after-readin' with its ARGS."
+  (advice-remove 'dired-subtree-insert #'dirvish-full-update-save-pos-ad)
+  (dirvish-with-update t (save-excursion (apply fn args)))
+  (advice-add 'dired-subtree-insert :around #'dirvish-full-update-save-pos-ad))
 
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN with ARGS."
