@@ -86,9 +86,6 @@
 By default update icons, padding, and current line.  If
 SKIP-ICONS is non-nil, do not update icons.  If SKIP-PADDING is
 non-nil, do not update padding."
-  (when (and dirvish-show-icons (not skip-icons))
-    (remove-overlays (point-min) (point-max) 'dirvish-icons t)
-    (dirvish-render 'dirvish--render-icon))
   (when (and (> dirvish-body-zoom 0) (not skip-padding))
     (save-excursion
       (let ((o (make-overlay (point-min) (point-max))))
@@ -100,6 +97,9 @@ non-nil, do not update padding."
               (end (line-beginning-position 2))
               (ol (make-overlay beg end)))
     (when dirvish-show-icons
+      (unless skip-icons
+        (remove-overlays (point-min) (point-max) 'dirvish-icons t)
+        (dirvish-render 'dirvish--render-icon))
       (remove-overlays beg end 'dirvish-icons t)
       (dirvish--render-icon pos 'highlight))
     (overlay-put ol 'dirvish-body t)
