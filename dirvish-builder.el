@@ -43,7 +43,7 @@ Dirvish sets `revert-buffer-function' to this function."
   "Default config for dirvish parent windows.
 If KEEP-DIRED is specified, reuse the old Dired buffer."
   (unless keep-dired
-    (dired-mode)
+    (dirvish-mode)
     (setq-local revert-buffer-function #'dirvish-revert)
     (dirvish-setup-dired-buffer))
   (set (make-local-variable 'face-remapping-alist)
@@ -77,7 +77,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (define-key map [remap dired-sort-toggle-or-edit] 'dirvish-sort-by-criteria)
     (define-key map [remap quit-window]               'dirvish-quit)
     (define-key map [remap +dired/quit-all]           'dirvish-quit)
-    (use-local-map map)))
+    (use-local-map map))
+  (setq-local dirvish--buffer-initialized t))
 
 (defun dirvish-build-parents ()
   "Create all dirvish parent windows."
@@ -87,7 +88,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (dv (dirvish-curr))
          (depth (dv-depth dv))
          (i 0))
-    (dirvish-setup)
+    (unless dirvish--buffer-initialized (dirvish-setup))
     (unless (dirvish-dired-p dv)
       (add-hook 'dired-hide-details-mode-hook #'dirvish-hide-details-h nil :local))
     (while (and (< i depth) (not (string= current parent)))
@@ -153,6 +154,10 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
       (dirvish-build-header)
       (dirvish-build-footer))
     (dirvish-build-parents)))
+
+(define-derived-mode dirvish-mode dired-mode "Dirvish"
+  "Convert Dired buffer to a Dirvish buffer."
+  :group 'dirvish :interactive nil)
 
 (provide 'dirvish-builder)
 ;;; dirvish-builder.el ends here

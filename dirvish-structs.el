@@ -136,6 +136,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
      (when (window-parameter nil 'window-side) (delete-window))
      (frame-selected-window))
    :documentation "is the main dirvish window.")
+  (root-dir-buf-alist
+   ()
+   :documentation "TODO.")
   (index-path
    ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
