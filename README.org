@@ -285,7 +285,6 @@ aims to:
 
 - Bugs are expected on Windows since dirvish has not been tested on it.
 - *WIP*: compatibility issues with some third-party dired related packages.
-- *WIP*: marks does not display correctly when revisit the same dirvish buffer.
 
 Feel free to report issues.
 

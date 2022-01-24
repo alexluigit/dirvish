@@ -152,7 +152,8 @@ update `dirvish-history-ring'."
          (dv-depth (dv-depth dv)))
     (when entry
       (if (file-directory-p entry)
-          (let* ((hist (directory-file-name entry))
+          (let* ((entry (file-name-as-directory (expand-file-name entry)))
+                 (hist (directory-file-name entry))
                  (sorter (cdr (dv-sort-criteria dv)))
                  (switches (string-join (list (dv-ls-switches dv) sorter) " "))
                  enable-dir-local-variables)
@@ -160,7 +161,7 @@ update `dirvish-history-ring'."
               (when (or (ring-empty-p dirvish-history-ring)
                         (not (eq hist (ring-ref dirvish-history-ring 0))))
                 (ring-insert dirvish-history-ring hist)))
-            (switch-to-buffer (dired-noselect entry switches))
+            (switch-to-buffer (dirvish--buffer-for-dir dv entry switches))
             (setq dirvish-child-entry (or bname curr-dir))
             (setf (dv-index-path dv) (or (dired-get-filename nil t) entry))
             (when (dirvish-p dv-tran)

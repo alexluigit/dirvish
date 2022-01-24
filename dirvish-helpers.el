@@ -152,6 +152,16 @@ within the viewport."
            (window-live-p win)
            (delete-window win)))))
 
+(defun dirvish--buffer-for-dir (dv entry switches)
+  "Return the dirvish buffer in DV for ENTRY.
+If the buffer is not available, create it with `ls' SWITCHES."
+  (let* ((root-dir-buf (dv-root-dir-buf-alist dv))
+         (buffer (alist-get entry root-dir-buf nil nil #'equal)))
+    (unless buffer
+      (setq buffer (dired-noselect entry switches))
+      (push (cons entry buffer) (dv-root-dir-buf-alist dv)))
+    buffer))
+
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
