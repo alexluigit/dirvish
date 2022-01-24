@@ -235,18 +235,26 @@ still needs work, but generally Dirvish works fine with the Dired ecosystem.
 
   ;; Narrow a dired buffer to the files matching a string.
   (use-package dired-narrow
-    :config
-    (bind-key "C-c C-n" 'dired-narrow dired-mode-map))
+    :bind
+    (:map dired-mode-map
+          ("C-c C-n" . dired-narrow)))
 
   ;; A poor man's treemacs
   (use-package dired-subtree
-    :config
-    (bind-key "TAB" 'dired-subtree-toggle dired-mode-map))
+    :bind
+    (:map dired-mode-map
+          ("TAB" . dired-subtree-toggle)))
+
+  (use-package dired-filter
+    :bind
+    (:map dired-mode-map
+          ([remap dired-omit-mode] . dired-filter-mode)))
 
   ;; Drop-in replacement for find-dired
   (use-package fd-dired
-    :config
-    (bind-key "C-c C-f" 'fd-dired dired-mode-map))
+    :bind
+    (:map dired-mode-map
+          ("C-c C-f" . fd-dired)))
 
   (use-package dirvish
     :config
