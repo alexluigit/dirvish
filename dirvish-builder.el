@@ -65,7 +65,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                                 '((:eval (dirvish-format-mode-line)))))
     (setq header-line-format (and owp dirvish-header-line-format
                                   '((:eval (format-mode-line dirvish-header-line-format))))))
-  (dired-hide-details-mode t)
+  (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'window-scroll-functions #'dirvish-update-viewport-h nil :local)
   (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
@@ -74,8 +74,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
     (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
     (define-key map [remap quit-window]               'dirvish-quit)
-    (use-local-map map))
-  (setq-local dirvish--buffer-initialized t))
+    (use-local-map map)))
 
 (defun dirvish-build-parents ()
   "Create all dirvish parent windows."
@@ -85,7 +84,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (dv (dirvish-curr))
          (depth (dv-depth dv))
          (i 0))
-    (unless dirvish--curr-name (dirvish-setup))
+    (dirvish-setup dirvish--curr-name)
     (unless (dirvish-dired-p dv)
       (add-hook 'dired-hide-details-mode-hook #'dirvish-hide-details-h nil :local))
     (while (and (< i depth) (not (string= current parent)))
