@@ -71,12 +71,9 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map (current-local-map))
-    (define-key map [remap dired-up-directory]        'dirvish-up-directory)
     (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
     (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
-    (define-key map [remap dired-sort-toggle-or-edit] 'dirvish-sort-by-criteria)
     (define-key map [remap quit-window]               'dirvish-quit)
-    (define-key map [remap +dired/quit-all]           'dirvish-quit)
     (use-local-map map))
   (setq-local dirvish--buffer-initialized t))
 

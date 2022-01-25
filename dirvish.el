@@ -58,18 +58,18 @@
   (interactive)
   (dirvish-find-file (ring-ref dirvish-history-ring 1)))
 
-(defun dirvish-up-directory ()
-  "Move to parent directory."
-  (interactive)
+(defun dirvish-up-directory (&optional other-window)
+  "Run Dirvish on parent directory of current directory.
+If OTHER-WINDOW (the optional prefix arg), display the parent
+directory in another window."
+  (interactive "P")
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current)))
     (if (string= parent current)
-        (when (eq system-type 'windows-nt)
-          (let* ((output (shell-command-to-string "wmic logicaldisk get name"))
-                 (drives (cdr (split-string output)))
-                 (drive (completing-read "Select drive: " drives)))
-            (when drive (dirvish-find-file drive))))
-      (dirvish-find-file parent t))))
+        (user-error "Dirvish: you're in root directory")
+      (if other-window
+          (dirvish-dired parent t)
+        (dirvish-find-file parent t)))))
 
 (defun dirvish-go-top (&optional reverse)
   "Move to top of dirvish buffer.
@@ -131,7 +131,8 @@ If REVERSE is non-nil, move to bottom instead."
 
 Delete the frame as well if it's created by `dirvish-new-frame'."
   (interactive)
-  (if-let ((dv (dirvish-live-p)))
+  (if-let ((dv (and dirvish--curr-name
+                    (gethash dirvish--curr-name (dirvish-hash)))))
       (dirvish-deactivate dv)
     (user-error "Not a Dirvish buffer"))
   (when (string= (frame-parameter nil 'name) "dirvish-emacs")
