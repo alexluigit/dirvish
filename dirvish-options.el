@@ -97,7 +97,7 @@ file deletion when you have multiple disk drives."
   :group 'dirvish :type 'string)
 
 (defcustom dirvish-icon-monochrome t
-  "Whether icon face uses `face-at-point'."
+  "Whether icon face uses `'dirvish-icon-face'."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-icon-v-offset 0.01
@@ -164,6 +164,17 @@ footer."
 
 (defvar dirvish-activation-hook nil
   "Hook runs after activation of dirvish instance.")
+
+;;;; Faces
+
+(defgroup dirvish-faces nil
+  "A better Dired."
+  :group 'dirvish)
+
+(defface dirvish-icon-face
+  '((t (:inherit font-lock-comment-face)))
+  "Face used for dirvish icons."
+  :group 'dired-faces)
 
 ;;;; Internal variables
 
