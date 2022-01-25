@@ -180,11 +180,10 @@ footer."
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
 (defvar dirvish-repeat-timers '())
-(defvar-local dirvish-child-entry nil)
+(defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)
-(defvar-local dirvish--buffer-initialized nil)
 (put 'dired-subdir-alist 'permanent-local t)
-(put 'dirvish-child-entry 'permanent-local t)
+(put 'dirvish--child-entry 'permanent-local t)
 (put 'fd-dired-input-fd-args 'permanent-local t)
 
 (provide 'dirvish-options)

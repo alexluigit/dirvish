@@ -54,7 +54,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (when (bound-and-true-p all-the-icons-dired-mode)
     (all-the-icons-dired-mode -1)
     (setq-local tab-width 2))
-  (when dirvish-child-entry (dired-goto-file dirvish-child-entry))
+  (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (dirvish-body-update)
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))
@@ -85,7 +85,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (dv (dirvish-curr))
          (depth (dv-depth dv))
          (i 0))
-    (unless dirvish--buffer-initialized (dirvish-setup))
+    (unless dirvish--curr-name (dirvish-setup))
     (unless (dirvish-dired-p dv)
       (add-hook 'dired-hide-details-mode-hook #'dirvish-hide-details-h nil :local))
     (while (and (< i depth) (not (string= current parent)))
@@ -107,7 +107,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                  (buffer (dired-noselect parent))
                  (window (display-buffer buffer `(dirvish--display-buffer . ,win-alist))))
             (with-selected-window window
-              (setq-local dirvish-child-entry current)
+              (setq-local dirvish--child-entry current)
               (dirvish-setup))))))))
 
 (defun dirvish-build-preview ()
