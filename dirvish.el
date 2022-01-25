@@ -54,7 +54,7 @@
 ;;;;; Dirvish commands
 
 (defun dirvish-other-buffer ()
-  "Replacement for `mode-line-other-buffer' in Dirvish."
+  "Switch to the most recently visited dirvish buffer."
   (interactive)
   (dirvish-find-file (ring-ref dirvish-history-ring 1)))
 

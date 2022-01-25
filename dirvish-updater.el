@@ -68,7 +68,7 @@
 (defun dirvish--mode-line-filter ()
   "Return a string showing active Dired file filter."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
-    (cond (dired-filter-mode
+    (cond ((bound-and-true-p dired-filter-mode)
            (format " %s %s " (propertize "Filters:" 'face 'bold)
                    (dired-filter--describe-filters)))
           (dired-omit-mode (propertize "[Omit]" 'face 'bold)))))

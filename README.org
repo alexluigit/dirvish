@@ -267,7 +267,7 @@ still needs work, but generally Dirvish works fine with the Dired ecosystem.
     (:map dired-mode-map
           ("SPC" . dirvish-show-history)
           ([remap dired-do-copy] . dirvish-yank)
-          ("o" . dirvish-other-buffer)))
+          ([remap mode-line-other-buffer] . dirvish-other-buffer)))
 #+end_src
 
 ** Similar projects
