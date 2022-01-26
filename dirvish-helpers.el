@@ -180,5 +180,15 @@ If the buffer is not available, create it with `ls' SWITCHES."
     (when (string-prefix-p (car dir) (dired-current-directory))
       (cl-return (concat (car dir) (cdr dir))))))
 
+(defun dirvish--append-metadata (metadata completions)
+  "Append METADATA for minibuffer COMPLETIONS."
+  (let ((entry (if (functionp metadata)
+                   `(metadata (annotation-function . ,metadata))
+                 `(metadata (category . ,metadata)))))
+    (lambda (string pred action)
+      (if (eq action 'metadata)
+          entry
+        (complete-with-action action completions string pred)))))
+
 (provide 'dirvish-helpers)
 ;;; dirvish-helpers.el ends here
