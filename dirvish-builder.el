@@ -4,7 +4,7 @@
 
 ;;; Commentary:
 
-;;; This library provides functions for building a dirvish layout.
+;; This library provides functions for building a dirvish layout.
 
 ;;; Code:
 

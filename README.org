@@ -190,7 +190,7 @@ This feature is currently only available for *vertico/selectrum*.
 | =dirvish-header-face-remap-alist= | Alist   | See: M-x =describe-variable=              |                    |
 | =dirvish-show-icons=              | Boolean | Show icons                              | t                  |
 | =dirvish-icon-delimiter=          | String  | The delimiter between icon and filename | "\t"               |
-| =dirvish-icon-monochrome=         | Boolean | Whether icon inherit =face-at-point=      | t                  |
+| =dirvish-icon-monochrome=         | Boolean | Whether icon use =dirvish-icon-face=      | t                  |
 | =dirvish-icon-v-offset=           | Float   | Icon's vertical offset                  | 0.01               |
 | =dirvish-preview-dispatchers=     | Hook    | See: M-x =describe-variable=              |                    |
 

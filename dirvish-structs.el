@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 
-;;; This library contains data structures for Dirvish.
+;; This library contains data structures for Dirvish.
 
 ;;; Code:
 

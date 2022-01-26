@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 
-;;; This library provides functions for updating a Dirvish layout.
+;; This library provides functions for updating a Dirvish layout.
 
 ;;; Code:
 

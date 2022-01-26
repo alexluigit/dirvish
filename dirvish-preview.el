@@ -4,7 +4,7 @@
 
 ;;; Commentary:
 
-;;; This library provides utilities for managing file preview in Dirvish.
+;; This library provides utilities for managing file preview in Dirvish.
 
 ;;; Code:
 
