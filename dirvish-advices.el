@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 
-;;; Accommodations for other packages.
+;; Accommodations for other packages.
 
 ;;; Code:
 

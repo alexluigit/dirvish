@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 
-;;; Helper functions for dirvish.
+;; Helper functions for dirvish.
 
 ;;; Code:
 

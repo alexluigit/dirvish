@@ -4,8 +4,8 @@
 
 ;;; Commentary:
 
-;;; This file contains all user custom options, internal variables/constants and
-;;; dirvish mode keymap for Dirvish.
+;; This file contains all user custom options, internal variables/constants and
+;; dirvish mode keymap for Dirvish.
 
 ;;; Code:
 
