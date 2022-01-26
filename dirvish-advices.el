@@ -10,9 +10,8 @@
 
 ;;; Code:
 
-(declare-function dirvish-find-file "dirvish")
 (defalias 'dirvish-enlarge-ad #'dirvish--enlarge)
-(require 'dirvish-builder)
+(require 'dirvish-command)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
 (require 'dirvish-options)
