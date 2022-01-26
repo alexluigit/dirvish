@@ -28,12 +28,7 @@
 
 ;;; Code:
 
-;;;; Deps / Modules
-
-(require 'ring)
 (require 'dirvish-advices)
-
-;;;; Setup
 
 (when dirvish-show-icons
   (setq dirvish-show-icons (require 'all-the-icons nil t)))
@@ -48,133 +43,6 @@
         (cl-substitute #'dirvish-preview-directory-dired-dispatcher
                        #'dirvish-preview-directory-exa-dispatcher
                        dirvish-preview-dispatchers)))
-
-;;;; Commands
-
-;;;;; Dirvish commands
-
-(defun dirvish-other-buffer ()
-  "Switch to the most recently visited dirvish buffer."
-  (interactive)
-  (dirvish-find-file (ring-ref dirvish-history-ring 1)))
-
-(defun dirvish-up-directory (&optional other-window)
-  "Run Dirvish on parent directory of current directory.
-If OTHER-WINDOW (the optional prefix arg), display the parent
-directory in another window."
-  (interactive "P")
-  (let* ((current (expand-file-name default-directory))
-         (parent (dirvish--get-parent current)))
-    (if (string= parent current)
-        (user-error "Dirvish: you're in root directory")
-      (if other-window
-          (dirvish-dired parent t)
-        (dirvish-find-file parent t)))))
-
-(defun dirvish-go-top (&optional reverse)
-  "Move to top of dirvish buffer.
-If REVERSE is non-nil, move to bottom instead."
-  (interactive)
-  (dirvish-with-update nil
-    (goto-char (if reverse (point-max) (point-min)))
-    (forward-line (if reverse -1 1))))
-
-(defun dirvish-go-bottom ()
-  "Move to bottom of dirvish buffer."
-  (interactive)
-  (dirvish-go-top t))
-
-(defun dirvish-show-history (history)
-  "Prompt for a target directory from HISTORY and goto it."
-  (interactive
-   (list (completing-read "Select from history: "
-                          (cl-remove-duplicates (ring-elements dirvish-history-ring)
-                                                :test (lambda (x y) (or (null y) (equal x y)))))))
-  (when history (dirvish-find-file history)))
-
-(defun dirvish-new-frame (&optional path)
-  "Make a new frame and launch dirvish with optional PATH."
-  (interactive (list (read-file-name "Open in new frame: ")))
-  (let ((fr (make-frame '((name . "dirvish-emacs")))))
-    (with-selected-frame fr
-      (switch-to-buffer (get-buffer-create "*scratch*"))
-      (dirvish path))))
-
-(defun dirvish-sort-by-criteria (criteria)
-  "Call `dired-sort-other' by different `CRITERIA'."
-  (interactive
-   (list
-    (read-char-choice
-     "Sort by (d/D)efault (e/E)xt (s/S)ize (t/T)ime (m/M)odified: "
-     '(?q ?d ?D ?e ?E ?s ?S ?t ?T ?m ?M))))
-  (when dired-sort-inhibit (user-error "Dirvish: cannot sort this buffer"))
-  (unless (eq criteria ?q)
-    (let* ((c (char-to-string criteria))
-           (revp (string-equal c (upcase c)))
-           (cc (downcase c))
-           (sort-flag
-            (cond
-             ((string-equal cc "d") '("default" . ""))
-             ((string-equal cc "m") '("modified" . " -c"))
-             ((string-equal cc "e") '("ext" . " -X"))
-             ((string-equal cc "t") '("time" . " -t"))
-             ((string-equal cc "s") '("size" . " -S"))))
-           (name (concat (car sort-flag) (when revp " [R]")))
-           (order (concat (cdr sort-flag) (when revp " -r")))
-           (dv (dirvish-curr)))
-      (setf (dv-sort-criteria dv) (cons name order))
-      (dirvish-with-update t
-        (dired-sort-other (string-join (list (dv-ls-switches dv) order) " "))))))
-
-(defun dirvish-quit ()
-  "Quit current Dirvish.
-
-Delete the frame as well if it's created by `dirvish-new-frame'."
-  (interactive)
-  (if-let ((dv (and dirvish--curr-name
-                    (gethash dirvish--curr-name (dirvish-hash)))))
-      (dirvish-deactivate dv)
-    (user-error "Not a Dirvish buffer"))
-  (when (string= (frame-parameter nil 'name) "dirvish-emacs")
-    (delete-frame)))
-
-(defun dirvish-find-file (&optional file ignore-hist)
-  "Find file in dirvish buffer.
-
-FILE can be a file or a directory, if nil then infer entry from
-variable `buffer-file-name'.  If IGNORE-HIST is non-nil, do not
-update `dirvish-history-ring'."
-  (interactive)
-  (let* ((entry (or file (dired-get-filename nil t)))
-         (bname (buffer-file-name (current-buffer)))
-         (curr-dir (expand-file-name default-directory))
-         (dv (dirvish-curr))
-         (dv-tran (dv-transient dv))
-         (dv-depth (dv-depth dv)))
-    (when entry
-      (if (file-directory-p entry)
-          (let* ((entry (file-name-as-directory (expand-file-name entry)))
-                 (hist (directory-file-name entry))
-                 (sorter (cdr (dv-sort-criteria dv)))
-                 (switches (string-join (list (dv-ls-switches dv) sorter) " "))
-                 enable-dir-local-variables)
-            (unless ignore-hist
-              (when (or (ring-empty-p dirvish-history-ring)
-                        (not (eq hist (ring-ref dirvish-history-ring 0))))
-                (ring-insert dirvish-history-ring hist)))
-            (switch-to-buffer (dirvish--buffer-for-dir dv entry switches))
-            (setq dirvish--child-entry (or bname curr-dir))
-            (setf (dv-index-path dv) (or (dired-get-filename nil t) entry))
-            (when (dirvish-p dv-tran)
-              (dirvish-activate
-               (dirvish-new
-                 :depth dv-depth
-                 :transient (dv-name dv-tran)
-                 :window-conf (current-window-configuration))))
-            (dirvish-build))
-        (find-file entry)))))
-
-;;;;; Global commands
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
