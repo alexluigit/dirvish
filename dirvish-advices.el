@@ -33,7 +33,7 @@
     (dired         dired-next-dirline           dirvish-lazy-update-ad)
     (dired         dired-mark                   dirvish-lazy-update-ad)
     (dired         dired-flag-file-deletion     dirvish-lazy-update-ad)
-    (dired         dired-goto-file              dirvish-lazy-update-ad)
+    (dired         dired-goto-file              dirvish-interactive-update-ad)
     (dired         dired-view-file              dirvish-enlarge-ad             :before)
     (dired         dired-internal-do-deletions  dirvish-deletion-ad)
     (wdired        wdired-change-to-wdired-mode dirvish-recover-cursor-ad      :after)
@@ -41,7 +41,6 @@
     (wdired        wdired-finish-edit           dirvish-mode-ad                :after)
     (wdired        wdired-abort-changes         dirvish-mode-ad                :after)
     (find-dired    find-dired-sentinel          dirvish-fd-ad                  :after)
-    (dired-x       dired-omit-mode              dirvish-full-update-ad)
     (dired-aux     dired-dwim-target-next       dirvish-dwim-target-next       :override)
     (dired-aux     dired-insert-subdir          dirvish-full-update-ad)
     (dired-aux     dired-kill-subdir            dirvish-full-update-ad)
@@ -178,11 +177,17 @@ FILE-NAME are the same args in `dired-jump'."
   (advice-add 'dired-subtree-insert :around #'dirvish-full-update-save-pos-ad))
 
 (defun dirvish-deletion-ad (fn &rest args)
-  "Advice function for FN with ARGS."
+  "Advice function for FN `dired-internal-do-deletions' with its ARGS."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
   (dirvish-with-update t
     (revert-buffer)
     (unless (dired-get-filename nil t) (dired-next-line 1))))
+
+(defun dirvish-interactive-update-ad (fn &rest args)
+  "Apply FN with ARGS, update dirvish when called interactively."
+  (if (called-interactively-p 'any)
+      (dirvish-with-update t (apply fn args))
+    (apply fn args)))
 
 (defun dirvish-find-file-ad (&rest _)
   "Quit current dirvish instance if inside one.
