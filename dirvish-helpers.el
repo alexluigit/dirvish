@@ -43,12 +43,13 @@ removed or updated before update current dirvish instance."
          (remove-overlays (1- pos) pos 'dirvish-icons t)
          (dirvish--render-icon pos))
        ,@body
-       (let ((skip (not ,full-update)))
-         (dirvish-body-update skip skip))
-       (when-let ((filename (dired-get-filename nil t)))
-         (setf (dv-index-path dv) filename)
-         (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
-         (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay)))))
+       (save-excursion
+         (let ((skip (not ,full-update)))
+           (dirvish-body-update skip skip))
+         (when-let ((filename (dired-get-filename nil t)))
+           (setf (dv-index-path dv) filename)
+           (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
+           (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay))))))
 
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
@@ -102,7 +103,7 @@ within the viewport."
       (forward-line beg)
       (while (and (not (eobp)) (< (line-number-at-pos) end))
         (when-let ((pos (dired-move-to-filename nil)))
-          (funcall renderer pos))
+          (unless (invisible-p pos) (funcall renderer pos)))
         (forward-line 1)))))
 
 (defun dirvish-format-header-line ()
