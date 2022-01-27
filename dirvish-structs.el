@@ -71,7 +71,7 @@ By default, this uses the current frame."
         (setq-local mode-line-format (and dirvish-header-line-format
                                           '((:eval (dirvish-format-header-line)))))
         (set (make-local-variable 'face-remapping-alist)
-             dirvish-header-face-remap-alist))
+             '((mode-line-inactive :inherit (mode-line-active) :height 1.99))))
       (dirvish--get-buffer 'footer
         (setq-local header-line-format nil)
         (setq-local window-size-fixed 'height)

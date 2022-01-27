@@ -126,24 +126,10 @@ STYLE should be one of these:
   :group 'dirvish :type 'symbol
   :options '(nil large normal))
 
-(defcustom dirvish-header-face-remap-alist
-  '((mode-line-inactive :inherit (mode-line-active) :height 1.99))
-  "Face remapping alist used in dirvish header window.
-Beware that only full-frame dirvish uses header window.  To
-configure faces in dirvish parent windows, use
-`dirvish-parent-face-remap-alist' instead.
-
-See `face-remapping-alist' for more details."
-  :group 'dirvish :type 'alist)
-
-(defcustom dirvish-parent-face-remap-alist
+(defcustom dirvish-face-remap-alist
   '((header-line :height 1.2 :box (:line-width 4 :color "#303030"))
-    (highlight :inherit (highlight) :extend t))
-  "Face remapping alist used in dirvish parent window.
-This variable doesn't take effect in a dirvish header window.  To
-configure faces in dirvish header window, use
-`dirvish-header-face-remap-alist' instead.
-
+    (highlight :inherit (highlight) :extend t)) ; line highlighting
+  "Face remapping alist used in dirvish window.
 See `face-remapping-alist' for more details."
   :group 'dirvish :type 'alist)
 
