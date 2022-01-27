@@ -80,7 +80,7 @@ ARG is same with command `dired-next-line'."
           (goal-column))
       (line-move arg t))
     (and (eobp) (forward-char -1))
-    (dired-move-to-filename)))
+    (setq cursor-type (not (dired-move-to-filename)))))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
@@ -185,7 +185,7 @@ FILE-NAME are the same args in `dired-jump'."
 (defun dirvish-interactive-update-ad (fn &rest args)
   "Apply FN with ARGS, update dirvish when called interactively."
   (if (called-interactively-p 'any)
-      (dirvish-with-update t (apply fn args))
+      (dirvish-with-update nil (apply fn args))
     (apply fn args)))
 
 (defun dirvish-find-file-ad (&rest _)
