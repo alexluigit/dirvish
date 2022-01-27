@@ -46,7 +46,7 @@
   "Render icon in POS with optional BACKGROUND color."
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icon-v-offset))
-         (icon-face (when dirvish-icon-monochrome '(:face dirvish-icon-face)))
+         (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
          (icon-attrs (append icon-face offset))
          (icon (if (file-directory-p entry)
                    (apply #'all-the-icons-icon-for-dir entry icon-attrs)

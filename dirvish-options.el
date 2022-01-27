@@ -96,13 +96,16 @@ file deletion when you have multiple disk drives."
   "A string attached to the icon."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-icon-monochrome t
-  "Whether icon face uses `'dirvish-icon-face'."
-  :group 'dirvish :type 'boolean)
+(define-obsolete-variable-alias 'dirvish-icon-monochrome 'dirvish-icon-palette "0.9.9")
 
-(defcustom dirvish-icon-v-offset 0.01
-  "Icon's vertical offset in dirvish body."
-  :group 'dirvish :type 'float)
+(defcustom dirvish-icon-palette 'all-the-icons
+  "Palette used for file icons.
+
+Values are interpreted as follows:
+- 'all-the-icons, meaning let `all-the-icons.el' to do the coloring.
+- A face that is used for all the icons.
+- nil, inherit face at point."
+  :group 'dirvish :type '(choice face symbol nil))
 
 (defcustom dirvish-header-line-format
   '((:eval (dirvish--header-line-path)))
@@ -165,17 +168,6 @@ footer."
 (defvar dirvish-activation-hook nil
   "Hook runs after activation of dirvish instance.")
 
-;;;; Faces
-
-(defgroup dirvish-faces nil
-  "A better Dired."
-  :group 'dirvish)
-
-(defface dirvish-icon-face
-  '((t (:inherit font-lock-comment-face)))
-  "Face used for dirvish icons."
-  :group 'dired-faces)
-
 ;;;; Internal variables
 
 (defconst dirvish-debouncing-delay 0.02)
@@ -183,6 +175,7 @@ footer."
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish-saved-display-buffer-alist display-buffer-alist)
+(defconst dirvish-icon-v-offset 0.01)
 (defconst dirvish-display-buffer-alist
   (append '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window))) display-buffer-alist))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
