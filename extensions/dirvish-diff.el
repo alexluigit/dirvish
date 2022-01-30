@@ -10,7 +10,8 @@
 
 ;;; Commentary:
 
-;; Show diff in Dirvish preview window.
+;; This is a dirvish extension which provides commands to show/stage diffs in
+;; Dirvish preview window.
 
 ;;; Code:
 

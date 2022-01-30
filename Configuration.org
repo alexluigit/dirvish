@@ -1,0 +1,136 @@
+#+AUTHOR: Alex Lu
+#+EMAIL: alexluigit@gmail.com
+#+startup: content
+
+** Options
+
+| Option                      | Type    | Description                                  |
+|-----------------------------+---------+----------------------------------------------|
+| =dirvish-cache-dir=           | String  | Cache directory           _"~/.cache/dirvish"_ |
+| =dirvish-trash-dir-alist=     | Alist   | Setup multiple trash cans                _nil_ |
+| =dirvish-history-length=      | Integer | List length of recently visited dirs      _30_ |
+| =dirvish-depth=               | Integer | Level of dirs to traverse up               _1_ |
+| =dirvish-parent-max-width=    | Float   | Max width of parent windows             _0.12_ |
+| =dirvish-preview-width=       | Float   | Width of preview window                 _0.65_ |
+| =dirvish-body-zoom=           | Float   | Increase fontsize in dirvish body        _0.1_ |
+| =dirvish-header-style=        | Option  | Style for full-frame dirvish header   _'large_ |
+| =dirvish-show-icons=          | Boolean | Show icons or not                          _t_ |
+| =dirvish-icon-delimiter=      | String  | The delimiter between icon and filename _"\t"_ |
+| =dirvish-icon-palette=        | Option  | Palette style used for icons  _'all-the-icons_ |
+| =dirvish-header-line-format=  | List    | See below                                    |
+| =dirvish-mode-line-format=    | Cons    | See below                                    |
+| =dirvish-preview-dispatchers= | Hook    | See below                                    |
+
+- =dirvish-header-line-format=
+  TODO
+- =dirvish-mode-line-format=
+  TODO
+- =dirvish-preview-dispatchers=
+  TODO
+
+** Hooks
+
+| Hook                       | Description                               |
+|----------------------------+-------------------------------------------|
+| =dirvish-activation-hook=    | Hook for dirvish instance initialization. |
+| =dirvish-mode-hook=          | Hook for parent buffer initialization.    |
+| =dirvish-preview-setup-hook= | Hook for preview buffer initialization.   |
+
+** Extensions
+*** Transient based help menu (dirvish-menu.el)
+
+TODO
+
+*** Multi-stage copy/pasting of files (dirvish-yank.el)
+
+TODO
+
+*** Minibuffer file preview (dirvish-peek.el)
+
+=dirvish-peek-mode= is an extension which provides =dirvish-peek-mode= to preview
+file when narrowing file/directory candidates using minibuffer.
+
+- Why does this feature exist? ::
+
+  *Dirvish* and *minibuffer* seem unrelated at first glance. But when it comes to
+  display a file preview, they actually share the same mechanism, that is: /get
+  file path under the cursor and update preview window accordingly./ Displaying
+  minibuffer file preview in a "dirvish" way, not only a lot of source code can
+  be reused, but also related user configurations.  In other words, you don't
+  have to configure file preview for dirvish and for minibuffer separately, they
+  will always /display the same thing./
+
+This extension is currently only available for *vertico/selectrum*.
+
+*** Git diff in dirvish (dirvish-diff.el)
+
+TODO
+
+** Complementary packages
+
+TODO
+
+** Example config
+
+#+begin_src emacs-lisp
+  (use-package dired
+    :config
+    (setq dired-recursive-deletes 'always)
+    (setq delete-by-moving-to-trash t)
+    (setq dired-dwim-target t)
+    (setq dired-listing-switches
+          "-AGhlv --group-directories-first --time-style=long-iso"))
+
+  (use-package dired-x
+    ;; Enable dired-omit-mode by default
+    ;; :hook
+    ;; (dired-mode . dired-omit-mode)
+    :config
+    ;; Make dired-omit-mode hide all "dotfiles"
+    (setq dired-omit-files
+          (concat dired-omit-files "\\|^\\..*$")))
+
+  ;; Addtional syntax highlighting for dired
+  (use-package diredfl
+    :hook
+    (dired-mode . diredfl-mode))
+
+  ;; Narrow a dired buffer to the files matching a string.
+  (use-package dired-narrow
+    :bind
+    (:map dired-mode-map
+          ("C-c C-n" . dired-narrow)))
+
+  ;; A poor man's treemacs
+  (use-package dired-subtree
+    :bind
+    (:map dired-mode-map
+          ("TAB" . dired-subtree-toggle)))
+
+  (use-package dired-filter
+    :bind
+    (:map dired-mode-map
+          ([remap dired-omit-mode] . dired-filter-mode)))
+
+  ;; Drop-in replacement for find-dired
+  (use-package fd-dired
+    :bind
+    (:map dired-mode-map
+          ("C-c C-f" . fd-dired)))
+
+  (use-package dirvish
+    :config
+    ;; Override dired with dirvish globally
+    (dirvish-override-dired-mode)
+    ;; Enable file preview when narrowing files in minibuffer.
+    ;; This feature only support `vertico/selectrum' for now.
+    (dirvish-peek-mode)
+    :bind
+    (:map dired-mode-map
+          ("SPC" . dirvish-show-history)
+          ("M-m" . dirvish-toggle-fullscreen)
+          ([remap dired-summary] . dirvish-dispatch)
+          ([remap dired-do-copy] . dirvish-yank)
+          ([remap mode-line-other-buffer] . dirvish-other-buffer)))
+#+end_src
+
