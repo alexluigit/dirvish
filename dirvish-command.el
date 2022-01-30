@@ -133,6 +133,23 @@ If REVERSE is non-nil, move to bottom instead."
       (dirvish-with-update t
         (dired-sort-other (string-join (list (dv-ls-switches dv) order) " "))))))
 
+(defun dirvish-toggle-fullscreen ()
+  "Toggle between `dirvish-dired' and `dirvish'."
+  (interactive)
+  (if-let (dv (dirvish-live-p))
+      (if (dirvish-dired-p dv)
+          (dirvish-here nil :depth dirvish-depth :window-conf (current-window-configuration))
+        (dirvish-here nil :depth -1))
+    (user-error "Dirvish: not in a dirvish buffer")))
+
+(defun dirvish-change-depth (level)
+  "Change parent depth of current Dirvish to LEVEL."
+  (interactive "p")
+  (when-let (dv (dirvish-live-p))
+    (unless (dirvish-dired-p dv)
+      (setf (dv-depth dv) level)
+      (dirvish-build))))
+
 (defun dirvish-quit ()
   "Quit current Dirvish.
 
