@@ -108,24 +108,15 @@ The preview in Dirvish can be generated either directly from elisp or by the
 help of shell commands. See =dirvish-preview-dispatchers= for more details. TODO:
 better doc on this, maybe a wiki article.
 
-*** Multiple instances
+*** Independent sessions
 
-You can open multiple dirvish instance across different windows / tabs /
+You can open multiple dirvish sessions across different windows / tabs /
 frames. Each one of them have private attributes such as parent buffer
 list, depth, =ls= command switches and so on.
 
-Although the independence of Dirvish instance, there are commands that operate
-on multiple instances such as =dirvish-yank=, you can take it as an example to
+Although the independence of Dirvish sessions, there are commands that operate
+on multiple sessions such as =dirvish-yank=, you can take it as an example to
 create your own cross-instance commands when you need to.
-
-*** Drop-in replacement commands
-
-*Dired* is superb, but from a modern file manager's (like *ranger*, *lf*) perspective,
-, some Dired commands are quite unintuitive.
-
-Dirvish provides a few drop-in replacement commands for those not-so-modern
-dired commands, such as =dirvish-sort-by-criteria= is a more user friendly version
-of =dired-sort-toggle-or-edit=. 
 
 *** Asynchronous I/O
 
@@ -136,139 +127,31 @@ generation etc.
 *** Bulit-in icon support
 
 You don't need [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] anymore since dirvish have built-in icon
-support. This native icon solution has several advantages over
-*dired + all-the-icons-dired*, those are:
+support. Rendering icons natively gives us better integration with line
+highlighting and more room to optimize performance (lazy rendering).
 
-**** Better integration with line highlighting
+[[./assets/line-comparison.png]]
 
-  If you want to highlight current (cursor) line in dired, normally you enable
-  =hl-line-mode= or add it to =dired-mode-hook=, but it doesn't play very well with
-  =all-the-icons-dired-mode= due to conflict overlays. Dirvish handles line
-  highlighting and icon rendering on its own.
+*** Extensions
 
-  [[./assets/line-comparison.png]]
+Several small extension packages to Dirvish are maintained in the subdirectory
+extensions/. These extensions are installed together with Dirvish if you pull
+the package from MELPA. They are inactive by default and can be enabled manually
+if desired. Currently the following extensions come with the Dirvish MELPA
+package:
 
-**** Lazy rendering
+- [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
+- [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
+- [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: File preview in minibuffer.
+- [[file:extensions/dirvish-diff.el][dirvish-diff.el]]: Show version-controlled diff in dirvish preview window.
 
-Dirvish doesn't render icons for all the files in a directory eagerly, instead
-it only render icons that are displayed within the viewport. Visiting =/usr/bin=
-(or any directory with over 1000 files) will no longer freeze your Emacs.
-
-*** Minibuffer file preview
-
-=dirvish-peek-mode= is a feature to preview file when narrowing
-file/directory candidates using minibuffer.
-
-- Why does this feature exist? ::
-
-  *Dirvish* and *minibuffer* seem unrelated at first glance. But when it comes to
-  display a file preview, they actually share the same mechanism, that is: /get
-  file path under the cursor and update preview window accordingly./ Displaying
-  minibuffer file preview in a "dirvish" way, not only a lot of source code can
-  be reused, but also related user configurations.  In other words, you don't
-  have to configure file preview for dirvish and for minibuffer separately, they
-  will always /display the same thing./
-
-This feature is currently only available for *vertico/selectrum*.
+With these extensions it is possible to adapt Dirvish such that it matches your
+preference or behaves similar to other familiar file explorers. See
+[[file:Configuration.org][Configuration.org]] for concrete examples.
 
 ** Configuration
-*** Options
 
-| Option                          | Type    | Description                             | default            |
-|---------------------------------+---------+-----------------------------------------+--------------------|
-| =dirvish-cache-dir=               | String  | Cache directory                         | "~/.cache/dirvish" |
-| =dirvish-trash-dir-alist=         | Alist   | Setup multiple trash cans.              | nil                |
-| =dirvish-history-length=          | Integer | The length of history ring              | 30                 |
-| =dirvish-depth=                   | Integer | Level of dirs to traverse up            | 1                  |
-| =dirvish-parent-max-width=        | Float   | Max width of parent windows             | 0.12               |
-| =dirvish-parent-face-remap-alist= | Alist   | See: M-x =describe-variable=              |                    |
-| =dirvish-preview-width=           | Float   | Width of preview window                 | 0.65               |
-| =dirvish-body-zoom=               | Float   | Increase fontsize in dirvish body       | 0.1                |
-| =dirvish-mode-line-format=        | Cons    | See: M-x =describe-variable=              |                    |
-| =dirvish-header-line-format=      | List    | See: M-x =describe-variable=              |                    |
-| =dirvish-header-style=            | Option  | Style for full-frame dirvish header     | large              |
-| =dirvish-header-face-remap-alist= | Alist   | See: M-x =describe-variable=              |                    |
-| =dirvish-show-icons=              | Boolean | Show icons                              | t                  |
-| =dirvish-icon-delimiter=          | String  | The delimiter between icon and filename | "\t"               |
-| =dirvish-icon-monochrome=         | Boolean | Whether icon use =dirvish-icon-face=      | t                  |
-| =dirvish-icon-v-offset=           | Float   | Icon's vertical offset                  | 0.01               |
-| =dirvish-preview-dispatchers=     | Hook    | See: M-x =describe-variable=              |                    |
-
-*** Hooks
-
-| Hook                       | Description                               |
-|----------------------------+-------------------------------------------|
-| =dirvish-activation-hook=    | Hook for dirvish instance initialization. |
-| =dirvish-mode-hook=          | Hook for parent buffer initialization.    |
-| =dirvish-preview-setup-hook= | Hook for preview buffer initialization.   |
-
-*** Example config
-
-Here is an example config.  There are several third-party packages listed in
-this section, all of these tools are independent to each other yet can operate
-in tandem.  I highly suggest you trying them out and see if they can improve
-your workflow. [TODO: a video demo] The compatibilities with other packages
-still needs work, but generally Dirvish works fine with the Dired ecosystem.
-
-#+begin_src emacs-lisp
-  (use-package dired
-    :config
-    (setq dired-recursive-deletes 'always)
-    (setq delete-by-moving-to-trash t)
-    (setq dired-dwim-target t)
-    (setq dired-listing-switches
-          "-AGhlv --group-directories-first --time-style=long-iso"))
-
-  (use-package dired-x
-    ;; Enable dired-omit-mode by default
-    ;; :hook
-    ;; (dired-mode . dired-omit-mode)
-    :config
-    ;; Make dired-omit-mode hide all "dotfiles"
-    (setq dired-omit-files
-          (concat dired-omit-files "\\|^\\..*$")))
-
-  ;; Addtional syntax highlighting for dired
-  (use-package diredfl
-    :hook
-    (dired-mode . diredfl-mode))
-
-  ;; Narrow a dired buffer to the files matching a string.
-  (use-package dired-narrow
-    :bind
-    (:map dired-mode-map
-          ("C-c C-n" . dired-narrow)))
-
-  ;; A poor man's treemacs
-  (use-package dired-subtree
-    :bind
-    (:map dired-mode-map
-          ("TAB" . dired-subtree-toggle)))
-
-  (use-package dired-filter
-    :bind
-    (:map dired-mode-map
-          ([remap dired-omit-mode] . dired-filter-mode)))
-
-  ;; Drop-in replacement for find-dired
-  (use-package fd-dired
-    :bind
-    (:map dired-mode-map
-          ("C-c C-f" . fd-dired)))
-
-  (use-package dirvish
-    :config
-    ;; Override dired with dirvish globally
-    (dirvish-override-dired-mode)
-    ;; Enable file preview when narrowing files in minibuffer.
-    ;; This feature only support `vertico/selectrum' for now.
-    (dirvish-peek-mode)
-    :bind
-    (:map dired-mode-map
-          ("SPC" . dirvish-show-history)
-          ([remap dired-do-copy] . dirvish-yank)
-          ([remap mode-line-other-buffer] . dirvish-other-buffer)))
-#+end_src
+See [[file:Configuration.org][Configuration.org]] for custom options and example config.
 
 ** Similar projects
 *** Ranger.el
