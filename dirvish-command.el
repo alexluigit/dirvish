@@ -17,7 +17,7 @@
 (defun dirvish-find-file-true-path ()
   "Open truename of (maybe) symlink file under the cursor."
   (interactive)
-  (dirvish-find-file (file-truename (dired-get-filename))))
+  (dired-jump nil (file-truename (dired-get-filename))))
 
 (defun dirvish-copy-file-name ()
   "Copy filename under the cursor."
@@ -33,6 +33,19 @@
   "Copy the current directory's (`default-directory''s) absolute path."
   (interactive)
   (message "Copied file DIRECTORY: %s" (kill-new (expand-file-name default-directory))))
+
+(defun dirvish-rename-space-to-underscore ()
+  "Rename marked files by replacing space to underscore."
+  (interactive)
+  (require 'dired-aux)
+  (if (derived-mode-p 'dired-mode)
+      (let ((markedFiles (dired-get-marked-files )))
+        (mapc (lambda (x)
+                (when (string-match " " x )
+                  (dired-rename-file x (replace-regexp-in-string " " "_" x) nil)))
+              markedFiles)
+        (revert-buffer))
+    (user-error "Not in a Dired buffer")))
 
 (defun dirvish-browse-all-directories ()
   "Browse all directories using `fd' command."
