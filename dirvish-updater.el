@@ -102,16 +102,15 @@ non-nil, do not update padding."
         (setq line-spacing dirvish-body-zoom)
         (overlay-put o 'display `(height ,(1+ dirvish-body-zoom))))))
   (remove-overlays (point-min) (point-max) 'dirvish-body t)
-  (when-let* ((pos (dired-move-to-filename nil))
-              (beg (line-beginning-position))
-              (end (line-beginning-position 2))
-              (ol (make-overlay beg end)))
+  (let* ((beg (line-beginning-position))
+         (end (line-beginning-position 2))
+         (ol (make-overlay beg end)))
     (when dirvish-show-icons
       (unless skip-icons
         (remove-overlays (point-min) (point-max) 'dirvish-icons t)
         (dirvish-render 'dirvish--render-icon))
       (remove-overlays beg end 'dirvish-icons t)
-      (dirvish--render-icon pos 'highlight))
+      (when-let ((pos (dired-move-to-filename nil))) (dirvish--render-icon pos 'highlight)))
     (overlay-put ol 'dirvish-body t)
     (overlay-put ol 'face 'highlight)))
 
