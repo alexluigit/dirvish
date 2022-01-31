@@ -48,12 +48,12 @@
                   'face '(:inherit dired-mark :height 1.2)))
     :if-derived dired-mode
     ["Essential commands"
+     ("e"   "Open file"                           dired-find-file)
      ("c"   "Copy"                                dired-do-copy :if-mode dired-mode)
-     ("c"   "Copy to current directory"           dirvish-yank :if-derived dirvish-mode)
+     ("c"   "Paste to current directory"          dirvish-yank :if-derived dirvish-mode)
      ("x"   "Delete"                              dired-do-delete)
      ("E"   "Create empty file"                   dired-create-empty-file)
      ("+"   "Create directory"                    dired-create-directory)
-     ("^"   "Go up directory"                     dired-up-directory)
      ("g"   "Refresh buffer"                      revert-buffer)]
     ["File commands"
      ("@"   "Edit file names"                     dirvish-renaming-cmds)
@@ -65,7 +65,8 @@
     ["View"
      ("s" "  Sort files"                          dired-sort-toggle-or-edit)
      ("(" "  Hide detail info"                    dired-hide-details-mode)
-     ("." "  Toggle file filters"                 dired-omit-mode)
+     ("." "  Toggle filters"                      dired-filter-mode :if (lambda () (featurep 'dired-filter)))
+     ("." "  Toggle filters"                      dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
      ("D" "  Toggle git diff"                     dirvish-diff :if-derived dirvish-mode)
      ("M-m" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
      ("M-l" "Change parent depth"                 dirvish-change-depth)]
@@ -77,11 +78,11 @@
      ("$" "    Hide subdir"                       dired-hide-subdir)
      ("M-$" "  Hide subdir all"                   dired-hide-all)]
     ["Navigation"
-     ("j"   "Jump to file"                        dired-goto-file)
-     ("<"   "Prev dirline"                        dired-prev-dirline)
-     (">"   "Next dirline"                        dired-next-dirline)
-     ("r"   "Common directories"                  dirvish-goto)
-     ("l"   "Last buffer"                         dirvish-other-buffer)
+     ("j"   "Jump to file in buffer"              dired-goto-file)
+     ("J"   "Jump to file in file system"         dirvish-browse-all-directories)
+     ("^"   "Go up directory"                     dired-up-directory)
+     ("r"   "Goto common directories"             dirvish-goto)
+     ("l"   "Goto last place"                     dirvish-other-buffer)
      ("SPC" "Recently visited"                    dirvish-show-history)]
     ["Mark"
      ("m" "  Mark current file"                   dired-mark)
