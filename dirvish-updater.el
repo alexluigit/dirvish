@@ -42,8 +42,8 @@
               (propertize path-tail 'face 'dired-mark)
               (propertize file-name 'face 'font-lock-constant-face)))))
 
-(defun dirvish--render-icon (pos &optional background)
-  "Render icon in POS with optional BACKGROUND color."
+(defun dirvish--render-icon (pos &optional hl-face)
+  "Render icon in POS with optional HL-FACE."
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icon-v-offset))
          (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
@@ -53,7 +53,9 @@
                  (apply #'all-the-icons-icon-for-file entry icon-attrs)))
          (icon-str (concat icon dirvish-icon-delimiter))
          (ov (make-overlay (1- pos) pos)))
-    (when background (add-face-text-property 0 (length icon-str) `(:background ,background) t icon-str))
+    (when-let (hl-face (fg (face-attribute hl-face :foreground))
+                       (bg (face-attribute hl-face :background)))
+      (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
     (overlay-put ov 'dirvish-icons t)
     (overlay-put ov 'after-string icon-str)))
 
@@ -109,7 +111,7 @@ non-nil, do not update padding."
         (remove-overlays (point-min) (point-max) 'dirvish-icons t)
         (dirvish-render 'dirvish--render-icon))
       (remove-overlays beg end 'dirvish-icons t)
-      (dirvish--render-icon pos (face-attribute 'highlight :background)))
+      (dirvish--render-icon pos 'highlight))
     (overlay-put ol 'dirvish-body t)
     (overlay-put ol 'face 'highlight)))
 
