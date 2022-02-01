@@ -88,7 +88,7 @@ If ALL-FRAMES, search target directories in all frames."
             (when (or all-frames (eq (window-frame w) (selected-frame)))
               (with-current-buffer (window-buffer w)
                 (list (dired-current-directory)))))
-          (dirvish-get-all 'root-window t)))
+          (delq (selected-window) (dirvish-get-all 'root-window t))))
 
 (defun dirvish-render (renderer &optional range)
   "Call RENDERER on RANGE in viewport.
