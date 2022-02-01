@@ -75,7 +75,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
     (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
     (define-key map [remap quit-window]               'dirvish-quit)
-    (use-local-map map)))
+    (use-local-map map))
+  (run-hooks 'dirvish-mode-hook))
 
 (defun dirvish-build-parents ()
   "Create all dirvish parent windows."

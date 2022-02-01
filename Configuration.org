@@ -4,29 +4,24 @@
 
 ** Options
 
-| Option                      | Type    | Description                                  |
-|-----------------------------+---------+----------------------------------------------|
-| =dirvish-cache-dir=           | String  | Cache directory           _"~/.cache/dirvish"_ |
-| =dirvish-trash-dir-alist=     | Alist   | Setup multiple trash cans                _nil_ |
-| =dirvish-history-length=      | Integer | List length of recently visited dirs      _30_ |
-| =dirvish-depth=               | Integer | Level of dirs to traverse up               _1_ |
-| =dirvish-parent-max-width=    | Float   | Max width of parent windows             _0.12_ |
-| =dirvish-preview-width=       | Float   | Width of preview window                 _0.65_ |
-| =dirvish-body-zoom=           | Float   | Increase fontsize in dirvish body        _0.1_ |
-| =dirvish-header-style=        | Option  | Style for full-frame dirvish header   _'large_ |
-| =dirvish-show-icons=          | Boolean | Show icons or not                          _t_ |
-| =dirvish-icon-delimiter=      | String  | The delimiter between icon and filename _"\t"_ |
-| =dirvish-icon-palette=        | Option  | Palette style used for icons  _'all-the-icons_ |
-| =dirvish-header-line-format=  | List    | See below                                    |
-| =dirvish-mode-line-format=    | Cons    | See below                                    |
-| =dirvish-preview-dispatchers= | Hook    | See below                                    |
+| Option                      | Type    | Description                             |
+|-----------------------------+---------+-----------------------------------------|
+| =dirvish-cache-dir=           | String  | Cache directory                         |
+| =dirvish-trash-dir-alist=     | Alist   | Setup multiple trash cans               |
+| =dirvish-history-length=      | Integer | List length of recently visited dirs    |
+| =dirvish-depth=               | Integer | Level of dirs to traverse up            |
+| =dirvish-parent-max-width=    | Float   | Max width of parent windows             |
+| =dirvish-preview-width=       | Float   | Width of preview window                 |
+| =dirvish-body-zoom=           | Float   | Increase fontsize in dirvish body       |
+| =dirvish-header-style=        | Option  | Style for full-frame dirvish header     |
+| =dirvish-show-icons=          | Boolean | Show icons or not                       |
+| =dirvish-icon-delimiter=      | String  | The delimiter between icon and filename |
+| =dirvish-icon-palette=        | Option  | Palette style used for icons            |
+| =dirvish-header-line-format=  | List    | Header line format in root window       |
+| =dirvish-mode-line-format=    | Cons    | Mode line format in root window         |
+| =dirvish-preview-dispatchers= | Hook    | Contents in preview window              |
 
-- =dirvish-header-line-format=
-  TODO
-- =dirvish-mode-line-format=
-  TODO
-- =dirvish-preview-dispatchers=
-  TODO
+Consult the docstring of the options for details.
 
 ** Hooks
 
