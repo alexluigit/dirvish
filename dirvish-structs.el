@@ -139,6 +139,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (root-dir-buf-alist
    ()
    :documentation "TODO.")
+  (attributes-alist
+   ()
+   :documentation "TODO.")
   (index-path
    ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
@@ -168,6 +171,8 @@ restore them after."
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
     `(let ((dv (make-dirvish ,@keywords)))
+       (when dirvish-show-icons
+         (push (cons 'dirvish-icons 'dirvish--render-icon) (dv-attributes-alist dv)))
        (dirvish-init-frame)
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given

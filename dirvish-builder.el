@@ -20,7 +20,7 @@
   (let ((buf (current-buffer)))
     ;; Do not update when current buffer exists in multiple windows
     (when (< (cl-count-if (lambda (w) (eq (window-buffer w) buf)) (window-list)) 2)
-      (dirvish-body-update nil t))))
+      (dirvish-body-update))))
 
 (defun dirvish-rebuild-parents-h (frame)
   "Rebuild dirvish layout in FRAME."
@@ -35,7 +35,7 @@
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
-  (dirvish-with-update t
+  (dirvish-with-update
     (dired-revert)
     (dirvish-setup-dired-buffer)))
 
@@ -54,6 +54,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (all-the-icons-dired-mode -1)
     (setq-local tab-width 2))
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
+  (setq dirvish--pos (point))
   (dirvish-body-update)
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))
@@ -142,7 +143,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish-build ()
   "Build dirvish layout."
-  (dirvish-with-update nil
+  (dirvish-with-update
     (unless (dirvish-dired-p)
       (delete-other-windows)
       (dirvish-build-preview)

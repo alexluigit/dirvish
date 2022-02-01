@@ -27,25 +27,15 @@ KEYWORDS are slot key-values for `dirvish-new'."
      (dirvish-activate (dirvish-new ,@keywords))
      (dirvish-find-file dir)))
 
-(defmacro dirvish-with-update (full-update &rest body)
-  "Do necessary cleanup, execute BODY, update current dirvish.
-
-If FULL-UPDATE is non-nil, redraw icons and reset line height.
-
-Some overlays such as icons, line highlighting, need to be
-removed or updated before update current dirvish instance."
-  (declare (indent 1))
+(defmacro dirvish-with-update (&rest body)
+  "Execute BODY then update current dirvish."
+  (declare (indent defun))
   `(progn
      (when-let ((dv (dirvish-curr)))
-       (remove-overlays (point-min) (point-max) 'dirvish-body t)
-       (when-let ((pos (dired-move-to-filename nil))
-                  dirvish-show-icons)
-         (remove-overlays (1- pos) pos 'dirvish-icons t)
-         (dirvish--render-icon pos))
        ,@body
+       (setq dirvish--pos (point))
        (save-excursion
-         (let ((skip (not ,full-update)))
-           (dirvish-body-update skip skip))
+         (dirvish-body-update)
          (when-let ((filename (dired-get-filename nil t)))
            (setf (dv-index-path dv) filename)
            (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
@@ -97,12 +87,13 @@ RENDERER is a function which takes a position (point in current
 line) and face as args."
   (remove-overlays (point-min) (point-max) ov-name t)
   (save-excursion
-    (let ((beg (or (car range) (- 0 (frame-height))))
-          (end (or (cdr range) (+ (line-number-at-pos) (frame-height)))))
+    (let ((beg (- 0 (frame-height)))
+          (end (+ (line-number-at-pos) (frame-height))))
       (forward-line beg)
       (while (and (not (eobp)) (< (line-number-at-pos) end))
-        (when-let ((pos (dired-move-to-filename nil)))
-          (unless (invisible-p pos) (funcall renderer pos)))
+        (when-let ((pos (and (not (invisible-p (point)))
+                             (dired-move-to-filename nil))))
+          (funcall renderer pos (and (eq pos dirvish--pos) 'highlight)))
         (forward-line 1)))))
 
 (defun dirvish-format-header-line ()
