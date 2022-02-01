@@ -98,7 +98,7 @@ directory in another window."
   "Move to top of dirvish buffer.
 If REVERSE is non-nil, move to bottom instead."
   (interactive)
-  (dirvish-with-update nil
+  (dirvish-with-update
     (goto-char (if reverse (point-max) (point-min)))
     (forward-line (if reverse -1 1))))
 
@@ -130,7 +130,7 @@ If REVERSE is non-nil, move to bottom instead."
            (order (concat (cdr sort-flag) (when revp " -r")))
            (dv (dirvish-curr)))
       (setf (dv-sort-criteria dv) (cons name order))
-      (dirvish-with-update t
+      (dirvish-with-update
         (dired-sort-other (string-join (list (dv-ls-switches dv) order) " "))))))
 
 (defun dirvish-toggle-fullscreen ()

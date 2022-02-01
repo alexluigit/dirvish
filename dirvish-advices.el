@@ -75,7 +75,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   "Override `dired-next-line' command.
 ARG is same with command `dired-next-line'."
   (interactive "^p")
-  (dirvish-with-update nil
+  (dirvish-with-update
     (let ((line-move-visual)
           (goal-column))
       (line-move arg t))
@@ -127,7 +127,7 @@ FILE-NAME are the same args in `dired-jump'."
 
 (defun dirvish-mode-ad (&rest _)
   "Apply `dirvish-setup' to current buffer."
-  (dirvish-with-update t (dirvish-setup)))
+  (dirvish-with-update (dirvish-setup)))
 
 (defun dirvish-fd-ad (&rest _)
   "Advisor function for `find-dired-sentinel'."
@@ -159,29 +159,29 @@ FILE-NAME are the same args in `dired-jump'."
 
 (defun dirvish-update-ad (fn &rest args)
   "Apply FN with ARGS while fully updating current dirvish."
-    (dirvish-with-update t (apply fn args)))
+    (dirvish-with-update (apply fn args)))
 
 (defun dirvish-full-update-save-pos-ad (fn &rest args)
   "Apply FN with ARGS, restore point, then update dirvish frame."
-  (dirvish-with-update t (save-excursion (apply fn args))))
+  (dirvish-with-update (save-excursion (apply fn args))))
 
 (defun dirvish-subtree-recover-ad (fn &rest args)
   "An advisor for FN `dired--subtree-after-readin' with its ARGS."
   (advice-remove 'dired-subtree-insert #'dirvish-full-update-save-pos-ad)
-  (dirvish-with-update t (save-excursion (apply fn args)))
+  (dirvish-with-update (save-excursion (apply fn args)))
   (advice-add 'dired-subtree-insert :around #'dirvish-full-update-save-pos-ad))
 
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN `dired-internal-do-deletions' with its ARGS."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
-  (dirvish-with-update t
+  (dirvish-with-update
     (revert-buffer)
     (unless (dired-get-filename nil t) (dired-next-line 1))))
 
 (defun dirvish-interactive-update-ad (fn &rest args)
   "Apply FN with ARGS, update dirvish when called interactively."
   (if (called-interactively-p 'any)
-      (dirvish-with-update nil (apply fn args))
+      (dirvish-with-update (apply fn args))
     (apply fn args)))
 
 (defun dirvish-find-file-ad (&rest _)

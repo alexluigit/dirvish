@@ -90,29 +90,23 @@
           (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold)))))
 
-(defun dirvish-body-update (&optional skip-icons skip-padding)
-  "Update attributes in dirvish body.
-
-By default update icons, padding, and current line.  If
-SKIP-ICONS is non-nil, do not update icons.  If SKIP-PADDING is
-non-nil, do not update padding."
-  (when (and (> dirvish-body-zoom 0) (not skip-padding))
-    (save-excursion
-      (let ((o (make-overlay (point-min) (point-max))))
-        (setq line-spacing dirvish-body-zoom)
-        (overlay-put o 'display `(height ,(1+ dirvish-body-zoom))))))
-  (remove-overlays (point-min) (point-max) 'dirvish-body t)
+(defun dirvish-body-update ()
+  "Update attributes in dirvish body."
+  (when (> dirvish-body-zoom 0)
+    (remove-overlays (point-min) (point-max) 'dirvish-zoom t)
+    (let ((o (make-overlay (point-min) (point-max))))
+      (setq line-spacing dirvish-body-zoom)
+      (overlay-put o 'dirvish-zoom t)
+      (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
+      (overlay-put o 'priority -999)))
+  (remove-overlays (point-min) (point-max) 'dirvish-hl-line t)
   (let* ((beg (line-beginning-position))
          (end (line-beginning-position 2))
          (ol (make-overlay beg end)))
-    (when dirvish-show-icons
-      (unless skip-icons
-        (remove-overlays (point-min) (point-max) 'dirvish-icons t)
-        (dirvish-render 'dirvish--render-icon))
-      (remove-overlays beg end 'dirvish-icons t)
-      (when-let ((pos (dired-move-to-filename nil))) (dirvish--render-icon pos 'highlight)))
-    (overlay-put ol 'dirvish-body t)
-    (overlay-put ol 'face 'highlight)))
+    (overlay-put ol 'dirvish-hl-line t)
+    (overlay-put ol 'face 'highlight))
+  (when-let ((renderers (dv-attributes-alist (dirvish-curr))))
+    (cl-dolist (renderer renderers) (dirvish-render (car renderer) (cdr renderer)))))
 
 (defun dirvish-mode-line-update ()
   "Show file details in mode line."
