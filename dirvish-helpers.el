@@ -90,13 +90,12 @@ If ALL-FRAMES, search target directories in all frames."
                 (list (dired-current-directory)))))
           (delq (selected-window) (dirvish-get-all 'root-window t))))
 
-(defun dirvish-render (renderer &optional range)
-  "Call RENDERER on RANGE in viewport.
+(defun dirvish-render (ov-name renderer)
+  "Remove overlay OV-NAME and call RENDERER for each line in viewport.
 
-Where RENDERER is a function which takes a position (point in
-current line) and optional face as args.  RANGE is a beginning
-and end position cons, default to buffer start and end position
-within the viewport."
+RENDERER is a function which takes a position (point in current
+line) and face as args."
+  (remove-overlays (point-min) (point-max) ov-name t)
   (save-excursion
     (let ((beg (or (car range) (- 0 (frame-height))))
           (end (or (cdr range) (+ (line-number-at-pos) (frame-height)))))
