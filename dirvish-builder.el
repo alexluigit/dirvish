@@ -55,6 +55,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (setq-local tab-width 2))
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (setq dirvish--pos (point))
+  (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory)))
   (dirvish-body-update)
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))

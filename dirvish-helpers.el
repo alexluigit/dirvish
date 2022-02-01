@@ -80,6 +80,17 @@ If ALL-FRAMES, search target directories in all frames."
                 (list (dired-current-directory)))))
           (delq (selected-window) (dirvish-get-all 'root-window t))))
 
+(defun dirvish--shell-to-string (program &rest args)
+  "Execute PROGRAM with arguments ARGS and return output string.
+
+If program returns non zero exit code return nil."
+  (let* ((exit-code nil)
+         (output
+          (with-output-to-string
+            (with-current-buffer standard-output
+              (setq exit-code (apply #'process-file program nil t nil args))))))
+    (when (eq exit-code 0) output)))
+
 (defun dirvish-render (ov-name renderer)
   "Remove overlay OV-NAME and call RENDERER for each line in viewport.
 
