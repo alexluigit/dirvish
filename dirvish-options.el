@@ -92,7 +92,7 @@ file deletion when you have multiple disk drives."
   "When not-nil show icons in Dirvish."
   :group 'dirvish :type 'boolean)
 
-(defcustom dirvish-icon-delimiter "\t"
+(defcustom dirvish-icon-delimiter "  "
   "A string attached to the icon."
   :group 'dirvish :type 'string)
 
@@ -173,6 +173,7 @@ footer."
 (defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)
 (defvar-local dirvish--pos nil)
+(defvar-local dirvish--vc-backend nil)
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish--child-entry 'permanent-local t)
 (put 'fd-dired-input-fd-args 'permanent-local t)
