@@ -92,6 +92,7 @@
 
 (defun dirvish-body-update ()
   "Update attributes in dirvish body."
+  (setq dirvish--pos (point))
   (when (> dirvish-body-zoom 0)
     (remove-overlays (point-min) (point-max) 'dirvish-zoom t)
     (let ((o (make-overlay (point-min) (point-max))))
