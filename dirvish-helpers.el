@@ -71,15 +71,6 @@ This function removes the header line in a Dired buffer."
               (progn (goto-char (point-min)) (forward-line 1) (point)))))
       (overlay-put o 'invisible t))))
 
-(defun dirvish-dwim-target-next (&optional all-frames)
-  "Replacement for `dired-dwim-target-next'.
-If ALL-FRAMES, search target directories in all frames."
-  (mapcan (lambda (w)
-            (when (or all-frames (eq (window-frame w) (selected-frame)))
-              (with-current-buffer (window-buffer w)
-                (list (dired-current-directory)))))
-          (delq (selected-window) (dirvish-get-all 'root-window t))))
-
 (defun dirvish--shell-to-string (program &rest args)
   "Execute PROGRAM with arguments ARGS and return output string.
 

@@ -40,7 +40,7 @@
     (wdired        wdired-finish-edit           dirvish-mode-ad                :after)
     (wdired        wdired-abort-changes         dirvish-mode-ad                :after)
     (find-dired    find-dired-sentinel          dirvish-fd-ad                  :after)
-    (dired-aux     dired-dwim-target-next       dirvish-dwim-target-next       :override)
+    (dired-aux     dired-dwim-target-next       dirvish-dwim-target-next-ad    :override)
     (dired-aux     dired-insert-subdir          dirvish-update-ad)
     (dired-aux     dired-kill-subdir            dirvish-update-ad)
     (dired-aux     dired-add-entry              dirvish-update-ad)
@@ -147,6 +147,15 @@ FILE-NAME are the same args in `dired-jump'."
         (unless (dirvish-dired-p old-dv)
           (setf (dv-preview-window new-dv) p-win))))
     (dirvish-setup 'keep-dired)))
+
+(defun dirvish-dwim-target-next-ad (&optional all-frames)
+  "Replacement for `dired-dwim-target-next'.
+If ALL-FRAMES, search target directories in all frames."
+  (mapcan (lambda (w)
+            (when (or all-frames (eq (window-frame w) (selected-frame)))
+              (with-current-buffer (window-buffer w)
+                (list (dired-current-directory)))))
+          (delq (selected-window) (dirvish-get-all 'root-window t))))
 
 (defun dirvish-recover-cursor-ad (&rest _)
   "An advisor to recover cursor in current buffer."
