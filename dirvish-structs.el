@@ -173,6 +173,10 @@ restore them after."
     `(let ((dv (make-dirvish ,@keywords)))
        (when dirvish-show-icons
          (push (cons 'dirvish-icons 'dirvish--render-icon) (dv-attributes-alist dv)))
+       (setf (dv-preview-dispatchers dv)
+             (append '(dirvish-preview-disable-dispatcher)
+                     (dv-preview-dispatchers dv)
+                     '(dirvish-preview-default-dispatcher)))
        (dirvish-init-frame)
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given

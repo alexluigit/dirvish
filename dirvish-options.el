@@ -21,8 +21,7 @@
 (define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
 
 (defcustom dirvish-preview-dispatchers
-  `(dirvish-preview-disable-dispatcher
-    ,(if (memq system-type '(windows-nt ms-dos))
+  `(,(if (memq system-type '(windows-nt ms-dos))
          'dirvish-preview-directory-dired-dispatcher
        'dirvish-preview-directory-exa-dispatcher)
     dirvish-preview-text-dispatcher
@@ -34,8 +33,7 @@
     ,(if (require 'pdf-tools nil t)
          'dirvish-preview-pdf-tools-dispatcher
        'dirvish-preview-pdf-preface-dispatcher)
-    dirvish-preview-archive-dispatcher
-    dirvish-preview-default-dispatcher)
+    dirvish-preview-archive-dispatcher)
   "List of preview dispatchers.
 Preview dispatchers are used to determine how dirvish show
 preview for different MIME or file extensions.  A preview

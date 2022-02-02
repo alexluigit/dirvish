@@ -20,10 +20,7 @@
 (require 'dirvish)
 
 (defvar dirvish-diff-dispatchers
-  '(dirvish-preview-disable-dispatcher
-    dirvish-preview-directory-exa-dispatcher
-    dirvish-vc-diff-dispatcher
-    dirvish-preview-default-dispatcher))
+  (append '(dirvish-vc-diff-dispatcher) dirvish-preview-dispatchers))
 
 (defvar-local dirvish--git-msgs-alist nil)
 
