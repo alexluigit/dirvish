@@ -27,20 +27,6 @@ KEYWORDS are slot key-values for `dirvish-new'."
      (dirvish-activate (dirvish-new ,@keywords))
      (dirvish-find-file dir)))
 
-(defmacro dirvish-with-update (&rest body)
-  "Execute BODY then update current dirvish."
-  (declare (indent defun))
-  `(progn
-     (when-let ((dv (dirvish-curr)))
-       ,@body
-       (setq dirvish--pos (point))
-       (save-excursion
-         (dirvish-body-update)
-         (when-let ((filename (dired-get-filename nil t)))
-           (setf (dv-index-path dv) filename)
-           (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
-           (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay))))))
-
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
   (let ((timer (intern (format "%s-timer" func))))

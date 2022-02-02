@@ -94,19 +94,6 @@ directory in another window."
             (dirvish-here parent :depth -1))
         (dirvish-find-file parent t)))))
 
-(defun dirvish-go-top (&optional reverse)
-  "Move to top of dirvish buffer.
-If REVERSE is non-nil, move to bottom instead."
-  (interactive)
-  (dirvish-with-update
-    (goto-char (if reverse (point-max) (point-min)))
-    (forward-line (if reverse -1 1))))
-
-(defun dirvish-go-bottom ()
-  "Move to bottom of dirvish buffer."
-  (interactive)
-  (dirvish-go-top t))
-
 (defun dirvish-sort-by-criteria (criteria)
   "Call `dired-sort-other' by different `CRITERIA'."
   (interactive
@@ -130,8 +117,7 @@ If REVERSE is non-nil, move to bottom instead."
            (order (concat (cdr sort-flag) (when revp " -r")))
            (dv (dirvish-curr)))
       (setf (dv-sort-criteria dv) (cons name order))
-      (dirvish-with-update
-        (dired-sort-other (string-join (list (dv-ls-switches dv) order) " "))))))
+      (dired-sort-other (string-join (list (dv-ls-switches dv) order) " ")))))
 
 (defun dirvish-toggle-fullscreen ()
   "Toggle between `dirvish-dired' and `dirvish'."
@@ -149,18 +135,6 @@ If REVERSE is non-nil, move to bottom instead."
     (unless (dirvish-dired-p dv)
       (setf (dv-depth dv) level)
       (dirvish-build))))
-
-(defun dirvish-quit ()
-  "Quit current Dirvish.
-
-Delete the frame as well if it's created by `dirvish-new-frame'."
-  (interactive)
-  (if-let ((dv (and dirvish--curr-name
-                    (gethash dirvish--curr-name (dirvish-hash)))))
-      (dirvish-deactivate dv)
-    (user-error "Not a Dirvish buffer"))
-  (when (string= (frame-parameter nil 'name) "dirvish-emacs")
-    (delete-frame)))
 
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
