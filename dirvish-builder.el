@@ -32,13 +32,32 @@
   "Hide other parent windows when showing Dired details."
   (if dired-hide-details-mode (dirvish-build) (dirvish--enlarge)))
 
+(defun dirvish-update-body-h ()
+  "Update UI of current Dirvish."
+  (when-let ((dv (dirvish-curr)))
+    (cond ((eobp) (forward-char -1)) ((bobp) (forward-line 1)))
+    (setq cursor-type (not (dired-move-to-filename)))
+    (setq dirvish--pos (point))
+    (save-excursion
+      (dirvish-body-update)
+      (when-let ((filename (dired-get-filename nil t)))
+        (setf (dv-index-path dv) filename)
+        (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
+        (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay)))))
+
+(defun dirvish-quit-h ()
+  "Quit current Dirvish."
+  (dirvish-deactivate (gethash dirvish--curr-name (dirvish-hash)))
+  (and (string= (frame-parameter nil 'name) "dirvish-emacs") (delete-frame))
+  (mode-line-other-buffer))
+
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
-  (dirvish-with-update
-    (dired-revert)
-    (dirvish-clean-preview-images (dired-get-marked-files))
-    (dirvish-setup-dired-buffer)))
+  (dired-revert)
+  (dirvish-clean-preview-images (dired-get-marked-files))
+  (dirvish-setup-dired-buffer)
+  (dirvish-update-body-h))
 
 (defun dirvish-setup (&optional keep-dired)
   "Default config for dirvish parent windows.
@@ -71,12 +90,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'window-scroll-functions #'dirvish-update-viewport-h nil :local)
   (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map (current-local-map))
-    (define-key map [remap end-of-buffer]             'dirvish-go-bottom)
-    (define-key map [remap beginning-of-buffer]       'dirvish-go-top)
-    (define-key map [remap quit-window]               'dirvish-quit)
-    (use-local-map map))
+  (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
+  (add-hook 'quit-window-hook #'dirvish-quit-h nil :local)
   (run-hooks 'dirvish-mode-hook))
 
 (defun dirvish-build-parents ()
@@ -146,13 +161,12 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish-build ()
   "Build dirvish layout."
-  (dirvish-with-update
-    (unless (dirvish-dired-p)
-      (delete-other-windows)
-      (dirvish-build-preview)
-      (dirvish-build-header)
-      (dirvish-build-footer))
-    (dirvish-build-parents)))
+  (unless (dirvish-dired-p)
+    (delete-other-windows)
+    (dirvish-build-preview)
+    (dirvish-build-header)
+    (dirvish-build-footer))
+  (dirvish-build-parents))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."

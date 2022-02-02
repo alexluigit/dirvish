@@ -25,32 +25,17 @@
     (dired         dired-other-window           dirvish-dired-other-window-ad  :override)
     (dired         dired-other-tab              dirvish-dired-other-tab-ad     :override)
     (dired         dired-other-frame            dirvish-dired-other-frame-ad   :override)
-    (dired         dired-next-line              dirvish-dired-next-line-ad     :override)
     (dired         dired-up-directory           dirvish-up-directory           :override)
     (dired         dired-sort-toggle-or-edit    dirvish-sort-by-criteria       :override)
-    (dired         +dired/quit-all              dirvish-quit                   :override)
-    (dired         dired-next-dirline           dirvish-update-ad)
-    (dired         dired-mark                   dirvish-update-ad)
-    (dired         dired-flag-file-deletion     dirvish-update-ad)
-    (dired         dired-goto-file              dirvish-interactive-update-ad)
+    (dired         +dired/quit-all              quit-window                    :override)
     (dired         dired-view-file              dirvish-enlarge-ad             :before)
     (dired         dired-internal-do-deletions  dirvish-deletion-ad)
     (wdired        wdired-change-to-wdired-mode dirvish-recover-cursor-ad      :after)
-    (wdired        wdired-exit                  dirvish-mode-ad                :after)
-    (wdired        wdired-finish-edit           dirvish-mode-ad                :after)
-    (wdired        wdired-abort-changes         dirvish-mode-ad                :after)
+    (wdired        wdired-exit                  dirvish-setup                  :after)
+    (wdired        wdired-finish-edit           dirvish-setup                  :after)
+    (wdired        wdired-abort-changes         dirvish-setup                  :after)
     (find-dired    find-dired-sentinel          dirvish-fd-ad                  :after)
     (dired-aux     dired-dwim-target-next       dirvish-dwim-target-next-ad    :override)
-    (dired-aux     dired-insert-subdir          dirvish-update-ad)
-    (dired-aux     dired-kill-subdir            dirvish-update-ad)
-    (dired-aux     dired-add-entry              dirvish-update-ad)
-    (dired-aux     dired-remove-entry           dirvish-update-ad)
-    (dired-aux     dired-kill-line              dirvish-update-ad)
-    (dired-aux     dired-do-kill-lines          dirvish-update-ad)
-    (dired-narrow  dired-narrow--internal       dirvish-update-ad)
-    (dired-subtree dired-subtree-insert         dirvish-full-update-save-pos-ad)
-    (dired-subtree dired-subtree-remove         dirvish-update-ad)
-    (dired-subtree dired-subtree--after-readin  dirvish-subtree-recover-ad)
     (evil          evil-refresh-cursor          dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor          dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer    dirvish-enlarge-ad             :before)
@@ -70,17 +55,6 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when switches
     (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
-
-(defun dirvish-dired-next-line-ad (arg)
-  "Override `dired-next-line' command.
-ARG is same with command `dired-next-line'."
-  (interactive "^p")
-  (dirvish-with-update
-    (let ((line-move-visual)
-          (goal-column))
-      (line-move arg t))
-    (and (eobp) (forward-char -1))
-    (setq cursor-type (not (dired-move-to-filename)))))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
@@ -125,10 +99,6 @@ FILE-NAME are the same args in `dired-jump'."
     (apply fn other-window (list (or file-name default-directory)))
     (dirvish-setup-dired-buffer)))
 
-(defun dirvish-mode-ad (&rest _)
-  "Apply `dirvish-setup' to current buffer."
-  (dirvish-with-update (dirvish-setup)))
-
 (defun dirvish-fd-ad (&rest _)
   "Advisor function for `find-dired-sentinel'."
   (let* ((old-dv (dirvish-curr))
@@ -166,32 +136,9 @@ If ALL-FRAMES, search target directories in all frames."
   (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
     (apply fn args)))
 
-(defun dirvish-update-ad (fn &rest args)
-  "Apply FN with ARGS while fully updating current dirvish."
-    (dirvish-with-update (apply fn args)))
-
-(defun dirvish-full-update-save-pos-ad (fn &rest args)
-  "Apply FN with ARGS, restore point, then update dirvish frame."
-  (dirvish-with-update (save-excursion (apply fn args))))
-
-(defun dirvish-subtree-recover-ad (fn &rest args)
-  "An advisor for FN `dired--subtree-after-readin' with its ARGS."
-  (advice-remove 'dired-subtree-insert #'dirvish-full-update-save-pos-ad)
-  (dirvish-with-update (save-excursion (apply fn args)))
-  (advice-add 'dired-subtree-insert :around #'dirvish-full-update-save-pos-ad))
-
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN `dired-internal-do-deletions' with its ARGS."
-  (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args))
-  (dirvish-with-update
-    (revert-buffer)
-    (unless (dired-get-filename nil t) (dired-next-line 1))))
-
-(defun dirvish-interactive-update-ad (fn &rest args)
-  "Apply FN with ARGS, update dirvish when called interactively."
-  (if (called-interactively-p 'any)
-      (dirvish-with-update (apply fn args))
-    (apply fn args)))
+  (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args)))
 
 (defun dirvish-find-file-ad (&rest _)
   "Quit current dirvish instance if inside one.
