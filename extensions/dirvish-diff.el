@@ -23,6 +23,7 @@
   (append '(dirvish-vc-diff-dispatcher) dirvish-preview-dispatchers))
 
 (defvar-local dirvish--git-msgs-alist nil)
+(defvar-local dirvish--vc-state-alist nil)
 
 (defcustom dirvish-git-log-format "%s"
   "Git log pretty format for `dirvish--get-commit-info'.
@@ -41,7 +42,7 @@ See PRETTY-FORMAT section of git-log's manpage for details."
     (needs-update     . ("U " . vc-needs-update-state))
     (ignored          . ("  " . vc-dir-status-ignored))
     (user             . ("U " . vc-state-base))
-    (unregistered     . ("  " . vc-state-base))
+    (unregistered     . ("? " . vc-state-base))
     (nil              . ("  " . vc-state-base)))
   "Alist of vc-states to indicator characters.
 This variable is used in `dirvish--render-gutter'."
@@ -53,29 +54,39 @@ This variable is used in `dirvish--render-gutter'."
   "Face for commit message overlays."
   :group 'dirvish)
 
+(defun dirvish--get-state (file backend)
+  "Get vc state for FILE with BACKEND."
+  (let ((file (or (file-remote-p file 'localname) file))
+        (state (alist-get file dirvish--vc-state-alist nil nil #'string=)))
+    (unless state
+      (setq state (vc-state-refresh file backend))
+      (push (cons file state) dirvish--vc-state-alist))
+    state))
+
 (defun dirvish--render-gutter (pos _hl-face)
   "Render vc gutter for file in POS."
-  (let* ((entry (dired-get-filename nil 'noerror))
-         (state (vc-state entry dirvish--vc-backend))
-         (state-cons (alist-get state dirvish-diff-vc-state-char-alist))
-         (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
-         (face (cdr state-cons))
-         (ov (make-overlay (1- pos) pos)))
-    (overlay-put ov 'dirvish-diff-gutter t)
-    (overlay-put ov 'face face)
-    (overlay-put ov 'display gutter-str)))
+  (when dirvish--vc-backend
+    (let* ((entry (dired-get-filename nil 'noerror))
+           (state (dirvish--get-state entry dirvish--vc-backend))
+           (state-cons (alist-get state dirvish-diff-vc-state-char-alist))
+           (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
+           (face (cdr state-cons))
+           (ov (make-overlay (1- pos) pos)))
+      (overlay-put ov 'dirvish-diff-gutter t)
+      (overlay-put ov 'face face)
+      (overlay-put ov 'display gutter-str))))
 
 (defun dirvish--get-commit-info (file)
   "Get commit message info for FILE."
   (let ((file (or (file-remote-p file 'localname) file))
         (msg (alist-get file dirvish--git-msgs-alist nil nil #'string=)))
-        (unless msg
-          (setq msg (dirvish--shell-to-string
-                     "git" "log" "-1" (concat "--pretty=" dirvish-git-log-format)
-                     file))
-          (when (and msg (not (string= "" msg))) (setq msg (substring msg 0 -1)))
-          (push (cons file msg) dirvish--git-msgs-alist))
-        msg))
+    (unless msg
+      (setq msg (dirvish--shell-to-string
+                 "git" "log" "-1" (concat "--pretty=" dirvish-git-log-format)
+                 file))
+      (when (and msg (not (string= "" msg))) (setq msg (substring msg 0 -1)))
+      (push (cons file msg) dirvish--git-msgs-alist))
+    msg))
 
 (defun dirvish--render-git-info (_pos hl-face)
   "Render git info with optional HL-FACE."
