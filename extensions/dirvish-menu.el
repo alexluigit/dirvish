@@ -39,9 +39,8 @@
                ,@args)))
         spec)))
 
-;;;###autoload (autoload 'dirvish-dispatch "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
- ((dispatch
+ ((dispatch-cmds
    [:description
     (lambda ()
       (propertize (capitalize (format "%s help menu\n" major-mode))
@@ -152,6 +151,19 @@
     ("d"   "Decrypt"                              epa-dired-do-decrypt)
     ("v"   "Verify"                               epa-dired-do-verify)
     ("s"   "Sign"                                 epa-dired-do-sign)])))
+
+;;;###autoload
+(defun dirvish-dispatch ()
+  "Summon dirvish commands menu."
+  (interactive)
+  (let ((transient-display-buffer-action
+         '(display-buffer-in-side-window
+           (side . bottom)
+           (dedicated . t)
+           (inhibit-same-window . t)
+           (window-parameters
+            (no-other-window . t)))))
+    (dirvish-dispatch-cmds)))
 
 ;;;###autoload (autoload 'dirvish-goto "dirvish-menu" nil t)
 (defcustom dirvish-goto-dirs-alist
