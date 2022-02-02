@@ -37,6 +37,7 @@
 Dirvish sets `revert-buffer-function' to this function."
   (dirvish-with-update
     (dired-revert)
+    (dirvish-clean-preview-images (dired-get-marked-files))
     (dirvish-setup-dired-buffer)))
 
 (defun dirvish-setup (&optional keep-dired)

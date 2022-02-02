@@ -27,6 +27,13 @@ cache image."
       (make-directory (file-name-directory cache) t))
     (concat cache ext)))
 
+(defun dirvish-clean-preview-images (fileset)
+  "Clean image cache for FILESET."
+  (let ((size (window-width (dv-preview-window (dirvish-curr)) 'pixel)))
+    (dolist (file fileset)
+      (mapc #'delete-file (file-expand-wildcards
+                           (dirvish--get-image-cache-for-file file size ".*") t)))))
+
 (defun dirvish--preview-process-fill-str-sentinel (proc _exitcode)
   "A sentinel for dirvish preview process.
 
@@ -96,7 +103,8 @@ image with width of DV's preview window as preview."
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
       (cond ((file-exists-p cache)
              `(image . (put-image ,(create-image cache nil nil :max-width size) 0)))
-            ((< (nth 7 (file-attributes file)) dirvish-preview-image-threshold)
+            ((or (< (nth 7 (file-attributes file)) dirvish-preview-image-threshold)
+                 (string-prefix-p (expand-file-name dirvish-cache-dir) file))
              `(image . (put-image ,(create-image file nil nil :max-width size) 0)))
             (t `(image-cache . ("convert" "-resize" ,(number-to-string size) ,file ,cache)))))))
 
