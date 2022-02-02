@@ -15,6 +15,7 @@
 (require 'dirvish-options)
 (require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))
+(mailcap-parse-mimetypes)
 
 (defun dirvish--get-image-cache-for-file (file size &optional ext)
   "Get image cache filepath for FILE.

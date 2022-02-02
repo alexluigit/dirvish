@@ -21,15 +21,19 @@
 (define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
 
 (defcustom dirvish-preview-dispatchers
-  '(dirvish-preview-disable-dispatcher
-    dirvish-preview-directory-exa-dispatcher
+  `(dirvish-preview-disable-dispatcher
+    ,(if (memq system-type '(windows-nt ms-dos))
+         'dirvish-preview-directory-dired-dispatcher
+       'dirvish-preview-directory-exa-dispatcher)
     dirvish-preview-text-dispatcher
     dirvish-preview-gif-dispatcher
     dirvish-preview-image-dispatcher
     dirvish-preview-video-dispatcher
     dirvish-preview-audio-dispatcher
     dirvish-preview-epub-dispatcher
-    dirvish-preview-pdf-preface-dispatcher
+    ,(if (require 'pdf-tools nil t)
+         'dirvish-preview-pdf-tools-dispatcher
+       'dirvish-preview-pdf-preface-dispatcher)
     dirvish-preview-archive-dispatcher
     dirvish-preview-default-dispatcher)
   "List of preview dispatchers.
@@ -88,7 +92,7 @@ in /mnt/HDD directory or its child entries. This can speed up
 file deletion when you have multiple disk drives."
   :group 'dirvish :type 'alist)
 
-(defcustom dirvish-show-icons t
+(defcustom dirvish-show-icons (require 'all-the-icons nil t)
   "When not-nil show icons in Dirvish."
   :group 'dirvish :type 'boolean)
 

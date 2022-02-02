@@ -30,20 +30,6 @@
 
 (require 'dirvish-advices)
 
-(when dirvish-show-icons
-  (setq dirvish-show-icons (require 'all-the-icons nil t)))
-(mailcap-parse-mimetypes)
-(when (require 'pdf-tools nil t)
-  (setq dirvish-preview-dispatchers
-        (cl-substitute #'dirvish-preview-pdf-tools-dispatcher
-                       #'dirvish-preview-pdf-preface-dispatcher
-                       dirvish-preview-dispatchers)))
-(when (memq system-type '(windows-nt ms-dos))
-  (setq dirvish-preview-dispatchers
-        (cl-substitute #'dirvish-preview-directory-dired-dispatcher
-                       #'dirvish-preview-directory-exa-dispatcher
-                       dirvish-preview-dispatchers)))
-
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
   "Override Dired with `dirvish-dired' globally."
