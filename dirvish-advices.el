@@ -30,7 +30,7 @@
     (dired         +dired/quit-all              quit-window                    :override)
     (dired         dired-view-file              dirvish-enlarge-ad             :before)
     (dired         dired-internal-do-deletions  dirvish-deletion-ad)
-    (wdired        wdired-change-to-wdired-mode dirvish-recover-cursor-ad      :after)
+    (wdired        wdired-change-to-wdired-mode dirvish-wdired-mode-ad         :after)
     (wdired        wdired-exit                  dirvish-setup                  :after)
     (wdired        wdired-finish-edit           dirvish-setup                  :after)
     (wdired        wdired-abort-changes         dirvish-setup                  :after)
@@ -127,9 +127,13 @@ If ALL-FRAMES, search target directories in all frames."
                 (list (dired-current-directory)))))
           (delq (selected-window) (dirvish-get-all 'root-window t))))
 
-(defun dirvish-recover-cursor-ad (&rest _)
-  "An advisor to recover cursor in current buffer."
-  (setq-local cursor-type 'bar))
+(defun dirvish-wdired-mode-ad (&rest _)
+  "Advisor function for `wdired-change-to-wdired-mode'."
+  (dired-move-to-end-of-filename t)
+  (setq-local cursor-type '(bar 4))
+  (remove-hook 'post-command-hook #'dirvish-update-body-h :local)
+  (mapc (lambda (ov) (unless (eq ov 'dirvish-zoom) (remove-overlays (point-min) (point-max) ov t)))
+        (mapcar 'car (dv-attributes-alist (dirvish-curr)))))
 
 (defun dirvish-refresh-cursor-ad (fn &rest args)
   "Only apply FN with ARGS when editing filenames in dirvish."

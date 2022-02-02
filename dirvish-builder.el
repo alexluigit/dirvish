@@ -37,7 +37,6 @@
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-char -1)) ((bobp) (forward-line 1)))
     (setq cursor-type (not (dired-move-to-filename)))
-    (setq dirvish--pos (point))
     (save-excursion
       (dirvish-body-update)
       (when-let ((filename (dired-get-filename nil t)))
@@ -74,7 +73,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (all-the-icons-dired-mode -1)
     (setq-local tab-width 2))
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
-  (setq dirvish--pos (point))
   (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory)))
   (dirvish-body-update)
   (let* ((dv (dirvish-curr))
