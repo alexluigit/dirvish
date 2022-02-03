@@ -59,6 +59,24 @@
     (overlay-put ov 'dirvish-icons t)
     (overlay-put ov 'after-string icon-str)))
 
+(defun dirvish--render-hl-line (_pos &optional hl-face)
+  "Highlight current line with HL-FACE."
+  (when hl-face
+    (let* ((beg (line-beginning-position))
+           (end (line-beginning-position 2))
+           (ol (make-overlay beg end)))
+      (overlay-put ol 'dirvish-hl-line t)
+      (overlay-put ol 'face 'highlight))))
+
+(defun dirvish--render-zoom (_pos render)
+  "Zoom in current Dirvish buffer when RENDER is non-nil."
+  (when render
+    (let ((o (make-overlay (point-min) (point-max))))
+      (setq line-spacing dirvish-body-zoom)
+      (overlay-put o 'dirvish-zoom t)
+      (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
+      (overlay-put o 'priority -999))))
+
 (defun dirvish--mode-line-sorter ()
   "Return a string showing current Dired file sort criteria."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
@@ -92,22 +110,24 @@
 
 (defun dirvish-body-update ()
   "Update attributes in dirvish body."
-  (setq dirvish--pos (point))
-  (when (> dirvish-body-zoom 0)
-    (remove-overlays (point-min) (point-max) 'dirvish-zoom t)
-    (let ((o (make-overlay (point-min) (point-max))))
-      (setq line-spacing dirvish-body-zoom)
-      (overlay-put o 'dirvish-zoom t)
-      (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
-      (overlay-put o 'priority -999)))
-  (remove-overlays (point-min) (point-max) 'dirvish-hl-line t)
-  (let* ((beg (line-beginning-position))
-         (end (line-beginning-position 2))
-         (ol (make-overlay beg end)))
-    (overlay-put ol 'dirvish-hl-line t)
-    (overlay-put ol 'face 'highlight))
-  (when-let ((renderers (dv-attributes-alist (dirvish-curr))))
-    (cl-dolist (renderer renderers) (dirvish-render (car renderer) (cdr renderer)))))
+  (let* ((curr-pos (point))
+         (p-min (point-min))
+         (p-max (point-max))
+         (fr-h (frame-height))
+         (beg (- 0 fr-h))
+         (end (+ (line-number-at-pos) fr-h))
+         (dv (dirvish-curr))
+         (attrs (dv-attributes-alist dv))
+         (ov-names (mapcar 'car attrs))
+         (renderers (mapcar 'cdr attrs)))
+    (mapc (lambda (ov) (remove-overlays p-min p-max ov t)) ov-names)
+    (save-excursion
+      (forward-line beg)
+      (while (and (not (eobp)) (< (line-number-at-pos) end))
+        (when-let ((pos (and (not (invisible-p (point)))
+                             (dired-move-to-filename nil))))
+          (mapc (lambda (rd) (funcall rd pos (and (eq pos curr-pos) 'highlight))) renderers))
+        (forward-line 1)))))
 
 (defun dirvish-mode-line-update ()
   "Show file details in mode line."
