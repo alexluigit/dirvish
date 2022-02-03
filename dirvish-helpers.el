@@ -72,13 +72,12 @@ If program returns non zero exit code return nil."
   "Format Dirvish header line."
   (when (dirvish-curr)
     (let* ((str (format-mode-line dirvish-header-line-format))
-           (scale (if (eq dirvish-header-style 'large) 2 1))
-           (ht (1+ (* scale (max dirvish-body-zoom 0.1))))
+           (ht (if (eq dirvish-header-style 'large) 1.2 1))
            (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
            (max-width (floor (/ win-width ht))))
       (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
         (setq str (substring str 0 -1)))
-      (propertize str 'display `((height ,ht) (raise ,(/ ht 10)))))))
+      (propertize str 'display `((height ,ht) (raise ,(/ (- dirvish-header-line-height ht) 2)))))))
 
 (defun dirvish-format-mode-line ()
   "Generate Dirvish mode line string."

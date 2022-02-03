@@ -69,7 +69,7 @@ leaving it for future dispatchers.  For details see
 
 (define-obsolete-variable-alias 'dirvish-body-fontsize-increment 'dirvish-body-zoom "0.9.9")
 
-(defcustom dirvish-body-zoom 0.1
+(defcustom dirvish-body-zoom 0.08
   "Font size increment in dirvish body.
 For example, if this value is 0.1, the font size in dirvish body
 will be scaled to 110% (1 + 0.1)."
@@ -129,7 +129,7 @@ STYLE should be one of these:
   :options '(nil large normal))
 
 (defcustom dirvish-face-remap-alist
-  '((header-line :height 1.2 :box (:line-width 4 :color "#303030"))
+  `((header-line :height ,(1+ dirvish-body-zoom) :box (:line-width 4 :color "#303030"))
     (highlight :inherit (highlight) :extend t)) ; line highlighting
   "Face remapping alist used in dirvish window.
 See `face-remapping-alist' for more details."
@@ -146,8 +146,7 @@ See `face-remapping-alist' for more details."
   "Template for displaying mode line in Dirvish instance.
 
 The value is a (LEFT . RIGHT) cons where LEFT/RIGHT has the same
-format as `mode-line-format'.  Set it to nil disables Dirvish
-footer."
+format as `mode-line-format'.  Set it to nil hides the footer."
   :group 'dirvish :type '(choice nil cons))
 
 (defvar dirvish-preview-setup-hook nil
@@ -158,6 +157,7 @@ footer."
 
 ;;;; Internal variables
 
+(defconst dirvish-header-line-height 1.5)
 (defconst dirvish-debouncing-delay 0.02)
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
