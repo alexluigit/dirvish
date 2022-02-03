@@ -15,13 +15,6 @@
 (require 'dirvish-options)
 (require 'dirvish-helpers)
 
-(defun dirvish-update-viewport-h (_win _pos)
-  "Refresh dirvish body attributes within viewport."
-  (let ((buf (current-buffer)))
-    ;; Do not update when current buffer exists in multiple windows
-    (when (< (cl-count-if (lambda (w) (eq (window-buffer w) buf)) (window-list)) 2)
-      (dirvish-body-update))))
-
 (defun dirvish-rebuild-parents-h (frame)
   "Rebuild dirvish layout in FRAME."
   (dirvish-reclaim frame)
@@ -35,8 +28,8 @@
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
-    (cond ((eobp) (forward-char -1)) ((bobp) (forward-line 1)))
-    (setq cursor-type (not (dired-move-to-filename)))
+    (cond ((eobp) (forward-line -1)) ((bobp) (forward-line 1)))
+    (dired-move-to-filename)
     (save-excursion
       (dirvish-body-update)
       (when-let ((filename (dired-get-filename nil t)))
@@ -86,7 +79,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                                   '((:eval (format-mode-line dirvish-header-line-format))))))
   (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
-  (add-hook 'window-scroll-functions #'dirvish-update-viewport-h nil :local)
   (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
   (add-hook 'quit-window-hook #'dirvish-quit-h nil :local)
