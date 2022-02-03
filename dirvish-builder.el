@@ -59,6 +59,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish-setup-dired-buffer))
   (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
+  (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `dirvish--hide-symlink'
   (setq cursor-type nil)
   (set-window-fringes nil 1 1)
   (when (bound-and-true-p all-the-icons-dired-mode)
@@ -66,6 +67,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (setq-local tab-width 2))
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory)))
+  (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (dirvish-body-update)
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))
@@ -76,7 +78,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                                 '((:eval (dirvish-format-mode-line)))))
     (setq header-line-format (and owp dirvish-header-line-format
                                   '((:eval (format-mode-line dirvish-header-line-format))))))
-  (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
