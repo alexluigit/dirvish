@@ -68,22 +68,6 @@ If program returns non zero exit code return nil."
               (setq exit-code (apply #'process-file program nil t nil args))))))
     (when (eq exit-code 0) output)))
 
-(defun dirvish-render (ov-name renderer)
-  "Remove overlay OV-NAME and call RENDERER for each line in viewport.
-
-RENDERER is a function which takes a position (point in current
-line) and face as args."
-  (remove-overlays (point-min) (point-max) ov-name t)
-  (save-excursion
-    (let ((beg (- 0 (frame-height)))
-          (end (+ (line-number-at-pos) (frame-height))))
-      (forward-line beg)
-      (while (and (not (eobp)) (< (line-number-at-pos) end))
-        (when-let ((pos (and (not (invisible-p (point)))
-                             (dired-move-to-filename nil))))
-          (funcall renderer pos (and (eq pos dirvish--pos) 'highlight)))
-        (forward-line 1)))))
-
 (defun dirvish-format-header-line ()
   "Format Dirvish header line."
   (when (dirvish-curr)

@@ -177,6 +177,10 @@ restore them after."
              (append '(dirvish-preview-disable-dispatcher)
                      (dv-preview-dispatchers dv)
                      '(dirvish-preview-default-dispatcher)))
+       (setf (dv-attributes-alist dv)
+             (append '((dirvish-hl-line . dirvish--render-hl-line)
+                       (dirvish-zoom    . dirvish--render-zoom))
+                     (dv-attributes-alist dv)))
        (dirvish-init-frame)
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given

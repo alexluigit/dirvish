@@ -174,7 +174,6 @@ footer."
 (defvar dirvish-repeat-timers '())
 (defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)
-(defvar-local dirvish--pos nil)
 (defvar-local dirvish--vc-backend nil)
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish--child-entry 'permanent-local t)

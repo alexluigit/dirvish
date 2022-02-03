@@ -30,12 +30,11 @@
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-line -1)) ((bobp) (forward-line 1)))
     (dired-move-to-filename)
-    (save-excursion
-      (dirvish-body-update)
-      (when-let ((filename (dired-get-filename nil t)))
-        (setf (dv-index-path dv) filename)
-        (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
-        (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay)))))
+    (dirvish-body-update)
+    (when-let ((filename (dired-get-filename nil t)))
+      (setf (dv-index-path dv) filename)
+      (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
+      (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay))))
 
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
