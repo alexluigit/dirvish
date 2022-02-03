@@ -77,6 +77,19 @@
       (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
       (overlay-put o 'priority -999))))
 
+(defun dirvish--hide-symlink-target (_pos _face)
+  "Hide symlink target using overlay."
+  ;; This hack solves 2 issues:
+  ;; 1. Hide " -> " arrow of symlink files as well.
+  ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
+	(dired-move-to-end-of-filename)
+	(when (and dired-hide-details-mode
+             (default-value 'dired-hide-details-hide-symlink-targets)
+             (< (+ (point) 4) (line-end-position)))
+    (let ((o (make-overlay (point) (line-end-position))))
+      (overlay-put o 'dirvish-symlink-target t)
+      (overlay-put o 'invisible t))))
+
 (defun dirvish--mode-line-sorter ()
   "Return a string showing current Dired file sort criteria."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
