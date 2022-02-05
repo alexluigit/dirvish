@@ -76,7 +76,7 @@
   (interactive (list (read-file-name "Open in new frame: ")))
   (let ((fr (make-frame '((name . "dirvish-emacs")))))
     (with-selected-frame fr
-      (switch-to-buffer (get-buffer-create "*scratch*"))
+      (switch-to-buffer (get-buffer-create dirvish-temp-buffer))
       (dirvish-here path :depth dirvish-depth))))
 
 (defun dirvish-up-directory (&optional other-window)
@@ -90,7 +90,7 @@ directory in another window."
         (user-error "Dirvish: you're in root directory")
       (if other-window
           (progn
-            (and other-window (switch-to-buffer-other-window "*scratch*"))
+            (and other-window (switch-to-buffer-other-window dirvish-temp-buffer))
             (dirvish-here parent :depth -1))
         (dirvish-find-file parent t)))))
 

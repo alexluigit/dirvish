@@ -62,7 +62,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (when-let ((dv (dirvish-live-p)))
     (unless (dirvish-dired-p dv) (dirvish-deactivate dv)))
-  (switch-to-buffer-other-window "*scratch*")
+  (switch-to-buffer-other-window dirvish-temp-buffer)
   (dirvish-activate (dirvish-new :depth -1))
   (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
   (dirvish-find-file dirname))
@@ -71,7 +71,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   "Override `dired-other-tab' command.
 DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (switch-to-buffer-other-tab "*scratch*")
+  (switch-to-buffer-other-tab dirvish-temp-buffer)
   (dirvish-drop)
   (dirvish-activate (dirvish-new :depth -1))
   (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
@@ -82,7 +82,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
 DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
   (let (after-focus-change-function)
-    (switch-to-buffer-other-frame "*scratch*")
+    (switch-to-buffer-other-frame dirvish-temp-buffer)
     (dirvish-activate (dirvish-new :depth dirvish-depth))
     (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
     (dirvish-find-file dirname)))
