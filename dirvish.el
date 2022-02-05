@@ -49,7 +49,7 @@
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-here path :depth dirvish-depth :window-conf (current-window-configuration)))
+  (dirvish-here path :depth dirvish-depth))
 
 ;;;###autoload
 (defun dirvish-dired (&optional path other-window)

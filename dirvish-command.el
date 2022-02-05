@@ -77,7 +77,7 @@
   (let ((fr (make-frame '((name . "dirvish-emacs")))))
     (with-selected-frame fr
       (switch-to-buffer (get-buffer-create "*scratch*"))
-      (dirvish-here path :depth dirvish-depth :window-conf (current-window-configuration)))))
+      (dirvish-here path :depth dirvish-depth))))
 
 (defun dirvish-up-directory (&optional other-window)
   "Run Dirvish on parent directory of current directory.
@@ -167,8 +167,7 @@ update `dirvish-history-ring'."
               (dirvish-activate
                (dirvish-new
                  :depth dv-depth
-                 :transient (dv-name dv-tran)
-                 :window-conf (current-window-configuration))))
+                 :transient (dv-name dv-tran))))
             (dirvish-build))
         (find-file entry)))))
 

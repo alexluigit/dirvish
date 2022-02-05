@@ -129,7 +129,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
    ()
    :documentation "holds all file preview buffers in this instance.")
   (window-conf
-   nil
+   (current-window-configuration)
    :documentation "is the window configuration given by `current-window-configuration'.")
   (root-window
    (progn
@@ -195,8 +195,7 @@ given, it is executed to unset the window configuration brought
 by this instance."
   (declare (indent defun))
   `(progn
-     (when-let ((win-conf (dv-window-conf ,dv)))
-       (set-window-configuration win-conf))
+     (dirvish-hide ,dv)
      (let ((tran-list (frame-parameter nil 'dirvish--transient)))
        (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
      (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
@@ -204,6 +203,11 @@ by this instance."
        (mapc #'kill-when-live (dv-preview-buffers ,dv)))
      (remhash (dv-name ,dv) (dirvish-hash))
      ,@body))
+
+(defun dirvish-hide (dv)
+  "Revert window configuration of DV."
+  (when-let ((win-conf (dv-window-conf dv)))
+    (set-window-configuration win-conf)))
 
 (defun dirvish-start-transient (old-dv new-dv)
   "Doc."
