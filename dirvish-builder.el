@@ -40,7 +40,7 @@
   "Quit current Dirvish."
   (dirvish-deactivate (gethash dirvish--curr-name (dirvish-hash)))
   (and (string= (frame-parameter nil 'name) "dirvish-emacs") (delete-frame))
-  (mode-line-other-buffer))
+  (unless (window-parameter nil 'window-side) (switch-to-buffer "*scratch*")))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
