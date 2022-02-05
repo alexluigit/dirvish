@@ -20,10 +20,8 @@
 PATH defaults to variable `buffer-file-name'.
 KEYWORDS are slot key-values for `dirvish-new'."
   (declare (indent defun))
-  (interactive)
-  `(let* ((file (or ,path buffer-file-name))
-          (dir (if file (expand-file-name (file-name-directory file))
-                 (expand-file-name default-directory))))
+  `(let* ((f (or ,path buffer-file-name))
+          (dir (expand-file-name (if f (file-name-directory f) default-directory))))
      (dirvish-activate (dirvish-new ,@keywords))
      (dirvish-find-file dir)))
 

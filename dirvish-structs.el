@@ -131,10 +131,11 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (window-conf
    (current-window-configuration)
    :documentation "is the window configuration given by `current-window-configuration'.")
+  (root-window-func
+   #'frame-selected-window
+   :documentation "is the main dirvish window.")
   (root-window
-   (progn
-     (when (window-parameter nil 'window-side) (delete-window))
-     (frame-selected-window))
+   nil
    :documentation "is the main dirvish window.")
   (root-dir-buf-alist
    ()
@@ -228,6 +229,15 @@ by this instance."
      (dirvish-kill dv))
    finally (dirvish-deactivate tran-dv)))
 
+(defun dirvish--create-root-window (dv)
+  "Create root window of DV."
+  (let ((depth (dv-depth dv))
+        (r-win (funcall (dv-root-window-func dv))))
+    (when (and (>= depth 0) (window-parameter r-win 'window-side))
+      (setq r-win (next-window)))
+    (setf (dv-root-window dv) r-win)
+    r-win))
+
 (defun dirvish-activate (dv)
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
@@ -236,10 +246,10 @@ by this instance."
     (cond ((dv-transient dv) nil)
           ((and (not (dirvish-dired-p old-dv))
                 (not (dirvish-dired-p dv)))
-           (setf (dv-window-conf dv) (dv-window-conf old-dv))
-           (setf (dv-window-conf old-dv) nil)
-           (dirvish-deactivate old-dv))
+           (dirvish-deactivate dv)
+           (user-error "Dirvish: using current session"))
           (t (dirvish-deactivate old-dv))))
+  (dirvish--create-root-window dv)
   (set-frame-parameter nil 'dirvish--curr dv)
   (run-hooks 'dirvish-activation-hook)
   dv)
