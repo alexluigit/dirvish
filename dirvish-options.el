@@ -163,6 +163,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish-saved-display-buffer-alist display-buffer-alist)
+(defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
 (defconst dirvish-icon-v-offset 0.01)
 (defconst dirvish-display-buffer-alist
   (append '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window))) display-buffer-alist))
