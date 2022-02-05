@@ -162,7 +162,6 @@ update `dirvish-history-ring'."
                 (ring-insert dirvish-history-ring hist)))
             (switch-to-buffer (dirvish--buffer-for-dir dv entry switches))
             (setq dirvish--child-entry (or bname curr-dir))
-            (setf (dv-index-path dv) (or (dired-get-filename nil t) entry))
             (when (dirvish-p dv-tran)
               (dirvish-activate
                (dirvish-new
