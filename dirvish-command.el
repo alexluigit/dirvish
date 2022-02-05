@@ -134,6 +134,7 @@ directory in another window."
   (when-let (dv (dirvish-live-p))
     (unless (dirvish-dired-p dv)
       (setf (dv-depth dv) level)
+      (setf (dv-fullscreen-depth dv) level)
       (dirvish-build))))
 
 (defun dirvish-find-file (&optional file ignore-hist)

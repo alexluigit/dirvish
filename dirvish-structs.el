@@ -105,12 +105,37 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
                      (mapcar dv-slot (hash-table-values (dirvish-hash))))))
     (delete-dups (flatten-tree all-vals))))
 
-(cl-defstruct (dirvish (:conc-name dv-))
+(cl-defstruct
+    (dirvish
+     (:conc-name dv-)
+     (:constructor
+      make-dirvish
+      (&key
+       (depth dirvish-depth)
+       (extra-renderers nil)
+       (custom-preview-dispatchers dirvish-preview-dispatchers)
+       (root-window-func #'frame-selected-window)
+       &aux
+       (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
+       (attributes-alist
+        (append
+         `(,(and dirvish-show-icons (cons 'dirvish-icons 'dirvish--render-icon))
+           (dirvish-hl-line        . dirvish--render-hl-line)
+           (dirvish-zoom           . dirvish--render-zoom)
+           (dirvish-symlink-target . dirvish--hide-symlink-target))
+         extra-renderers))
+       (preview-dispatchers
+        (append '(dirvish-preview-disable-dispatcher)
+                custom-preview-dispatchers
+                '(dirvish-preview-default-dispatcher))))))
   "Define dirvish data type."
   (name
    (cl-gensym)
    :documentation "is a symbol that is unique for every instance.")
   (depth
+   dirvish-depth
+   :documentation "TODO.")
+  (fullscreen-depth
    dirvish-depth
    :documentation "TODO.")
   (transient
@@ -172,17 +197,6 @@ restore them after."
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
     `(let ((dv (make-dirvish ,@keywords)))
-       (when dirvish-show-icons
-         (push (cons 'dirvish-icons 'dirvish--render-icon) (dv-attributes-alist dv)))
-       (setf (dv-preview-dispatchers dv)
-             (append '(dirvish-preview-disable-dispatcher)
-                     (dv-preview-dispatchers dv)
-                     '(dirvish-preview-default-dispatcher)))
-       (setf (dv-attributes-alist dv)
-             (append '((dirvish-hl-line        . dirvish--render-hl-line)
-                       (dirvish-zoom           . dirvish--render-zoom)
-                       (dirvish-symlink-target . dirvish--hide-symlink-target))
-                     (dv-attributes-alist dv)))
        (dirvish-init-frame)
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given
