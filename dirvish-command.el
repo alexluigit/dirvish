@@ -120,12 +120,23 @@ directory in another window."
       (dired-sort-other (string-join (list (dv-ls-switches dv) order) " ")))))
 
 (defun dirvish-toggle-fullscreen ()
-  "Toggle between `dirvish-dired' and `dirvish'."
+  "Toggle fullscreen of current Dirvish."
   (interactive)
-  (if-let (dv (dirvish-live-p))
-      (if (dirvish-dired-p dv)
-          (dirvish-here nil :depth dirvish-depth :window-conf (current-window-configuration))
-        (dirvish-here nil :depth -1))
+  (if-let* ((dv (dirvish-live-p))
+            (old-depth (dv-depth dv))
+            (fs-depth (dv-fullscreen-depth dv))
+            (new-depth (if (eq old-depth -1) fs-depth -1))
+            (buf (current-buffer)))
+      (progn
+        (setf (dv-depth dv) new-depth)
+        (dirvish-drop)
+        (dirvish-hide dv)
+        (setf (dv-depth dv) new-depth)
+        (with-selected-window (dirvish--create-root-window dv)
+          (switch-to-buffer buf)
+          (dirvish-reclaim)
+          (dirvish-build)
+          (dirvish-update-body-h)))
     (user-error "Dirvish: not in a dirvish buffer")))
 
 (defun dirvish-change-depth (level)
