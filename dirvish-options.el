@@ -157,7 +157,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 
 ;;;; Internal variables
 
-(defconst dirvish-header-line-height 1.5)
+(defconst dirvish-header-line-height 1.99)
 (defconst dirvish-debouncing-delay 0.02)
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
