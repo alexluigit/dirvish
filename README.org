@@ -143,7 +143,7 @@ package:
 - [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
 - [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
 - [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: File preview in minibuffer.
-- [[file:extensions/dirvish-diff.el][dirvish-diff.el]]: Show version-controlled diff in dirvish preview window.
+- [[file:extensions/dirvish-diff.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
 
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers. See
