@@ -105,6 +105,12 @@ If program returns non zero exit code return nil."
          (new-window (split-window-no-error root-win size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
+(defun dirvish--display-side-window ()
+  "Display `dirvish-temp-buffer' at side window."
+  (let* ((buf (get-buffer-create dirvish-temp-buffer))
+         (win (display-buffer-in-side-window buf dirvish-side-display-alist)))
+    (select-window win)))
+
 (defun dirvish--enlarge (&rest _)
   "Kill all dirvish parent windows except the root one."
   (when (dirvish-live-p)
