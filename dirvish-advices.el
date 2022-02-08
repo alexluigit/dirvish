@@ -111,7 +111,7 @@ FILE-NAME are the same args in `dired-jump'."
     (delete-region pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
     (unless (memq (dv-transient old-dv) (frame-parameter nil 'dirvish--transient))
       (let ((new-dv (dirvish-new :depth (dv-depth old-dv))))
-        (dirvish-start-transient old-dv new-dv)
+        (dirvish--start-transient old-dv new-dv)
         (unless (dirvish-dired-p old-dv)
           (setf (dv-preview-window new-dv) p-win))))
     (dirvish-setup 'keep-dired)))
@@ -131,7 +131,7 @@ If ALL-FRAMES, search target directories in all frames."
   (setq-local cursor-type '(bar 4))
   (remove-hook 'post-command-hook #'dirvish-update-body-h :local)
   (mapc (lambda (ov) (unless (eq ov 'dirvish-zoom) (remove-overlays (point-min) (point-max) ov t)))
-        (mapcar 'car (dv-attributes-alist (dirvish-curr)))))
+        (mapcar #'car (dv-attributes-alist (dirvish-curr)))))
 
 (defun dirvish-refresh-cursor-ad (fn &rest args)
   "Only apply FN with ARGS when editing filenames in dirvish."
@@ -148,7 +148,7 @@ Use it as a `:before' advisor to target function."
   (let* ((dv (dirvish-live-p))
          (dv-tran (and dv (dv-transient dv))))
     (if dv-tran
-        (dirvish-end-transient dv-tran)
+        (dirvish--end-transient dv-tran)
       (and dv (dirvish-deactivate dv)))))
 
 (defun dirvish-ignore-ad (fn &rest args)

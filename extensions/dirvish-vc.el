@@ -18,7 +18,6 @@
 (declare-function magit-stage-file "magit-apply")
 (declare-function magit-unstage-file "magit-apply")
 (require 'dirvish)
-(require 'dirvish-menu)
 
 (defvar-local dirvish--git-msgs-alist nil)
 (defvar-local dirvish--vc-state-alist nil)
@@ -96,6 +95,7 @@ This variable is used in `dirvish--render-gutter'."
       (overlay-put ov 'dirvish-git-msg t)
       (overlay-put ov 'after-string str))))
 
+;;;###autoload
 (defun dirvish-vc-diff-dispatcher (_file _dv)
   "A dispatcher function for `dirvish-preview-dispatchers'.
 If `vc-diff' returns t, then show its result buffer as preview."

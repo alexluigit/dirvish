@@ -131,8 +131,8 @@
          (end (+ (line-number-at-pos) fr-h))
          (dv (dirvish-curr))
          (attrs (dv-attributes-alist dv))
-         (ov-names (mapcar 'car attrs))
-         (renderers (mapcar 'cdr attrs)))
+         (ov-names (mapcar #'car attrs))
+         (renderers (mapcar #'cdr attrs)))
     (mapc (lambda (ov) (remove-overlays p-min p-max ov t)) ov-names)
     (save-excursion
       (forward-line beg)
