@@ -1,4 +1,4 @@
-;;; dirvish-diff.el --- Show diff in Dirvish preview window -*- lexical-binding: t -*-
+;;; dirvish-vc.el --- Version-control integration for Dirvish -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
@@ -10,27 +10,20 @@
 
 ;;; Commentary:
 
-;; This is a dirvish extension which provides commands to show/stage diffs in
-;; Dirvish preview window.
+;; Show version-control info such as git commit message at root window and git
+;; diff at preview window in Dirvish.
 
 ;;; Code:
 
 (declare-function magit-stage-file "magit-apply")
 (declare-function magit-unstage-file "magit-apply")
 (require 'dirvish)
-
-(defvar dirvish-diff-dispatchers
-  (append '(dirvish-vc-diff-dispatcher) dirvish-preview-dispatchers))
+(require 'dirvish-menu)
 
 (defvar-local dirvish--git-msgs-alist nil)
 (defvar-local dirvish--vc-state-alist nil)
 
-(defcustom dirvish-git-log-format "%s"
-  "Git log pretty format for `dirvish--get-commit-info'.
-See PRETTY-FORMAT section of git-log's manpage for details."
-  :group 'dirvish :type 'string)
-
-(defcustom dirvish-diff-vc-state-char-alist
+(defcustom dirvish-vc-state-char-alist
   '((up-to-date       . ("  " . vc-up-to-date-state))
     (edited           . ("E " . vc-edited-state))
     (added            . ("+ " . vc-locally-added-state))
@@ -49,12 +42,12 @@ This variable is used in `dirvish--render-gutter'."
   :group 'dirvish
   :type '(alist :key-type symbol :value-type 'cons))
 
-(defface dirvish-commit-message-face
+(defface dirvish-git-commit-message-face
   '((t (:inherit font-lock-comment-face)))
   "Face for commit message overlays."
   :group 'dirvish)
 
-(defun dirvish--get-state (file backend)
+(defun dirvish--get-vc-state (file backend)
   "Get vc state for FILE with BACKEND."
   (let ((file (or (file-remote-p file 'localname) file))
         (state (alist-get file dirvish--vc-state-alist nil nil #'string=)))
@@ -63,48 +56,48 @@ This variable is used in `dirvish--render-gutter'."
       (push (cons file state) dirvish--vc-state-alist))
     state))
 
-(defun dirvish--render-gutter (pos _hl-face)
+;;;###autoload
+(defun dirvish--render-vc-gutter (pos _hl-face)
   "Render vc gutter for file in POS."
   (when dirvish--vc-backend
     (let* ((entry (dired-get-filename nil 'noerror))
-           (state (dirvish--get-state entry dirvish--vc-backend))
-           (state-cons (alist-get state dirvish-diff-vc-state-char-alist))
+           (state (dirvish--get-vc-state entry dirvish--vc-backend))
+           (state-cons (alist-get state dirvish-vc-state-char-alist))
            (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
            (face (cdr state-cons))
            (ov (make-overlay (1- pos) pos)))
-      (overlay-put ov 'dirvish-diff-gutter t)
+      (overlay-put ov 'dirvish-vc-gutter t)
       (overlay-put ov 'face face)
       (overlay-put ov 'display gutter-str))))
 
-(defun dirvish--get-commit-info (file)
+(defun dirvish--get-git-commit-msg (file)
   "Get commit message info for FILE."
   (let ((file (or (file-remote-p file 'localname) file))
         (msg (alist-get file dirvish--git-msgs-alist nil nil #'string=)))
     (unless msg
-      (setq msg (dirvish--shell-to-string
-                 "git" "log" "-1" (concat "--pretty=" dirvish-git-log-format)
-                 file))
+      (setq msg (dirvish--shell-to-string "git" "log" "-1" "--pretty=%s" file))
       (when (and msg (not (string= "" msg))) (setq msg (substring msg 0 -1)))
       (push (cons file msg) dirvish--git-msgs-alist))
     msg))
 
-(defun dirvish--render-git-info (_pos hl-face)
+;;;###autoload
+(defun dirvish--render-git-msg (_pos hl-face)
   "Render git info with optional HL-FACE."
   (when dirvish--vc-backend
     (dired-move-to-end-of-filename t)
     (let* ((entry (dired-get-filename nil 'noerror))
-           (info (dirvish--get-commit-info entry))
+           (info (dirvish--get-git-commit-msg entry))
            (str (concat "\t" info))
            (ov (make-overlay (1- (point)) (point))))
       (if-let (hl-face (fg (face-attribute hl-face :foreground))
                        (bg (face-attribute hl-face :background)))
           (add-face-text-property 0 (length str) `(:background ,bg :foreground ,fg) t str)
-        (add-face-text-property 0 (length str) 'dirvish-commit-message-face t str))
-      (overlay-put ov 'dirvish-git-info t)
+        (add-face-text-property 0 (length str) 'dirvish-git-commit-message-face t str))
+      (overlay-put ov 'dirvish-git-msg t)
       (overlay-put ov 'after-string str))))
 
 (defun dirvish-vc-diff-dispatcher (_file _dv)
-  "A dispatcher function for `dirvish-diff-dispatchers'.
+  "A dispatcher function for `dirvish-preview-dispatchers'.
 If `vc-diff' returns t, then show its result buffer as preview."
   (when (and dirvish--vc-backend
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
@@ -130,18 +123,5 @@ If `vc-diff' returns t, then show its result buffer as preview."
   (interactive)
   (dirvish--magit-on-files #'magit-unstage-file fileset))
 
-;;;###autoload
-(defun dirvish-diff (&optional path)
-  "Open dirvish to show diff generated by version-control tools.
-If called with \\[universal-arguments], prompt for PATH,
-otherwise it defaults to variable `buffer-file-name'."
-  (interactive (list (and current-prefix-arg (read-file-name "Dirvish-diff: "))))
-  (dirvish-here path
-    :depth 0
-    :window-conf (current-window-configuration)
-    :preview-dispatchers dirvish-diff-dispatchers
-    :attributes-alist '((dirvish-diff-gutter . dirvish--render-gutter)
-                        (dirvish-git-info . dirvish--render-git-info))))
-
-(provide 'dirvish-diff)
-;;; dirvish-diff.el ends here
+(provide 'dirvish-vc)
+;;; dirvish-vc.el ends here

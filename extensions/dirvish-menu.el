@@ -66,7 +66,6 @@
      ("(" "  Hide detail info"                    dired-hide-details-mode)
      ("." "  Toggle filters"                      dired-filter-mode :if (lambda () (featurep 'dired-filter)))
      ("." "  Toggle filters"                      dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
-     ("D" "  Toggle git diff"                     dirvish-diff :if-derived dirvish-mode)
      ("M-m" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
      ("M-l" "Change parent depth"                 dirvish-change-depth)]
     ["Subdirs"
