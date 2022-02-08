@@ -211,15 +211,15 @@ by this instance."
   (when-let ((win-conf (dv-window-conf dv)))
     (set-window-configuration win-conf)))
 
-(defun dirvish-start-transient (old-dv new-dv)
-  "Doc."
+(defun dirvish--start-transient (old-dv new-dv)
+  "Mark OLD-DV and NEW-DV as a parent/child transient Dirvish."
   (setf (dv-transient new-dv) old-dv)
   (let ((tran-list (frame-parameter nil 'dirvish--transient)))
     (set-frame-parameter nil 'dirvish--transient (push old-dv tran-list)))
   (dirvish-activate new-dv))
 
-(defun dirvish-end-transient (tran)
-  "Doc."
+(defun dirvish--end-transient (tran)
+  "End transient of Dirvish instance or name TRAN."
   (cl-loop
    with hash = (dirvish-hash)
    with tran-dv = (if (dirvish-p tran) tran (gethash tran hash))

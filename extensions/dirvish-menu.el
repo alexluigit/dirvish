@@ -21,6 +21,7 @@
 (require 'seq)
 (require 'subr-x)
 (require 'transient)
+(require 'dirvish-vc)
 
 (defgroup dirvish-menu nil
   "Useful preset transient commands."
