@@ -112,22 +112,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
       make-dirvish
       (&key
        (depth dirvish-depth)
-       (extra-renderers nil)
-       (custom-preview-dispatchers dirvish-preview-dispatchers)
        (root-window-func #'frame-selected-window)
        &aux
-       (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
-       (attributes-alist
-        (append
-         `(,(and dirvish-show-icons (cons 'dirvish-icons 'dirvish--render-icon))
-           (dirvish-hl-line        . dirvish--render-hl-line)
-           (dirvish-zoom           . dirvish--render-zoom)
-           (dirvish-symlink-target . dirvish--hide-symlink-target))
-         extra-renderers))
-       (preview-dispatchers
-        (append '(dirvish-preview-disable-dispatcher)
-                custom-preview-dispatchers
-                '(dirvish-preview-default-dispatcher))))))
+       (fullscreen-depth (if (>= depth 0) depth dirvish-depth)))))
   "Define dirvish data type."
   (name
    (cl-gensym)
@@ -252,6 +239,24 @@ by this instance."
     (setf (dv-root-window dv) r-win)
     r-win))
 
+(defun dirvish--refresh-slots (dv)
+  "Update dynamic slot values of DV."
+  (let* ((attrs (append '(hl-line zoom symlink-target) dirvish-attributes))
+         (attrs-alist
+          (cl-loop for attr in attrs
+                   for attr-ov-name = (intern (format "dirvish-%s" attr))
+                   for attr-renderer = (intern (format "dirvish--render-%s" attr))
+                   collect (cons attr-ov-name attr-renderer)))
+         (preview-dps
+          (cl-loop for dp-name in (append '(disable) dirvish-preview-dispatchers '(default))
+                   for dp-func-name = (intern (format "dirvish-preview-%s-dispatcher" dp-name))
+                   collect dp-func-name)))
+    (setf (dv-attributes-alist dv) attrs-alist)
+    (setf (dv-preview-dispatchers dv) preview-dps)
+    (when (and (seq-intersection attrs dirvish-enlarge-attributes)
+               (not (dirvish-dired-p dv)))
+      (setf (dv-depth dv) 0))))
+
 (defun dirvish-activate (dv)
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
@@ -263,6 +268,7 @@ by this instance."
            (dirvish-deactivate dv)
            (user-error "Dirvish: using current session"))
           (t (dirvish-deactivate old-dv))))
+  (dirvish--refresh-slots dv)
   (dirvish--create-root-window dv)
   (set-frame-parameter nil 'dirvish--curr dv)
   (run-hooks 'dirvish-activation-hook)

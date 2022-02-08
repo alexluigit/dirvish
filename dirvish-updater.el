@@ -42,7 +42,7 @@
               (propertize path-tail 'face 'dired-mark)
               (propertize file-name 'face 'font-lock-constant-face)))))
 
-(defun dirvish--render-icon (pos &optional hl-face)
+(defun dirvish--render-all-the-icons (pos &optional hl-face)
   "Render icon in POS with optional HL-FACE."
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icon-v-offset))
@@ -56,7 +56,7 @@
     (when-let (hl-face (fg (face-attribute hl-face :foreground))
                        (bg (face-attribute hl-face :background)))
       (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
-    (overlay-put ov 'dirvish-icons t)
+    (overlay-put ov 'dirvish-all-the-icons t)
     (overlay-put ov 'after-string icon-str)))
 
 (defun dirvish--render-hl-line (_pos &optional hl-face)
@@ -77,7 +77,7 @@
       (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
       (overlay-put o 'priority -999))))
 
-(defun dirvish--hide-symlink-target (_pos _face)
+(defun dirvish--render-symlink-target (_pos _face)
   "Hide symlink target using overlay."
   ;; This hack solves 2 issues:
   ;; 1. Hide " -> " arrow of symlink files as well.

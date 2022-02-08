@@ -227,8 +227,7 @@ A PREVIEW-TYPE can be one of following values:
         (enable-local-variables nil)
         (inhibit-modification-hooks t)
         (auto-save-default nil)
-        (delay-mode-hooks t)
-        (dirvish-show-icons nil))
+        (delay-mode-hooks t))
     (when (and (memq preview-type '(shell image-cache))
                (not (executable-find cmd)))
       (setq preview-type 'info
