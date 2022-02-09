@@ -59,7 +59,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish-setup-dired-buffer))
   (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
-  (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `dirvish--hide-symlink'
+  (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `dirvish--render-symlink-target'
   (setq cursor-type nil)
   (set-window-fringes nil 1 1)
   (when (bound-and-true-p all-the-icons-dired-mode)
