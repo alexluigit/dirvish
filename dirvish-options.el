@@ -18,7 +18,8 @@
   "A better Dired."
   :group 'dired)
 
-(defcustom dirvish-attributes `(,(require 'vscode-icon nil t))
+(defconst dirvish-icon-backend (require 'vscode-icon nil t))
+(defcustom dirvish-attributes `(,dirvish-icon-backend)
   "File attributes showing in Dirvish file lines."
   :group 'dirvish :type '(repeat dirvish-attribute))
 
@@ -72,7 +73,7 @@ leaving it for future dispatchers.  For details see
 
 (define-obsolete-variable-alias 'dirvish-body-fontsize-increment 'dirvish-body-zoom "0.9.9")
 
-(defcustom dirvish-body-zoom 0.08
+(defcustom dirvish-body-zoom 0.05
   "Font size increment in dirvish body.
 For example, if this value is 0.1, the font size in dirvish body
 will be scaled to 110% (1 + 0.1)."

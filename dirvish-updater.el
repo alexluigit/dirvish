@@ -26,6 +26,32 @@
   (setq dired-filter-show-filters nil)
   (setq dired-filter-revert 'always))
 
+(dirvish-define-attribute hl-line (hl-face) :lineform
+  (when hl-face
+    (let* ((beg (line-beginning-position))
+           (end (line-beginning-position 2))
+           (ol (make-overlay beg end)))
+      (overlay-put ol 'dirvish-hl-line t)
+      (overlay-put ol 'face 'highlight))))
+
+(dirvish-define-attribute zoom () :bodyform
+  (let ((o (make-overlay (point-min) (point-max))))
+    (setq line-spacing dirvish-body-zoom)
+    (overlay-put o 'dirvish-zoom t)
+    (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
+    (overlay-put o 'priority -999)))
+
+;; This hack solves 2 issues:
+;; 1. Hide " -> " arrow of symlink files as well.
+;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
+(dirvish-define-attribute symlink-target (end) :lineform
+	(when (and dired-hide-details-mode
+             (default-value 'dired-hide-details-hide-symlink-targets)
+             (< (+ end 4) (line-end-position)))
+    (let ((o (make-overlay end (line-end-position))))
+      (overlay-put o 'dirvish-symlink-target t)
+      (overlay-put o 'invisible t))))
+
 (defun dirvish--header-line-path ()
   "Compose header string."
   (when-let ((dv (dirvish-curr)))
@@ -35,41 +61,10 @@
            (path-regex (concat (getenv "HOME") "/\\|\\/$"))
            (path-tail (replace-regexp-in-string path-regex "" file-path))
            (file-name (file-name-nondirectory index)))
-      (format "  %s %s %s"
+      (format " %s %s %s"
               (propertize (if path-prefix-home "~" ":"))
               (propertize path-tail 'face 'dired-mark)
               (propertize file-name 'face 'font-lock-constant-face)))))
-
-(defun dirvish--render-hl-line (_pos &optional hl-face)
-  "Highlight current line with HL-FACE."
-  (when hl-face
-    (let* ((beg (line-beginning-position))
-           (end (line-beginning-position 2))
-           (ol (make-overlay beg end)))
-      (overlay-put ol 'dirvish-hl-line t)
-      (overlay-put ol 'face 'highlight))))
-
-(defun dirvish--render-zoom (_pos render)
-  "Zoom in current Dirvish buffer when RENDER is non-nil."
-  (when render
-    (let ((o (make-overlay (point-min) (point-max))))
-      (setq line-spacing dirvish-body-zoom)
-      (overlay-put o 'dirvish-zoom t)
-      (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
-      (overlay-put o 'priority -999))))
-
-(defun dirvish--render-symlink-target (_pos _face)
-  "Hide symlink target using overlay."
-  ;; This hack solves 2 issues:
-  ;; 1. Hide " -> " arrow of symlink files as well.
-  ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
-	(dired-move-to-end-of-filename)
-	(when (and dired-hide-details-mode
-             (default-value 'dired-hide-details-hide-symlink-targets)
-             (< (+ (point) 4) (line-end-position)))
-    (let ((o (make-overlay (point) (line-end-position))))
-      (overlay-put o 'dirvish-symlink-target t)
-      (overlay-put o 'invisible t))))
 
 (defun dirvish--mode-line-sorter ()
   "Return a string showing current Dired file sort criteria."
@@ -105,22 +100,21 @@
 (defun dirvish-body-update ()
   "Update attributes in dirvish body."
   (let* ((curr-pos (point))
-         (p-min (point-min))
-         (p-max (point-max))
          (fr-h (frame-height))
          (beg (- 0 fr-h))
          (end (+ (line-number-at-pos) fr-h))
          (dv (dirvish-curr))
          (attrs (dv-attributes-alist dv))
-         (ov-names (mapcar #'car attrs))
-         (renderers (mapcar #'cdr attrs)))
-    (mapc (lambda (ov) (remove-overlays p-min p-max ov t)) ov-names)
+         (body-renderers (mapcar #'car attrs))
+         (line-renderers (mapcar #'cdr attrs)))
+    (mapc #'funcall body-renderers)
     (save-excursion
       (forward-line beg)
       (while (and (not (eobp)) (< (line-number-at-pos) end))
-        (when-let ((pos (and (not (invisible-p (point)))
-                             (dired-move-to-filename nil))))
-          (mapc (lambda (rd) (funcall rd pos (and (eq pos curr-pos) 'highlight))) renderers))
+        (when-let ((beg (and (not (invisible-p (point)))
+                             (dired-move-to-filename nil)))
+                   (end (dired-move-to-end-of-filename t)))
+          (mapc (lambda (rd) (funcall rd beg end (and (eq beg curr-pos) 'highlight))) line-renderers))
         (forward-line 1)))))
 
 (defun dirvish-mode-line-update ()

@@ -38,6 +38,31 @@ FRAME defaults to current frame."
       (or dirvish-override-dired-mode (dirvish--remove-advices)))
     (set-frame-parameter nil 'dirvish--curr (gethash dirvish--curr-name (dirvish-hash)))))
 
+;;;###autoload
+(cl-defmacro dirvish-define-attribute (name arglist &key bodyform lineform)
+  "Define dirvish attribute NAME.
+
+An attribute contains two rendering functions that being called
+on `post-command-hook': `dirvish--render-NAME-body/line'.  The
+former one takes no argument and runs BODYFORM once.  The latter
+one takes ARGLIST and runs LINEFORM for every line where ARGLIST
+can have element of `beg' (filename beginning position),
+`end' (filename end position), or `hl-face' (indicate current
+line when present)."
+  (declare (indent defun))
+  (let* ((attr-name (intern (format "dirvish-%s" name)))
+         (body-func-name (intern (format "dirvish--render-%s-body" name)))
+         (line-func-name (intern (format "dirvish--render-%s-line" name)))
+         (line-arglist '(beg end hl-face))
+         (ignore-list (cl-set-difference line-arglist arglist)))
+    `(progn
+       (defun ,body-func-name ()
+         (remove-overlays (point-min) (point-max) ',attr-name t)
+         ,bodyform)
+       (defun ,line-func-name ,line-arglist
+         (ignore ,@ignore-list)
+         ,lineform))))
+
 (defmacro dirvish--get-buffer (type &rest body)
   "Return dirvish buffer with TYPE.
 If BODY is non-nil, create the buffer and execute BODY in it."
@@ -248,9 +273,9 @@ by this instance."
   (let* ((attrs (remove nil (append '(hl-line zoom symlink-target) dirvish-attributes)))
          (attrs-alist
           (cl-loop for attr in attrs
-                   for attr-ov-name = (intern (format "dirvish-%s" attr))
-                   for attr-renderer = (intern (format "dirvish--render-%s" attr))
-                   collect (cons attr-ov-name attr-renderer)))
+                   for body-renderer = (intern (format "dirvish--render-%s-body" attr))
+                   for line-renderer = (intern (format "dirvish--render-%s-line" attr))
+                   collect (cons body-renderer line-renderer)))
          (preview-dps
           (cl-loop for dp-name in (append '(disable) dirvish-preview-dispatchers '(default))
                    for dp-func-name = (intern (format "dirvish-preview-%s-dispatcher" dp-name))

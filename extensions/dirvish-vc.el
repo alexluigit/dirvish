@@ -55,19 +55,21 @@ This variable is used in `dirvish--render-gutter'."
       (push (cons file state) dirvish--vc-state-alist))
     state))
 
-;;;###autoload
-(defun dirvish--render-vc-gutter (pos _hl-face)
-  "Render vc gutter for file in POS."
+;;;###autoload (autoload 'dirvish--render-vc-gutter-body "dirvish-vc" nil t)
+;;;###autoload (autoload 'dirvish--render-vc-gutter-line "dirvish-vc" nil t)
+(dirvish-define-attribute vc-gutter (beg hl-face) :lineform
   (when dirvish--vc-backend
     (let* ((entry (dired-get-filename nil 'noerror))
            (state (dirvish--get-vc-state entry dirvish--vc-backend))
            (state-cons (alist-get state dirvish-vc-state-char-alist))
            (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
            (face (cdr state-cons))
-           (ov (make-overlay (1- pos) pos)))
+           (ov (make-overlay (1- beg) beg)))
+      (if hl-face
+          (add-face-text-property 0 (length gutter-str) hl-face t gutter-str)
+        (add-face-text-property 0 (length gutter-str) face t gutter-str))
       (overlay-put ov 'dirvish-vc-gutter t)
-      (overlay-put ov 'face face)
-      (overlay-put ov 'display gutter-str))))
+      (overlay-put ov 'before-string gutter-str))))
 
 (defun dirvish--get-git-commit-msg (file)
   "Get commit message info for FILE."
@@ -79,18 +81,17 @@ This variable is used in `dirvish--render-gutter'."
       (push (cons file msg) dirvish--git-msgs-alist))
     msg))
 
-;;;###autoload
-(defun dirvish--render-git-msg (_pos hl-face)
-  "Render git info with optional HL-FACE."
+;;;###autoload (autoload 'dirvish--render-git-msg-body "dirvish-vc" nil t)
+;;;###autoload (autoload 'dirvish--render-git-msg-line "dirvish-vc" nil t)
+(dirvish-define-attribute git-msg (end hl-face) :lineform
   (when dirvish--vc-backend
-    (dired-move-to-end-of-filename t)
+    ;; (dired-move-to-end-of-filename t)
     (let* ((entry (dired-get-filename nil 'noerror))
            (info (dirvish--get-git-commit-msg entry))
            (str (concat "\t" info))
-           (ov (make-overlay (1- (point)) (point))))
-      (if-let (hl-face (fg (face-attribute hl-face :foreground))
-                       (bg (face-attribute hl-face :background)))
-          (add-face-text-property 0 (length str) `(:background ,bg :foreground ,fg) t str)
+           (ov (make-overlay (1- end) end)))
+      (if hl-face
+          (add-face-text-property 0 (length str) hl-face t str)
         (add-face-text-property 0 (length str) 'dirvish-git-commit-message-face t str))
       (overlay-put ov 'dirvish-git-msg t)
       (overlay-put ov 'after-string str))))
