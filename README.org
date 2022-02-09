@@ -34,6 +34,7 @@ The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vi
 |-------------------+----------------------------+----------|
 | =exa=               | Generate directory preview | Optional |
 | =all-the-icons.el=  | Icon support               | Optional |
+| =vscode-icon.el=    | Icon support               | Optional |
 | =pdftoppm=          | Generate pdf preface image | Optional |
 | =imagemagick=       | Generate image cache       | Optional |
 | =ffmpegthumbnailer= | Generate video thumbnailer | Optional |
@@ -124,14 +125,6 @@ To prevent emacs from getting freezes, dirvish uses external process to deal
 with heavy I/O task, such as file copy/move, directory preview, or image cache
 generation etc.
 
-*** Bulit-in icon support
-
-You don't need [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] anymore since dirvish have built-in icon
-support. Rendering icons natively gives us better integration with line
-highlighting and more room to optimize performance (lazy rendering).
-
-[[./assets/line-comparison.png]]
-
 *** Extensions
 
 Several small extension packages to Dirvish are maintained in the subdirectory
@@ -143,7 +136,8 @@ package:
 - [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
 - [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
 - [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: File preview in minibuffer.
-- [[file:extensions/dirvish-diff.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
+- [[file:extensions/dirvish-vc.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
+- [[file:extensions/dirvish-icons.el][dirvish-icons.el]]: Icon support for Dirvish.
 
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers. See

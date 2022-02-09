@@ -64,6 +64,7 @@
                ,@args)))
         spec)))
 
+;;;###autoload (autoload 'dirvish-menu-file-info-cmds "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
  ((all-cmds
    [:description

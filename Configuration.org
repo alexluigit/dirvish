@@ -18,8 +18,6 @@
 | =dirvish-mode-line-format=    | Cons    | Mode line format in root window           |
 | =dirvish-attributes=          | List    | File attributes showing in file lines     |
 | =dirvish-enlarge-attributes=  | List    | File attributes that enlarge root window. |
-| =dirvish-icon-delimiter=      | String  | The delimiter between icon and filename   |
-| =dirvish-icon-palette=        | Option  | Palette style used for icons              |
 | =dirvish-preview-dispatchers= | Hook    | Contents in preview window                |
 
 Consult the docstring of the options for details.
@@ -62,6 +60,22 @@ This extension is currently only available for *vertico/selectrum*.
 
 TODO
 
+*** Bulit-in icon support (dirvish-icons.el)
+
+You don't need [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] anymore since dirvish have built-in icon
+support. Rendering icons natively gives us better integration with line
+highlighting and more room to optimize performance (lazy rendering).
+
+[[./assets/line-comparison.png]]
+
+**** Options
+
+| Option                      | Type    | Description                               |
+|-----------------------------+---------+-------------------------------------------|
+| =dirvish-icon-size=           | Integer | Icon size used for vscode-icon            |
+| =dirvish-icon-delimiter=      | String  | The delimiter between icon and filename   |
+| =dirvish-icon-palette=        | Option  | Palette style used for all-the-icons      |
+
 ** Complementary packages
 
 TODO
@@ -95,7 +109,7 @@ TODO
   (use-package dired-narrow
     :bind
     (:map dired-mode-map
-          ("C-c C-n" . dired-narrow)))
+          ("N" . dired-narrow)))
 
   ;; A poor man's treemacs
   (use-package dired-subtree
@@ -124,6 +138,9 @@ TODO
     :bind
     (:map dired-mode-map
           ("SPC" . dirvish-show-history)
+          ("f"   . dirvish-file-info-cmds)
+          ("r"   . dirvish-goto)
+          ("M-c" . dirvish-ui-config)
           ("M-m" . dirvish-toggle-fullscreen)
           ([remap dired-summary] . dirvish-dispatch)
           ([remap dired-do-copy] . dirvish-yank)
