@@ -29,8 +29,9 @@ cache image."
 
 (defun dirvish-clean-preview-images (fileset)
   "Clean image cache for FILESET."
-  (unless (dirvish-dired-p)
-    (let ((size (window-width (dv-preview-window (dirvish-curr)) 'pixel)))
+  (let ((win (dv-preview-window (dirvish-curr))) size)
+    (when (window-live-p win)
+      (setq size (window-width win 'pixel))
       (dolist (file fileset)
         (mapc #'delete-file (file-expand-wildcards
                              (dirvish--get-image-cache-for-file file size ".*") t))))))
@@ -263,15 +264,15 @@ A PREVIEW-TYPE can be one of following values:
   "Update dirvish preview."
   (when-let* ((curr-dv (dirvish-curr))
               (preview-window (dv-preview-window curr-dv)))
-    (let* ((orig-buffer-list (buffer-list))
-           (index (or (dv-index-path curr-dv) ""))
-           (preview-buffer (dirvish-get-preview-buffer index)))
-      (when (window-live-p preview-window)
+    (when (window-live-p preview-window)
+      (let* ((orig-buffer-list (buffer-list))
+             (index (or (dv-index-path curr-dv) ""))
+             (preview-buffer (dirvish-get-preview-buffer index)))
         (setq other-window-scroll-buffer preview-buffer)
-        (set-window-buffer preview-window preview-buffer))
-      (unless (memq preview-buffer orig-buffer-list)
-        (push preview-buffer (dv-preview-buffers curr-dv)))
-      (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook)))))
+        (set-window-buffer preview-window preview-buffer)
+        (unless (memq preview-buffer orig-buffer-list)
+          (push preview-buffer (dv-preview-buffers curr-dv)))
+        (with-current-buffer preview-buffer (run-hooks 'dirvish-preview-setup-hook))))))
 
 (provide 'dirvish-preview)
 ;;; dirvish-preview.el ends here
