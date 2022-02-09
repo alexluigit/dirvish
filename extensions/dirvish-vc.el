@@ -96,7 +96,7 @@ This variable is used in `dirvish--render-gutter'."
       (overlay-put ov 'after-string str))))
 
 ;;;###autoload
-(defun dirvish-vc-diff-dispatcher (_file _dv)
+(defun dirvish-preview-vc-diff-dispatcher (_file _dv)
   "A dispatcher function for `dirvish-preview-dispatchers'.
 If `vc-diff' returns t, then show its result buffer as preview."
   (when (and dirvish--vc-backend
