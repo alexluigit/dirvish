@@ -27,14 +27,14 @@
   "A string attached to the icon."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-vscode-icon-size 32
-  "Doc."
+(defcustom dirvish-icon-size 32
+  "Icon size used for vscode-icon backend."
   :group 'dirvish :type 'integer)
 
 (define-obsolete-variable-alias 'dirvish-icon-monochrome 'dirvish-icon-palette "0.9.9")
 
 (defcustom dirvish-icon-palette 'all-the-icons
-  "Palette used for file icons.
+  "Palette used for file all-the-icons backend.
 
 Values are interpreted as follows:
 - 'all-the-icons, meaning let `all-the-icons.el' to do the coloring.
@@ -72,7 +72,7 @@ Values are interpreted as follows:
 ;;;###autoload (autoload 'dirvish--render-vscode-icon-line "dirvish-icons" nil t)
 (dirvish-define-attribute vscode-icon (beg hl-face) :lineform
   (let* ((entry (dired-get-filename nil 'noerror))
-         (vscode-icon-size dirvish-vscode-icon-size)
+         (vscode-icon-size dirvish-icon-size)
          (icon (dirvish--vscode-icon-for-file entry))
          (after-str dirvish-icon-delimiter)
          (ov (make-overlay (1- beg) beg)))

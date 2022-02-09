@@ -18,7 +18,7 @@
   "A better Dired."
   :group 'dired)
 
-(defconst dirvish-icon-backend (require 'vscode-icon nil t))
+(defconst dirvish-icon-backend (or (require 'vscode-icon nil t) (require 'all-the-icons nil t)))
 (defcustom dirvish-attributes `(,dirvish-icon-backend)
   "File attributes showing in Dirvish file lines."
   :group 'dirvish :type '(repeat dirvish-attribute))
