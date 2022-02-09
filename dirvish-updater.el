@@ -10,8 +10,6 @@
 
 ;;; Code:
 
-(declare-function all-the-icons-icon-for-file "all-the-icons")
-(declare-function all-the-icons-icon-for-dir "all-the-icons")
 (declare-function dired-filter--describe-filters "dired-filter")
 (defvar dired-filter-mode)
 (defvar dired-filter-show-filters)
@@ -41,23 +39,6 @@
               (propertize (if path-prefix-home "~" ":"))
               (propertize path-tail 'face 'dired-mark)
               (propertize file-name 'face 'font-lock-constant-face)))))
-
-(defun dirvish--render-all-the-icons (pos &optional hl-face)
-  "Render icon in POS with optional HL-FACE."
-  (let* ((entry (dired-get-filename 'relative 'noerror))
-         (offset `(:v-adjust ,dirvish-icon-v-offset))
-         (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
-         (icon-attrs (append icon-face offset))
-         (icon (if (file-directory-p entry)
-                   (apply #'all-the-icons-icon-for-dir entry icon-attrs)
-                 (apply #'all-the-icons-icon-for-file entry icon-attrs)))
-         (icon-str (concat icon dirvish-icon-delimiter))
-         (ov (make-overlay (1- pos) pos)))
-    (when-let (hl-face (fg (face-attribute hl-face :foreground))
-                       (bg (face-attribute hl-face :background)))
-      (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
-    (overlay-put ov 'dirvish-all-the-icons t)
-    (overlay-put ov 'after-string icon-str)))
 
 (defun dirvish--render-hl-line (_pos &optional hl-face)
   "Highlight current line with HL-FACE."

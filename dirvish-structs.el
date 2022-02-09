@@ -245,7 +245,7 @@ by this instance."
 
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
-  (let* ((attrs (append '(hl-line zoom symlink-target) dirvish-attributes))
+  (let* ((attrs (remove nil (append '(hl-line zoom symlink-target) dirvish-attributes)))
          (attrs-alist
           (cl-loop for attr in attrs
                    for attr-ov-name = (intern (format "dirvish-%s" attr))
