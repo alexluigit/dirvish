@@ -29,10 +29,11 @@ cache image."
 
 (defun dirvish-clean-preview-images (fileset)
   "Clean image cache for FILESET."
-  (let ((size (window-width (dv-preview-window (dirvish-curr)) 'pixel)))
-    (dolist (file fileset)
-      (mapc #'delete-file (file-expand-wildcards
-                           (dirvish--get-image-cache-for-file file size ".*") t)))))
+  (unless (dirvish-dired-p)
+    (let ((size (window-width (dv-preview-window (dirvish-curr)) 'pixel)))
+      (dolist (file fileset)
+        (mapc #'delete-file (file-expand-wildcards
+                             (dirvish--get-image-cache-for-file file size ".*") t))))))
 
 (defun dirvish--preview-process-fill-str-sentinel (proc _exitcode)
   "A sentinel for dirvish preview process.

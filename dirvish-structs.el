@@ -114,7 +114,8 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
        (depth dirvish-depth)
        (root-window-func #'frame-selected-window)
        &aux
-       (fullscreen-depth (if (>= depth 0) depth dirvish-depth)))))
+       (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
+       (read-only-depth (if (>= depth 0) depth dirvish-depth)))))
   "Define dirvish data type."
   (name
    (cl-gensym)
@@ -125,6 +126,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (fullscreen-depth
    dirvish-depth
    :documentation "TODO.")
+  (read-only-depth
+   dirvish-depth
+   :read-only t :documentation "TODO.")
   (transient
    nil
    :documentation "TODO.")
@@ -253,9 +257,12 @@ by this instance."
                    collect dp-func-name)))
     (setf (dv-attributes-alist dv) attrs-alist)
     (setf (dv-preview-dispatchers dv) preview-dps)
-    (when (and (seq-intersection attrs dirvish-enlarge-attributes)
-               (not (dirvish-dired-p dv)))
-      (setf (dv-depth dv) 0))))
+    (cond ((seq-intersection attrs dirvish-enlarge-attributes)
+           (unless (dirvish-dired-p dv) (setf (dv-depth dv) 0))
+           (setf (dv-fullscreen-depth dv) 0))
+          (t
+           (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
+           (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))))
 
 (defun dirvish-activate (dv)
   "Activate dirvish instance DV."
