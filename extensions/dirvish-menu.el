@@ -223,10 +223,10 @@ the DIR.  See setter of this option for details."
 
 ;;;###autoload (autoload 'dirvish-ui-config "dirvish-menu" nil t)
 (defcustom dirvish-ui-option-alist
-  '(("a" all-the-icons attributes "Icons powered by all-the-icons")
-    ("m" git-msg       attributes "Git commit messages")
-    ("g" vc-gutter     attributes "VC state at fringe")
-    ("d" vc-diff       preview-dispatchers "VC diff at preview window"))
+  `(("i" ,dirvish-icon-backend attributes "File icons")
+    ("m" git-msg               attributes "Git commit messages")
+    ("g" vc-gutter             attributes "VC state at fringe")
+    ("d" vc-diff               preview-dispatchers "VC diff at preview window"))
   "TOGGLEs for `dirvish-ui-config'.
 A TOGGLE is a list consists of (KEY VAR SCOPE DESCRIPTION) where
 KEY is a string passed to `kbd', VAR is a valid attribute (as in

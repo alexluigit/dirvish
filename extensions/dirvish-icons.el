@@ -19,7 +19,9 @@
 (declare-function vscode-icon-for-file "vscode-icon")
 (defvar vscode-icon-size)
 (defconst dirvish-icon-v-offset 0.01)
+(defvar-local dirvish--vscode-icon-alist nil)
 (require 'dired)
+(require 'dirvish-structs)
 
 (defcustom dirvish-icon-delimiter " "
   "A string attached to the icon."
@@ -40,9 +42,17 @@ Values are interpreted as follows:
 - nil, inherit face at point."
   :group 'dirvish :type '(choice face symbol nil))
 
-;;;###autoload
-(defun dirvish--render-all-the-icons (pos &optional hl-face)
-  "Render icon in POS with optional HL-FACE using `all-the-icons'."
+(defun dirvish--vscode-icon-for-file (file)
+  "Get vscode-icon for FILE."
+  (let ((icon (alist-get file dirvish--vscode-icon-alist nil nil #'string=)))
+    (unless icon
+      (setq icon (vscode-icon-for-file file))
+      (push (cons file icon) dirvish--vscode-icon-alist))
+    icon))
+
+;;;###autoload (autoload 'dirvish--render-all-the-icons-body "dirvish-icons" nil t)
+;;;###autoload (autoload 'dirvish--render-all-the-icons-line "dirvish-icons" nil t)
+(dirvish-define-attribute all-the-icons (beg hl-face) :lineform
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icon-v-offset))
          (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
@@ -51,21 +61,21 @@ Values are interpreted as follows:
                    (apply #'all-the-icons-icon-for-dir entry icon-attrs)
                  (apply #'all-the-icons-icon-for-file entry icon-attrs)))
          (icon-str (concat icon dirvish-icon-delimiter))
-         (ov (make-overlay (1- pos) pos)))
+         (ov (make-overlay (1- beg) beg)))
     (when-let (hl-face (fg (face-attribute hl-face :foreground))
                        (bg (face-attribute hl-face :background)))
       (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
     (overlay-put ov 'dirvish-all-the-icons t)
     (overlay-put ov 'after-string icon-str)))
 
-;;;###autoload
-(defun dirvish--render-vscode-icon (pos &optional hl-face)
-  "Render icon in POS with optional HL-FACE using `vscode-icon'."
+;;;###autoload (autoload 'dirvish--render-vscode-icon-body "dirvish-icons" nil t)
+;;;###autoload (autoload 'dirvish--render-vscode-icon-line "dirvish-icons" nil t)
+(dirvish-define-attribute vscode-icon (beg hl-face) :lineform
   (let* ((entry (dired-get-filename nil 'noerror))
          (vscode-icon-size dirvish-vscode-icon-size)
-         (icon (vscode-icon-for-file entry))
+         (icon (dirvish--vscode-icon-for-file entry))
          (after-str dirvish-icon-delimiter)
-         (ov (make-overlay (1- pos) pos)))
+         (ov (make-overlay (1- beg) beg)))
     (when hl-face (setq after-str (propertize after-str 'face hl-face)))
     (overlay-put ov 'display icon)
     (overlay-put ov 'dirvish-vscode-icon t)
