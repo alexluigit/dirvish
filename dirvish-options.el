@@ -18,15 +18,15 @@
   "A better Dired."
   :group 'dired)
 
-(define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
-
-(defcustom dirvish-attributes `(,(require 'all-the-icons nil t))
+(defcustom dirvish-attributes `(,(require 'vscode-icon nil t))
   "File attributes showing in Dirvish file lines."
-  :group 'dirvish :type '(repeat (choice 'all-the-icons vc-gutter git-msg)))
+  :group 'dirvish :type '(repeat dirvish-attribute))
 
 (defcustom dirvish-enlarge-attributes '(git-msg)
   "File attributes that enlarge current window when present."
-  :group 'dirvish :type '(repeat (choice 'all-the-icons 'vscode-icons vc-gutter git-msg)))
+  :group 'dirvish :type '(repeat dirvish-attribute))
+
+(define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
 
 (defcustom dirvish-preview-dispatchers
   `(,(if (memq system-type '(windows-nt ms-dos)) 'directory-dired 'directory-exa)
@@ -93,21 +93,6 @@ in /mnt/HDD directory or its child entries. This can speed up
 file deletion when you have multiple disk drives."
   :group 'dirvish :type 'alist)
 
-(defcustom dirvish-icon-delimiter "  "
-  "A string attached to the icon."
-  :group 'dirvish :type 'string)
-
-(define-obsolete-variable-alias 'dirvish-icon-monochrome 'dirvish-icon-palette "0.9.9")
-
-(defcustom dirvish-icon-palette 'all-the-icons
-  "Palette used for file icons.
-
-Values are interpreted as follows:
-- 'all-the-icons, meaning let `all-the-icons.el' to do the coloring.
-- A face that is used for all the icons.
-- nil, inherit face at point."
-  :group 'dirvish :type '(choice face symbol nil))
-
 (defcustom dirvish-header-line-format
   '((:eval (dirvish--header-line-path)))
   "Template for displaying header line in Dirvish instance.
@@ -163,7 +148,6 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish-saved-display-buffer-alist display-buffer-alist)
 (defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
-(defconst dirvish-icon-v-offset 0.01)
 (defconst dirvish-display-buffer-alist
   (append '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window))) display-buffer-alist))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
