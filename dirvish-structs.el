@@ -138,6 +138,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
       (&key
        (depth dirvish-depth)
        (root-window-func #'frame-selected-window)
+       (transient nil)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
        (read-only-depth (if (>= depth 0) depth dirvish-depth)))))
@@ -226,7 +227,9 @@ given, it is executed to unset the window configuration brought
 by this instance."
   (declare (indent defun))
   `(progn
-     (dirvish-hide ,dv)
+     (let ((conf (dv-window-conf ,dv)))
+       (when (and (not (dirvish-dired-p ,dv)) (window-configuration-p conf))
+         (set-window-configuration conf)))
      (let ((tran-list (frame-parameter nil 'dirvish--transient)))
        (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
      (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
@@ -236,9 +239,10 @@ by this instance."
      ,@body))
 
 (defun dirvish-hide (dv)
-  "Revert window configuration of DV."
-  (when-let ((win-conf (dv-window-conf dv)))
-    (set-window-configuration win-conf)))
+  "Hide Dirvish session DV."
+  (if (dirvish-dired-p dv)
+      (let (quit-window-hook) (quit-window))
+    (set-window-configuration (dv-window-conf dv))))
 
 (defun dirvish--start-transient (old-dv new-dv)
   "Mark OLD-DV and NEW-DV as a parent/child transient Dirvish."
