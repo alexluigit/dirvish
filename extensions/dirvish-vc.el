@@ -85,7 +85,6 @@ This variable is used in `dirvish--render-gutter'."
 ;;;###autoload (autoload 'dirvish--render-git-msg-line "dirvish-vc" nil t)
 (dirvish-define-attribute git-msg (end hl-face) :lineform
   (when dirvish--vc-backend
-    ;; (dired-move-to-end-of-filename t)
     (let* ((entry (dired-get-filename nil 'noerror))
            (info (dirvish--get-git-commit-msg entry))
            (str (concat "\t" info))
