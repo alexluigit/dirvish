@@ -128,10 +128,10 @@ directory in another window."
             (new-depth (if (eq old-depth -1) fs-depth -1))
             (buf (current-buffer)))
       (progn
-        (setf (dv-depth dv) new-depth)
         (dirvish-drop)
         (dirvish-hide dv)
         (setf (dv-depth dv) new-depth)
+        (setf (dv-window-conf dv) (current-window-configuration))
         (with-selected-window (dirvish--create-root-window dv)
           (switch-to-buffer buf)
           (dirvish-reclaim)
