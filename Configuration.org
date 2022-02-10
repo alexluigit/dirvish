@@ -138,8 +138,8 @@ TODO
     :bind
     (:map dired-mode-map
           ("SPC" . dirvish-show-history)
-          ("f"   . dirvish-file-info-cmds)
-          ("r"   . dirvish-goto)
+          ("f"   . dirvish-menu-file-info-cmds)
+          ("r"   . dirvish-roam)
           ("M-c" . dirvish-ui-config)
           ("M-m" . dirvish-toggle-fullscreen)
           ([remap dired-summary] . dirvish-dispatch)

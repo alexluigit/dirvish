@@ -80,7 +80,7 @@ this instance.
 inside of current window, just like how dired does it. To get a "dirvish-ish"
 dired, use =dirvish-dired=.
 
-If you find some any Dired command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
+If you find any Dired command doesn't work as expected, please report an [[https://github.com/alexluigit/dirvish/issues][issue]].
 
 **** Override Dired
 
@@ -92,7 +92,7 @@ Now all Dired entry commands incluing =dired[-other-window/tab/frame]=,
 
 **** In relation to Dired config
 
-Dirvish respects all of your dired options *except* the following ones:
+Dirvish respects all of your Dired options *except* the following ones:
 
 | Option                                   | Reason                                                  |
 |------------------------------------------+---------------------------------------------------------|

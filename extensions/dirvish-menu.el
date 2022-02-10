@@ -98,7 +98,7 @@
      ("j" "  Jump to file in buffer"              dired-goto-file)
      ("J" "  Jump to file in file system"         dirvish-browse-all-directories)
      ("^" "  Go up directory"                     dired-up-directory)
-     ("/" "  Goto common directories"             dirvish-goto)
+     ("r" "  'Roam' in file system"               dirvish-roam)
      ("l" "  Goto last place"                     dirvish-other-buffer)
      ("SPC" "Recently visited"                    dirvish-show-history)]
     ["Mark"
@@ -192,13 +192,13 @@
             (no-other-window . t)))))
     (dirvish-menu-all-cmds)))
 
-;;;###autoload (autoload 'dirvish-goto "dirvish-menu" nil t)
-(defcustom dirvish-goto-dirs-alist
+;;;###autoload (autoload 'dirvish-roam "dirvish-menu" nil t)
+(defcustom dirvish-roam-dirs-alist
   '(("h" "~/"                          "Home")
     ("d" "~/Downloads/"                "Downloads")
     ("m" "/mnt/"                       "Drives")
     ("t" "~/.local/share/Trash/files/" "TrashCan"))
-  "Predefined DIRs for `dirvish-goto'.
+  "Predefined DIRs for `dirvish-roam'.
 A DIR is a list consists of (KEY PATH DESCRIPTION) where KEY is a
 string passed to `kbd', PATH is the the target for command
 `dirvish-find-file', DESCRIPTION is a optional description for
@@ -210,7 +210,7 @@ the DIR.  See setter of this option for details."
     (let* ((desc-len-seq (mapcar (lambda (i) (length (nth 2 i))) v))
            (max-desc-len (seq-max desc-len-seq)))
       (eval
-       `(transient-define-prefix dirvish-goto ()
+       `(transient-define-prefix dirvish-roam ()
           "Open frequently visited directories using dirvish."
           ["Go to Directory: "
            ,@(cl-loop
@@ -220,7 +220,7 @@ the DIR.  See setter of this option for details."
                     (concat desc "  "
                             (make-string (- max-desc-len (length desc)) ?\ )
                             (propertize path 'face 'font-lock-comment-face))
-                    `(lambda () (interactive) (dired-jump nil ,path))))])))))
+                    `(lambda () (interactive) (dirvish-find-file ,path))))])))))
 
 ;;;###autoload (autoload 'dirvish-ui-config "dirvish-menu" nil t)
 (defcustom dirvish-ui-option-alist
