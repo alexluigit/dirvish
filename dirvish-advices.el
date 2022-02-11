@@ -49,7 +49,7 @@
 FN refers to original `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (when-let ((dv (dirvish-live-p))) (dirvish-deactivate dv))
+  (when-let ((dv (dirvish-curr))) (dirvish-deactivate dv))
   (apply fn dirname (and switches (list switches)))
   (dirvish-activate (dirvish-new :depth -1))
   (when switches
@@ -60,7 +60,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   "Override `dired-other-window' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (when-let ((dv (dirvish-live-p)))
+  (when-let ((dv (dirvish-curr)))
     (unless (dirvish-dired-p dv) (dirvish-deactivate dv)))
   (switch-to-buffer-other-window dirvish-temp-buffer)
   (dirvish-activate (dirvish-new :depth -1))
@@ -94,7 +94,7 @@ FILE-NAME are the same args in `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg
                   (read-file-name "Dirvish jump to: "))))
-  (if (and (dirvish-live-p) (not other-window))
+  (if (and (dirvish-curr) (not other-window))
       (dirvish-find-file file-name)
     (apply fn other-window (list (or file-name default-directory)))
     (dirvish-setup-dired-buffer)))
@@ -135,7 +135,7 @@ If ALL-FRAMES, search target directories in all frames."
 
 (defun dirvish-refresh-cursor-ad (fn &rest args)
   "Only apply FN with ARGS when editing filenames in dirvish."
-  (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
+  (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-curr))
     (apply fn args)))
 
 (defun dirvish-deletion-ad (fn &rest args)
@@ -145,7 +145,7 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish-find-file-ad (&rest _)
   "Quit current dirvish instance if inside one.
 Use it as a `:before' advisor to target function."
-  (let* ((dv (dirvish-live-p))
+  (let* ((dv (dirvish-curr))
          (dv-tran (and dv (dv-transient dv))))
     (if dv-tran
         (dirvish--end-transient dv-tran)
@@ -153,7 +153,7 @@ Use it as a `:before' advisor to target function."
 
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
-  (unless (dirvish-live-p) (apply fn args)))
+  (unless (dirvish-curr) (apply fn args)))
 
 (defun dirvish--add-advices ()
   "Add all advices listed in `dirvish-advice-alist'."

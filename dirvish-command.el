@@ -122,7 +122,7 @@ directory in another window."
 (defun dirvish-toggle-fullscreen ()
   "Toggle fullscreen of current Dirvish."
   (interactive)
-  (if-let* ((dv (dirvish-live-p))
+  (if-let* ((dv (dirvish-curr))
             (old-depth (dv-depth dv))
             (fs-depth (dv-fullscreen-depth dv))
             (new-depth (if (eq old-depth -1) fs-depth -1))
@@ -142,7 +142,7 @@ directory in another window."
 (defun dirvish-change-depth (level)
   "Change parent depth of current Dirvish to LEVEL."
   (interactive "p")
-  (when-let (dv (dirvish-live-p))
+  (when-let (dv (dirvish-curr))
     (unless (dirvish-dired-p dv)
       (setf (dv-depth dv) level)
       (setf (dv-fullscreen-depth dv) level)

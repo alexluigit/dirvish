@@ -297,13 +297,14 @@ by this instance."
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
   (setq display-buffer-alist dirvish-display-buffer-alist)
-  (when-let (old-dv (dirvish-live-p))
+  (when-let (old-dv (dirvish-curr))
     (cond ((dv-transient dv) nil)
           ((and (not (dirvish-dired-p old-dv))
                 (not (dirvish-dired-p dv)))
            (dirvish-deactivate dv)
            (user-error "Dirvish: using current session"))
-          (t (dirvish-deactivate old-dv))))
+          ((memq (selected-window) (dv-parent-windows old-dv))
+           (dirvish-deactivate old-dv))))
   (dirvish--refresh-slots dv)
   (dirvish--create-root-window dv)
   (set-frame-parameter nil 'dirvish--curr dv)
@@ -325,13 +326,6 @@ by this instance."
   "Return t if DV is a `dirvish-dired' instance.
 DV defaults to the current dirvish instance if not provided."
   (when-let ((dv (or dv (dirvish-curr)))) (eq (dv-depth dv) -1)))
-
-;;;###autoload
-(defun dirvish-live-p (&optional win)
-  "If WIN is occupied by a `dirvish' instance, return this instance.
-WIN defaults to `selected-window' if not provided."
-  (when-let ((dv (dirvish-curr)))
-    (and (memq (or win (selected-window)) (dv-parent-windows dv)) dv)))
 
 (provide 'dirvish-structs)
 ;;; dirvish-structs.el ends here
