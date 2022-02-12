@@ -34,8 +34,11 @@ FRAME defaults to current frame."
   "Reclaim current dirvish."
   (unless (active-minibuffer-window)
     (if dirvish--curr-name
-        (or dirvish-override-dired-mode (dirvish--add-advices))
-      (or dirvish-override-dired-mode (dirvish--remove-advices)))
+        (progn
+          (or dirvish-override-dired-mode (dirvish--add-advices))
+          (setq display-buffer-alist dirvish-display-buffer-alist))
+      (or dirvish-override-dired-mode (dirvish--remove-advices))
+      (setq display-buffer-alist dirvish-saved-display-buffer-alist))
     (set-frame-parameter nil 'dirvish--curr (gethash dirvish--curr-name (dirvish-hash)))))
 
 ;;;###autoload
@@ -296,7 +299,6 @@ by this instance."
 (defun dirvish-activate (dv)
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
-  (setq display-buffer-alist dirvish-display-buffer-alist)
   (when-let (old-dv (dirvish-curr))
     (cond ((dv-transient dv) nil)
           ((and (not (dirvish-dired-p old-dv))
@@ -317,7 +319,6 @@ by this instance."
     (unless (dirvish-get-all 'name t)
       (setq other-window-scroll-buffer nil)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
-      (setq display-buffer-alist dirvish-saved-display-buffer-alist)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (dirvish-reclaim))
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t))))
