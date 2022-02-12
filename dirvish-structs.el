@@ -327,5 +327,10 @@ by this instance."
 DV defaults to the current dirvish instance if not provided."
   (when-let ((dv (or dv (dirvish-curr)))) (eq (dv-depth dv) -1)))
 
+(defun dirvish-live-p (&optional dv)
+  "Return t if selected window is occupied by Dirvish DV.
+DV defaults to the current dirvish instance if not provided."
+  (when-let ((dv (or dv (dirvish-curr)))) (memq (selected-window) (dv-parent-windows dv))))
+
 (provide 'dirvish-structs)
 ;;; dirvish-structs.el ends here
