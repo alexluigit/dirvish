@@ -18,7 +18,7 @@
 (defun dirvish-rebuild-parents-h (frame)
   "Rebuild dirvish layout in FRAME."
   (dirvish-reclaim frame)
-  (when-let ((dv (dirvish-curr)))
+  (when-let ((dv (and (dirvish-live-p) (dirvish-curr))))
     (unless (dv-transient dv) (dirvish-build))))
 
 (defun dirvish-hide-details-h ()

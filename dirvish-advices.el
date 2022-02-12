@@ -135,7 +135,7 @@ If ALL-FRAMES, search target directories in all frames."
 
 (defun dirvish-refresh-cursor-ad (fn &rest args)
   "Only apply FN with ARGS when editing filenames in dirvish."
-  (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-curr))
+  (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
     (apply fn args)))
 
 (defun dirvish-deletion-ad (fn &rest args)
