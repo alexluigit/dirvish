@@ -165,14 +165,12 @@ update `dirvish-history-ring'."
       (if (file-directory-p entry)
           (let* ((entry (file-name-as-directory (expand-file-name entry)))
                  (hist (directory-file-name entry))
-                 (sorter (cdr (dv-sort-criteria dv)))
-                 (switches (string-join (list (dv-ls-switches dv) sorter) " "))
                  enable-dir-local-variables)
             (unless ignore-hist
               (when (or (ring-empty-p dirvish-history-ring)
                         (not (eq hist (ring-ref dirvish-history-ring 0))))
                 (ring-insert dirvish-history-ring hist)))
-            (switch-to-buffer (dirvish--buffer-for-dir dv entry switches))
+            (switch-to-buffer (dirvish--buffer-for-dir dv entry))
             (setq dirvish--child-entry (or bname curr-dir))
             (when (dirvish-p dv-tran)
               (dirvish-activate
