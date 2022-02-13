@@ -119,11 +119,13 @@ If program returns non zero exit code return nil."
            (window-live-p win)
            (delete-window win)))))
 
-(defun dirvish--buffer-for-dir (dv entry switches)
+(defun dirvish--buffer-for-dir (dv entry)
   "Return the dirvish buffer in DV for ENTRY.
-If the buffer is not available, create it with `ls' SWITCHES."
+If the buffer is not available, create it with `dired-noselect'."
   (let* ((root-dir-buf (dv-root-dir-buf-alist dv))
-         (buffer (alist-get entry root-dir-buf nil nil #'equal)))
+         (buffer (alist-get entry root-dir-buf nil nil #'equal))
+         (sorter (cdr (dv-sort-criteria dv)))
+         (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
     (unless buffer
       (setq buffer (dired-noselect entry switches))
       (push (cons entry buffer) (dv-root-dir-buf-alist dv)))
