@@ -129,7 +129,10 @@ directory in another window."
             (buf (current-buffer)))
       (progn
         (dirvish-drop)
-        (dirvish-hide dv)
+        (if (dirvish-dired-p dv)
+            (with-selected-window (dv-root-window dv)
+              (let (quit-window-hook) (quit-window)))
+          (set-window-configuration (dv-window-conf dv)))
         (setf (dv-depth dv) new-depth)
         (setf (dv-window-conf dv) (current-window-configuration))
         (with-selected-window (dirvish--create-root-window dv)

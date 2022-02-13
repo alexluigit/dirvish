@@ -241,12 +241,6 @@ by this instance."
      (remhash (dv-name ,dv) (dirvish-hash))
      ,@body))
 
-(defun dirvish-hide (dv)
-  "Hide Dirvish session DV."
-  (if (dirvish-dired-p dv)
-      (let (quit-window-hook) (quit-window))
-    (set-window-configuration (dv-window-conf dv))))
-
 (defun dirvish--start-transient (old-dv new-dv)
   "Mark OLD-DV and NEW-DV as a parent/child transient Dirvish."
   (setf (dv-transient new-dv) old-dv)
