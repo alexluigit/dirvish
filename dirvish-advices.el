@@ -40,7 +40,7 @@
     (evil          evil-refresh-cursor             dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor             dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer       dirvish-enlarge-ad             :before)
-    (winner        winner-save-old-configurations  dirvish-winner-save-ad)
+    (winner        winner-save-old-configurations  dirvish-ignore-ad)
     (lsp-mode      lsp-deferred                    dirvish-ignore-ad)
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
     (recentf       recentf-track-closed-file       dirvish-ignore-ad))
@@ -162,10 +162,6 @@ Use it as a `:before' advisor to target function."
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
   (unless (dirvish-curr) (apply fn args)))
-
-(defun dirvish-winner-save-ad (fn &rest args)
-  "Advice for FN `winner-save-old-configurations' and its ARGS."
-  (if (dirvish-curr) (dirvish-reclaim) (apply fn args)))
 
 (defun dirvish--add-advices ()
   "Add all advices listed in `dirvish-advice-alist'."

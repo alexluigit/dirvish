@@ -1,4 +1,4 @@
-;;; dirvish-yank.el --- Async file copy/paste in dirvish -*- lexical-binding: t -*-
+;;; dirvish-yank.el --- Async file copy/paste in Dirvish -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>

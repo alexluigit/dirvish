@@ -234,7 +234,8 @@ by this instance."
        (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
      (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
        (mapc #'kill-when-live (dv-parent-buffers ,dv))
-       (mapc #'kill-when-live (dv-preview-buffers ,dv)))
+       (mapc #'kill-when-live (dv-preview-buffers ,dv))
+       (dolist (type '(preview footer header)) (kill-when-live (dirvish--get-buffer type))))
      (remhash (dv-name ,dv) (dirvish-hash))
      ,@body))
 
