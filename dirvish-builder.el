@@ -79,7 +79,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (setq header-line-format (and owp dirvish-header-line-format
                                   '((:eval (format-mode-line dirvish-header-line-format))))))
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
-  (add-hook 'window-selection-change-functions #'dirvish-reclaim nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
   (add-hook 'quit-window-hook #'dirvish-quit-h nil :local)
   (run-hooks 'dirvish-mode-hook))
