@@ -103,10 +103,12 @@ FILE-NAME are the same args in `dired-jump'."
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advisor function for `find-dired-sentinel'."
-  (let* ((old-dv (dirvish-curr))
+  (let* ((old-dv (or (dirvish-curr)
+                     (with-current-buffer (other-buffer) (dirvish-curr))))
          (p-win (dv-preview-window old-dv))
          (pt-min (point-min))
          buffer-read-only)
+    (set-frame-parameter nil 'dirvish--curr old-dv)
     (dirvish--enlarge)
     (delete-matching-lines "find finished at.*\\|^ +$")
       ;;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
