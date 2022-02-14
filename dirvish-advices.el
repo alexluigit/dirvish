@@ -34,7 +34,8 @@
     (wdired        wdired-exit                     dirvish-setup                  :after)
     (wdired        wdired-finish-edit              dirvish-setup                  :after)
     (wdired        wdired-abort-changes            dirvish-setup                  :after)
-    (find-dired    find-dired-sentinel             dirvish-fd-ad                  :after)
+    (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
+    (fd-dired      fd-dired                        dirvish-fd-dired-ad)
     (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
     (evil          evil-refresh-cursor             dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor             dirvish-refresh-cursor-ad)
@@ -100,7 +101,7 @@ FILE-NAME are the same args in `dired-jump'."
     (apply fn other-window (list (or file-name default-directory)))
     (dirvish-setup-dired-buffer)))
 
-(defun dirvish-fd-ad (&rest _)
+(defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advisor function for `find-dired-sentinel'."
   (let* ((old-dv (dirvish-curr))
          (p-win (dv-preview-window old-dv))
@@ -116,6 +117,12 @@ FILE-NAME are the same args in `dired-jump'."
         (unless (dirvish-dired-p old-dv)
           (setf (dv-preview-window new-dv) p-win))))
     (dirvish-setup 'keep-dired)))
+
+(defun dirvish-fd-dired-ad (fn &rest args)
+  "Advisor function for FN `fd-dired' with its ARGS."
+  ;; HACK for *FD* window placement. `fd-dired-display-in-current-window' does not behave as described.
+  (let ((display-buffer-alist '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window)))))
+    (apply fn args)))
 
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
   "Replacement for `dired-dwim-target-next'.

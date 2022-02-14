@@ -34,11 +34,8 @@ FRAME defaults to current frame."
   "Reclaim current dirvish."
   (unless (active-minibuffer-window)
     (if dirvish--curr-name
-        (progn
-          (or dirvish-override-dired-mode (dirvish--add-advices))
-          (setq display-buffer-alist dirvish-display-buffer-alist))
-      (or dirvish-override-dired-mode (dirvish--remove-advices))
-      (setq display-buffer-alist dirvish-saved-display-buffer-alist))
+        (or dirvish-override-dired-mode (dirvish--add-advices))
+      (or dirvish-override-dired-mode (dirvish--remove-advices)))
     (set-frame-parameter nil 'dirvish--curr (gethash dirvish--curr-name (dirvish-hash)))))
 
 ;;;###autoload

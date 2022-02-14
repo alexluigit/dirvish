@@ -147,10 +147,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
-(defconst dirvish-saved-display-buffer-alist display-buffer-alist)
 (defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
-(defconst dirvish-display-buffer-alist
-  (append '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window))) display-buffer-alist))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-mode-line-update-timer nil)
