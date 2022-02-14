@@ -30,11 +30,44 @@ FRAME defaults to current frame."
 FRAME defaults to current frame."
   (set-frame-parameter frame 'dirvish--curr nil))
 
+(defmacro dirvish--get-buffer (type &rest body)
+  "Return dirvish buffer with TYPE.
+If BODY is non-nil, create the buffer and execute BODY in it."
+  (declare (indent 1))
+  `(progn
+     (let* ((id (frame-parameter nil 'window-id))
+            (h-name (format " *Dirvish %s-%s*" ,type id))
+            (buf (get-buffer-create h-name)))
+       (with-current-buffer buf ,@body buf))))
+
+(defun dirvish--init-frame-buffers ()
+  "Initialize util buffers for current frame."
+  (dirvish--get-buffer 'preview
+    (setq-local mode-line-format nil)
+    (add-hook 'window-scroll-functions #'dirvish-update-ansicolor-h nil :local))
+  (dirvish--get-buffer 'header
+    (setq-local header-line-format nil)
+    (setq-local window-size-fixed 'height)
+    (setq-local face-font-rescale-alist nil)
+    (setq-local mode-line-format (and dirvish-header-line-format
+                                      '((:eval (dirvish-format-header-line)))))
+    (set (make-local-variable 'face-remapping-alist)
+         `((mode-line-inactive :inherit (mode-line-active) :height ,dirvish-header-line-height))))
+  (dirvish--get-buffer 'footer
+    (setq-local header-line-format nil)
+    (setq-local window-size-fixed 'height)
+    (setq-local face-font-rescale-alist nil)
+    (setq-local mode-line-format '((:eval (dirvish-format-mode-line))))
+    (set (make-local-variable 'face-remapping-alist)
+         '((mode-line-inactive mode-line-active)))))
+
 (defun dirvish-reclaim (&optional _window)
   "Reclaim current dirvish."
   (unless (active-minibuffer-window)
     (if dirvish--curr-name
-        (or dirvish-override-dired-mode (dirvish--add-advices))
+        (progn
+          (dirvish--init-frame-buffers)
+          (or dirvish-override-dired-mode (dirvish--add-advices)))
       (or dirvish-override-dired-mode (dirvish--remove-advices)))
     (set-frame-parameter nil 'dirvish--curr (gethash dirvish--curr-name (dirvish-hash)))))
 
@@ -63,47 +96,11 @@ line when present)."
          (ignore ,@ignore-list)
          ,lineform))))
 
-(defmacro dirvish--get-buffer (type &rest body)
-  "Return dirvish buffer with TYPE.
-If BODY is non-nil, create the buffer and execute BODY in it."
-  (declare (indent 1))
-  `(progn
-     (let* ((id (frame-parameter nil 'window-id))
-            (h-name (format " *Dirvish %s-%s*" ,type id))
-            (buf (get-buffer-create h-name)))
-       (with-current-buffer buf ,@body buf))))
-
 (defun dirvish-update-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
   (with-current-buffer (current-buffer)
     (ansi-color-apply-on-region
      pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
-
-(defun dirvish-init-frame (&optional frame)
-  "Initialize the dirvishs system in FRAME.
-By default, this uses the current frame."
-  (unless (frame-parameter frame 'dirvish--hash)
-    (with-selected-frame (or frame (selected-frame))
-      (set-frame-parameter frame 'dirvish--transient '())
-      (set-frame-parameter frame 'dirvish--hash (make-hash-table :test 'equal))
-      (dirvish--get-buffer 'preview
-        (setq-local mode-line-format nil)
-        (add-hook 'window-scroll-functions #'dirvish-update-ansicolor-h nil :local))
-      (dirvish--get-buffer 'header
-        (setq-local header-line-format nil)
-        (setq-local window-size-fixed 'height)
-        (setq-local face-font-rescale-alist nil)
-        (setq-local mode-line-format (and dirvish-header-line-format
-                                          '((:eval (dirvish-format-header-line)))))
-        (set (make-local-variable 'face-remapping-alist)
-             `((mode-line-inactive :inherit (mode-line-active) :height ,dirvish-header-line-height))))
-      (dirvish--get-buffer 'footer
-        (setq-local header-line-format nil)
-        (setq-local window-size-fixed 'height)
-        (setq-local face-font-rescale-alist nil)
-        (setq-local mode-line-format '((:eval (dirvish-format-mode-line))))
-        (set (make-local-variable 'face-remapping-alist)
-             '((mode-line-inactive mode-line-active)))))))
 
 (defun dirvish-hash (&optional frame)
   "Return a hash containing all dirvish instance in FRAME.
@@ -214,7 +211,10 @@ restore them after."
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
     `(let ((dv (make-dirvish ,@keywords)))
-       (dirvish-init-frame)
+       (unless (frame-parameter nil 'dirvish--hash)
+         (add-hook 'window-selection-change-functions #'dirvish-reclaim)
+         (set-frame-parameter nil 'dirvish--transient '())
+         (set-frame-parameter nil 'dirvish--hash (make-hash-table :test 'equal)))
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given
        dv)))
