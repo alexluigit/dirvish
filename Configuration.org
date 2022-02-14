@@ -24,11 +24,12 @@ Consult the docstring of the options for details.
 
 ** Hooks
 
-| Hook                       | Description                               |
-|----------------------------+-------------------------------------------|
-| =dirvish-activation-hook=    | Hook for dirvish instance initialization. |
-| =dirvish-mode-hook=          | Hook for parent buffer initialization.    |
-| =dirvish-preview-setup-hook= | Hook for preview buffer initialization.   |
+| Hook                       | Description                             |
+|----------------------------+-----------------------------------------|
+| =dirvish-activation-hook=    | Hook for dirvish session activation.    |
+| =dirvish-deactivation-hook=  | Hook for dirvish session deactivation.  |
+| =dirvish-mode-hook=          | Hook for parent buffer initialization.  |
+| =dirvish-preview-setup-hook= | Hook for preview buffer initialization. |
 
 ** Extensions
 *** Transient based help menu (dirvish-menu.el)

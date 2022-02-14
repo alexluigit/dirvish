@@ -138,7 +138,10 @@ format as `mode-line-format'.  Set it to nil hides the footer."
   "Hook functions for preview buffer initialization.")
 
 (defvar dirvish-activation-hook nil
-  "Hook runs after activation of dirvish instance.")
+  "Hook runs after activation of a Dirvish session.")
+
+(defvar dirvish-deactivation-hook nil
+  "Hook runs after deactivation of a Dirvish session.")
 
 ;;;; Internal variables
 

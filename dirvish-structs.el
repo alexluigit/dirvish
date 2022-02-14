@@ -313,6 +313,7 @@ by this instance."
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
     (dirvish-reclaim))
+  (run-hooks 'dirvish-deactivation-hook)
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t))))
 
 (defun dirvish-dired-p (&optional dv)
