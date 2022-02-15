@@ -50,8 +50,8 @@ Values are interpreted as follows:
       (push (cons file icon) dirvish--vscode-icon-alist))
     icon))
 
-;;;###autoload (autoload 'dirvish--render-all-the-icons-body "dirvish-icons" nil t)
-;;;###autoload (autoload 'dirvish--render-all-the-icons-line "dirvish-icons" nil t)
+;;;###autoload (autoload 'dirvish--render-all-the-icons-body "dirvish-icons")
+;;;###autoload (autoload 'dirvish--render-all-the-icons-line "dirvish-icons")
 (dirvish-define-attribute all-the-icons (beg hl-face) :lineform
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icon-v-offset))
@@ -68,8 +68,8 @@ Values are interpreted as follows:
     (overlay-put ov 'dirvish-all-the-icons t)
     (overlay-put ov 'after-string icon-str)))
 
-;;;###autoload (autoload 'dirvish--render-vscode-icon-body "dirvish-icons" nil t)
-;;;###autoload (autoload 'dirvish--render-vscode-icon-line "dirvish-icons" nil t)
+;;;###autoload (autoload 'dirvish--render-vscode-icon-body "dirvish-icons")
+;;;###autoload (autoload 'dirvish--render-vscode-icon-line "dirvish-icons")
 (dirvish-define-attribute vscode-icon (beg hl-face) :lineform
   (let* ((entry (dired-get-filename nil 'noerror))
          (vscode-icon-size dirvish-icon-size)

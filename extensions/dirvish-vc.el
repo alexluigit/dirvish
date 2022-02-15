@@ -55,8 +55,8 @@ This variable is used in `dirvish--render-gutter'."
       (push (cons file state) dirvish--vc-state-alist))
     state))
 
-;;;###autoload (autoload 'dirvish--render-vc-gutter-body "dirvish-vc" nil t)
-;;;###autoload (autoload 'dirvish--render-vc-gutter-line "dirvish-vc" nil t)
+;;;###autoload (autoload 'dirvish--render-vc-gutter-body "dirvish-vc")
+;;;###autoload (autoload 'dirvish--render-vc-gutter-line "dirvish-vc")
 (dirvish-define-attribute vc-gutter (beg hl-face) :lineform
   (when dirvish--vc-backend
     (let* ((entry (dired-get-filename nil 'noerror))
@@ -81,8 +81,8 @@ This variable is used in `dirvish--render-gutter'."
       (push (cons file msg) dirvish--git-msgs-alist))
     msg))
 
-;;;###autoload (autoload 'dirvish--render-git-msg-body "dirvish-vc" nil t)
-;;;###autoload (autoload 'dirvish--render-git-msg-line "dirvish-vc" nil t)
+;;;###autoload (autoload 'dirvish--render-git-msg-body "dirvish-vc")
+;;;###autoload (autoload 'dirvish--render-git-msg-line "dirvish-vc")
 (dirvish-define-attribute git-msg (end hl-face) :lineform
   (when dirvish--vc-backend
     (let* ((entry (dired-get-filename nil 'noerror))
