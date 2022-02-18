@@ -49,8 +49,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
-    (setq-local mode-line-format (and dirvish-header-line-format
-                                      '((:eval (dirvish-format-header-line)))))
+    (setq-local mode-line-format '((:eval (dirvish-apply-header-style))))
     (set (make-local-variable 'face-remapping-alist)
          `((mode-line-inactive :inherit (mode-line-active) :height ,dirvish-header-line-height))))
   (dirvish--get-buffer 'footer
@@ -136,6 +135,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
        (depth dirvish-depth)
        (root-window-func #'frame-selected-window)
        (transient nil)
+       (type nil)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
        (read-only-depth (if (>= depth 0) depth dirvish-depth)))))
@@ -155,6 +155,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (transient
    nil
    :documentation "TODO.")
+  (type
+   nil
+   :documentation "TODO")
   (parent-buffers
    ()
    :documentation "holds all parent buffers in this instance.")

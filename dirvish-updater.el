@@ -52,7 +52,7 @@
       (overlay-put o 'dirvish-symlink-target t)
       (overlay-put o 'invisible t))))
 
-(defun dirvish--header-line-path ()
+(defun dirvish-default-header-string ()
   "Compose header string."
   (when-let ((dv (dirvish-curr)))
     (let* ((index (dv-index-path dv))
