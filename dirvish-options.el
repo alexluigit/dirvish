@@ -94,12 +94,9 @@ in /mnt/HDD directory or its child entries. This can speed up
 file deletion when you have multiple disk drives."
   :group 'dirvish :type 'alist)
 
-(defcustom dirvish-header-line-format
-  '((:eval (dirvish--header-line-path)))
-  "Template for displaying header line in Dirvish instance.
-
-The variable has the same format as `mode-line-format'."
-  :group 'dirvish :type 'list)
+(defcustom dirvish-header-string-function 'dirvish-default-header-string
+  "Function that returns content (a string) in Dirvish header."
+  :group 'dirvish :type 'function)
 
 (define-obsolete-variable-alias 'dirvish-use-large-header 'dirvish-header-style "0.8")
 

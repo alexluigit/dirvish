@@ -70,14 +70,15 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (dirvish-body-update)
   (let* ((dv (dirvish-curr))
-         (owp (dirvish-dired-p dv)))
+         (owp (dirvish-dired-p dv))
+         (sp-h-fn (intern (format "dirvish-%s-header-string" (dv-type dv))))
+         (header-fn (or (and (functionp sp-h-fn) sp-h-fn) dirvish-header-string-function)))
     (push (selected-window) (dv-parent-windows dv))
     (push (current-buffer) (dv-parent-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
     (setq mode-line-format (and owp dirvish-mode-line-format
                                 '((:eval (dirvish-format-mode-line)))))
-    (setq header-line-format (and owp dirvish-header-line-format
-                                  '((:eval (format-mode-line dirvish-header-line-format))))))
+    (setq header-line-format (and owp dirvish-header-string-function `((:eval (funcall #',header-fn))))))
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
   (add-hook 'quit-window-hook #'dirvish-quit-h nil :local)
@@ -128,7 +129,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish-build-header ()
   "Create a window showing dirvish header."
-  (when (and dirvish-header-style dirvish-header-line-format)
+  (when dirvish-header-style
     (let* ((inhibit-modification-hooks t)
            (buf (dirvish--get-buffer 'header))
            (win-alist `((side . above)

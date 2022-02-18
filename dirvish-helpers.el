@@ -66,10 +66,12 @@ If program returns non zero exit code return nil."
               (setq exit-code (apply #'process-file program nil t nil args))))))
     (when (eq exit-code 0) output)))
 
-(defun dirvish-format-header-line ()
+(defun dirvish-apply-header-style ()
   "Format Dirvish header line."
-  (when (dirvish-curr)
-    (let* ((str (format-mode-line dirvish-header-line-format))
+  (when-let ((dv (dirvish-curr)))
+    (let* ((sp-h-fn (intern (format "dirvish-%s-header-string" (dv-type dv))))
+           (h-fn (or (and (functionp sp-h-fn) sp-h-fn) dirvish-header-string-function))
+           (str (format-mode-line `((:eval (funcall #',h-fn)))))
            (large-header-p (eq dirvish-header-style 'large))
            (ht (if large-header-p 1.2 1))
            (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
