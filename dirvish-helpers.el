@@ -116,7 +116,7 @@ If program returns non zero exit code return nil."
 (defun dirvish--enlarge (&rest _)
   "Kill all dirvish parent windows except the root one."
   (when (dirvish-curr)
-    (cl-dolist (win (dv-parent-windows (dirvish-curr)))
+    (cl-dolist (win (dv-dired-windows (dirvish-curr)))
       (and (not (eq win (dv-root-window (dirvish-curr))))
            (window-live-p win)
            (delete-window win)))))
