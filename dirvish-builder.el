@@ -125,7 +125,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (fringe 30)
          (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
     (set-window-fringes new-window fringe fringe nil t)
-    (setf (dv-preview-window (dirvish-curr)) new-window)))
+    (setf (dv-preview-window dv) new-window)))
 
 (defun dirvish--build-header (dv)
   "Create a window showing header for DV."
