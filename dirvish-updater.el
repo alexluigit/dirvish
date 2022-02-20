@@ -120,8 +120,8 @@
 (defun dirvish-mode-line-update ()
   "Show file details in mode line."
   (when-let ((dv (dirvish-curr)))
-    (with-current-buffer (dirvish--get-buffer 'footer) (force-mode-line-update))
-    (with-current-buffer (dirvish--get-buffer 'header) (force-mode-line-update))))
+    (with-current-buffer (dirvish--get-util-buffer dv 'footer) (force-mode-line-update))
+    (with-current-buffer (dirvish--get-util-buffer dv 'header) (force-mode-line-update))))
 
 (provide 'dirvish-updater)
 ;;; dirvish-updater.el ends here
