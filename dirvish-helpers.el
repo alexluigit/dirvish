@@ -104,6 +104,7 @@ If program returns non zero exit code return nil."
          (size (or height (ceiling (* (frame-width) width))))
          (split-width-threshold 0)
          (root-win (dv-root-window (dirvish-curr)))
+         (mode-line-format nil)
          (new-window (split-window-no-error root-win size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
