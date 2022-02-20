@@ -30,29 +30,29 @@ FRAME defaults to current frame."
 FRAME defaults to current frame."
   (set-frame-parameter frame 'dirvish--curr nil))
 
-(defmacro dirvish--get-buffer (type &rest body)
-  "Return dirvish buffer with TYPE.
+(defmacro dirvish--get-util-buffer (dv type &rest body)
+  "Return dirvish session DV's utility buffer with TYPE.
 If BODY is non-nil, create the buffer and execute BODY in it."
-  (declare (indent 1))
+  (declare (indent defun))
   `(progn
-     (let* ((id (frame-parameter nil 'window-id))
-            (h-name (format " *Dirvish %s-%s*" ,type id))
+     (let* ((id (dv-name ,dv))
+            (h-name (format " *Dirvish-%s-%s*" ,type id))
             (buf (get-buffer-create h-name)))
        (with-current-buffer buf ,@body buf))))
 
-(defun dirvish--init-frame-buffers ()
-  "Initialize util buffers for current frame."
-  (dirvish--get-buffer 'preview
+(defun dirvish--init-util-buffers (dv)
+  "Initialize util buffers for DV."
+  (dirvish--get-util-buffer dv 'preview
     (setq-local mode-line-format nil)
     (add-hook 'window-scroll-functions #'dirvish-update-ansicolor-h nil :local))
-  (dirvish--get-buffer 'header
+  (dirvish--get-util-buffer dv 'header
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
     (setq-local mode-line-format '((:eval (dirvish-apply-header-style))))
     (set (make-local-variable 'face-remapping-alist)
          `((mode-line-inactive :inherit (mode-line-active) :height ,dirvish-header-line-height))))
-  (dirvish--get-buffer 'footer
+  (dirvish--get-util-buffer dv 'footer
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
@@ -65,10 +65,11 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   (unless (active-minibuffer-window)
     (if dirvish--curr-name
         (progn
-          (dirvish--init-frame-buffers)
+          (dirvish--init-util-buffers (dirvish-curr))
           (or dirvish-override-dired-mode (dirvish--add-advices)))
       (or dirvish-override-dired-mode (dirvish--remove-advices)))
-    (set-frame-parameter nil 'dirvish--curr (gethash dirvish--curr-name (dirvish-hash)))))
+    (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
+      (set-frame-parameter nil 'dirvish--curr dv) dv)))
 
 ;;;###autoload
 (cl-defmacro dirvish-define-attribute (name arglist &key bodyform lineform)
@@ -78,7 +79,7 @@ An attribute contains two rendering functions that being called
 on `post-command-hook': `dirvish--render-NAME-body/line'.  The
 former one takes no argument and runs BODYFORM once.  The latter
 one takes ARGLIST and runs LINEFORM for every line where ARGLIST
-can have element of `beg' (filename beginning position),
+can have elements including `beg' (filename beginning position),
 `end' (filename end position), or `hl-face' (indicate current
 line when present)."
   (declare (indent defun))
@@ -242,7 +243,7 @@ by this instance."
      (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
        (mapc #'kill-when-live (dv-dired-buffers ,dv))
        (mapc #'kill-when-live (dv-preview-buffers ,dv))
-       (dolist (type '(preview footer header)) (kill-when-live (dirvish--get-buffer type))))
+       (dolist (type '(preview footer header)) (kill-when-live (dirvish--get-util-buffer ,dv type))))
      (remhash (dv-name ,dv) (dirvish-hash))
      ,@body))
 

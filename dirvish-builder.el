@@ -84,12 +84,11 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (add-hook 'quit-window-hook #'dirvish-quit-h nil :local)
   (run-hooks 'dirvish-mode-hook))
 
-(defun dirvish-build-parents ()
-  "Create all dirvish parent windows."
+(defun dirvish--build-parents (dv)
+  "Create all dirvish parent windows for DV."
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current))
          (parent-dirs ())
-         (dv (dirvish-curr))
          (depth (dv-depth dv))
          (i 0))
     (dirvish-setup dirvish--curr-name)
@@ -117,32 +116,32 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
               (setq-local dirvish--child-entry current)
               (dirvish-setup))))))))
 
-(defun dirvish-build-preview ()
-  "Build dirvish preview window."
+(defun dirvish--build-preview (dv)
+ "Create a window showing preview for DV."
   (let* ((inhibit-modification-hooks t)
-         (buf (dirvish--get-buffer 'preview))
+         (buf (dirvish--get-util-buffer dv 'preview))
          (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
          (fringe 30)
          (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
     (set-window-fringes new-window fringe fringe nil t)
     (setf (dv-preview-window (dirvish-curr)) new-window)))
 
-(defun dirvish-build-header ()
-  "Create a window showing dirvish header."
+(defun dirvish--build-header (dv)
+  "Create a window showing header for DV."
   (when dirvish-header-style
     (let* ((inhibit-modification-hooks t)
-           (buf (dirvish--get-buffer 'header))
+           (buf (dirvish--get-util-buffer dv 'header))
            (win-alist `((side . above)
                         (window-height . -2)
                         (window-parameters . ((no-other-window . t)))))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
       (set-window-buffer new-window buf))))
 
-(defun dirvish-build-footer ()
-  "Create a window showing dirvish footer."
+(defun dirvish--build-footer (dv)
+  "Create a window showing footer for DV."
   (when dirvish-mode-line-format
     (let* ((inhibit-modification-hooks t)
-           (buf (dirvish--get-buffer 'footer))
+           (buf (dirvish--get-util-buffer dv 'footer))
            (win-alist `((side . below)
                         (window-height . -2)
                         (window-parameters . ((no-other-window . t)))))
@@ -151,12 +150,14 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish-build ()
   "Build dirvish layout."
-  (unless (dirvish-dired-p)
-    (delete-other-windows)
-    (dirvish-build-preview)
-    (dirvish-build-header)
-    (dirvish-build-footer))
-  (dirvish-build-parents))
+  (let ((dv (dirvish-curr)))
+    (unless (dirvish-dired-p dv)
+      (delete-other-windows)
+      (dirvish--build-preview dv)
+      (dirvish--build-header dv)
+      (dirvish--build-footer dv))
+    (unless (dv-dedicated dv)
+      (dirvish--build-parents dv))))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
