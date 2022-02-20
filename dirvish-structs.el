@@ -136,6 +136,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
        (root-window-func #'frame-selected-window)
        (transient nil)
        (type nil)
+       (dedicated nil)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
        (read-only-depth (if (>= depth 0) depth dirvish-depth)))))
@@ -156,6 +157,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
    nil
    :documentation "TODO.")
   (type
+   nil
+   :documentation "TODO")
+  (dedicated
    nil
    :documentation "TODO")
   (dired-buffers
