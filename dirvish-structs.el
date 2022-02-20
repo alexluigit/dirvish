@@ -158,12 +158,12 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (type
    nil
    :documentation "TODO")
-  (parent-buffers
+  (dired-buffers
    ()
-   :documentation "holds all parent buffers in this instance.")
-  (parent-windows
+   :documentation "holds all dired buffers in this instance.")
+  (dired-windows
    ()
-   :documentation "holds all parent windows in this instance.")
+   :documentation "holds all dired windows in this instance.")
   (preview-window
    nil
    :documentation "is the window to display preview buffer.")
@@ -236,7 +236,7 @@ by this instance."
      (let ((tran-list (frame-parameter nil 'dirvish--transient)))
        (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
      (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
-       (mapc #'kill-when-live (dv-parent-buffers ,dv))
+       (mapc #'kill-when-live (dv-dired-buffers ,dv))
        (mapc #'kill-when-live (dv-preview-buffers ,dv))
        (dolist (type '(preview footer header)) (kill-when-live (dirvish--get-buffer type))))
      (remhash (dv-name ,dv) (dirvish-hash))
@@ -300,7 +300,7 @@ by this instance."
                 (not (dirvish-dired-p dv)))
            (dirvish-deactivate dv)
            (user-error "Dirvish: using current session"))
-          ((memq (selected-window) (dv-parent-windows old-dv))
+          ((memq (selected-window) (dv-dired-windows old-dv))
            (dirvish-deactivate old-dv))))
   (dirvish--refresh-slots dv)
   (dirvish--create-root-window dv)
@@ -327,7 +327,7 @@ DV defaults to the current dirvish instance if not provided."
 (defun dirvish-live-p (&optional dv)
   "Return t if selected window is occupied by Dirvish DV.
 DV defaults to the current dirvish instance if not provided."
-  (when-let ((dv (or dv (dirvish-curr)))) (memq (selected-window) (dv-parent-windows dv))))
+  (when-let ((dv (or dv (dirvish-curr)))) (memq (selected-window) (dv-dired-windows dv))))
 
 (provide 'dirvish-structs)
 ;;; dirvish-structs.el ends here

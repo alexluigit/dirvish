@@ -73,8 +73,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (owp (dirvish-dired-p dv))
          (sp-h-fn (intern (format "dirvish-%s-header-string" (dv-type dv))))
          (header-fn (or (and (functionp sp-h-fn) sp-h-fn) dirvish-header-string-function)))
-    (push (selected-window) (dv-parent-windows dv))
-    (push (current-buffer) (dv-parent-buffers dv))
+    (push (selected-window) (dv-dired-windows dv))
+    (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
     (setq mode-line-format (and owp dirvish-mode-line-format
                                 '((:eval (dirvish-format-mode-line)))))
