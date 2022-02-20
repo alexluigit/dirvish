@@ -23,10 +23,6 @@
   "File attributes showing in Dirvish file lines."
   :group 'dirvish :type '(repeat dirvish-attribute))
 
-(defcustom dirvish-enlarge-attributes '(git-msg)
-  "File attributes that enlarge current window when present."
-  :group 'dirvish :type '(repeat dirvish-attribute))
-
 (define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
 
 (defcustom dirvish-preview-dispatchers
@@ -147,6 +143,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
+(defvar dirvish-enlarge-attributes '(git-msg))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-preview-update-timer nil)
 (defvar dirvish-mode-line-update-timer nil)

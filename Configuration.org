@@ -4,21 +4,20 @@
 
 ** Options
 
-| Option                      | Type    | Description                               |
-|-----------------------------+---------+-------------------------------------------|
-| =dirvish-cache-dir=           | String  | Cache directory                           |
-| =dirvish-trash-dir-alist=     | Alist   | Setup multiple trash cans                 |
-| =dirvish-history-length=      | Integer | List length of recently visited dirs      |
-| =dirvish-depth=               | Integer | Level of dirs to traverse up              |
-| =dirvish-parent-max-width=    | Float   | Max width of parent windows               |
-| =dirvish-preview-width=       | Float   | Width of preview window                   |
-| =dirvish-body-zoom=           | Float   | Increase fontsize in dirvish body         |
-| =dirvish-header-style=        | Option  | Style for full-frame dirvish header       |
-| =dirvish-header-line-format=  | List    | Header line format in root window         |
-| =dirvish-mode-line-format=    | Cons    | Mode line format in root window           |
-| =dirvish-attributes=          | List    | File attributes showing in file lines     |
-| =dirvish-enlarge-attributes=  | List    | File attributes that enlarge root window. |
-| =dirvish-preview-dispatchers= | Hook    | Contents in preview window                |
+| Option                         | Type     | Description                              |
+|--------------------------------+----------+------------------------------------------|
+| =dirvish-cache-dir=              | String   | Cache directory                          |
+| =dirvish-trash-dir-alist=        | Alist    | Setup multiple trash cans                |
+| =dirvish-history-length=         | Integer  | List length of recently visited dirs     |
+| =dirvish-depth=                  | Integer  | Level of dirs to traverse up             |
+| =dirvish-parent-max-width=       | Float    | Max width of parent windows              |
+| =dirvish-preview-width=          | Float    | Width of preview window                  |
+| =dirvish-body-zoom=              | Float    | Increase fontsize in dirvish body        |
+| =dirvish-header-style=           | Option   | Style for full-frame dirvish header      |
+| =dirvish-header-string-function= | Function | Default header string                    |
+| =dirvish-mode-line-format=       | Cons     | Mode line format in root window          |
+| =dirvish-attributes=             | List     | File attributes showing in file lines    |
+| =dirvish-preview-dispatchers=    | Hook     | Contents in preview window               |
 
 Consult the docstring of the options for details.
 
