@@ -123,8 +123,7 @@ See `face-remapping-alist' for more details."
   '(((:eval (dirvish--mode-line-sorter))
      (:eval (dirvish--mode-line-filter)))
     .
-    ((:eval (dirvish--mode-line-fd-args))
-     (:eval (dirvish--mode-line-index))))
+    ((:eval (dirvish--mode-line-index))))
   "Template for displaying mode line in Dirvish instance.
 
 The value is a (LEFT . RIGHT) cons where LEFT/RIGHT has the same
@@ -159,7 +158,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defvar-local dirvish--vc-backend nil)
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish--child-entry 'permanent-local t)
-(put 'fd-dired-input-fd-args 'permanent-local t)
+(put 'dirvish--curr-name 'permanent-local t)
 
 (provide 'dirvish-options)
 ;;; dirvish-options.el ends here

@@ -11,6 +11,7 @@
 ;;; Code:
 
 (defalias 'dirvish-enlarge-ad #'dirvish--enlarge)
+(defvar fd-dired-buffer-name-format)
 (require 'dirvish-command)
 (require 'dirvish-structs)
 (require 'dirvish-helpers)
@@ -103,27 +104,36 @@ FILE-NAME are the same args in `dired-jump'."
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advisor function for `find-dired-sentinel'."
-  (let* ((old-dv (or (dirvish-curr)
-                     (with-current-buffer (other-buffer) (dirvish-curr))))
-         (p-win (dv-preview-window old-dv))
-         (pt-min (point-min))
-         buffer-read-only)
-    (set-frame-parameter nil 'dirvish--curr old-dv)
-    (dirvish--enlarge)
+  (let ((pt-min (point-min))
+        (dv (dirvish-curr))
+        (last-dv (with-current-buffer (other-buffer)
+                   (when (derived-mode-p 'dirvish-mode) (dirvish-curr))))
+        buffer-read-only)
+    (unless (and dv (eq (dv-type dv) 'find-dired))
+      (let* ((last-depth
+              (with-current-buffer (other-buffer)
+                (and (derived-mode-p 'dirvish-mode) (dv-depth (dirvish-curr)))))
+             (new-dv (dirvish-new :type 'find-dired :dedicated t))
+             (tran-list (frame-parameter nil 'dirvish--transient)))
+        (set-frame-parameter nil 'dirvish--transient (push new-dv tran-list))
+        (setf (dv-transient new-dv) (or last-dv new-dv))
+        (dirvish-activate new-dv)
+        (setf (dv-depth new-dv) (or last-depth 0))
+        (setq-local dirvish--curr-name (dv-name new-dv))
+        (dirvish-reclaim)
+        (dirvish-build)))
+    ;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-matching-lines "find finished at.*\\|^ +$")
-      ;;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-region pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
-    (unless (memq (dv-transient old-dv) (frame-parameter nil 'dirvish--transient))
-      (let ((new-dv (dirvish-new :depth (dv-depth old-dv))))
-        (dirvish--start-transient old-dv new-dv)
-        (unless (dirvish-dired-p old-dv)
-          (setf (dv-preview-window new-dv) p-win))))
-    (dirvish-setup 'keep-dired)))
+    (and (dirvish-curr) (dirvish-setup 'keep-dired))))
 
 (defun dirvish-fd-dired-ad (fn &rest args)
   "Advisor function for FN `fd-dired' with its ARGS."
+  (when (and (dirvish-curr) (eq (dv-type (dirvish-curr)) 'find-dired))
+    (dirvish-deactivate (dirvish-curr)))
   ;; HACK for *FD* window placement. `fd-dired-display-in-current-window' does not behave as described.
-  (let ((display-buffer-alist '(("^\\*F\\(?:d\\|ind\\)\\*$" (display-buffer-same-window)))))
+  (let ((display-buffer-alist '(("^ ?\\*Fd.*$" (display-buffer-same-window))))
+        (fd-dired-buffer-name-format "*%s*"))
     (apply fn args)))
 
 (defun dirvish-dwim-target-next-ad (&optional all-frames)

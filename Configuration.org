@@ -126,8 +126,7 @@ TODO
   ;; Drop-in replacement for find-dired
   (use-package fd-dired
     :bind
-    (:map dired-mode-map
-          ("C-c C-f" . fd-dired)))
+    ("C-c f" . fd-dired))
 
   (use-package dirvish
     :config

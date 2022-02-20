@@ -66,6 +66,15 @@
               (propertize path-tail 'face 'dired-mark)
               (propertize file-name 'face 'font-lock-constant-face)))))
 
+(defun dirvish-find-dired-header-string ()
+  "Return a string showing current `find/fd' command args."
+  (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
+    (when-let ((args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
+      (format " %s [%s] at %s"
+              (propertize "FD:" 'face 'bold)
+              (propertize args 'face 'font-lock-string-face)
+              (propertize default-directory 'face 'dired-header)))))
+
 (defun dirvish--mode-line-sorter ()
   "Return a string showing current Dired file sort criteria."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
@@ -80,15 +89,6 @@
            (format " %s %s " (propertize "Filters:" 'face 'bold)
                    (dired-filter--describe-filters)))
           (dired-omit-mode (propertize "[Omit]" 'face 'bold)))))
-
-(defun dirvish--mode-line-fd-args ()
-  "Return a string showing current `find/fd' command args."
-  (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
-    (when (string-match "^\\*F\\(?:d\\|ind\\)\\*$" (buffer-name))
-      (format " %s [%s] "
-              (propertize "FD:" 'face 'bold)
-              (propertize (or (bound-and-true-p fd-dired-input-fd-args) find-args)
-                          'face 'font-lock-string-face)))))
 
 (defun dirvish--mode-line-index ()
   "Return a string showing index in a Dirvish buffer."

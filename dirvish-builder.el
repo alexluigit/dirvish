@@ -94,6 +94,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish-setup dirvish--curr-name)
     (unless (dirvish-dired-p dv)
       (add-hook 'dired-hide-details-mode-hook #'dirvish-hide-details-h nil :local))
+    (when (dv-dedicated dv) (setq depth 0))
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)
@@ -156,8 +157,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
       (dirvish--build-preview dv)
       (dirvish--build-header dv)
       (dirvish--build-footer dv))
-    (unless (dv-dedicated dv)
-      (dirvish--build-parents dv))))
+    (dirvish--build-parents dv)))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
