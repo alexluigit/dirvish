@@ -247,13 +247,6 @@ by this instance."
      (remhash (dv-name ,dv) (dirvish-hash))
      ,@body))
 
-(defun dirvish--start-transient (old-dv new-dv)
-  "Mark OLD-DV and NEW-DV as a parent/child transient Dirvish."
-  (setf (dv-transient new-dv) old-dv)
-  (let ((tran-list (frame-parameter nil 'dirvish--transient)))
-    (set-frame-parameter nil 'dirvish--transient (push old-dv tran-list)))
-  (dirvish-activate new-dv))
-
 (defun dirvish--end-transient (tran)
   "End transient of Dirvish instance or name TRAN."
   (cl-loop
