@@ -1,4 +1,4 @@
-;;; dirvish-structs.el --- Dirvish data structures -*- lexical-binding: t -*-
+;;; dirvish-core.el --- Core data structures and utils for Dirvish -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 
-;; This library contains data structures for Dirvish.
+;; This library contains core data structures and utils for Dirvish.
 
 ;;; Code:
 
@@ -49,14 +49,14 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
-    (setq-local mode-line-format '((:eval (dirvish-apply-header-style))))
+    (setq-local mode-line-format '((:eval (dirvish--apply-header-style))))
     (set (make-local-variable 'face-remapping-alist)
          `((mode-line-inactive :inherit (mode-line-active) :height ,dirvish-header-line-height))))
   (dirvish--get-util-buffer dv 'footer
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
-    (setq-local mode-line-format '((:eval (dirvish-format-mode-line))))
+    (setq-local mode-line-format '((:eval (dirvish--format-mode-line))))
     (set (make-local-variable 'face-remapping-alist)
          '((mode-line-inactive mode-line-active)))))
 
@@ -289,6 +289,43 @@ by this instance."
            (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
            (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))))
 
+(defun dirvish--apply-header-style ()
+  "Format Dirvish header line."
+  (when-let ((dv (dirvish-curr)))
+    (let* ((sp-h-fn (intern (format "dirvish-%s-header-string" (dv-type dv))))
+           (h-fn (or (and (functionp sp-h-fn) sp-h-fn) dirvish-header-string-function))
+           (str (format-mode-line `((:eval (funcall #',h-fn)))))
+           (large-header-p (eq dirvish-header-style 'large))
+           (ht (if large-header-p 1.2 1))
+           (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
+           (max-width (floor (/ win-width ht))))
+      (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
+        (setq str (substring str 0 -1)))
+      (propertize str 'display `((height ,ht) (raise ,(if large-header-p 0.25 0.35)))))))
+
+(defun dirvish--format-mode-line ()
+  "Generate Dirvish mode line string."
+  (when (dirvish-curr)
+    (cl-destructuring-bind (left . right) dirvish-mode-line-format
+      (let ((fmt-right (format-mode-line right)))
+        (concat (format-mode-line left)
+                (propertize " " 'display
+                            `((space :align-to (- (+ right right-fringe right-margin)
+                                                  ,(string-width fmt-right)))))
+                fmt-right)))))
+
+(defun dirvish--buffer-for-dir (dv entry)
+  "Return the dirvish buffer in DV for ENTRY.
+If the buffer is not available, create it with `dired-noselect'."
+  (let* ((root-dir-buf (dv-root-dir-buf-alist dv))
+         (buffer (alist-get entry root-dir-buf nil nil #'equal))
+         (sorter (cdr (dv-sort-criteria dv)))
+         (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
+    (unless buffer
+      (setq buffer (dired-noselect entry switches))
+      (push (cons entry buffer) (dv-root-dir-buf-alist dv)))
+    buffer))
+
 (defun dirvish-activate (dv)
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
@@ -327,5 +364,5 @@ DV defaults to the current dirvish instance if not provided."
 DV defaults to the current dirvish instance if not provided."
   (when-let ((dv (or dv (dirvish-curr)))) (memq (selected-window) (dv-dired-windows dv))))
 
-(provide 'dirvish-structs)
-;;; dirvish-structs.el ends here
+(provide 'dirvish-core)
+;;; dirvish-core.el ends here

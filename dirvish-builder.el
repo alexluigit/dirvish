@@ -9,9 +9,9 @@
 ;;; Code:
 
 (declare-function all-the-icons-dired-mode "all-the-icons-dired")
+(require 'dirvish-core)
 (require 'dirvish-updater)
 (require 'dirvish-preview)
-(require 'dirvish-structs)
 (require 'dirvish-options)
 (require 'dirvish-helpers)
 
@@ -76,8 +76,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (push (selected-window) (dv-dired-windows dv))
     (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
-    (setq mode-line-format (and owp dirvish-mode-line-format
-                                '((:eval (dirvish-format-mode-line)))))
+    (setq mode-line-format (and owp dirvish-mode-line-format '((:eval (dirvish--format-mode-line)))))
     (setq header-line-format (and owp dirvish-header-string-function `((:eval (funcall #',header-fn))))))
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
@@ -89,12 +88,11 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current))
          (parent-dirs ())
-         (depth (dv-depth dv))
+         (depth (if (dv-dedicated dv) 0 (dv-depth dv)))
          (i 0))
     (dirvish-setup dirvish--curr-name)
     (unless (dirvish-dired-p dv)
       (add-hook 'dired-hide-details-mode-hook #'dirvish-hide-details-h nil :local))
-    (when (dv-dedicated dv) (setq depth 0))
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)

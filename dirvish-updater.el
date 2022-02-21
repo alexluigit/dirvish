@@ -15,7 +15,7 @@
 (defvar dired-filter-show-filters)
 (defvar dired-filter-revert)
 (defvar fd-dired-input-fd-args)
-(require 'dirvish-structs)
+(require 'dirvish-core)
 (require 'dirvish-helpers)
 (require 'dirvish-options)
 (eval-when-compile

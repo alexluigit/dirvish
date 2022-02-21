@@ -1,4 +1,4 @@
-;;; dirvish-command.el --- Utility dirvish commands -*- lexical-binding: t -*-
+;;; dirvish-commands.el --- Utility dirvish commands -*- lexical-binding: t -*-
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 
-;; This library provides some utility commands for Dirvish.
+;; This library provides extra utility commands in Dirvish.
 
 ;;; Code:
 
@@ -182,5 +182,5 @@ update `dirvish-history-ring'."
             (dirvish-build))
         (find-file entry)))))
 
-(provide 'dirvish-command)
-;;; dirvish-command.el ends here
+(provide 'dirvish-commands)
+;;; dirvish-commands.el ends here
