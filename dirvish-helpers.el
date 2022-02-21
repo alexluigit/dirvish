@@ -10,7 +10,7 @@
 
 ;;; Code:
 
-(require 'dirvish-structs)
+(require 'dirvish-core)
 (require 'dirvish-options)
 (require 'dired-x)
 
@@ -66,31 +66,6 @@ If program returns non zero exit code return nil."
               (setq exit-code (apply #'process-file program nil t nil args))))))
     (when (eq exit-code 0) output)))
 
-(defun dirvish-apply-header-style ()
-  "Format Dirvish header line."
-  (when-let ((dv (dirvish-curr)))
-    (let* ((sp-h-fn (intern (format "dirvish-%s-header-string" (dv-type dv))))
-           (h-fn (or (and (functionp sp-h-fn) sp-h-fn) dirvish-header-string-function))
-           (str (format-mode-line `((:eval (funcall #',h-fn)))))
-           (large-header-p (eq dirvish-header-style 'large))
-           (ht (if large-header-p 1.2 1))
-           (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
-           (max-width (floor (/ win-width ht))))
-      (while (>= (+ (length str) (/ (- (string-bytes str) (length str)) 2)) (1- max-width))
-        (setq str (substring str 0 -1)))
-      (propertize str 'display `((height ,ht) (raise ,(if large-header-p 0.25 0.35)))))))
-
-(defun dirvish-format-mode-line ()
-  "Generate Dirvish mode line string."
-  (when (dirvish-curr)
-    (cl-destructuring-bind (left . right) dirvish-mode-line-format
-      (let ((fmt-right (format-mode-line right)))
-        (concat (format-mode-line left)
-                (propertize " " 'display
-                            `((space :align-to (- (+ right right-fringe right-margin)
-                                                  ,(string-width fmt-right)))))
-                fmt-right)))))
-
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER at one side of the selected frame.
 
@@ -103,9 +78,8 @@ If program returns non zero exit code return nil."
          (height (cdr (assq 'window-height alist)))
          (size (or height (ceiling (* (frame-width) width))))
          (split-width-threshold 0)
-         (root-win (dv-root-window (dirvish-curr)))
          (mode-line-format nil)
-         (new-window (split-window-no-error root-win size side)))
+         (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
 (defun dirvish--display-side-window ()
@@ -121,18 +95,6 @@ If program returns non zero exit code return nil."
       (and (not (eq win (dv-root-window (dirvish-curr))))
            (window-live-p win)
            (delete-window win)))))
-
-(defun dirvish--buffer-for-dir (dv entry)
-  "Return the dirvish buffer in DV for ENTRY.
-If the buffer is not available, create it with `dired-noselect'."
-  (let* ((root-dir-buf (dv-root-dir-buf-alist dv))
-         (buffer (alist-get entry root-dir-buf nil nil #'equal))
-         (sorter (cdr (dv-sort-criteria dv)))
-         (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
-    (unless buffer
-      (setq buffer (dired-noselect entry switches))
-      (push (cons entry buffer) (dv-root-dir-buf-alist dv)))
-    buffer))
 
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."

@@ -11,7 +11,7 @@
 (declare-function image-get-display-property "image-mode")
 (require 'so-long)
 (require 'mailcap)
-(require 'dirvish-structs)
+(require 'dirvish-core)
 (require 'dirvish-options)
 (require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))

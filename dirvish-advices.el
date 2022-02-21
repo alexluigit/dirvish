@@ -12,8 +12,8 @@
 
 (defalias 'dirvish-enlarge-ad #'dirvish--enlarge)
 (defvar fd-dired-buffer-name-format)
-(require 'dirvish-command)
-(require 'dirvish-structs)
+(require 'dirvish-core)
+(require 'dirvish-commands)
 (require 'dirvish-helpers)
 (require 'dirvish-options)
 

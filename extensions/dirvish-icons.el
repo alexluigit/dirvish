@@ -21,7 +21,7 @@
 (defconst dirvish-icon-v-offset 0.01)
 (defvar-local dirvish--vscode-icon-alist nil)
 (require 'dired)
-(require 'dirvish-structs)
+(require 'dirvish-core)
 
 (defcustom dirvish-icon-delimiter " "
   "A string attached to the icon."
