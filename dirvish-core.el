@@ -134,13 +134,18 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
       make-dirvish
       (&key
        (depth dirvish-depth)
-       (root-window-func #'frame-selected-window)
        (transient nil)
        (type nil)
        (dedicated nil)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
-       (read-only-depth (if (>= depth 0) depth dirvish-depth)))))
+       (read-only-depth (if (>= depth 0) depth dirvish-depth))
+       (root-window-fn (let ((fn (intern (format "dirvish-%s-root-window-fn" type))))
+                         (if (functionp fn) fn #'frame-selected-window)))
+       (header-string-fn (let ((fn (intern (format "dirvish-%s-header-string-fn" type))))
+                         (if (functionp fn) fn (symbol-value 'dirvish-header-string-function))))
+       (quit-window-fn (let ((fn (intern (format "dirvish-%s-quit-window-fn" type))))
+                         (if (functionp fn) fn #'ignore))))))
   "Define dirvish data type."
   (name
    (cl-gensym)
@@ -178,9 +183,15 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (window-conf
    (current-window-configuration)
    :documentation "is the window configuration given by `current-window-configuration'.")
-  (root-window-func
+  (root-window-fn
    #'frame-selected-window
    :documentation "is the main dirvish window.")
+  (header-string-fn
+   (symbol-value 'dirvish-header-string-function)
+   :documentation "TODO.")
+  (quit-window-fn
+   #'ignore
+   :documentation "TODO.")
   (root-window
    nil
    :documentation "is the main dirvish window.")
@@ -221,7 +232,6 @@ restore them after."
     `(let ((dv (make-dirvish ,@keywords)))
        (unless (frame-parameter nil 'dirvish--hash)
          (add-hook 'window-selection-change-functions #'dirvish-reclaim)
-         (set-frame-parameter nil 'dirvish--transient '())
          (set-frame-parameter nil 'dirvish--hash (make-hash-table :test 'equal)))
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given
@@ -234,17 +244,18 @@ DV defaults to current dirvish instance if not given.  If BODY is
 given, it is executed to unset the window configuration brought
 by this instance."
   (declare (indent defun))
-  `(progn
-     (let ((conf (dv-window-conf ,dv)))
-       (when (and (not (dirvish-dired-p ,dv)) (window-configuration-p conf))
-         (set-window-configuration conf)))
-     (let ((tran-list (frame-parameter nil 'dirvish--transient)))
-       (set-frame-parameter nil 'dirvish--transient (remove dv tran-list)))
-     (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
-       (mapc #'kill-when-live (dv-dired-buffers ,dv))
-       (mapc #'kill-when-live (dv-preview-buffers ,dv))
-       (dolist (type '(preview footer header)) (kill-when-live (dirvish--get-util-buffer ,dv type))))
+  `(unwind-protect
+       (let ((conf (dv-window-conf ,dv)))
+         (when (and (not (dirvish-dired-p ,dv)) (window-configuration-p conf))
+           (set-window-configuration conf))
+         (setq dirvish-transient-dvs (delete dv dirvish-transient-dvs))
+         (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
+           (mapc #'kill-when-live (dv-dired-buffers ,dv))
+           (mapc #'kill-when-live (dv-preview-buffers ,dv))
+           (dolist (type '(preview footer header)) (kill-when-live (dirvish--get-util-buffer ,dv type))))
+         (funcall (dv-quit-window-fn ,dv) ,dv))
      (remhash (dv-name ,dv) (dirvish-hash))
+     (dirvish-reclaim)
      ,@body))
 
 (defun dirvish--end-transient (tran)
@@ -262,7 +273,7 @@ by this instance."
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
   (let ((depth (dv-depth dv))
-        (r-win (funcall (dv-root-window-func dv))))
+        (r-win (funcall (dv-root-window-fn dv))))
     (when (and (>= depth 0) (window-parameter r-win 'window-side))
       (setq r-win (next-window)))
     (setf (dv-root-window dv) r-win)
@@ -292,8 +303,7 @@ by this instance."
 (defun dirvish--apply-header-style ()
   "Format Dirvish header line."
   (when-let ((dv (dirvish-curr)))
-    (let* ((sp-h-fn (intern (format "dirvish-%s-header-string" (dv-type dv))))
-           (h-fn (or (and (functionp sp-h-fn) sp-h-fn) dirvish-header-string-function))
+    (let* ((h-fn (dv-header-string-fn dv))
            (str (format-mode-line `((:eval (funcall #',h-fn)))))
            (large-header-p (eq dirvish-header-style 'large))
            (ht (if large-header-p 1.2 1))
@@ -349,8 +359,7 @@ If the buffer is not available, create it with `dired-noselect'."
     (unless (dirvish-get-all 'name t)
       (setq other-window-scroll-buffer nil)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
-      (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm))))
-    (dirvish-reclaim))
+      (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm)))))
   (run-hooks 'dirvish-deactivation-hook)
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t))))
 
