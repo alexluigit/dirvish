@@ -90,7 +90,7 @@ in /mnt/HDD directory or its child entries. This can speed up
 file deletion when you have multiple disk drives."
   :group 'dirvish :type 'alist)
 
-(defcustom dirvish-header-string-function 'dirvish-default-header-string
+(defcustom dirvish-header-string-function 'dirvish-default-header-string-fn
   "Function that returns content (a string) in Dirvish header."
   :group 'dirvish :type 'function)
 
@@ -149,6 +149,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defvar dirvish-mode-line-update-timer nil)
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
+(defvar dirvish-transient-dvs '())
 (defvar dirvish-repeat-timers '())
 (defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)

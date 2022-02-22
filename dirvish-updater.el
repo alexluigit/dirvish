@@ -52,7 +52,7 @@
       (overlay-put o 'dirvish-symlink-target t)
       (overlay-put o 'invisible t))))
 
-(defun dirvish-default-header-string ()
+(defun dirvish-default-header-string-fn ()
   "Compose header string."
   (when-let ((dv (dirvish-curr)))
     (let* ((index (dv-index-path dv))
@@ -66,7 +66,7 @@
               (propertize path-tail 'face 'dired-mark)
               (propertize file-name 'face 'font-lock-constant-face)))))
 
-(defun dirvish-find-dired-header-string ()
+(defun dirvish-find-dired-header-string-fn ()
   "Return a string showing current `find/fd' command args."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
     (when-let ((args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
