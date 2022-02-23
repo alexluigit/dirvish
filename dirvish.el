@@ -38,10 +38,10 @@
       (progn
         (dirvish--add-advices)
         (setq find-directory-functions
-              (cl-substitute #'dirvish-dired #'dired-noselect find-directory-functions)))
+              (cl-substitute #'dirvish-noselect #'dired-noselect find-directory-functions)))
     (dirvish--remove-advices)
     (setq find-directory-functions
-          (cl-substitute #'dired-noselect #'dirvish-dired find-directory-functions))))
+          (cl-substitute #'dired-noselect #'dirvish-noselect find-directory-functions))))
 
 ;;;###autoload
 (defun dirvish (&optional path)
