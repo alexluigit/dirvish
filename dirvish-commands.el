@@ -138,7 +138,8 @@ directory in another window."
         (with-selected-window (dirvish--create-root-window dv)
           (switch-to-buffer buf)
           (dirvish-reclaim)
-          (dirvish-build)))
+          (dirvish-build)
+          (dirvish-update-body-h)))
     (user-error "Dirvish: not in a dirvish buffer")))
 
 (defun dirvish-change-depth (level)
@@ -181,6 +182,14 @@ update `dirvish-history-ring'."
                  :transient (dv-name dv-tran))))
             (dirvish-build))
         (find-file entry)))))
+
+(defun dirvish-noselect (dir)
+  "Return the Dirvish buffer at DIR, do not select it."
+  (or dir (setq dir default-directory))
+  (let ((dv (dirvish-activate (dirvish-new :depth -1))))
+    (with-current-buffer (dirvish--buffer-for-dir dv dir)
+      (dirvish-build)
+      (current-buffer))))
 
 (provide 'dirvish-commands)
 ;;; dirvish-commands.el ends here
