@@ -62,11 +62,6 @@ leaving it for future dispatchers.  For details see
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-side-display-alist
-  '((side . left) (slot . -1) (window-width . 0.2))
-  "Alist used in `display-buffer-in-side-window'."
-  :group 'dirvish :type 'alist)
-
 (define-obsolete-variable-alias 'dirvish-body-fontsize-increment 'dirvish-body-zoom "0.9.9")
 
 (defcustom dirvish-body-zoom 0.05

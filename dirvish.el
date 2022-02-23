@@ -61,14 +61,5 @@ in other window when OTHER-WINDOW is non-nil."
   (and other-window (switch-to-buffer-other-window dirvish-temp-buffer))
   (dirvish-here path :depth -1))
 
-;;;###autoload
-(defun dirvish-side (&optional path)
-  "Open Dirvish in side window with optional PATH.
-If called with \\[universal-arguments], prompt for PATH,
-otherwise it defaults to variable `buffer-file-name'."
-  (interactive (list (and current-prefix-arg (read-file-name "Dirvish side: "))))
-  (dirvish-here (or path (cdr-safe (project-current)))
-    :depth -1 :root-window-func #'dirvish--display-side-window))
-
 (provide 'dirvish)
 ;;; dirvish.el ends here
