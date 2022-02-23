@@ -32,6 +32,13 @@
   "Minibuffer metadata categories to show file preview."
   :group 'dirvish :type 'list)
 
+(defcustom dirvish-peek-display-alist
+  '((side . right)
+    (slot . -1)
+    (window-width . 0.5))
+  "Display alist for preview window of `dirvish-peek'."
+  :group 'dirvish :type 'alist)
+
 (defun dirvish--peek-create ()
   "Create dirvish minibuffer preview window.
 The window is created only when metadata in current minibuffer is
@@ -48,8 +55,8 @@ one of categories in `dirvish-peek-categories'."
                (not (and old-dv (dv-preview-window old-dv))))
       (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
       (push (selected-window) (dv-dired-windows new-dv))
-      (let ((next-win (next-window)))
-        (setf (dv-preview-window new-dv) next-win)))
+      (setf (dv-preview-window new-dv)
+            (display-buffer-in-side-window dirvish-temp-buffer dirvish-peek-display-alist)))
     (set-frame-parameter nil 'dirvish--peek
                          `(:category ,preview-category :old ,old-dv :new ,new-dv))))
 
