@@ -65,6 +65,7 @@
         spec)))
 
 ;;;###autoload (autoload 'dirvish-menu-file-info-cmds "dirvish-menu" nil t)
+;;;###autoload (autoload 'dirvish-menu-action-on-marks "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
  ((all-cmds
    [:description
@@ -72,19 +73,27 @@
       (propertize (capitalize (format "%s help menu" (if (derived-mode-p 'dirvish-mode) "Dirvish" "Dired")))
                   'face '(:inherit dired-mark :height 1.2 :underline t)))
     :if-derived dired-mode
-    ["File commands"
+    ["Essential commands"
      ("e"   "Open file"                           dired-find-file)
      ("o"   "Open file other window"              dired-find-file-other-window)
-     ("@"   "Rename files"                        dirvish-menu-renaming-cmds)
      ("w"   "Get file information"                dirvish-menu-file-info-cmds)
+     ("s"   "Sort files"                          dired-sort-toggle-or-edit)
+     ("v"   "View current file"                   dired-view-file)
+     ("g"   "Refresh buffer"                      revert-buffer)]
+    ["I/O commands"
+     ("a"   "Add (create) an empty file"          dired-create-empty-file)
+     ("C"   "Copy"                                dired-do-copy :if-mode dired-mode)
+     ("C"   "Paste marked files here"             dirvish-yank :if-derived dirvish-mode)
+     ("@"   "Rename files"                        dirvish-menu-renaming-cmds)
+     ("X"   "Delete"                              dired-do-delete)
      ("f"   "Edit file attributes"                dirvish-menu-edit-file-attrs)
-     ("s"   "Sort files"                          dired-sort-toggle-or-edit)]
+     ("+"   "Create directory"                    dired-create-directory)]
     ["View"
      ("(" "  Hide detail info"                    dired-hide-details-mode)
      ("." "  Apply filters"                       dired-filter-mode :if (lambda () (featurep 'dired-filter)))
      ("." "  Apply filters"                       dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
      ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))
-     ("M-m" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
+     ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
      ("M-c" "Configure Dirvish UI"                dirvish-ui-config :if-derived dirvish-mode)
      ("M-l" "Change parent depth"                 dirvish-change-depth :if-derived dirvish-mode)]
     ["Subdirs"
@@ -107,19 +116,11 @@
      ("U" "  Unmark all"                          dired-unmark-all-marks)
      ("t" "  Toggle (invert) marks"               dired-toggle-marks)
      ("*" "  Mark by.."                           dirvish-menu-mark-by)
-     ("SPC" "Actions on marks"                    dirvish-menu-action-on-marks)]
-    ["Essential commands"
-     ("C"   "Copy"                                dired-do-copy :if-mode dired-mode)
-     ("C"   "Paste to current directory"          dirvish-yank :if-derived dirvish-mode)
-     ("x"   "Delete"                              dired-do-delete)
-     ("a"   "Add (create) an empty file"          dired-create-empty-file)
-     ("v"   "View current file"                   dired-view-file)
-     ("+"   "Create directory"                    dired-create-directory)
-     ("g"   "Refresh buffer"                      revert-buffer)]
+     ("M-a" "Actions on marks"                    dirvish-menu-action-on-marks)]
     ["Extensions"
      (":" "  GNUpg helpers"                       dirvish-menu-epa-dired-cmds)
      ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (fboundp 'dired-subtree-toggle)))
-     ("=" "  Diffing with the other file"         dired-diff)]])
+     ("=" "  Diffing files"                       dired-diff)]])
   (edit-file-attrs
    ["Change file attributes"
     ("R"   "Name"                                 dired-do-rename)
@@ -188,8 +189,8 @@
            (side . bottom)
            (dedicated . t)
            (inhibit-same-window . t)
-           (window-parameters
-            (no-other-window . t)))))
+           (window-parameters (no-other-window . t))))
+        (transient-show-popup t))
     (dirvish-menu-all-cmds)))
 
 ;;;###autoload (autoload 'dirvish-roam "dirvish-menu" nil t)
@@ -206,7 +207,7 @@ the DIR.  See setter of this option for details."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
-    `(setq ,k v)
+    (set k v)
     (let* ((desc-len-seq (mapcar (lambda (i) (length (nth 2 i))) v))
            (max-desc-len (seq-max desc-len-seq)))
       (eval
@@ -238,7 +239,7 @@ the VAR.  See setter of this option for details."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
-    `(setq ,k v)
+    (set k v)
     (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attributes)) v))
           (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview-dispatchers)) v)))
       (cl-labels ((new-infix (i)
@@ -257,11 +258,11 @@ the VAR.  See setter of this option for details."
         (eval
          `(transient-define-prefix dirvish-ui-config ()
             "Change UI config of Dirvish."
-            ["File attributes in body"
+            ["File attributes:"
              ,@(mapcar #'expand-infix attr-alist)]
-            ["Preview"
+            ["Preview:"
              ,@(mapcar #'expand-infix preview-alist)]
-            ["Actions"
+            ["Actions:"
              ("RET" "Confirm and quit"
               (lambda () (interactive) (dirvish-build) (revert-buffer)))]))))))
 
