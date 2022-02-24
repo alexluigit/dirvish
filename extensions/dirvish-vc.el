@@ -24,7 +24,7 @@
 
 (defcustom dirvish-vc-state-char-alist
   '((up-to-date       . ("  " . vc-up-to-date-state))
-    (edited           . ("E " . vc-edited-state))
+    (edited           . ("M " . vc-edited-state))
     (added            . ("+ " . vc-locally-added-state))
     (removed          . ("- " . vc-removed-state))
     (missing          . ("! " . vc-missing-state))

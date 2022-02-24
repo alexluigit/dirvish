@@ -95,7 +95,7 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
 (defun dirvish-side (&optional path)
   "Open Dirvish in side window with optional PATH.
 If called with \\[universal-arguments], prompt for PATH,
-otherwise it defaults to variable `buffer-file-name'."
+otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish side: "))))
   (cl-destructuring-bind (dv . state) (dirvish-side--get-state)
     (cl-case state
