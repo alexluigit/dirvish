@@ -16,8 +16,13 @@
 
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
-(declare-function vscode-icon-for-file "vscode-icon")
+(declare-function vscode-icon-can-scale-image-p "vscode-icon")
+(declare-function dired-subtree--is-expanded-p "dired-subtree")
 (defvar vscode-icon-size)
+(defvar vscode-icon-dir)
+(defvar dirvish-icons--with-expand-state (require 'dired-subtree nil t))
+(defconst dirvish--vscode-icon-directory
+  (concat vscode-icon-dir (if (vscode-icon-can-scale-image-p) "128/" "23/")))
 (defconst dirvish-icon-v-offset 0.01)
 (defvar-local dirvish--vscode-icon-alist nil)
 (require 'dired)
@@ -44,11 +49,28 @@ Values are interpreted as follows:
 
 (defun dirvish--vscode-icon-for-file (file)
   "Get vscode-icon for FILE."
-  (let ((icon (alist-get file dirvish--vscode-icon-alist nil nil #'string=)))
+  (let ((icon (cdr (assoc file dirvish--vscode-icon-alist))))
     (unless icon
-      (setq icon (vscode-icon-for-file file))
-      (push (cons file icon) dirvish--vscode-icon-alist))
-    icon))
+      (let ((default-directory dirvish--vscode-icon-directory))
+        (if (file-directory-p file)
+            (let* ((base-name (file-name-base file))
+                   (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist)) base-name))
+                   (icon-path (vscode-icon-dir-exists-p icon-base))
+                   closed-icon opened-icon)
+              (if icon-path
+                  (progn
+                    (setq closed-icon (vscode-icon-create-image icon-path))
+                    (setq opened-icon (vscode-icon-create-image (expand-file-name (format "folder_type_%s_opened.png" icon-base)))))
+                (setq closed-icon (vscode-icon-create-image (expand-file-name "default_folder.png")))
+                (setq opened-icon (vscode-icon-create-image (expand-file-name "default_folder_opened.png"))))
+              (setq icon (cons closed-icon opened-icon)))
+          (setq icon (vscode-icon-file file)))
+        (push (cons file icon) dirvish--vscode-icon-alist)))
+    (cond ((not (file-directory-p file)) icon)
+          ((and dirvish-icons--with-expand-state
+                (dired-subtree--is-expanded-p))
+           (cdr icon))
+          (t (car icon)))))
 
 ;;;###autoload (autoload 'dirvish--render-all-the-icons-body "dirvish-icons")
 ;;;###autoload (autoload 'dirvish--render-all-the-icons-line "dirvish-icons")
