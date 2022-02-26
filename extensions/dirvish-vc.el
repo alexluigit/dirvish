@@ -95,10 +95,9 @@ This variable is used in `dirvish--render-gutter'."
       (overlay-put ov 'dirvish-git-msg t)
       (overlay-put ov 'after-string str))))
 
-;;;###autoload
-(defun dirvish-preview-vc-diff-dispatcher (_file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If `vc-diff' returns t, then show its result buffer as preview."
+;;;###autoload (autoload 'dirvish-vc-diff-preview-dp "dirvish-vc")
+(dirvish-define-preview vc-diff ()
+  "Show output of `vc-diff' as preview."
   (when (and dirvish--vc-backend
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
                        ((symbol-function 'message) #'ignore))

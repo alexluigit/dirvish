@@ -53,41 +53,31 @@ When PROC finishes, fill preview buffer with process result."
   "A process sentinel for updating dirvish preview window."
   (dirvish-preview-update))
 
-(defun dirvish-preview-disable-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish do not display
-a preview."
+(dirvish-define-preview disable (file)
+  "Disable preview in some cases."
   (when (or (not (file-exists-p file))
             (not (file-readable-p file))
             (member (file-name-extension file)
                     '("iso" "bin" "exe" "gpg" "elc" "eln")))
     `(info . ,(format "File %s is not readable or in the preview blacklist." file))))
 
-(defun dirvish-preview-directory-exa-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish uses `exa' to
-generate directory preview."
+(dirvish-define-preview directory-exa (file)
+  "Uses `exa' to generate directory preview."
   (when (file-directory-p file)
     `(shell . ("exa" "--color=always" "-al" ,file))))
 
-(defun dirvish-preview-directory-dired-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish returns a
-Dired buffer as preview."
+(dirvish-define-preview directory-dired (file)
+  "Uses Dired to generate directory preview."
   (when (file-directory-p file)
     `(buffer . (dired-noselect ,file))))
 
-(defun dirvish-preview-text-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish returns a
-regular file buffer as preview."
+(dirvish-define-preview text (file)
+  "Open FILE with `find-file-noselect'."
   (when (string-match "text/" (or (mailcap-file-name-to-mime-type file) ""))
     `(buffer . (find-file-noselect ,file t nil))))
 
-(defun dirvish-preview-gif-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish displays an
-animated image as preview."
+(dirvish-define-preview gif (file)
+  "Display an animated image FILE."
   (when (string= (mailcap-file-name-to-mime-type file) "image/gif")
     (let ((gif-buf (find-file-noselect file t nil))
           (callback (lambda (buf)
@@ -97,10 +87,8 @@ animated image as preview."
       (run-with-idle-timer 1 nil callback gif-buf)
       `(buffer . ,gif-buf))))
 
-(defun dirvish-preview-image-dispatcher (file dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish displays a
-image with width of DV's preview window as preview."
+(dirvish-define-preview image (file dv)
+  "Display a image with width of DV's preview window."
   (when (string-match "image/" (or (mailcap-file-name-to-mime-type file) ""))
     (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
@@ -111,10 +99,8 @@ image with width of DV's preview window as preview."
              `(image . (put-image ,(create-image file nil nil :max-width size) 0)))
             (t `(image-cache . ("convert" "-resize" ,(number-to-string size) ,file ,cache)))))))
 
-(defun dirvish-preview-video-dispatcher (file dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish displays a
-video thumbnail with width of DV's preview window as preview."
+(dirvish-define-preview video (file dv)
+  "Display a video thumbnail with width of DV's preview window."
   (when (string-match "video/" (or (mailcap-file-name-to-mime-type file) ""))
     (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
@@ -122,17 +108,13 @@ video thumbnail with width of DV's preview window as preview."
           `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
 
-(defun dirvish-preview-audio-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish use output of
-`mediainfo' shell command as preview."
+(dirvish-define-preview audio (file)
+  "Use output of `mediainfo' shell command as preview."
   (when (string-match "audio/" (or (mailcap-file-name-to-mime-type file) ""))
     `(shell . ("mediainfo" ,file))))
 
-(defun dirvish-preview-epub-dispatcher (file dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish displays a
-epub thumbnail with width of DV's preview window as preview."
+(dirvish-define-preview epub (file dv)
+  "Display a epub thumbnail with width of DV's preview window."
   (when (string= (file-name-extension file) "epub")
     (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size ".jpg")))
@@ -140,10 +122,8 @@ epub thumbnail with width of DV's preview window as preview."
           `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
 
-(defun dirvish-preview-pdf-preface-dispatcher (file dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish displays a pdf
-thumbnail with width of DV's preview window as preview."
+(dirvish-define-preview pdf-preface (file dv)
+  "Display a pdf preface image with width of DV's preview window."
   (when (string= (file-name-extension file) "pdf")
     (let* ((size (window-width (dv-preview-window dv) 'pixel))
            (cache (dirvish--get-image-cache-for-file file size))
@@ -152,38 +132,31 @@ thumbnail with width of DV's preview window as preview."
           `(image . (put-image ,(create-image cache-jpg nil nil :max-width size) 0))
         `(image-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
 
-(defun dirvish-preview-pdf-tools-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish returns a
-regular file buffer as preview."
+(dirvish-define-preview pdf-tools (file)
+  "Open FILE with `find-file-noselect'."
   (when (string= (file-name-extension file) "pdf")
     `(buffer . (find-file-noselect ,file t nil))))
 
-(defun dirvish-preview-archive-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish uses output
-from corresponding unarchive shell commands as preview."
+(dirvish-define-preview archive (file)
+  "Display output from corresponding unarchive shell commands."
   (cond ((string= (file-name-extension file) "zip")
          `(shell . ("zipinfo" ,file)))
         ((member (file-name-extension file) '("tar" "zst"))
          `(shell . ("tar" "-tvf" ,file)))))
 
-(defun dirvish-preview-default-dispatcher (file _dv)
-  "A dispatcher function for `dirvish-preview-dispatchers'.
-If FILE can be matched by this dispatcher, Dirvish either display
-a regular file buffer or a warning as preview depending on
-whether this file is too large or containing very long lines."
+(dirvish-define-preview default (file)
+  "Default preview dispatcher."
   (let ((threshold (or large-file-warning-threshold 10000000))
         (filesize (file-attribute-size (file-attributes file)))
         (enable-local-variables nil))
     (cond ((file-directory-p file) ; in case user did not specify a directory dispatcher
-           (dirvish-preview-directory-dired-dispatcher file nil))
-          ((> filesize threshold)
+           (dirvish-directory-dired-preview-dp file nil))
+          ((> filesize threshold) ; do not preview too large files
            `(info . ,(format "File %s is too big for literal preview." file)))
           (t
            (let ((buf (find-file-noselect file t nil)))
              (with-current-buffer buf
-               (if (so-long-detected-long-line-p)
+               (if (so-long-detected-long-line-p) ; do not preview files containing too long lines
                    (progn
                      (kill-buffer buf)
                      `(info . ,(format "File %s contains very long lines, preview skipped." file)))
@@ -197,29 +170,23 @@ return the buffer.
 A PAYLOAD is can be either:
 
 - a buffer which is displayed inside of preview window.
-
 - a (CMD . ARGS) cons where CMD can be a elisp function or a
 shell command.  In either case, ARGS holds a list of arguments
 for them.
-
 - a string which is displayed directly in preview buffer.  Need
   to use in conjunction with `info' PREVIEW-TYPE.
 
 A PREVIEW-TYPE can be one of following values:
 
 - `info', which means insert PAYLOAD string to preview buffer.
-
 - `buffer', meaning either PAYLOAD itself is a buffer
   or `(apply CMD ARGS)' return a buffer directly as preview
   buffer.
-
 - `image', meaning `(apply CMD ARGS)' should return a image to be
   inserted to preview buffer.
-
 - `shell', indicates CMD is a shell command, the result of CMD
   and ARGS will be inserted in preview buffer as content when the
   shell process exits successfully.
-
 - `image-cache', similar to `shell', but the CMD should generate
   a cache image, and when the process exits, it fires up a
   preview update."

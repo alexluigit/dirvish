@@ -73,7 +73,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
 
 ;;;###autoload
 (cl-defmacro dirvish-define-attribute (name arglist &key bodyform lineform)
-  "Define dirvish attribute NAME.
+  "Define a Dirvish attribute NAME.
 
 An attribute contains two rendering functions that being called
 on `post-command-hook': `dirvish--render-NAME-body/line'.  The
@@ -95,6 +95,19 @@ line when present)."
        (defun ,line-func-name ,line-arglist
          (ignore ,@ignore-list)
          ,lineform))))
+
+(cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
+  "Define a Dirvish preview dispatcher NAME.
+A dirvish preview dispatcher is a function consumed by
+`dirvish-preview-dispatch' which optionally takes
+`file' (filename under the cursor) and `dv' (current Dirvish
+session) as argument specified in ARGLIST.  DOCSTRING and BODY is
+the docstring and body for this function."
+  (declare (indent defun))
+  (let* ((dp-name (intern (format "dirvish-%s-preview-dp" name)))
+         (default-arglist '(file dv))
+         (ignore-list (cl-set-difference default-arglist arglist)))
+    `(progn (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
 
 (defun dirvish-update-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
@@ -289,7 +302,7 @@ by this instance."
                    collect (cons body-renderer line-renderer)))
          (preview-dps
           (cl-loop for dp-name in (append '(disable) dirvish-preview-dispatchers '(default))
-                   for dp-func-name = (intern (format "dirvish-preview-%s-dispatcher" dp-name))
+                   for dp-func-name = (intern (format "dirvish-%s-preview-dp" dp-name))
                    collect dp-func-name)))
     (setf (dv-attributes-alist dv) attrs-alist)
     (setf (dv-preview-dispatchers dv) preview-dps)
