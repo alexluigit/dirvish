@@ -57,14 +57,14 @@ This variable is used in `dirvish--render-gutter'."
 
 ;;;###autoload (autoload 'dirvish--render-vc-gutter-body "dirvish-vc")
 ;;;###autoload (autoload 'dirvish--render-vc-gutter-line "dirvish-vc")
-(dirvish-define-attribute vc-gutter (beg hl-face) :lineform
+(dirvish-define-attribute vc-gutter (file-beg hl-face) :lineform
   (when dirvish--vc-backend
     (let* ((entry (dired-get-filename nil 'noerror))
            (state (dirvish--get-vc-state entry dirvish--vc-backend))
            (state-cons (alist-get state dirvish-vc-state-char-alist))
            (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
            (face (cdr state-cons))
-           (ov (make-overlay (1- beg) beg)))
+           (ov (make-overlay (1- file-beg) file-beg)))
       (if hl-face
           (add-face-text-property 0 (length gutter-str) hl-face t gutter-str)
         (add-face-text-property 0 (length gutter-str) face t gutter-str))
@@ -83,12 +83,12 @@ This variable is used in `dirvish--render-gutter'."
 
 ;;;###autoload (autoload 'dirvish--render-git-msg-body "dirvish-vc")
 ;;;###autoload (autoload 'dirvish--render-git-msg-line "dirvish-vc")
-(dirvish-define-attribute git-msg (end hl-face) :lineform
+(dirvish-define-attribute git-msg (file-end hl-face) :lineform
   (when dirvish--vc-backend
     (let* ((entry (dired-get-filename nil 'noerror))
            (info (dirvish--get-git-commit-msg entry))
            (str (concat "\t" info))
-           (ov (make-overlay (1- end) end)))
+           (ov (make-overlay (1- file-end) file-end)))
       (if hl-face
           (add-face-text-property 0 (length str) hl-face t str)
         (add-face-text-property 0 (length str) 'dirvish-git-commit-message-face t str))

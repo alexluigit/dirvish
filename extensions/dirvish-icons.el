@@ -74,7 +74,7 @@ Values are interpreted as follows:
 
 ;;;###autoload (autoload 'dirvish--render-all-the-icons-body "dirvish-icons")
 ;;;###autoload (autoload 'dirvish--render-all-the-icons-line "dirvish-icons")
-(dirvish-define-attribute all-the-icons (beg hl-face) :lineform
+(dirvish-define-attribute all-the-icons (file-beg hl-face) :lineform
   (let* ((entry (dired-get-filename 'relative 'noerror))
          (offset `(:v-adjust ,dirvish-icon-v-offset))
          (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
@@ -83,7 +83,7 @@ Values are interpreted as follows:
                    (apply #'all-the-icons-icon-for-dir entry icon-attrs)
                  (apply #'all-the-icons-icon-for-file entry icon-attrs)))
          (icon-str (concat icon dirvish-icon-delimiter))
-         (ov (make-overlay (1- beg) beg)))
+         (ov (make-overlay (1- file-beg) file-beg)))
     (when-let (hl-face (fg (face-attribute hl-face :foreground))
                        (bg (face-attribute hl-face :background)))
       (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
@@ -92,12 +92,12 @@ Values are interpreted as follows:
 
 ;;;###autoload (autoload 'dirvish--render-vscode-icon-body "dirvish-icons")
 ;;;###autoload (autoload 'dirvish--render-vscode-icon-line "dirvish-icons")
-(dirvish-define-attribute vscode-icon (beg hl-face) :lineform
+(dirvish-define-attribute vscode-icon (file-beg hl-face) :lineform
   (let* ((entry (dired-get-filename nil 'noerror))
          (vscode-icon-size dirvish-icon-size)
          (icon (dirvish--vscode-icon-for-file entry))
          (after-str dirvish-icon-delimiter)
-         (ov (make-overlay (1- beg) beg)))
+         (ov (make-overlay (1- file-beg) file-beg)))
     (when hl-face (setq after-str (propertize after-str 'face hl-face)))
     (overlay-put ov 'display icon)
     (overlay-put ov 'dirvish-vscode-icon t)

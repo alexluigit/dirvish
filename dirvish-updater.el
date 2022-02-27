@@ -26,11 +26,9 @@
   (setq dired-filter-show-filters nil)
   (setq dired-filter-revert 'always))
 
-(dirvish-define-attribute hl-line (hl-face) :lineform
+(dirvish-define-attribute hl-line (line-beg line-end hl-face) :lineform
   (when hl-face
-    (let* ((beg (line-beginning-position))
-           (end (line-beginning-position 2))
-           (ol (make-overlay beg end)))
+    (let ((ol (make-overlay line-beg (1+ line-end))))
       (overlay-put ol 'dirvish-hl-line t)
       (overlay-put ol 'face 'highlight))))
 
@@ -44,11 +42,11 @@
 ;; This hack solves 2 issues:
 ;; 1. Hide " -> " arrow of symlink files as well.
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
-(dirvish-define-attribute symlink-target (end) :lineform
+(dirvish-define-attribute symlink-target (file-end line-end) :lineform
 	(when (and dired-hide-details-mode
              (default-value 'dired-hide-details-hide-symlink-targets)
-             (< (+ end 4) (line-end-position)))
-    (let ((o (make-overlay end (line-end-position))))
+             (< (+ file-end 4) line-end))
+    (let ((o (make-overlay file-end line-end)))
       (overlay-put o 'dirvish-symlink-target t)
       (overlay-put o 'invisible t))))
 
@@ -111,10 +109,14 @@
     (save-excursion
       (forward-line beg)
       (while (and (not (eobp)) (< (line-number-at-pos) end))
-        (when-let ((beg (and (not (invisible-p (point)))
+        (when-let ((line-beg (line-beginning-position))
+                   (line-end (line-end-position))
+                   (file-beg (and (not (invisible-p (point)))
                              (dired-move-to-filename nil)))
-                   (end (dired-move-to-end-of-filename t)))
-          (mapc (lambda (rd) (funcall rd beg end (and (eq beg curr-pos) 'highlight))) line-renderers))
+                   (file-end (dired-move-to-end-of-filename t)))
+          (mapc (lambda (rd) (funcall rd file-beg file-end line-beg line-end
+                                 (and (eq file-beg curr-pos) 'highlight)))
+                line-renderers))
         (forward-line 1)))))
 
 (defun dirvish-mode-line-update ()
