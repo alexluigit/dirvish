@@ -76,17 +76,20 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   "Define a Dirvish attribute NAME.
 
 An attribute contains two rendering functions that being called
-on `post-command-hook': `dirvish--render-NAME-body/line'.  The
-former one takes no argument and runs BODYFORM once.  The latter
-one takes ARGLIST and runs LINEFORM for every line where ARGLIST
-can have elements including `beg' (filename beginning position),
-`end' (filename end position), or `hl-face' (indicate current
-line when present)."
+on `post-command-hook'.  The first fn takes no argument and runs
+BODYFORM once.  The second fn runs LINEFORM for every line with
+ARGLIST.  The following symbols are allowed in ARGLIST:
+
+- `file-beg' filename beginning position
+- `file-end' filename end position
+- `line-beg' line beginning position
+- `line-end' line end position
+- `hl-face' a face that is only passed in for current line"
   (declare (indent defun))
   (let* ((attr-name (intern (format "dirvish-%s" name)))
          (body-func-name (intern (format "dirvish--render-%s-body" name)))
          (line-func-name (intern (format "dirvish--render-%s-line" name)))
-         (line-arglist '(beg end hl-face))
+         (line-arglist '(file-beg file-end line-beg line-end hl-face))
          (ignore-list (cl-set-difference line-arglist arglist)))
     `(progn
        (defun ,body-func-name ()
