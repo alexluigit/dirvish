@@ -62,14 +62,6 @@ leaving it for future dispatchers.  For details see
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(define-obsolete-variable-alias 'dirvish-body-fontsize-increment 'dirvish-body-zoom "0.9.9")
-
-(defcustom dirvish-body-zoom 0.05
-  "Font size increment in dirvish body.
-For example, if this value is 0.1, the font size in dirvish body
-will be scaled to 110% (1 + 0.1)."
-  :group 'dirvish :type 'float)
-
 (defcustom dirvish-trash-dir-alist nil
   "An alist of (DISK . TRASH-DIR).
 
@@ -102,7 +94,7 @@ STYLE should be one of these:
   :options '(nil large normal))
 
 (defcustom dirvish-face-remap-alist
-  `((header-line :height ,(1+ dirvish-body-zoom) :box (:line-width 4 :color "#303030"))
+  '((header-line :height 1.04 :box (:line-width 4 :color "#303030"))
     (highlight :inherit (highlight) :extend t)) ; line highlighting
   "Face remapping alist used in dirvish window.
 See `face-remapping-alist' for more details."

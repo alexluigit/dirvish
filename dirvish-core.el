@@ -13,6 +13,7 @@
 (declare-function dirvish--add-advices "dirvish-advices")
 (declare-function dirvish--remove-advices "dirvish-advices")
 (require 'dirvish-options)
+(require 'face-remap)
 (require 'ansi-color)
 (require 'cl-lib)
 
@@ -297,7 +298,7 @@ by this instance."
 
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
-  (let* ((attrs (remove nil (append '(hl-line zoom symlink-target) dirvish-attributes)))
+  (let* ((attrs (remove nil (append '(hl-line symlink-target) dirvish-attributes)))
          (attrs-alist
           (cl-loop for attr in attrs
                    for body-renderer = (intern (format "dirvish--render-%s-body" attr))
