@@ -32,13 +32,6 @@
       (overlay-put ol 'dirvish-hl-line t)
       (overlay-put ol 'face 'highlight))))
 
-(dirvish-define-attribute zoom () :bodyform
-  (let ((o (make-overlay (point-min) (point-max))))
-    (setq line-spacing dirvish-body-zoom)
-    (overlay-put o 'dirvish-zoom t)
-    (overlay-put o 'display `(height ,(1+ dirvish-body-zoom)))
-    (overlay-put o 'priority -999)))
-
 ;; This hack solves 2 issues:
 ;; 1. Hide " -> " arrow of symlink files as well.
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
