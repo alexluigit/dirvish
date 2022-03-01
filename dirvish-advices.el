@@ -16,6 +16,7 @@
 (require 'dirvish-commands)
 (require 'dirvish-helpers)
 (require 'dirvish-options)
+(require 'dired-subtree nil t)
 
 (defvar dirvish-advice-alist
   '((files         find-file                       dirvish-find-file-ad           :before)
@@ -38,6 +39,8 @@
     (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
     (fd-dired      fd-dired                        dirvish-fd-dired-ad)
     (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
+    (dired-subtree dired-subtree-insert            dirvish-subtree-insert-ad)
+    (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
     (evil          evil-refresh-cursor             dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor             dirvish-refresh-cursor-ad)
     (magit         magit-status-setup-buffer       dirvish-enlarge-ad             :before)
@@ -46,6 +49,23 @@
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
     (recentf       recentf-track-closed-file       dirvish-ignore-ad))
   "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
+
+(defun dirvish-subtree-insert-ad (fn &rest _)
+  "Advisor for FN `dired-subtree-insert'."
+  (let ((f-name (dired-get-filename nil t))
+        (oldp (point)))
+    (funcall fn)
+    (dirvish-get-attribute-create f-name :expanded t
+      (save-excursion
+        (goto-char oldp)
+        (dired-subtree--is-expanded-p)))))
+
+(defun dirvish-subtree-remove-ad (fn &rest _)
+  "Advisor for FN `dired-subtree-remove'."
+  (funcall fn)
+  (let ((f-name (dired-get-filename nil t)))
+    (dirvish-get-attribute-create f-name :expanded t
+      (dired-subtree--is-expanded-p))))
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
   "Override `dired' command.
