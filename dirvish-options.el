@@ -141,6 +141,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)
 (defvar-local dirvish--vc-backend nil)
+(defvar-local dirvish--attributes-alist nil)
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish--child-entry 'permanent-local t)
 (put 'dirvish--curr-name 'permanent-local t)

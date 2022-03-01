@@ -20,11 +20,9 @@
 (declare-function dired-subtree--is-expanded-p "dired-subtree")
 (defvar vscode-icon-size)
 (defvar vscode-icon-dir)
-(defvar dirvish-icons--with-expand-state (require 'dired-subtree nil t))
 (defconst dirvish--vscode-icon-directory
   (concat vscode-icon-dir (if (vscode-icon-can-scale-image-p) "128/" "23/")))
 (defconst dirvish-icon-v-offset 0.01)
-(defvar-local dirvish--vscode-icon-alist nil)
 (require 'dired)
 (require 'dirvish-core)
 
@@ -47,43 +45,17 @@ Values are interpreted as follows:
 - nil, inherit face at point."
   :group 'dirvish :type '(choice face symbol nil))
 
-(defun dirvish--vscode-icon-for-file (file)
-  "Get vscode-icon for FILE."
-  (let ((icon (cdr (assoc file dirvish--vscode-icon-alist))))
-    (unless icon
-      (let ((default-directory dirvish--vscode-icon-directory))
-        (if (file-directory-p file)
-            (let* ((base-name (file-name-base file))
-                   (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist)) base-name))
-                   (icon-path (vscode-icon-dir-exists-p icon-base))
-                   closed-icon opened-icon)
-              (if icon-path
-                  (progn
-                    (setq closed-icon (vscode-icon-create-image icon-path))
-                    (setq opened-icon (vscode-icon-create-image (expand-file-name (format "folder_type_%s_opened.png" icon-base)))))
-                (setq closed-icon (vscode-icon-create-image (expand-file-name "default_folder.png")))
-                (setq opened-icon (vscode-icon-create-image (expand-file-name "default_folder_opened.png"))))
-              (setq icon (cons closed-icon opened-icon)))
-          (setq icon (vscode-icon-file file)))
-        (push (cons file icon) dirvish--vscode-icon-alist)))
-    (cond ((not (file-directory-p file)) icon)
-          ((and dirvish-icons--with-expand-state
-                (dired-subtree--is-expanded-p))
-           (cdr icon))
-          (t (car icon)))))
-
 ;;;###autoload (autoload 'dirvish--render-all-the-icons-body "dirvish-icons")
 ;;;###autoload (autoload 'dirvish--render-all-the-icons-line "dirvish-icons")
-(dirvish-define-attribute all-the-icons (file-beg hl-face) :lineform
-  (let* ((entry (dired-get-filename 'relative 'noerror))
-         (offset `(:v-adjust ,dirvish-icon-v-offset))
+(dirvish-define-attribute all-the-icons (f-name f-beg hl-face) :lineform
+  (let* ((offset `(:v-adjust ,dirvish-icon-v-offset))
          (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
          (icon-attrs (append icon-face offset))
-         (icon (if (file-directory-p entry)
-                   (apply #'all-the-icons-icon-for-dir entry icon-attrs)
-                 (apply #'all-the-icons-icon-for-file entry icon-attrs)))
+         (icon (if (file-directory-p f-name)
+                   (apply #'all-the-icons-icon-for-dir f-name icon-attrs)
+                 (apply #'all-the-icons-icon-for-file f-name icon-attrs)))
          (icon-str (concat icon dirvish-icon-delimiter))
-         (ov (make-overlay (1- file-beg) file-beg)))
+         (ov (make-overlay (1- f-beg) f-beg)))
     (when-let (hl-face (fg (face-attribute hl-face :foreground))
                        (bg (face-attribute hl-face :background)))
       (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
@@ -92,12 +64,30 @@ Values are interpreted as follows:
 
 ;;;###autoload (autoload 'dirvish--render-vscode-icon-body "dirvish-icons")
 ;;;###autoload (autoload 'dirvish--render-vscode-icon-line "dirvish-icons")
-(dirvish-define-attribute vscode-icon (file-beg hl-face) :lineform
-  (let* ((entry (dired-get-filename nil 'noerror))
-         (vscode-icon-size dirvish-icon-size)
-         (icon (dirvish--vscode-icon-for-file entry))
+(dirvish-define-attribute vscode-icon (f-name f-beg hl-face) :lineform
+  (let* ((vscode-icon-size dirvish-icon-size)
+         (icon-info
+          (dirvish-get-attribute-create f-name :vscode-icon nil
+            (let ((default-directory dirvish--vscode-icon-directory))
+              (if (file-directory-p f-name)
+                  (let* ((base-name (file-name-base f-name))
+                         (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist)) base-name))
+                         (icon-path (vscode-icon-dir-exists-p icon-base))
+                         closed-icon opened-icon)
+                    (if icon-path
+                        (progn
+                          (setq closed-icon (vscode-icon-create-image icon-path))
+                          (setq opened-icon (vscode-icon-create-image
+                                             (expand-file-name (format "folder_type_%s_opened.png" icon-base)))))
+                      (setq closed-icon (vscode-icon-create-image (expand-file-name "default_folder.png")))
+                      (setq opened-icon (vscode-icon-create-image (expand-file-name "default_folder_opened.png"))))
+                    (cons closed-icon opened-icon))
+                (vscode-icon-file f-name)))))
+         (icon (cond ((not (file-directory-p f-name)) icon-info)
+                     ((dirvish-get-attribute-create f-name :expanded nil nil) (cdr icon-info))
+                     (t (car icon-info))))
          (after-str dirvish-icon-delimiter)
-         (ov (make-overlay (1- file-beg) file-beg)))
+         (ov (make-overlay (1- f-beg) f-beg)))
     (when hl-face (setq after-str (propertize after-str 'face hl-face)))
     (overlay-put ov 'display icon)
     (overlay-put ov 'dirvish-vscode-icon t)
