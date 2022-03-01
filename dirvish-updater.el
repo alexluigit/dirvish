@@ -26,20 +26,20 @@
   (setq dired-filter-show-filters nil)
   (setq dired-filter-revert 'always))
 
-(dirvish-define-attribute hl-line (line-beg line-end hl-face) :lineform
+(dirvish-define-attribute hl-line (l-beg l-end hl-face) :lineform
   (when hl-face
-    (let ((ol (make-overlay line-beg (1+ line-end))))
+    (let ((ol (make-overlay l-beg (1+ l-end))))
       (overlay-put ol 'dirvish-hl-line t)
       (overlay-put ol 'face 'highlight))))
 
 ;; This hack solves 2 issues:
 ;; 1. Hide " -> " arrow of symlink files as well.
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
-(dirvish-define-attribute symlink-target (file-end line-end) :lineform
-	(when (and dired-hide-details-mode
+(dirvish-define-attribute symlink-target (f-end l-end) :lineform
+  (when (and dired-hide-details-mode
              (default-value 'dired-hide-details-hide-symlink-targets)
-             (< (+ file-end 4) line-end))
-    (let ((o (make-overlay file-end line-end)))
+             (< (+ f-end 4) l-end))
+    (let ((o (make-overlay f-end l-end)))
       (overlay-put o 'dirvish-symlink-target t)
       (overlay-put o 'invisible t))))
 
@@ -88,27 +88,28 @@
           (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold)))))
 
-(defun dirvish-body-update ()
-  "Update attributes in dirvish body."
+(defun dirvish-body-update (attrs)
+  "Update ATTRS in dirvish body."
+  (when (> (length dirvish--attributes-alist) 500)
+    (setq-local dirvish--attributes-alist nil))
   (let* ((curr-pos (point))
          (fr-h (frame-height))
          (beg (- 0 fr-h))
          (end (+ (line-number-at-pos) fr-h))
-         (dv (dirvish-curr))
-         (attrs (dv-attributes-alist dv))
          (body-renderers (mapcar #'car attrs))
          (line-renderers (mapcar #'cdr attrs)))
     (mapc #'funcall body-renderers)
     (save-excursion
       (forward-line beg)
       (while (and (not (eobp)) (< (line-number-at-pos) end))
-        (when-let ((line-beg (line-beginning-position))
-                   (line-end (line-end-position))
-                   (file-beg (and (not (invisible-p (point)))
-                             (dired-move-to-filename nil)))
-                   (file-end (dired-move-to-end-of-filename t)))
-          (mapc (lambda (rd) (funcall rd file-beg file-end line-beg line-end
-                                 (and (eq file-beg curr-pos) 'highlight)))
+        (when-let ((f-name (dired-get-filename nil t))
+                   (l-beg (line-beginning-position))
+                   (l-end (line-end-position))
+                   (f-beg (and (not (invisible-p (point)))
+                               (dired-move-to-filename nil)))
+                   (f-end (dired-move-to-end-of-filename t)))
+          (mapc (lambda (rd) (funcall rd f-name f-beg f-end l-beg l-end
+                                 (and (eq f-beg curr-pos) 'highlight)))
                 line-renderers))
         (forward-line 1)))))
 

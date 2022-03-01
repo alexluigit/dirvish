@@ -19,9 +19,6 @@
 (declare-function magit-unstage-file "magit-apply")
 (require 'dirvish)
 
-(defvar-local dirvish--git-msgs-alist nil)
-(defvar-local dirvish--vc-state-alist nil)
-
 (defcustom dirvish-vc-state-char-alist
   '((up-to-date       . ("  " . vc-up-to-date-state))
     (edited           . ("M " . vc-edited-state))
@@ -46,49 +43,33 @@ This variable is used in `dirvish--render-gutter'."
   "Face for commit message overlays."
   :group 'dirvish)
 
-(defun dirvish--get-vc-state (file backend)
-  "Get vc state for FILE with BACKEND."
-  (let ((file (or (file-remote-p file 'localname) file))
-        (state (alist-get file dirvish--vc-state-alist nil nil #'string=)))
-    (unless state
-      (setq state (vc-state-refresh file backend))
-      (push (cons file state) dirvish--vc-state-alist))
-    state))
-
 ;;;###autoload (autoload 'dirvish--render-vc-gutter-body "dirvish-vc")
 ;;;###autoload (autoload 'dirvish--render-vc-gutter-line "dirvish-vc")
-(dirvish-define-attribute vc-gutter (file-beg hl-face) :lineform
+(dirvish-define-attribute vc-gutter (f-name f-beg hl-face) :lineform
   (when dirvish--vc-backend
-    (let* ((entry (dired-get-filename nil 'noerror))
-           (state (dirvish--get-vc-state entry dirvish--vc-backend))
+    (let* ((state (dirvish-get-attribute-create f-name :vc-gutter nil
+                    (let ((f-name (or (file-remote-p f-name 'localname) f-name)))
+                      (vc-state-refresh f-name dirvish--vc-backend))))
            (state-cons (alist-get state dirvish-vc-state-char-alist))
            (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
            (face (cdr state-cons))
-           (ov (make-overlay (1- file-beg) file-beg)))
+           (ov (make-overlay (1- f-beg) f-beg)))
       (if hl-face
           (add-face-text-property 0 (length gutter-str) hl-face t gutter-str)
         (add-face-text-property 0 (length gutter-str) face t gutter-str))
       (overlay-put ov 'dirvish-vc-gutter t)
       (overlay-put ov 'before-string gutter-str))))
 
-(defun dirvish--get-git-commit-msg (file)
-  "Get commit message info for FILE."
-  (let ((file (or (file-remote-p file 'localname) file))
-        (msg (alist-get file dirvish--git-msgs-alist nil nil #'string=)))
-    (unless msg
-      (setq msg (dirvish--shell-to-string "git" "log" "-1" "--pretty=%s" file))
-      (when (and msg (not (string= "" msg))) (setq msg (substring msg 0 -1)))
-      (push (cons file msg) dirvish--git-msgs-alist))
-    msg))
-
 ;;;###autoload (autoload 'dirvish--render-git-msg-body "dirvish-vc")
 ;;;###autoload (autoload 'dirvish--render-git-msg-line "dirvish-vc")
-(dirvish-define-attribute git-msg (file-end hl-face) :lineform
+(dirvish-define-attribute git-msg (f-name f-end hl-face) :lineform
   (when dirvish--vc-backend
-    (let* ((entry (dired-get-filename nil 'noerror))
-           (info (dirvish--get-git-commit-msg entry))
+    (let* ((info (dirvish-get-attribute-create f-name :git-msg nil
+                   (let* ((f-name (or (file-remote-p f-name 'localname) f-name))
+                          (msg (dirvish--shell-to-string "git" "log" "-1" "--pretty=%s" f-name)))
+                     (if (and msg (not (string= "" msg))) (substring msg 0 -1) ""))))
            (str (concat "\t" info))
-           (ov (make-overlay (1- file-end) file-end)))
+           (ov (make-overlay (1- f-end) f-end)))
       (if hl-face
           (add-face-text-property 0 (length str) hl-face t str)
         (add-face-text-property 0 (length str) 'dirvish-git-commit-message-face t str))

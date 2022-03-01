@@ -81,24 +81,36 @@ on `post-command-hook'.  The first fn takes no argument and runs
 BODYFORM once.  The second fn runs LINEFORM for every line with
 ARGLIST.  The following symbols are allowed in ARGLIST:
 
-- `file-beg' filename beginning position
-- `file-end' filename end position
-- `line-beg' line beginning position
-- `line-end' line end position
+- `f-name' filename
+- `f-beg' beginning position of filename
+- `f-end' end position of filename
+- `l-beg' line beginning position
+- `l-end' line end position
 - `hl-face' a face that is only passed in for current line"
   (declare (indent defun))
   (let* ((attr-name (intern (format "dirvish-%s" name)))
          (body-func-name (intern (format "dirvish--render-%s-body" name)))
          (line-func-name (intern (format "dirvish--render-%s-line" name)))
-         (line-arglist '(file-beg file-end line-beg line-end hl-face))
+         (line-arglist '(f-name f-beg f-end l-beg l-end hl-face))
          (ignore-list (cl-set-difference line-arglist arglist)))
     `(progn
        (defun ,body-func-name ()
          (remove-overlays (point-min) (point-max) ',attr-name t)
          ,bodyform)
        (defun ,line-func-name ,line-arglist
-         (ignore ,@ignore-list)
+         (always ,@ignore-list)
          ,lineform))))
+
+(defmacro dirvish-get-attribute-create (file attribute force &rest body)
+  "Get FILE's ATTRIBUTE from `dirvish--attributes-alist'.
+When FORCE or the attribute does not exist, set it with BODY."
+  (declare (indent defun))
+  `(let ((f-name ,file)
+         (item (alist-get f-name dirvish--attributes-alist nil nil #'string=)))
+     (unless item (push (list f-name :expanded nil) dirvish--attributes-alist))
+     (when (or ,force (not (plist-get item ,attribute)))
+       (plist-put (alist-get f-name dirvish--attributes-alist nil nil #'string=) ,attribute ,@body))
+     (plist-get (alist-get f-name dirvish--attributes-alist nil nil #'string=) ,attribute)))
 
 (cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
   "Define a Dirvish preview dispatcher NAME.
