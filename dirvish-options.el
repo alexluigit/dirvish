@@ -132,8 +132,6 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
 (defvar dirvish-enlarge-attributes '(git-msg))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
-(defvar dirvish-preview-update-timer nil)
-(defvar dirvish-mode-line-update-timer nil)
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
 (defvar dirvish-transient-dvs '())

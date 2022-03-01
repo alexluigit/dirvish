@@ -85,7 +85,7 @@ invoked when file name under cursor in minibuffer changed."
       ('library
        (setq cand (file-truename (or (ignore-errors (find-library-name cand)) "")))))
     (setf (dv-index-path (dirvish-curr)) cand)
-    (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay)))
+    (dirvish-debounce 'layout (dirvish-preview-update))))
 
 (define-obsolete-function-alias 'dirvish-minibuf-preview-mode 'dirvish-peek-mode "0.9.9")
 
