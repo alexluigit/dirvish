@@ -33,18 +33,17 @@ KEYWORDS are slot key-values for `dirvish-new'."
        (add-to-list 'dirvish-repeat-timers ',timer)
        (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
 
-(defmacro dirvish-debounce (func delay &rest args)
-  "Execute a delayed version of FUNC with delay time DELAY.
+(defmacro dirvish-debounce (label &rest body)
+  "Debouncing the execution of BODY.
 
-When called, the FUNC only runs after the idle time
-specified by DELAY.  Multiple calls to the same function before
-the idle timer fires are ignored.  ARGS is arguments for FUNC."
-  (let* ((timer (intern (format "%s-timer" func)))
-         (do-once `(lambda (&rest args)
-                     (unwind-protect (apply #',func args) (setq ,timer nil)))))
+The BODY runs after the idle time `dirvish-debouncing-delay'.
+Multiple calls under the same LABEL are ignored."
+  (let* ((timer (intern (format "dirvish-%s-debouncing-timer" label)))
+         (do-once `(lambda () (unwind-protect ,@body (setq ,timer nil)))))
     `(progn
+       (defvar ,timer nil)
        (unless (timerp ,timer)
-         (setq ,timer (run-with-idle-timer ,delay nil ,do-once ,@args))))))
+         (setq ,timer (run-with-idle-timer dirvish-debouncing-delay nil ,do-once))))))
 
 (defun dirvish-setup-dired-buffer (&rest _)
   "Setup Dired buffer for dirvish.

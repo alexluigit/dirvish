@@ -33,8 +33,7 @@
     (dirvish-body-update (dv-attributes-alist dv))
     (when-let ((filename (dired-get-filename nil t)))
       (setf (dv-index-path dv) filename)
-      (dirvish-debounce dirvish-mode-line-update dirvish-debouncing-delay)
-      (dirvish-debounce dirvish-preview-update dirvish-debouncing-delay))))
+      (dirvish-debounce 'layout (dirvish-mode-line-update) (dirvish-preview-update)))))
 
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
