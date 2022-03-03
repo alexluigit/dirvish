@@ -11,6 +11,7 @@
 ;;; Code:
 
 (defalias 'dirvish-enlarge-ad #'dirvish--enlarge)
+(declare-function dirvish-dired "dirvish")
 (defvar fd-dired-buffer-name-format)
 (require 'dirvish-core)
 (require 'dirvish-commands)
@@ -62,7 +63,7 @@
 
 (defun dirvish-subtree-remove-ad (fn &rest _)
   "Advisor for FN `dired-subtree-remove'."
-  (funcall fn)
+  (dirvish--hide-dired-header (funcall fn)) ; See `dired-hacks' #170
   (let ((f-name (dired-get-filename nil t)))
     (dirvish-get-attribute-create f-name :expanded t
       (dired-subtree--is-expanded-p))))
@@ -110,17 +111,14 @@ DIRNAME and SWITCHES are the same args in `dired'."
     (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
     (dirvish-find-file dirname)))
 
-(defun dirvish-dired-jump-ad (fn &optional other-window file-name)
+(defun dirvish-dired-jump-ad (_fn &optional other-window file-name)
   "An advisor for `dired-jump' command.
-FN refers to original `dired-jump' command.  OTHER-WINDOW and
-FILE-NAME are the same args in `dired-jump'."
+OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
   (interactive
-   (list nil (and current-prefix-arg
-                  (read-file-name "Dirvish jump to: "))))
+   (list nil (and current-prefix-arg (read-file-name "Dirvish jump to: "))))
   (if (and (dirvish-curr) (not other-window))
       (dirvish-find-file file-name)
-    (apply fn other-window (list (or file-name default-directory)))
-    (dirvish-setup-dired-buffer)))
+    (dirvish-dired (or file-name default-directory) other-window)))
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advisor function for `find-dired-sentinel'."
