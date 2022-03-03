@@ -15,41 +15,7 @@
 (defvar fd-dired-buffer-name-format)
 (require 'dirvish-core)
 (require 'dirvish-commands)
-(require 'dirvish-helpers)
-(require 'dirvish-options)
 (require 'dired-subtree nil t)
-
-(defvar dirvish-advice-alist
-  '((files         find-file                       dirvish-find-file-ad           :before)
-    (dired         dired                           dirvish-dired-ad)
-    (dired         dired-jump                      dirvish-dired-jump-ad)
-    (dired         dired-find-file                 dirvish-find-file              :override)
-    (dired         dired-find-alternate-file       dirvish-find-file              :override)
-    (dired         dired-other-window              dirvish-dired-other-window-ad  :override)
-    (dired         dired-other-tab                 dirvish-dired-other-tab-ad     :override)
-    (dired         dired-other-frame               dirvish-dired-other-frame-ad   :override)
-    (dired         dired-up-directory              dirvish-up-directory           :override)
-    (dired         dired-sort-toggle-or-edit       dirvish-sort-by-criteria       :override)
-    (dired         +dired/quit-all                 quit-window                    :override)
-    (dired         dired-view-file                 dirvish-enlarge-ad             :before)
-    (dired         dired-internal-do-deletions     dirvish-deletion-ad)
-    (wdired        wdired-change-to-wdired-mode    dirvish-wdired-mode-ad         :after)
-    (wdired        wdired-exit                     dirvish-setup                  :after)
-    (wdired        wdired-finish-edit              dirvish-setup                  :after)
-    (wdired        wdired-abort-changes            dirvish-setup                  :after)
-    (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
-    (fd-dired      fd-dired                        dirvish-fd-dired-ad)
-    (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
-    (dired-subtree dired-subtree-insert            dirvish-subtree-insert-ad)
-    (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
-    (evil          evil-refresh-cursor             dirvish-refresh-cursor-ad)
-    (meow          meow--update-cursor             dirvish-refresh-cursor-ad)
-    (magit         magit-status-setup-buffer       dirvish-enlarge-ad             :before)
-    (winner        winner-save-old-configurations  dirvish-ignore-ad)
-    (lsp-mode      lsp-deferred                    dirvish-ignore-ad)
-    (recentf       recentf-track-opened-file       dirvish-ignore-ad)
-    (recentf       recentf-track-closed-file       dirvish-ignore-ad))
-  "A list of FILE, FUNCTION, and ADVICE FUNCTION used for overriding Dired.")
 
 (defun dirvish-subtree-insert-ad (fn &rest _)
   "Advisor for FN `dired-subtree-insert'."
@@ -189,15 +155,6 @@ Use it as a `:before' advisor to target function."
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
   (unless (dirvish-curr) (apply fn args)))
-
-(defun dirvish--add-advices ()
-  "Add all advices listed in `dirvish-advice-alist'."
-  (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
-    (when (require file nil t) (advice-add sym (or place :around) fn))))
-
-(defun dirvish--remove-advices ()
-  "Remove all advices listed in `dirvish-advice-alist'."
-  (pcase-dolist (`(,_ ,sym ,fn) dirvish-advice-alist) (advice-remove sym fn)))
 
 (provide 'dirvish-advices)
 ;;; dirvish-advices.el ends here

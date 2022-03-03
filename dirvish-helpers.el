@@ -10,7 +10,6 @@
 
 ;;; Code:
 
-(require 'dirvish-core)
 (require 'dirvish-options)
 (require 'dired-x)
 
@@ -83,14 +82,6 @@ If program returns non zero exit code return nil."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--enlarge (&rest _)
-  "Kill all dirvish parent windows except the root one."
-  (when (dirvish-curr)
-    (cl-dolist (win (dv-dired-windows (dirvish-curr)))
-      (and (not (eq win (dv-root-window (dirvish-curr))))
-           (window-live-p win)
-           (delete-window win)))))
-
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
@@ -127,6 +118,15 @@ If program returns non zero exit code return nil."
       (if (eq action 'metadata)
           entry
         (complete-with-action action completions string pred)))))
+
+(defun dirvish--add-advices ()
+  "Add all advices listed in `dirvish-advice-alist'."
+  (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
+    (when (require file nil t) (advice-add sym (or place :around) fn))))
+
+(defun dirvish--remove-advices ()
+  "Remove all advices listed in `dirvish-advice-alist'."
+  (pcase-dolist (`(,_ ,sym ,fn) dirvish-advice-alist) (advice-remove sym fn)))
 
 (provide 'dirvish-helpers)
 ;;; dirvish-helpers.el ends here

@@ -9,11 +9,8 @@
 ;;; Code:
 
 (declare-function all-the-icons-dired-mode "all-the-icons-dired")
-(require 'dirvish-core)
 (require 'dirvish-updater)
 (require 'dirvish-preview)
-(require 'dirvish-options)
-(require 'dirvish-helpers)
 
 (defun dirvish-rebuild-parents-h (frame)
   "Rebuild dirvish layout in FRAME."

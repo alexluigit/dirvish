@@ -10,9 +10,7 @@
 
 ;;; Code:
 
-(declare-function dirvish--add-advices "dirvish-advices")
-(declare-function dirvish--remove-advices "dirvish-advices")
-(require 'dirvish-options)
+(require 'dirvish-helpers)
 (require 'face-remap)
 (require 'ansi-color)
 (require 'cl-lib)
@@ -309,6 +307,14 @@ by this instance."
       (setq r-win (next-window)))
     (setf (dv-root-window dv) r-win)
     r-win))
+
+(defun dirvish--enlarge (&rest _)
+  "Kill all dirvish parent windows except the root one."
+  (when (dirvish-curr)
+    (cl-dolist (win (dv-dired-windows (dirvish-curr)))
+      (and (not (eq win (dv-root-window (dirvish-curr))))
+           (window-live-p win)
+           (delete-window win)))))
 
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
