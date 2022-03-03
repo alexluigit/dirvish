@@ -18,9 +18,14 @@
   "A better Dired."
   :group 'dired)
 
-(defconst dirvish-icon-backend (or (require 'vscode-icon nil t) (require 'all-the-icons nil t)))
-(defcustom dirvish-attributes `(,dirvish-icon-backend)
-  "File attributes showing in Dirvish file lines."
+(defcustom dirvish-attributes '()
+  "File attributes such as `file-size' showing in Dirvish file lines.
+
+The attributes are defined by `dirvish-define-attribute', you can
+get all available attributes by evaluating:
+
+\(progn (mapc #'require dirvish-extra-libs)
+       (describe-variable 'dirvish--available-attrs))"
   :group 'dirvish :type '(repeat dirvish-attribute))
 
 (define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
@@ -124,22 +129,25 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 
 ;;;; Internal variables
 
+(defconst dirvish-prefix-spaces 2)
 (defconst dirvish-header-line-height 1.99)
 (defconst dirvish-debouncing-delay 0.02)
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
-(defvar dirvish-enlarge-attributes '(git-msg))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
+(defvar dirvish-extra-libs '(dirvish-extras dirvish-vc))
 (defvar dirvish-transient-dvs '())
 (defvar dirvish-repeat-timers '())
+(defvar dirvish--available-attrs '())
 (defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)
 (defvar-local dirvish--vc-backend nil)
-(defvar-local dirvish--attributes-alist nil)
+(defvar-local dirvish--attrs-width `(,dirvish-prefix-spaces . 0))
+(defvar-local dirvish--attrs-alist nil)
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish--child-entry 'permanent-local t)
 (put 'dirvish--curr-name 'permanent-local t)

@@ -26,22 +26,19 @@
   (setq dired-filter-show-filters nil)
   (setq dired-filter-revert 'always))
 
-(dirvish-define-attribute hl-line (l-beg l-end hl-face) :lineform
+(dirvish-define-attribute hl-line
+  :form
   (when hl-face
-    (let ((ol (make-overlay l-beg (1+ l-end))))
-      (overlay-put ol 'dirvish-hl-line t)
-      (overlay-put ol 'face 'highlight))))
+    (let ((ov (make-overlay l-beg (1+ l-end)))) (overlay-put ov 'face 'highlight) ov)))
 
 ;; This hack solves 2 issues:
 ;; 1. Hide " -> " arrow of symlink files as well.
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
-(dirvish-define-attribute symlink-target (f-end l-end) :lineform
-  (when (and dired-hide-details-mode
-             (default-value 'dired-hide-details-hide-symlink-targets)
-             (< (+ f-end 4) l-end))
-    (let ((o (make-overlay f-end l-end)))
-      (overlay-put o 'dirvish-symlink-target t)
-      (overlay-put o 'invisible t))))
+(dirvish-define-attribute symlink-target
+  :if (and dired-hide-details-mode (default-value 'dired-hide-details-hide-symlink-targets))
+  :form
+  (when (< (+ f-end 4) l-end)
+    (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
 (defun dirvish-default-header-string-fn ()
   "Compose header string."
@@ -88,29 +85,34 @@
           (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold)))))
 
-(defun dirvish-body-update (attrs)
-  "Update ATTRS in dirvish body."
-  (when (> (length dirvish--attributes-alist) 500)
-    (setq-local dirvish--attributes-alist nil))
-  (let* ((curr-pos (point))
+(defun dirvish-body-update (dv)
+  "Update attributes in Dirvish session DV's body."
+  (when (> (length dirvish--attrs-alist) 500)
+    (setq-local dirvish--attrs-alist nil))
+  (let* ((attrs (dv-attributes-alist dv))
+         (curr-pos (point))
          (fr-h (frame-height))
          (beg (- 0 fr-h))
          (end (+ (line-number-at-pos) fr-h))
-         (body-renderers (mapcar #'car attrs))
-         (line-renderers (mapcar #'cdr attrs)))
-    (mapc #'funcall body-renderers)
+         (fns (cl-loop with (left-w . right-w) = (cons dirvish-prefix-spaces 0)
+                       for (ov pred fn left right) in attrs
+                       do (remove-overlays (point-min) (point-max) ov t)
+                       for valid = (funcall pred dv)
+                       when valid do (progn (setq left-w (+ left-w (or (eval left) 0)))
+                                            (setq right-w (+ right-w (or (eval right) 0))))
+                       when valid collect (prog1 fn (setq-local dirvish--attrs-width (cons left-w right-w))))))
     (save-excursion
       (forward-line beg)
       (while (and (not (eobp)) (< (line-number-at-pos) end))
         (when-let ((f-name (dired-get-filename nil t))
-                   (l-beg (line-beginning-position))
-                   (l-end (line-end-position))
                    (f-beg (and (not (invisible-p (point)))
                                (dired-move-to-filename nil)))
                    (f-end (dired-move-to-end-of-filename t)))
-          (mapc (lambda (rd) (funcall rd f-name f-beg f-end l-beg l-end
-                                 (and (eq f-beg curr-pos) 'highlight)))
-                line-renderers))
+          (let ((f-attrs (file-attributes f-name))
+                (l-beg (line-beginning-position))
+                (l-end (line-end-position))
+                (hl-face (and (eq f-beg curr-pos) 'highlight)))
+            (dolist (fn fns) (funcall fn f-name f-attrs f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
 
 (defun dirvish-mode-line-update ()

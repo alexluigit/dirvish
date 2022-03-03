@@ -223,9 +223,11 @@ the DIR.  See setter of this option for details."
                             (propertize path 'face 'font-lock-comment-face))
                     `(lambda () (interactive) (dirvish-find-file ,path))))])))))
 
+(defconst dirvish-icon-backend (or (require 'vscode-icon nil t) (require 'all-the-icons nil t)))
 ;;;###autoload (autoload 'dirvish-ui-config "dirvish-menu" nil t)
 (defcustom dirvish-ui-option-alist
-  `(("i" ,dirvish-icon-backend attributes "File icons")
+  `(,(when dirvish-icon-backend `("i" ,dirvish-icon-backend attributes "File icons"))
+    ("s" file-size             attributes "File size")
     ("m" git-msg               attributes "Git commit messages")
     ("g" vc-gutter             attributes "VC state at fringe")
     ("d" vc-diff               preview-dispatchers "VC diff at preview window"))
@@ -239,7 +241,7 @@ the VAR.  See setter of this option for details."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
-    (set k v)
+    (set k (remove nil v))
     (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attributes)) v))
           (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview-dispatchers)) v)))
       (cl-labels ((new-infix (i)
