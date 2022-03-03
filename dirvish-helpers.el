@@ -45,14 +45,16 @@ Multiple calls under the same LABEL are ignored."
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer dirvish-debouncing-delay nil ,do-once))))))
 
-(defun dirvish-setup-dired-buffer (&rest _)
-  "Setup Dired buffer for dirvish.
-This function removes the header line in a Dired buffer."
-  (save-excursion
-    (let ((o (make-overlay
-              (point-min)
-              (progn (goto-char (point-min)) (forward-line 1) (point)))))
-      (overlay-put o 'invisible t))))
+(defmacro dirvish--hide-dired-header (&rest body)
+  "Execute BODY then hide the Dired header."
+  `(progn
+     (remove-overlays (point-min) (point-max) 'dirvish-remove-header t)
+     ,@body
+     (save-excursion
+       (goto-char (point-min))
+       (let ((o (make-overlay (point) (progn (forward-line 1) (point)))))
+         (overlay-put o 'dirvish-remove-header t)
+         (overlay-put o 'invisible t)))))
 
 (defun dirvish--shell-to-string (program &rest args)
   "Execute PROGRAM with arguments ARGS and return output string.

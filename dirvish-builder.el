@@ -46,7 +46,7 @@
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
   (dirvish-clean-preview-images (dired-get-marked-files))
-  (dirvish-setup-dired-buffer)
+  (dirvish--hide-dired-header)
   (dirvish-update-body-h))
 
 (defun dirvish-setup (&optional keep-dired)
@@ -55,7 +55,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (unless keep-dired
     (dirvish-mode)
     (setq-local revert-buffer-function #'dirvish-revert)
-    (dirvish-setup-dired-buffer))
+    (dirvish--hide-dired-header))
   (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `dirvish--render-symlink-target'
