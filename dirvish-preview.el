@@ -12,8 +12,6 @@
 (require 'so-long)
 (require 'mailcap)
 (require 'dirvish-core)
-(require 'dirvish-options)
-(require 'dirvish-helpers)
 (eval-when-compile (require 'subr-x))
 (mailcap-parse-mimetypes)
 
