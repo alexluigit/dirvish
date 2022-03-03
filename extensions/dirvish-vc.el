@@ -43,38 +43,39 @@ This variable is used in `dirvish--render-gutter'."
   "Face for commit message overlays."
   :group 'dirvish)
 
-;;;###autoload (autoload 'dirvish--render-vc-gutter-body "dirvish-vc")
-;;;###autoload (autoload 'dirvish--render-vc-gutter-line "dirvish-vc")
-(dirvish-define-attribute vc-gutter (f-name f-beg hl-face) :lineform
-  (when dirvish--vc-backend
-    (let* ((state (dirvish-get-attribute-create f-name :vc-gutter nil
-                    (let ((f-name (or (file-remote-p f-name 'localname) f-name)))
-                      (vc-state-refresh f-name dirvish--vc-backend))))
-           (state-cons (alist-get state dirvish-vc-state-char-alist))
-           (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
-           (face (cdr state-cons))
-           (ov (make-overlay (1- f-beg) f-beg)))
-      (if hl-face
-          (add-face-text-property 0 (length gutter-str) hl-face t gutter-str)
-        (add-face-text-property 0 (length gutter-str) face t gutter-str))
-      (overlay-put ov 'dirvish-vc-gutter t)
-      (overlay-put ov 'before-string gutter-str))))
+(dirvish-define-attribute vc-gutter
+  :if (and (eq (dv-root-window dv) (selected-window)) dirvish--vc-backend)
+  :left 3
+  :form
+  (let* ((state (dirvish-get-attribute-create f-name :vc-gutter nil
+                  (let ((f-name (or (file-remote-p f-name 'localname) f-name)))
+                    (vc-state-refresh f-name dirvish--vc-backend))))
+         (state-cons (alist-get state dirvish-vc-state-char-alist))
+         (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
+         (face (cdr state-cons))
+         (ov (make-overlay (1- f-beg) f-beg)))
+    (if hl-face
+        (add-face-text-property 0 (length gutter-str) hl-face t gutter-str)
+      (add-face-text-property 0 (length gutter-str) face t gutter-str))
+    (overlay-put ov 'before-string gutter-str) ov))
 
-;;;###autoload (autoload 'dirvish--render-git-msg-body "dirvish-vc")
-;;;###autoload (autoload 'dirvish--render-git-msg-line "dirvish-vc")
-(dirvish-define-attribute git-msg (f-name f-end hl-face) :lineform
-  (when dirvish--vc-backend
-    (let* ((info (dirvish-get-attribute-create f-name :git-msg nil
-                   (let* ((f-name (or (file-remote-p f-name 'localname) f-name))
-                          (msg (dirvish--shell-to-string "git" "log" "-1" "--pretty=%s" f-name)))
-                     (if (and msg (not (string= "" msg))) (substring msg 0 -1) ""))))
-           (str (concat "\t" info))
-           (ov (make-overlay (1- f-end) f-end)))
-      (if hl-face
-          (add-face-text-property 0 (length str) hl-face t str)
-        (add-face-text-property 0 (length str) 'dirvish-git-commit-message-face t str))
-      (overlay-put ov 'dirvish-git-msg t)
-      (overlay-put ov 'after-string str))))
+(dirvish-define-attribute git-msg
+  :if (and (eq (dv-root-window dv) (selected-window)) dirvish--vc-backend)
+  :form
+  (let* ((info (dirvish-get-attribute-create f-name :git-msg nil
+                 (let* ((f-name (or (file-remote-p f-name 'localname) f-name))
+                        (msg (dirvish--shell-to-string "git" "log" "-1" "--pretty=%s" f-name)))
+                   (if (and msg (not (string= "" msg))) (substring msg 0 -1) ""))))
+         (face (or hl-face 'dirvish-git-commit-message-face))
+         (width (window-width))
+         (depth (* 2 (dirvish--get-subtree-depth)))
+         (f-base-str (buffer-substring f-beg f-end))
+         (f-base-len (dirvish--actual-string-length f-base-str))
+         (remained (- width f-base-len depth (car dirvish--attrs-width) (cdr dirvish--attrs-width)))
+         (msg-str (truncate-string-to-width (concat "\t" info) remained))
+         (ov (make-overlay (1- f-end) f-end)))
+    (add-face-text-property 0 (length msg-str) face t msg-str)
+    (overlay-put ov 'after-string msg-str) ov))
 
 ;;;###autoload (autoload 'dirvish-vc-diff-preview-dp "dirvish-vc")
 (dirvish-define-preview vc-diff ()

@@ -95,6 +95,15 @@ If program returns non zero exit code return nil."
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
 
+(defun dirvish--actual-string-length (string)
+  "Get STRING's actual display length."
+  (let ((len (length string))) (+ len (/ (- (string-bytes string) len) 2))))
+
+(defun dirvish--get-subtree-depth ()
+  "Get subtree depth at point."
+  (apply #'max (append (cl-loop for ov in (overlays-at (point))
+                                collect (or (overlay-get ov 'dired-subtree-depth) 0)) '(0))))
+
 (defun dirvish--get-filesize (fileset)
   "Determine file size of provided list of files in FILESET."
   (unless (executable-find "du") (user-error "`du' executable not found"))

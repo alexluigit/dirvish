@@ -73,44 +73,46 @@ If BODY is non-nil, create the buffer and execute BODY in it."
       (set-frame-parameter nil 'dirvish--curr dv) dv)))
 
 ;;;###autoload
-(cl-defmacro dirvish-define-attribute (name arglist &key bodyform lineform)
+(cl-defmacro dirvish-define-attribute (name &key if form left right doc)
   "Define a Dirvish attribute NAME.
 
-An attribute contains two rendering functions that being called
-on `post-command-hook'.  The first fn takes no argument and runs
-BODYFORM once.  The second fn runs LINEFORM for every line with
-ARGLIST.  The following symbols are allowed in ARGLIST:
+An attribute contains a pair of predicate/rendering functions
+that are being called on `post-command-hook'.  The predicate fn
+takes current session DV as argument and execute IF once.  When
+IF evaluates to t, the rendering fn runs FORM for every line with
+following arguments:
 
-- `f-name' filename
-- `f-beg' beginning position of filename
-- `f-end' end position of filename
-- `l-beg' line beginning position
-- `l-end' line end position
-- `hl-face' a face that is only passed in for current line"
+- `f-name'  from `dired-get-filename'
+- `f-attrs' from `file-attributes'
+- `f-beg'   from `dired-move-to-filename'
+- `f-end'   from `dired-move-to-end-of-filename'
+- `l-beg'   from `line-beginning-position'
+- `l-end'   from `line-end-position'
+- `hl-face' a face that is only passed in on current line
+Optional keywords LEFT, RIGHT and DOC are supported."
   (declare (indent defun))
-  (let* ((attr-name (intern (format "dirvish-%s" name)))
-         (body-func-name (intern (format "dirvish--render-%s-body" name)))
-         (line-func-name (intern (format "dirvish--render-%s-line" name)))
-         (line-arglist '(f-name f-beg f-end l-beg l-end hl-face))
-         (ignore-list (cl-set-difference line-arglist arglist)))
+  (let* ((ov (intern (format "dirvish-%s-ov" name)))
+         (pred (intern (format "dirvish-attribute-%s-pred" name)))
+         (render (intern (format "dirvish-attribute-%s-rd" name)))
+         (args '(f-name f-attrs f-beg f-end l-beg l-end hl-face))
+         (pred-body (if (> (length if) 0) if t)))
     `(progn
-       (defun ,body-func-name ()
-         (remove-overlays (point-min) (point-max) ',attr-name t)
-         ,bodyform)
-       (defun ,line-func-name ,line-arglist
-         (always ,@ignore-list)
-         ,lineform))))
+       (add-to-list
+        'dirvish--available-attrs
+        (cons ',name '(:doc ,doc :left ,left :right ,right :overlay ,ov :if ,pred :fn ,render)))
+       (defun ,pred (dv) (always dv) ,pred-body)
+       (defun ,render ,args (always ,@args) (let ((ov ,form)) (and ov (overlay-put ov ',ov t)))))))
 
 (defmacro dirvish-get-attribute-create (file attribute force &rest body)
-  "Get FILE's ATTRIBUTE from `dirvish--attributes-alist'.
+  "Get FILE's ATTRIBUTE from `dirvish--attrs-alist'.
 When FORCE or the attribute does not exist, set it with BODY."
   (declare (indent defun))
   `(let ((f-name ,file)
-         (item (alist-get f-name dirvish--attributes-alist nil nil #'string=)))
-     (unless item (push (list f-name :expanded nil) dirvish--attributes-alist))
+         (item (alist-get f-name dirvish--attrs-alist nil nil #'string=)))
+     (unless item (push (list f-name :expanded nil) dirvish--attrs-alist))
      (when (or ,force (not (plist-get item ,attribute)))
-       (plist-put (alist-get f-name dirvish--attributes-alist nil nil #'string=) ,attribute ,@body))
-     (plist-get (alist-get f-name dirvish--attributes-alist nil nil #'string=) ,attribute)))
+       (plist-put (alist-get f-name dirvish--attrs-alist nil nil #'string=) ,attribute ,@body))
+     (plist-get (alist-get f-name dirvish--attrs-alist nil nil #'string=) ,attribute)))
 
 (cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
   "Define a Dirvish preview dispatcher NAME.
@@ -310,24 +312,21 @@ by this instance."
 
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
-  (let* ((attrs (remove nil (append '(hl-line symlink-target) dirvish-attributes)))
+  (when dirvish-attributes (mapc #'require dirvish-extra-libs))
+  (let* ((attr-names (remove nil (append '(hl-line symlink-target) dirvish-attributes)))
          (attrs-alist
-          (cl-loop for attr in attrs
-                   for body-renderer = (intern (format "dirvish--render-%s-body" attr))
-                   for line-renderer = (intern (format "dirvish--render-%s-line" attr))
-                   collect (cons body-renderer line-renderer)))
+          (cl-loop for name in attr-names
+                   for attr = (cdr-safe (assoc name dirvish--available-attrs))
+                   collect (cl-destructuring-bind (&key overlay if fn left right &allow-other-keys)
+                               attr (list overlay if fn left right))))
          (preview-dps
           (cl-loop for dp-name in (append '(disable) dirvish-preview-dispatchers '(default))
                    for dp-func-name = (intern (format "dirvish-%s-preview-dp" dp-name))
                    collect dp-func-name)))
     (setf (dv-attributes-alist dv) attrs-alist)
     (setf (dv-preview-dispatchers dv) preview-dps)
-    (cond ((seq-intersection attrs dirvish-enlarge-attributes)
-           (unless (dirvish-dired-p dv) (setf (dv-depth dv) 0))
-           (setf (dv-fullscreen-depth dv) 0))
-          (t
-           (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
-           (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))))
+    (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
+    (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))
 
 (defun dirvish--apply-header-style ()
   "Format Dirvish header line."

@@ -1,4 +1,4 @@
-;;; dirvish-icons.el --- Icons support for Dirvish -*- lexical-binding: t -*-
+;;; dirvish-extras.el --- Extra commands, attributes, or preview dispatchers for Dirvish -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
@@ -10,21 +10,33 @@
 
 ;;; Commentary:
 
-;; `all-the-icons.el' and `vscode-icon.el' integration for Dirvish.
+;; This library provided:
+;;
+;; Commands
+;; Attributes
+;; - `file-size' attribute at right fringe
+;; - `vs-icon' attribute
+;; - `all-the-icons' attribute
 
 ;;; Code:
 
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
 (declare-function vscode-icon-can-scale-image-p "vscode-icon")
-(declare-function dired-subtree--is-expanded-p "dired-subtree")
+(declare-function vscode-icon-file "vscode-icon")
+(declare-function vscode-icon-dir-exists-p "vscode-icon")
+(declare-function vscode-icon-create-image "vscode-icon")
 (defvar vscode-icon-size)
+(defvar vscode-icon-dir-alist)
 (defvar vscode-icon-dir)
-(defconst dirvish--vscode-icon-directory
-  (concat vscode-icon-dir (if (vscode-icon-can-scale-image-p) "128/" "23/")))
-(defconst dirvish-icon-v-offset 0.01)
-(require 'dired)
 (require 'dirvish-core)
+
+(defvar dirvish--vscode-icon-directory
+  (concat vscode-icon-dir
+          (if (and (require 'vscode-icon nil t) (vscode-icon-can-scale-image-p)) "128/" "23/")))
+(defconst dirvish--all-the-icons-offset 0.01)
+(require 'dired)
+(require 'dirvish-helpers)
 
 (defcustom dirvish-icon-delimiter " "
   "A string attached to the icon."
@@ -45,10 +57,15 @@ Values are interpreted as follows:
 - nil, inherit face at point."
   :group 'dirvish :type '(choice face symbol nil))
 
-;;;###autoload (autoload 'dirvish--render-all-the-icons-body "dirvish-icons")
-;;;###autoload (autoload 'dirvish--render-all-the-icons-line "dirvish-icons")
-(dirvish-define-attribute all-the-icons (f-name f-beg hl-face) :lineform
-  (let* ((offset `(:v-adjust ,dirvish-icon-v-offset))
+(defface dirvish-file-size-face
+  '((t (:inherit font-lock-doc-face)))
+  "Face for file size overlays."
+  :group 'dirvish)
+
+(dirvish-define-attribute all-the-icons
+  :left (+ (length dirvish-icon-delimiter) 2)
+  :form
+  (let* ((offset `(:v-adjust ,dirvish--all-the-icons-offset))
          (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
          (icon-attrs (append icon-face offset))
          (icon (if (file-directory-p f-name)
@@ -62,9 +79,9 @@ Values are interpreted as follows:
     (overlay-put ov 'dirvish-all-the-icons t)
     (overlay-put ov 'after-string icon-str)))
 
-;;;###autoload (autoload 'dirvish--render-vscode-icon-body "dirvish-icons")
-;;;###autoload (autoload 'dirvish--render-vscode-icon-line "dirvish-icons")
-(dirvish-define-attribute vscode-icon (f-name f-beg hl-face) :lineform
+(dirvish-define-attribute vscode-icon
+  :left (length dirvish-icon-delimiter)
+  :form
   (let* ((vscode-icon-size dirvish-icon-size)
          (icon-info
           (dirvish-get-attribute-create f-name :vscode-icon nil
@@ -90,8 +107,34 @@ Values are interpreted as follows:
          (ov (make-overlay (1- f-beg) f-beg)))
     (when hl-face (setq after-str (propertize after-str 'face hl-face)))
     (overlay-put ov 'display icon)
-    (overlay-put ov 'dirvish-vscode-icon t)
-    (overlay-put ov 'after-string after-str)))
+    (overlay-put ov 'after-string after-str) ov))
 
-(provide 'dirvish-icons)
-;;; dirvish-icons.el ends here
+(dirvish-define-attribute file-size
+  :if (and (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
+  :right 6
+  :form
+  (unless (file-directory-p f-name)
+    (let* ((depth (* 2 (dirvish--get-subtree-depth)))
+           (width (window-width))
+           (f-size-raw (file-size-human-readable (if f-attrs (file-attribute-size f-attrs) 0)))
+           (f-size-str (let* ((str-spc (concat f-size-raw " ")) (len (- 6 (length str-spc))))
+                         (if (> len 0) (concat (make-string len ?\ ) str-spc) str-spc)))
+           (f-size-len (length f-size-str))
+           (f-base-str (buffer-substring f-beg f-end))
+           (f-base-len (dirvish--actual-string-length f-base-str))
+           (remained (- width f-size-len depth (car dirvish--attrs-width)))
+           (ov-pos (if (> remained f-base-len)
+                       f-end
+                     (let ((pos f-beg) (vis-str ""))
+                       (while (< (dirvish--actual-string-length vis-str) remained)
+                         (setq pos (1+ pos))
+                         (setq vis-str (buffer-substring f-beg pos)))
+                       pos)))
+           (face (or hl-face 'dirvish-file-size-face))
+           (spc (propertize " " 'display `(space :align-to (- right-fringe ,f-size-len)) 'face face))
+           (ov (make-overlay ov-pos ov-pos)))
+      (add-face-text-property 0 f-size-len face t f-size-str)
+      (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
+
+(provide 'dirvish-extras)
+;;; dirvish-extras.el ends here
