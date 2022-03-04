@@ -52,6 +52,13 @@
   (dirvish--refresh-slots (dirvish-curr))
   (revert-buffer))
 
+(defun dirvish--change-depth (level)
+  "Change parent depth of current Dirvish to LEVEL."
+  (let ((dv (dirvish-curr)))
+    (setf (dv-depth dv) level)
+    (setf (dv-fullscreen-depth dv) level)
+    (dirvish-build)))
+
 (defmacro dirvish-menu--transient-define-multi (spec)
   "Define transient command with core information from SPEC."
   `(prog1 'dirvish-menu
@@ -59,15 +66,15 @@
         (lambda (elm)
           (let ((pkg  (pop elm))
                 (args elm))
-            `(transient-define-prefix ,(intern (format "dirvish-menu-%s" pkg)) ()
+            `(transient-define-prefix ,(intern (format "dirvish-%s-menu" pkg)) ()
                ,(format "Dirvish commands menu for `%s'." pkg)
                ,@args)))
         spec)))
 
-;;;###autoload (autoload 'dirvish-menu-file-info-cmds "dirvish-menu" nil t)
-;;;###autoload (autoload 'dirvish-menu-action-on-marks "dirvish-menu" nil t)
+;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
+;;;###autoload (autoload 'dirvish-mark-actions-menu "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
- ((all-cmds
+ ((top-level
    [:description
     (lambda ()
       (propertize (capitalize (format "%s help menu" (if (derived-mode-p 'dirvish-mode) "Dirvish" "Dired")))
@@ -94,8 +101,8 @@
      ("." "  Apply filters"                       dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
      ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))
      ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
-     ("M-c" "Configure Dirvish UI"                dirvish-ui-config :if-derived dirvish-mode)
-     ("M-l" "Change parent depth"                 dirvish-change-depth :if-derived dirvish-mode)]
+     ("M-s" "Setup Dirvish"                       dirvish-setup :if-derived dirvish-mode)
+     ("M-c" "Collapse file names"                 dired-collapse-mode :if (lambda () (featurep 'dired-collapse)))]
     ["Subdirs"
      ("i" "    Insert subdir"                     dired-maybe-insert-subdir)
      ("K" "    Kill subdir"                       dired-kill-subdir)
@@ -141,7 +148,7 @@
     ("."   "NUMERICAL BACKUP"                     dired-clean-directory)
     ("%"   "NAME     matched regexp"              dired-mark-files-regexp)
     ("g"   "CONTENTS matched regexp"              dired-mark-files-containing-regexp)])
-  (action-on-marks
+  (mark-actions
    ["Actions on marks"
     ("S"   "Symlink"                              dired-do-symlink)
     ("H"   "Hardlink"                             dired-do-hardlink)
@@ -160,20 +167,20 @@
     ("k"   "Kill lines"                           dired-do-kill-lines)
     ("n"   "Move to next marked"                  dired-next-marked-file)
     ("p"   "Move to prev marked"                  dired-prev-marked-file)])
-  (file-info-cmds
+  (file-info
    ["Get file information"
     ("n"   "copy file NAME"                       dirvish-copy-file-name)
     ("p"   "copy file PATH"                       dirvish-copy-file-path)
     ("d"   "copy file DIRECTORY"                  dirvish-copy-file-directory)
     ("t"   "show file TYPE"                       dired-show-file-type)
     ("l"   "find symlink's truename"              dirvish-find-file-true-path)])
-  (renaming-cmds
+  (renaming
    ["File renaming"
     ("u"   "Upper-case file name"                 dired-upcase)
     ("l"   "Lower-case file name"                 dired-downcase)
     ("_"   "Replace SPC with UNDERSCORE"          dirvish-rename-space-to-underscore)
     ("w"   "Enter wdired [writable dired]"        wdired-change-to-wdired-mode :if-not-derived wdired-mode)])
-  (epa-dired-cmds
+  (epa-dired
    ["GNUpg assistant"
     ("e"   "Encrypt"                              epa-dired-do-encrypt)
     ("d"   "Decrypt"                              epa-dired-do-decrypt)
@@ -191,7 +198,7 @@
            (inhibit-same-window . t)
            (window-parameters (no-other-window . t))))
         (transient-show-popup t))
-    (dirvish-menu-all-cmds)))
+    (dirvish-top-level-menu)))
 
 ;;;###autoload (autoload 'dirvish-roam "dirvish-menu" nil t)
 (defcustom dirvish-roam-dirs-alist
@@ -208,8 +215,7 @@ the DIR.  See setter of this option for details."
   :set
   (lambda (k v)
     (set k v)
-    (let* ((desc-len-seq (mapcar (lambda (i) (length (nth 2 i))) v))
-           (max-desc-len (seq-max desc-len-seq)))
+    (let ((max-desc-len (seq-max (mapcar (lambda (i) (length (nth 2 i))) v))))
       (eval
        `(transient-define-prefix dirvish-roam ()
           "Open frequently visited directories using dirvish."
@@ -223,15 +229,22 @@ the DIR.  See setter of this option for details."
                             (propertize path 'face 'font-lock-comment-face))
                     `(lambda () (interactive) (dirvish-find-file ,path))))])))))
 
-(defconst dirvish-icon-backend (or (require 'vscode-icon nil t) (require 'all-the-icons nil t)))
-;;;###autoload (autoload 'dirvish-ui-config "dirvish-menu" nil t)
-(defcustom dirvish-ui-option-alist
-  `(,(when dirvish-icon-backend `("i" ,dirvish-icon-backend attributes "File icons"))
-    ("s" file-size             attributes "File size")
-    ("m" git-msg               attributes "Git commit messages")
-    ("g" vc-gutter             attributes "VC state at fringe")
-    ("d" vc-diff               preview-dispatchers "VC diff at preview window"))
-  "TOGGLEs for `dirvish-ui-config'.
+(define-obsolete-function-alias 'dirvish-ui-config 'dirvish-setup-menu "1.0.0")
+
+(defconst dirvish--icon-backend (or (require 'vscode-icon nil t) (require 'all-the-icons nil t)))
+;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
+(defcustom dirvish-setup-menu-alist
+  `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attributes "File icons"))
+    ("s" file-size      attributes          "File size")
+    ("m" git-msg        attributes          "Git commit messages")
+    ("g" vc-gutter      attributes          "VC state at fringe")
+    ("d" vc-diff        preview-dispatchers "VC diff at preview window")
+    ("0" 0              column              "main column only")
+    ("1" 1              column              "main + 1 parent (ranger like)")
+    ("2" 2              column              "main + 2 parent")
+    ("3" 3              column              "main + 3 parent")
+    ("4" 4              column              "main + 4 parent"))
+  "TOGGLEs for `dirvish-setup-menu'.
 A TOGGLE is a list consists of (KEY VAR SCOPE DESCRIPTION) where
 KEY is a string passed to `kbd', VAR is a valid attribute (as in
 `dirvish-attributes') or preview dispatcher (as in
@@ -243,7 +256,8 @@ the VAR.  See setter of this option for details."
   (lambda (k v)
     (set k (remove nil v))
     (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attributes)) v))
-          (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview-dispatchers)) v)))
+          (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview-dispatchers)) v))
+          (column-alist (seq-filter (lambda (i) (eq (nth 2 i) 'column)) v)))
       (cl-labels ((new-infix (i)
                     (let ((infix-var (nth 1 i))
                           (infix-name (intern (format "dirvish-%s-infix" (nth 1 i))))
@@ -254,19 +268,23 @@ the VAR.  See setter of this option for details."
                                :variable ',infix-var
                                :scope ',infix-scope
                                :description ,infix-desc))))
-                  (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i))))))
+                  (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
+                  (column-option (i) (list (car i) (nth 3 i)
+                                           `(lambda () (interactive) (dirvish--change-depth ,(nth 1 i))))))
         (mapc #'new-infix attr-alist)
         (mapc #'new-infix preview-alist)
         (eval
-         `(transient-define-prefix dirvish-ui-config ()
+         `(transient-define-prefix dirvish-setup-menu ()
             "Change UI config of Dirvish."
             ["File attributes:"
              ,@(mapcar #'expand-infix attr-alist)]
             ["Preview:"
              ,@(mapcar #'expand-infix preview-alist)]
+            ["Layout (for this session):"
+             :if (lambda () (and (derived-mode-p 'dirvish-mode) (not (dirvish-dired-p))))
+             ,@(mapcar #'column-option column-alist)]
             ["Actions:"
-             ("RET" "Confirm and quit"
-              (lambda () (interactive) (dirvish-build) (revert-buffer)))]))))))
+             ("RET" "Confirm and quit" (lambda () (interactive) (dirvish-build) (revert-buffer)))]))))))
 
 (provide 'dirvish-menu)
 ;;; dirvish-menu.el ends here
