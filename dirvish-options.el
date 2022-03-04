@@ -136,6 +136,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
+(defconst dirvish-built-in-attrs '(hl-line symlink-target))
 (defvar dirvish-advice-alist
   '((files         find-file                       dirvish-find-file-ad           :before)
     (dired         dired                           dirvish-dired-ad)

@@ -319,7 +319,7 @@ by this instance."
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
   (when dirvish-attributes (mapc #'require dirvish-extra-libs))
-  (let* ((attr-names (remove nil (append '(hl-line symlink-target) dirvish-attributes)))
+  (let* ((attr-names (append dirvish-built-in-attrs dirvish-attributes))
          (attrs-alist
           (cl-loop for name in attr-names
                    for attr = (cdr-safe (assoc name dirvish--available-attrs))
