@@ -156,10 +156,10 @@ highlighting and more room to optimize performance (lazy rendering).
   :bind
   (:map dired-mode-map
         ("SPC" . dirvish-show-history)
-        ("f"   . dirvish-menu-file-info-cmds)
+        ("f"   . dirvish-file-info-menu)
         ("r"   . dirvish-roam)
-        ("M-a" . dirvish-menu-action-on-marks)
-        ("M-c" . dirvish-ui-config)
+        ("M-a" . dirvish-mark-actions-menu)
+        ("M-s" . dirvish-setup-menu)
         ("M-f" . dirvish-toggle-fullscreen)
         ([remap dired-summary] . dirvish-dispatch)
         ([remap dired-do-copy] . dirvish-yank)

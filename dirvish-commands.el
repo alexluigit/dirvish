@@ -142,15 +142,6 @@ directory in another window."
           (dirvish-update-body-h)))
     (user-error "Dirvish: not in a dirvish buffer")))
 
-(defun dirvish-change-depth (level)
-  "Change parent depth of current Dirvish to LEVEL."
-  (interactive "p")
-  (when-let (dv (dirvish-curr))
-    (unless (dirvish-dired-p dv)
-      (setf (dv-depth dv) level)
-      (setf (dv-fullscreen-depth dv) level)
-      (dirvish-build))))
-
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
 
