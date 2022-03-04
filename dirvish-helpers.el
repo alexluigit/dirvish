@@ -95,6 +95,11 @@ If program returns non zero exit code return nil."
   (apply #'max (append (cl-loop for ov in (overlays-at (point))
                                 collect (or (overlay-get ov 'dired-subtree-depth) 0)) '(0))))
 
+(defun dirvish--subtree-expanded-p ()
+  "70x Faster version of `dired-subtree--is-expanded-p'."
+  (save-excursion (< (dirvish--get-subtree-depth)
+                     (progn (forward-line 1) (dirvish--get-subtree-depth)))))
+
 (defun dirvish--get-filesize (fileset)
   "Determine file size of provided list of files in FILESET."
   (unless (executable-find "du") (user-error "`du' executable not found"))

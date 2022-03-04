@@ -107,7 +107,7 @@ When FORCE or the attribute does not exist, set it with BODY."
   (declare (indent defun))
   `(let ((f-name ,file)
          (item (alist-get f-name dirvish--attrs-alist nil nil #'string=)))
-     (unless item (push (list f-name :expanded nil) dirvish--attrs-alist))
+     (unless item (push (list f-name :init t) dirvish--attrs-alist))
      (when (or ,force (not (plist-get item ,attribute)))
        (plist-put (alist-get f-name dirvish--attrs-alist nil nil #'string=) ,attribute ,@body))
      (plist-get (alist-get f-name dirvish--attrs-alist nil nil #'string=) ,attribute)))

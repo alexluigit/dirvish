@@ -10,29 +10,14 @@
 
 ;;; Code:
 
-(defalias 'dirvish-enlarge-ad #'dirvish--enlarge)
 (declare-function dirvish-dired "dirvish")
 (defvar fd-dired-buffer-name-format)
 (require 'dirvish-core)
 (require 'dirvish-commands)
-(require 'dired-subtree nil t)
-
-(defun dirvish-subtree-insert-ad (fn &rest _)
-  "Advisor for FN `dired-subtree-insert'."
-  (let ((f-name (dired-get-filename nil t))
-        (oldp (point)))
-    (funcall fn)
-    (dirvish-get-attribute-create f-name :expanded t
-      (save-excursion
-        (goto-char oldp)
-        (dired-subtree--is-expanded-p)))))
 
 (defun dirvish-subtree-remove-ad (fn &rest _)
   "Advisor for FN `dired-subtree-remove'."
-  (dirvish--hide-dired-header (funcall fn)) ; See `dired-hacks' #170
-  (let ((f-name (dired-get-filename nil t)))
-    (dirvish-get-attribute-create f-name :expanded t
-      (dired-subtree--is-expanded-p))))
+  (dirvish--hide-dired-header (funcall fn))) ; See `dired-hacks' #170
 
 (defun dirvish-dired-ad (fn dirname &optional switches)
   "Override `dired' command.
