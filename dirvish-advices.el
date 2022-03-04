@@ -116,6 +116,8 @@ If ALL-FRAMES, search target directories in all frames."
   "Advisor function for `wdired-change-to-wdired-mode'."
   (dired-move-to-end-of-filename t)
   (setq-local cursor-type '(bar 4))
+  (dolist (ov (mapcar #'car (dv-attributes-alist (dirvish-curr))))
+    (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h :local))
 
 (defun dirvish-refresh-cursor-ad (fn &rest args)
