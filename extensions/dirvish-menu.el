@@ -40,17 +40,22 @@
   (propertize (prin1-to-string (oref obj value)) 'face 'transient-value))
 
 (cl-defmethod transient-init-value ((obj dirvish--toggle))
-  (oset obj value (if (memq (oref obj variable) (symbol-value (oref obj scope))) 'On 'Off)))
+  (oset obj value (if (memq (oref obj variable) (funcall (oref obj scope) (dirvish-curr))) 'On 'Off)))
 
 (cl-defmethod transient-infix-read ((obj dirvish--toggle))
   (oset obj value (if (eq (oref obj value) 'On) 'Off 'On)))
 
 (cl-defmethod transient-infix-set ((obj dirvish--toggle) value)
-  (if (eq value 'On)
-      (push (oref obj variable) (symbol-value (oref obj scope)))
-    (set (oref obj scope) (delq (oref obj variable) (symbol-value (oref obj scope)))))
-  (dirvish--refresh-slots (dirvish-curr))
-  (revert-buffer))
+  (let* ((dv (dirvish-curr))
+         (item (oref obj variable))
+         (slot-name (oref obj scope))
+         (curr-val (funcall slot-name dv))
+         (new-val (if (eq value 'On) (push item curr-val) (delq item curr-val))))
+    (cl-case slot-name
+      ('dv-raw-attributes (setf (dv-raw-attributes dv) new-val))
+      ('dv-raw-preview-dps (setf (dv-raw-preview-dps dv) new-val)))
+    (dirvish--refresh-slots dv)
+    (revert-buffer)))
 
 (defun dirvish--change-depth (level)
   "Change parent depth of current Dirvish to LEVEL."
@@ -83,7 +88,7 @@
     ["Essential commands"
      ("e"   "Open file"                           dired-find-file)
      ("o"   "Open file other window"              dired-find-file-other-window)
-     ("w"   "Get file information"                dirvish-menu-file-info-cmds)
+     ("w"   "Get file information"                dirvish-file-info-menu)
      ("s"   "Sort files"                          dired-sort-toggle-or-edit)
      ("v"   "View current file"                   dired-view-file)
      ("g"   "Refresh buffer"                      revert-buffer)]
@@ -91,9 +96,9 @@
      ("a"   "Add (create) an empty file"          dired-create-empty-file)
      ("C"   "Copy"                                dired-do-copy :if-mode dired-mode)
      ("C"   "Paste marked files here"             dirvish-yank :if-derived dirvish-mode)
-     ("@"   "Rename files"                        dirvish-menu-renaming-cmds)
+     ("@"   "Rename files"                        dirvish-renaming-menu)
      ("X"   "Delete"                              dired-do-delete)
-     ("f"   "Edit file attributes"                dirvish-menu-edit-file-attrs)
+     ("f"   "Edit file attributes"                dirvish-file-attributes-menu)
      ("+"   "Create directory"                    dired-create-directory)]
     ["View"
      ("(" "  Hide detail info"                    dired-hide-details-mode)
@@ -101,7 +106,7 @@
      ("." "  Apply filters"                       dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
      ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))
      ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
-     ("M-s" "Setup Dirvish"                       dirvish-setup :if-derived dirvish-mode)
+     ("M-s" "Setup Dirvish"                       dirvish-setup-menu :if-derived dirvish-mode)
      ("M-c" "Collapse file names"                 dired-collapse-mode :if (lambda () (featurep 'dired-collapse)))]
     ["Subdirs"
      ("i" "    Insert subdir"                     dired-maybe-insert-subdir)
@@ -122,20 +127,20 @@
      ("u" "  Unmark current file"                 dired-unmark)
      ("U" "  Unmark all"                          dired-unmark-all-marks)
      ("t" "  Toggle (invert) marks"               dired-toggle-marks)
-     ("*" "  Mark by.."                           dirvish-menu-mark-by)
-     ("M-a" "Actions on marks"                    dirvish-menu-action-on-marks)]
+     ("*" "  Mark by.."                           dirvish-marking-menu)
+     ("M-a" "Actions on marks"                    dirvish-mark-actions-menu)]
     ["Extensions"
-     (":" "  GNUpg helpers"                       dirvish-menu-epa-dired-cmds)
+     (":" "  GNUpg helpers"                       dirvish-epa-dired-menu)
      ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (fboundp 'dired-subtree-toggle)))
      ("=" "  Diffing files"                       dired-diff)]])
-  (edit-file-attrs
+  (file-attributes
    ["Change file attributes"
     ("R"   "Name"                                 dired-do-rename)
     ("G"   "Group"                                dired-do-chgrp)
     ("M"   "Mode"                                 dired-do-chmod)
     ("O"   "Owner"                                dired-do-chown)
     ("T"   "Timestamp"                            dired-do-touch)])
-  (mark-by
+  (marking
    ["Mark all ____ files:"
     ("s"   "SUBDIR"                               dired-mark-subdir-files)
     ("*"   "EXECUTABLE"                           dired-mark-executables)
@@ -235,15 +240,15 @@ the DIR.  See setter of this option for details."
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-setup-menu-alist
   `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attributes "File icons"))
-    ("s" file-size      attributes          "File size")
-    ("m" git-msg        attributes          "Git commit messages")
-    ("g" vc-gutter      attributes          "VC state at fringe")
-    ("d" vc-diff        preview-dispatchers "VC diff at preview window")
-    ("0" 0              column              "main column only")
-    ("1" 1              column              "main + 1 parent (ranger like)")
-    ("2" 2              column              "main + 2 parent")
-    ("3" 3              column              "main + 3 parent")
-    ("4" 4              column              "main + 4 parent"))
+    ("s" file-size      attributes   "File size")
+    ("m" git-msg        attributes   "Git commit messages")
+    ("g" vc-gutter      attributes   "VC state at fringe")
+    ("d" vc-diff        preview-dps  "VC diff at preview window")
+    ("0" 0              column       "main column only")
+    ("1" 1              column       "main + 1 parent (ranger like)")
+    ("2" 2              column       "main + 2 parent")
+    ("3" 3              column       "main + 3 parent")
+    ("4" 4              column       "main + 4 parent"))
   "TOGGLEs for `dirvish-setup-menu'.
 A TOGGLE is a list consists of (KEY VAR SCOPE DESCRIPTION) where
 KEY is a string passed to `kbd', VAR is a valid attribute (as in
@@ -261,7 +266,7 @@ the VAR.  See setter of this option for details."
       (cl-labels ((new-infix (i)
                     (let ((infix-var (nth 1 i))
                           (infix-name (intern (format "dirvish-%s-infix" (nth 1 i))))
-                          (infix-scope (intern (format "dirvish-%s" (nth 2 i))))
+                          (infix-scope (intern (format "dv-raw-%s" (nth 2 i))))
                           (infix-desc (nth 3 i)))
                       (eval `(transient-define-infix ,infix-name ()
                                :class 'dirvish--toggle
@@ -275,12 +280,12 @@ the VAR.  See setter of this option for details."
         (mapc #'new-infix preview-alist)
         (eval
          `(transient-define-prefix dirvish-setup-menu ()
-            "Change UI config of Dirvish."
+            "Change config of current Dirvish session."
             ["File attributes:"
              ,@(mapcar #'expand-infix attr-alist)]
             ["Preview:"
              ,@(mapcar #'expand-infix preview-alist)]
-            ["Layout (for this session):"
+            ["Layout:"
              :if (lambda () (and (derived-mode-p 'dirvish-mode) (not (dirvish-dired-p))))
              ,@(mapcar #'column-option column-alist)]
             ["Actions:"
