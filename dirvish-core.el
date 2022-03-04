@@ -227,14 +227,20 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (root-dir-buf-alist
    ()
    :documentation "TODO.")
+  (raw-attributes
+   dirvish-attributes
+   :documentation "TODO.")
   (attributes-alist
    ()
    :documentation "TODO.")
   (index-path
    ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
-  (preview-dispatchers
+  (raw-preview-dps
    dirvish-preview-dispatchers
+   :documentation "TODO.")
+  (preview-dispatchers
+   ()
    :documentation "Preview dispatchers used for preview in this instance.")
   (ls-switches
    dired-listing-switches
@@ -319,14 +325,14 @@ by this instance."
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
   (when dirvish-attributes (mapc #'require dirvish-extra-libs))
-  (let* ((attr-names (append dirvish-built-in-attrs dirvish-attributes))
+  (let* ((attr-names (append dirvish-built-in-attrs (dv-raw-attributes dv)))
          (attrs-alist
           (cl-loop for name in attr-names
                    for attr = (cdr-safe (assoc name dirvish--available-attrs))
                    collect (cl-destructuring-bind (&key overlay if fn left right &allow-other-keys)
                                attr (list overlay if fn left right))))
          (preview-dps
-          (cl-loop for dp-name in (append '(disable) dirvish-preview-dispatchers '(default))
+          (cl-loop for dp-name in (append '(disable) (dv-raw-preview-dps dv) '(default))
                    for dp-func-name = (intern (format "dirvish-%s-preview-dp" dp-name))
                    collect dp-func-name)))
     (setf (dv-attributes-alist dv) attrs-alist)
