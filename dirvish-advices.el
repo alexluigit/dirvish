@@ -12,7 +12,6 @@
 
 (declare-function dirvish-dired "dirvish")
 (defvar fd-dired-buffer-name-format)
-(require 'dirvish-core)
 (require 'dirvish-commands)
 
 (defun dirvish-subtree-remove-ad (fn &rest _)
@@ -129,7 +128,7 @@ If ALL-FRAMES, search target directories in all frames."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args)))
 
 (defun dirvish-find-file-ad (&rest _)
-  "Quit current dirvish instance if inside one.
+  "Quit Dirvish session if inside one.
 Use it as a `:before' advisor to target function."
   (let* ((dv (dirvish-curr))
          (dv-tran (and dv (dv-transient dv))))
