@@ -71,14 +71,6 @@
   (interactive)
   (dirvish-find-file (ring-ref dirvish-history-ring 1)))
 
-(defun dirvish-new-frame (&optional path)
-  "Make a new frame and launch dirvish with optional PATH."
-  (interactive (list (read-file-name "Open in new frame: ")))
-  (let ((fr (make-frame '((name . "dirvish-emacs")))))
-    (with-selected-frame fr
-      (switch-to-buffer (get-buffer-create dirvish-temp-buffer))
-      (dirvish-here path :depth dirvish-depth))))
-
 (defun dirvish-up-directory (&optional other-window)
   "Run Dirvish on parent directory of current directory.
 If OTHER-WINDOW (the optional prefix arg), display the parent
