@@ -13,6 +13,13 @@
 ;; This library provided:
 ;;
 ;; Commands
+;; - `dirvish-find-file-true-path'
+;; - `dirvish-copy-file-name'
+;; - `dirvish-copy-file-path'
+;; - `dirvish-copy-file-directory'
+;; - `dirvish-rename-space-to-underscore'
+;; - `dirvish-browse-all-directories'
+;;
 ;; Attributes
 ;; - `file-size' attribute at right fringe
 ;; - `vs-icon' attribute
@@ -31,7 +38,7 @@
 (defvar vscode-icon-dir)
 (require 'all-the-icons nil t)
 (require 'vscode-icon nil t)
-(require 'dirvish-core)
+(require 'dirvish-commands)
 
 (defvar dirvish--vscode-icon-directory
   (concat (and (boundp 'vscode-icon-dir) vscode-icon-dir)
@@ -137,6 +144,71 @@ Values are interpreted as follows:
            (ov (make-overlay ov-pos ov-pos)))
       (add-face-text-property 0 f-size-len face t f-size-str)
       (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
+
+;;;###autoload
+(defun dirvish-show-history (&optional history)
+  "Select a target directory from HISTORY and open it in Dirvish."
+  (interactive)
+  (setq history (or history (ring-elements dirvish-history-ring)))
+  (let* ((history-w/metadata (dirvish--append-metadata 'file history))
+         (result (completing-read "Recently visited: " history-w/metadata)))
+      (when result (dirvish-find-file result))))
+
+;;;###autoload
+(defun dirvish-other-buffer ()
+  "Switch to the most recently visited dirvish buffer."
+  (interactive)
+  (dirvish-find-file (ring-ref dirvish-history-ring 1)))
+
+;;;###autoload
+(defun dirvish-find-file-true-path ()
+  "Open truename of (maybe) symlink file under the cursor."
+  (interactive)
+  (dired-jump nil (file-truename (dired-get-filename))))
+
+;;;###autoload
+(defun dirvish-copy-file-name ()
+  "Copy filename under the cursor."
+  (interactive)
+  (message "Copied file NAME: %s" (dired-copy-filename-as-kill)))
+
+;;;###autoload
+(defun dirvish-copy-file-path ()
+  "Copy filename under the cursor."
+  (interactive)
+  (message "Copied file PATH: %s" (kill-new (dired-get-filename nil t))))
+
+;;;###autoload
+(defun dirvish-copy-file-directory ()
+  "Copy the current directory's (`default-directory''s) absolute path."
+  (interactive)
+  (message "Copied file DIRECTORY: %s" (kill-new (expand-file-name default-directory))))
+
+;;;###autoload
+(defun dirvish-rename-space-to-underscore ()
+  "Rename marked files by replacing space to underscore."
+  (interactive)
+  (require 'dired-aux)
+  (if (derived-mode-p 'dired-mode)
+      (let ((markedFiles (dired-get-marked-files )))
+        (mapc (lambda (x)
+                (when (string-match " " x )
+                  (dired-rename-file x (replace-regexp-in-string " " "_" x) nil)))
+              markedFiles)
+        (revert-buffer))
+    (user-error "Not in a Dired buffer")))
+
+;;;###autoload
+(defun dirvish-browse-all-directories ()
+  "Browse all directories using `fd' command."
+  (interactive)
+  (unless (executable-find "fd") (user-error "Dirvish: install `fd' to use this command"))
+  (let* ((command "fd -H -td -0 . /")
+         (output (shell-command-to-string command))
+         (files-raw (split-string output "\0" t))
+         (files (dirvish--append-metadata 'file files-raw))
+         (file (completing-read "Goto: " files)))
+    (dired-jump nil file)))
 
 (provide 'dirvish-extras)
 ;;; dirvish-extras.el ends here

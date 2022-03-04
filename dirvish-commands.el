@@ -14,63 +14,6 @@
 (require 'ring)
 (require 'dired)
 
-(defun dirvish-find-file-true-path ()
-  "Open truename of (maybe) symlink file under the cursor."
-  (interactive)
-  (dired-jump nil (file-truename (dired-get-filename))))
-
-(defun dirvish-copy-file-name ()
-  "Copy filename under the cursor."
-  (interactive)
-  (message "Copied file NAME: %s" (dired-copy-filename-as-kill)))
-
-(defun dirvish-copy-file-path ()
-  "Copy filename under the cursor."
-  (interactive)
-  (message "Copied file PATH: %s" (kill-new (dired-get-filename nil t))))
-
-(defun dirvish-copy-file-directory ()
-  "Copy the current directory's (`default-directory''s) absolute path."
-  (interactive)
-  (message "Copied file DIRECTORY: %s" (kill-new (expand-file-name default-directory))))
-
-(defun dirvish-rename-space-to-underscore ()
-  "Rename marked files by replacing space to underscore."
-  (interactive)
-  (require 'dired-aux)
-  (if (derived-mode-p 'dired-mode)
-      (let ((markedFiles (dired-get-marked-files )))
-        (mapc (lambda (x)
-                (when (string-match " " x )
-                  (dired-rename-file x (replace-regexp-in-string " " "_" x) nil)))
-              markedFiles)
-        (revert-buffer))
-    (user-error "Not in a Dired buffer")))
-
-(defun dirvish-browse-all-directories ()
-  "Browse all directories using `fd' command."
-  (interactive)
-  (unless (executable-find "fd") (user-error "Dirvish: install `fd' to use this command"))
-  (let* ((command "fd -H -td -0 . /")
-         (output (shell-command-to-string command))
-         (files-raw (split-string output "\0" t))
-         (files (dirvish--append-metadata 'file files-raw))
-         (file (completing-read "Goto: " files)))
-    (dired-jump nil file)))
-
-(defun dirvish-show-history (&optional history)
-  "Select a target directory from HISTORY and open it in Dirvish."
-  (interactive)
-  (setq history (or history (ring-elements dirvish-history-ring)))
-  (let* ((history-w/metadata (dirvish--append-metadata 'file history))
-         (result (completing-read "Recently visited: " history-w/metadata)))
-      (when result (dirvish-find-file result))))
-
-(defun dirvish-other-buffer ()
-  "Switch to the most recently visited dirvish buffer."
-  (interactive)
-  (dirvish-find-file (ring-ref dirvish-history-ring 1)))
-
 (defun dirvish-up-directory (&optional other-window)
   "Run Dirvish on parent directory of current directory.
 If OTHER-WINDOW (the optional prefix arg), display the parent
