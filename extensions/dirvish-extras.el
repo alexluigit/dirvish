@@ -29,11 +29,13 @@
 (defvar vscode-icon-size)
 (defvar vscode-icon-dir-alist)
 (defvar vscode-icon-dir)
+(require 'all-the-icons nil t)
+(require 'vscode-icon nil t)
 (require 'dirvish-core)
 
 (defvar dirvish--vscode-icon-directory
-  (concat vscode-icon-dir
-          (if (and (require 'vscode-icon nil t) (vscode-icon-can-scale-image-p)) "128/" "23/")))
+  (concat (and (boundp 'vscode-icon-dir) vscode-icon-dir)
+          (if (and (fboundp 'vscode-icon-can-scale-image-p) (vscode-icon-can-scale-image-p)) "128/" "23/")))
 (defconst dirvish--all-the-icons-offset 0.01)
 (require 'dired)
 (require 'dirvish-helpers)
@@ -101,7 +103,7 @@ Values are interpreted as follows:
                     (cons closed-icon opened-icon))
                 (vscode-icon-file f-name)))))
          (icon (cond ((not (file-directory-p f-name)) icon-info)
-                     ((dirvish-get-attribute-create f-name :expanded nil nil) (cdr icon-info))
+                     ((dirvish--subtree-expanded-p) (cdr icon-info))
                      (t (car icon-info))))
          (after-str dirvish-icon-delimiter)
          (ov (make-overlay (1- f-beg) f-beg)))
