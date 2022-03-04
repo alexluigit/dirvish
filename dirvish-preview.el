@@ -15,6 +15,10 @@
 (eval-when-compile (require 'subr-x))
 (mailcap-parse-mimetypes)
 
+(defun dirvish--preview-image-size (window &optional height)
+  "Get corresponding image width or HEIGHT in WINDOW."
+  (floor (* dirvish-preview-image-scale (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
+
 (defun dirvish--get-image-cache-for-file (file size &optional ext)
   "Get image cache filepath for FILE.
 SIZE is window pixelwise width of current dirvish preview window.
@@ -25,11 +29,22 @@ cache image."
       (make-directory (file-name-directory cache) t))
     (concat cache ext)))
 
+(defun dirvish-preview--insert-image (image dv)
+  "Insert IMAGE at preview window of DV."
+  (insert " ")
+  (add-text-properties 1 2 `(display ,image rear-nonsticky t keymap ,image-map))
+  (cl-destructuring-bind (i-width . i-height) (image-size (image-get-display-property))
+    (let* ((p-window (dv-preview-window dv))
+           (w-offset (max (round (/ (- (window-width p-window) i-width) 2)) 0))
+           (h-offset (max (round (/ (- (window-height p-window) i-height) 2)) 0)))
+      (goto-char 1)
+      (insert (make-string h-offset ?\n) (make-string w-offset ?\s)))))
+
 (defun dirvish-clean-preview-images (fileset)
   "Clean image cache for FILESET."
   (let ((win (dv-preview-window (dirvish-curr))) size)
     (when (window-live-p win)
-      (setq size (window-width win 'pixel))
+      (setq size (dirvish--preview-image-size win))
       (dolist (file fileset)
         (mapc #'delete-file (file-expand-wildcards
                              (dirvish--get-image-cache-for-file file size ".*") t))))))
@@ -88,22 +103,26 @@ When PROC finishes, fill preview buffer with process result."
 (dirvish-define-preview image (file dv)
   "Display a image with width of DV's preview window."
   (when (string-match "image/" (or (mailcap-file-name-to-mime-type file) ""))
-    (let* ((size (window-width (dv-preview-window dv) 'pixel))
-           (cache (dirvish--get-image-cache-for-file file size ".jpg")))
+    (let* ((p-win (dv-preview-window dv))
+           (width (dirvish--preview-image-size p-win))
+           (height (dirvish--preview-image-size p-win 'height))
+           (cache (dirvish--get-image-cache-for-file file width ".jpg")))
       (cond ((file-exists-p cache)
-             `(image . (put-image ,(create-image cache nil nil :max-width size) 0)))
+             `(image . ,(create-image cache nil nil :max-width width :max-height height)))
             ((or (< (nth 7 (file-attributes file)) dirvish-preview-image-threshold)
                  (string-prefix-p (expand-file-name dirvish-cache-dir) file))
-             `(image . (put-image ,(create-image file nil nil :max-width size) 0)))
-            (t `(image-cache . ("convert" "-resize" ,(number-to-string size) ,file ,cache)))))))
+             `(image . ,(create-image file nil nil :max-width width :max-height height)))
+            (t `(image-cache . ("convert" "-resize" ,(number-to-string width) ,file ,cache)))))))
 
 (dirvish-define-preview video (file dv)
   "Display a video thumbnail with width of DV's preview window."
   (when (string-match "video/" (or (mailcap-file-name-to-mime-type file) ""))
-    (let* ((size (window-width (dv-preview-window dv) 'pixel))
-           (cache (dirvish--get-image-cache-for-file file size ".jpg")))
+    (let* ((p-win (dv-preview-window dv))
+           (width (dirvish--preview-image-size p-win))
+           (height (dirvish--preview-image-size p-win 'height))
+           (cache (dirvish--get-image-cache-for-file file width ".jpg")))
       (if (file-exists-p cache)
-          `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
+          `(image . ,(create-image cache nil nil :max-width width :max-height height))
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
 
 (dirvish-define-preview audio (file)
@@ -114,20 +133,24 @@ When PROC finishes, fill preview buffer with process result."
 (dirvish-define-preview epub (file dv)
   "Display a epub thumbnail with width of DV's preview window."
   (when (string= (file-name-extension file) "epub")
-    (let* ((size (window-width (dv-preview-window dv) 'pixel))
-           (cache (dirvish--get-image-cache-for-file file size ".jpg")))
+    (let* ((p-win (dv-preview-window dv))
+           (width (dirvish--preview-image-size p-win))
+           (height (dirvish--preview-image-size p-win 'height))
+           (cache (dirvish--get-image-cache-for-file file width ".jpg")))
       (if (file-exists-p cache)
-          `(image . (put-image ,(create-image cache nil nil :max-width size) 0))
+          `(image . ,(create-image cache nil nil :max-width width :max-height height))
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
 
 (dirvish-define-preview pdf-preface (file dv)
   "Display a pdf preface image with width of DV's preview window."
   (when (string= (file-name-extension file) "pdf")
-    (let* ((size (window-width (dv-preview-window dv) 'pixel))
-           (cache (dirvish--get-image-cache-for-file file size))
+    (let* ((p-win (dv-preview-window dv))
+           (width (dirvish--preview-image-size p-win))
+           (height (dirvish--preview-image-size p-win 'height))
+           (cache (dirvish--get-image-cache-for-file file width))
            (cache-jpg (concat cache ".jpg")))
       (if (file-exists-p cache-jpg)
-          `(image . (put-image ,(create-image cache-jpg nil nil :max-width size) 0))
+          `(image . ,(create-image cache-jpg nil nil :max-width width :max-height height))
         `(image-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
 
 (dirvish-define-preview pdf-tools (file)
@@ -160,7 +183,7 @@ When PROC finishes, fill preview buffer with process result."
                      `(info . ,(format "File %s contains very long lines, preview skipped." file)))
                  `(buffer . ,buf))))))))
 
-(defun dirvish-preview-dispatch (preview-type payload)
+(defun dirvish-preview-dispatch (preview-type payload dv)
   "Execute dispatcher PAYLOAD according to PREVIEW-TYPE.
 This function apply the payloads provided by the first
 matched preview dispatcher to the preview buffer, and finally
@@ -180,8 +203,7 @@ A PREVIEW-TYPE can be one of following values:
 - `buffer', meaning either PAYLOAD itself is a buffer
   or `(apply CMD ARGS)' return a buffer directly as preview
   buffer.
-- `image', meaning `(apply CMD ARGS)' should return a image to be
-  inserted to preview buffer.
+- `image', meaning PAYLOAD should be an image to be inserted.
 - `shell', indicates CMD is a shell command, the result of CMD
   and ARGS will be inserted in preview buffer as content when the
   shell process exits successfully.
@@ -205,7 +227,7 @@ A PREVIEW-TYPE can be one of following values:
       (cl-case preview-type
         ('info (insert payload))
         ('buffer (setq buf (if cmd (apply cmd args) payload)))
-        ('image (apply cmd args))
+        ('image (dirvish-preview--insert-image payload dv))
         ('image-cache
          (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
            (set-process-sentinel proc #'dirvish--preview-process-update-sentinel)
@@ -220,9 +242,10 @@ A PREVIEW-TYPE can be one of following values:
 (defun dirvish-get-preview-buffer (file)
   "Create the preview buffer for FILE."
   (and (file-directory-p file) (setq file (file-name-as-directory file)))
-  (cl-loop for dispatcher in (dv-preview-dispatchers (dirvish-curr))
-           for (dv-type . payload) = (funcall dispatcher file (dirvish-curr))
-           for buffer = (dirvish-preview-dispatch dv-type payload)
+  (cl-loop with dv = (dirvish-curr)
+           for dispatcher in (dv-preview-dispatchers dv)
+           for (dv-type . payload) = (funcall dispatcher file dv)
+           for buffer = (dirvish-preview-dispatch dv-type payload dv)
            until dv-type
            finally return buffer))
 
