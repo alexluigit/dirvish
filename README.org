@@ -13,25 +13,28 @@ A minimalistic yet versatile file manager based on *Dired*.
 
 ** Introduction
 
-This package empowers Dired with:
+This package gives Dired the following features:
 
-- Different layouts support
+- Multiple window layouts
 - Isolated sessions
-- A modern and modular user interface
-- A few (optional) useful extensions
+- A modern and composable user interface
 
-Let Dirvish become your Dired, [[https://github.com/ranger/ranger][ranger]], even [[https://github.com/Alexander-Miller/treemacs][treemacs]].
+A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/Alexander-Miller/treemacs][treemacs]], this is Dirvish ;)
 
 ** Screenshots
 
-[[./assets/main.png]]
-*Figure 1*. ~drivish~ as a file browser/manager with live preview.
+[[main][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/main.png]]
+*Figure 1*. ~dirvish~ as a file browser/manager with live preview
 
-[[./assets/sessions.png]]
-*Figure 2*. L: ~dirvish-dired~; M: ~dirvish-dired~ + sort + filter; R: ~fd-dired~
+[[sessions][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/sessions.png]]
+*Figure 2*. Independent sessions
 
-[[./assets/side.png]]
-*Figure 3*. A toggleable Dirvish session in side window (extension).
+[[side][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/side.png]]
+*Figure 3*. A Dirvish session in side window
+
+https://user-images.githubusercontent.com/16313743/156892360-2ec3a5e6-0de3-4ee3-b31c-dd6b19ad06ab.mp4
+
+*Figure 4*. Compose the user interface like a breeze
 
 ** Installation
 
@@ -59,12 +62,14 @@ To install it manually, first clone this repository, then add =path/to/dirvish= 
 #+end_src
 
 ** Quickstart
-*** Dirvish sessions
 
-You can start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
+Start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
 
 - ~dirvish-dired~ creates a session in current window (like ~dired~).
 - ~dirvish~ creates a session that makes use of the whole frame (see Figure 1).
+
+You can use ~dirvish-toggle-fullscreen~ command to toggle the fullscreen state of
+any Dirvish session.
 
 Although based on Dired, Dirvish doesn't change any of your Dired config nor
 rebind any keys in ~dired-mode-map~. As a result, a Dired user already knew how to
@@ -74,31 +79,21 @@ It is also recommended to enable ~dirvish-override-dired-mode~, which makes all
 your Dired entry commands including ~dired[-other-window/tab/frame]~ initialize or
 reuse a Dirvish session automatically.
 
-*** Additional Commands
-
-| Command                        | Description                                 |
-|--------------------------------+---------------------------------------------|
-| ~dirvish-toggle-fullscreen~      | Enter or exit fullscreen state of a session |
-| ~dirvish-show-history~           | Navigate to recently visited directories    |
-| ~dirvish-other-buffer~           | Switch to most recent Dirvish buffer        |
-| ~dirvish-browse-all-directories~ | Browse all directories using ~fd~ command     |
-
-*NOTE*: This doesn't include commands in extensions, see [[file:Configuration.org][Configuration.org]].
-
 ** Extensions
 
 Several small extension packages to Dirvish are maintained in the subdirectory
-extensions/. These extensions are installed together with Dirvish if you pull
-the package from MELPA. They are inactive by default and can be enabled manually
-if desired. Currently the following extensions come with the Dirvish MELPA
-package:
+extensions/. They are installed together with Dirvish if you pull the package
+from MELPA, Dirvish can work properly with or without it though. These
+extensions are inactive by default and can be enabled manually if desired.
+
+Currently the following extensions come with the package:
 
 - [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/Alexander-Miller/treemacs][treemacs]].
 - [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
 - [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
 - [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: File preview in minibuffer.
 - [[file:extensions/dirvish-vc.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
-- [[file:extensions/dirvish-icons.el][dirvish-icons.el]]: Icon support for Dirvish.
+- [[file:extensions/dirvish-extras.el][dirvish-extras.el]]: Extra commands, UI elements, preview dispatchers for Dirvish.
 
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
@@ -107,8 +102,20 @@ preference or behaves similar to other familiar file explorers.
 
 See [[file:Configuration.org][Configuration.org]] (included docs for extensions).
 
-** Similar projects
-*** Ranger.el
+** Related projects
+*** ranger.el
+
+TODO
+
+*** treemacs
+
+TODO
+
+*** neotree
+
+TODO
+
+*** dired-sidebar
 
 TODO
 
@@ -128,19 +135,26 @@ the Dired commands work exactly the same in a ~dirvish-mode~ buffer.
 
 Nonetheless, Dirvish and Dired handle these aspects differently:
 
++ Isolated sessions ::
+
+  Each Dirvish has its own window layout along with some other isolated niceties
+  such as header string. This makes it easy for Dirvish to adapt itself towards
+  diffenent file management tasks (See [[#Screenshots][screenshots]]).
+
 + Buffer management ::
 
-  Navigating through the file system using Dired always end up with a lot of
-  Dired buffers. You can either replace ~dired-find-file~ with
+  =dired= command and friends create new Dired buffers, hence navigating through
+  the file system using Dired always end up with a lot of Dired buffers. To
+  avoid this, one can either replace ~dired-find-file~ with
   ~dired-find-alternate-file~ or enable ~dired-kill-when-opening-new-dired-buffer~
   which inhibit new buffer generation in some cases, whereas the drawbacks are:
 
-  - It does NOT work for all navigation commands such as ~dired-up-directory~
+  - It does *NOT* work for some commands such as ~dired-up-directory~
   - Kill an old buffer also removes all the metadata (such as marks) it holds
   - Performance issue on slow disk (think of revisiting a huge directory)
 
-  Dirvish does not kill the old Dirvish buffer when entering a new Dirvish
-  buffer, instead it kill all buffers that this session holds when exits.
+  As a comparison, each Dirvish holds its own directory/preview buffer list.
+  These buffer won't get killed until the user explicitly exit this session.
 
 + Mode line ::
 

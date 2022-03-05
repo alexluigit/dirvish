@@ -20,11 +20,10 @@
 
 (defcustom dirvish-attributes '()
   "File attributes such as `file-size' showing in Dirvish file lines.
-
 The attributes are defined by `dirvish-define-attribute', you can
 get all available attributes by evaluating:
 
-\(progn (mapc #'require dirvish-extra-libs)
+\(progn (mapc #'require `dirvish-extra-libs')
        (describe-variable 'dirvish--available-attrs))"
   :group 'dirvish :type '(repeat dirvish-attribute))
 
@@ -69,7 +68,6 @@ leaving it for future dispatchers.  For details see
 
 (defcustom dirvish-trash-dir-alist nil
   "An alist of (DISK . TRASH-DIR).
-
 Where DISK is path to a disk and TRASH-DIR is its corresponding
 trash directory.
 For example, if you set it to:
@@ -90,7 +88,6 @@ file deletion when you have multiple disk drives."
 
 (defcustom dirvish-header-style 'large
   "Display STYLE used for header in a full-frame dirvish instance.
-
 STYLE should be one of these:
 - nil, which means do not show the header.
 - `normal', header has the same fontsize as body.
@@ -113,7 +110,6 @@ See `face-remapping-alist' for more details."
     .
     ((:eval (dirvish--mode-line-index))))
   "Template for displaying mode line in Dirvish instance.
-
 The value is a (LEFT . RIGHT) cons where LEFT/RIGHT has the same
 format as `mode-line-format'.  Set it to nil hides the footer."
   :group 'dirvish :type '(choice nil cons))
