@@ -34,7 +34,7 @@
     (unregistered     . ("? " . vc-state-base))
     (nil              . ("  " . vc-state-base)))
   "Alist of vc-states to indicator characters.
-This variable is used in `dirvish--render-gutter'."
+This variable is consumed by `vc-state' attribute in Dirvish."
   :group 'dirvish
   :type '(alist :key-type symbol :value-type 'cons))
 
@@ -43,11 +43,11 @@ This variable is used in `dirvish--render-gutter'."
   "Face for commit message overlays."
   :group 'dirvish)
 
-(dirvish-define-attribute vc-gutter
+(dirvish-define-attribute vc-state
   :if (and (eq (dv-root-window dv) (selected-window)) dirvish--vc-backend)
   :left 3
   :form
-  (let* ((state (dirvish-get-attribute-create f-name :vc-gutter nil
+  (let* ((state (dirvish-get-attribute-create f-name :vc-state nil
                   (let ((f-name (or (file-remote-p f-name 'localname) f-name)))
                     (vc-state-refresh f-name dirvish--vc-backend))))
          (state-cons (alist-get state dirvish-vc-state-char-alist))

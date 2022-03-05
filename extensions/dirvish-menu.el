@@ -22,6 +22,7 @@
 (require 'subr-x)
 (require 'transient)
 (require 'dirvish-builder)
+(defvar dirvish-menu-available-prefixs '(dirvish-setup-menu dirvish-goto-bookmark))
 
 (defgroup dirvish-menu nil
   "Useful preset transient commands."
@@ -79,11 +80,14 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   `(prog1 'dirvish-menu
      ,@(mapcar
         (lambda (elm)
-          (let ((pkg  (pop elm))
-                (args elm))
-            `(transient-define-prefix ,(intern (format "dirvish-%s-menu" pkg)) ()
-               ,(format "Dirvish commands menu for `%s'." pkg)
-               ,@args)))
+          (let* ((pkg  (pop elm))
+                 (prefix (intern (format "dirvish-%s-menu" pkg)))
+                 (args elm))
+            `(progn
+               (add-to-list 'dirvish-menu-available-prefixs ',prefix)
+               (transient-define-prefix ,prefix ()
+                 ,(format "Dirvish commands menu for `%s'." pkg)
+                 ,@args))))
         spec)))
 
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
@@ -251,9 +255,9 @@ invoke the navigation, PATH is the the argument for command
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-setup-menu-alist
   `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attributes "File icons"))
-    ("s" file-size      attributes   "File size")
+    ("s" file-size      attributes   "File size (right-aligned)")
+    ("g" vc-state       attributes   "VC state (left-aligned)")
     ("m" git-msg        attributes   "Git commit messages")
-    ("g" vc-gutter      attributes   "VC state at left fringe")
     ("d" vc-diff        preview-dps  "VC diff")
     ("0" 0              column       "main column only")
     ("1" 1              column       "main + 1 parent (ranger like)")
