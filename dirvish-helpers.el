@@ -83,7 +83,7 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--actual-string-length (string)
   "Get STRING's actual display length."
-  (let ((len (length string))) (+ len (/ (- (string-bytes string) len) 2))))
+  (/ (+ (length string) (string-bytes string)) 2))
 
 (defun dirvish--get-subtree-depth ()
   "Get subtree depth at point."
