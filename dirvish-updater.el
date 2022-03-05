@@ -68,7 +68,8 @@
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
     (format " %s %s "
             (propertize "Sort:" 'face 'bold)
-            (propertize (car (dv-sort-criteria (dirvish-curr))) 'face 'font-lock-type-face))))
+            (or (and dired-sort-inhibit (propertize "inhibited" 'face 'font-lock-warning-face))
+                (propertize (car (dv-sort-criteria (dirvish-curr))) 'face 'font-lock-type-face)))))
 
 (defun dirvish--mode-line-filter ()
   "Return a string showing active Dired file filter."
