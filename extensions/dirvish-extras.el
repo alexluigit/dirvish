@@ -18,7 +18,7 @@
 ;; - `dirvish-copy-file-path'
 ;; - `dirvish-copy-file-directory'
 ;; - `dirvish-rename-space-to-underscore'
-;; - `dirvish-browse-all-directories'
+;; - `dirvish-roam'
 ;;
 ;; Attributes
 ;; - `file-size' attribute at right fringe
@@ -199,7 +199,7 @@ Values are interpreted as follows:
     (user-error "Not in a Dired buffer")))
 
 ;;;###autoload
-(defun dirvish-browse-all-directories ()
+(defun dirvish-roam ()
   "Browse all directories using `fd' command."
   (interactive)
   (unless (executable-find "fd") (user-error "Dirvish: install `fd' to use this command"))
