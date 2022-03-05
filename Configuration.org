@@ -17,32 +17,85 @@
 | =zipinfo=           | Preview zip files          | Optional |
 | =mediainfo=         | Display media metadata     | Optional |
 
-** Options
+** Customization options
 
-| Option                         | Type     | Description                           |
-|--------------------------------+----------+---------------------------------------|
-| ~dirvish-cache-dir~              | String   | Cache directory                       |
-| ~dirvish-trash-dir-alist~        | Alist    | Setup multiple trash cans             |
-| ~dirvish-history-length~         | Integer  | List length of recently visited dirs  |
-| ~dirvish-depth~                  | Integer  | Level of dirs to traverse up          |
-| ~dirvish-parent-max-width~       | Float    | Max width of parent windows           |
-| ~dirvish-preview-width~          | Float    | Width of preview window               |
-| ~dirvish-header-style~           | Option   | Style for full-frame Dirvish header   |
-| ~dirvish-header-string-function~ | Function | Default header string                 |
-| ~dirvish-face-remap-alist~       | Alist    | Remapping faces in Dirvish window     |
-| ~dirvish-mode-line-format~       | Cons     | Mode line format in root window       |
-| ~dirvish-attributes~             | List     | File attributes showing in file lines |
-| ~dirvish-preview-dispatchers~    | Hook     | See [[#Preview Dispatchers][Preview Dispathers]]                |
+| Option                         | Type     | Description                         |
+|--------------------------------+----------+-------------------------------------|
+| ~dirvish-cache-dir~              | String   | Cache directory                     |
+| ~dirvish-trash-dir-alist~        | Alist    | Setup multiple trash cans           |
+| ~dirvish-history-length~         | Integer  | Maximum number of items in history  |
+| ~dirvish-depth~                  | Integer  | Level of dirs to traverse up        |
+| ~dirvish-parent-max-width~       | Float    | Max width of parent windows         |
+| ~dirvish-preview-width~          | Float    | Width of preview window             |
+| ~dirvish-header-style~           | Option   | Style for full-frame Dirvish header |
+| ~dirvish-header-string-function~ | Function | Default header string               |
+| ~dirvish-face-remap-alist~       | Alist    | Remapping faces in Dirvish window   |
+| ~dirvish-mode-line-format~       | Cons     | Mode line format in root window     |
+| ~dirvish-attributes~             | List     | See [[#Extra attributes][Extra attributes]]                |
+| ~dirvish-preview-dispatchers~    | List     | See [[#Preview Dispatchers][Preview Dispathers]]              |
 
 Consult the docstring of the options for details.
 
+** Extra attributes
+
+List of file attributes such as ~file-size~ showing in Dirvish file lines.  The
+attributes are defined by ~dirvish-define-attribute~, you can get all available
+attributes by evaluating:
+
+#+begin_src emacs-lisp
+(progn (mapc #'require `dirvish-extra-libs') (describe-variable 'dirvish--available-attrs))
+#+end_src
+
+To change the attributes session-locally, see [[#Transient based help menu (dirvish-menu.el)][dirvish-menu]].
+
 ** Preview dispatchers
 
-TODO
+The variable ~dirvish-preview-dispatchers~ determines how file preview works in
+Dirvish.
 
-** Custom session
+Preview dispatchers are defined by ~dirvish-define-preview~. It holds a function
+that takes current filename and dirvish session as arguments and gets called at
+runtime when the preview window is available.  It controls how the preview
+content for certain filetypes are generated, or it can decline to handle the
+file name and leaving it for future dispatchers. If none of the dispatchers can
+handle the preview, the fallback dispatcher named ~default~ is used.
 
-TODO
+The default value of ~dirvish-preview-dispatchers~ looks something like:
+
+#+begin_src emacs-lisp
+(directory-exa text gif image video audio epub archive pdf-tools)
+#+end_src
+
+Let's say you don't like the preview directory result provided by ~exa~ shell
+command, you can remove the ~directory-exa~ dispatcher like this:
+
+#+begin_src emacs-lisp
+(setq dirvish-preview-dispatchers (remove 'directory-exa dirvish-preview-dispatchers))
+#+end_src
+
+This makes Dirvish use the fallback directory previewer, Dired.
+
+You may also want to create your own dispathers. Here is an sample dispatcher
+to preview the =README.md= file in a directory:
+
+#+begin_src emacs-lisp
+(dirvish-define-preview readme (file)
+  "Preview README.md file in a directory when exists."
+  (when (file-directory-p file) ; we only interest in directories in this case
+    (let ((readme-file (expand-file-name "README.md" file)))
+      (when (file-exists-p readme-file) ; when the README.md exists
+        ;; Instruct Dirvish to open the README file as preview
+        `(buffer . (find-file-noselect ,readme-file t nil))))))
+
+(add-to-list 'dirvish-preview-dispatchers 'readme)
+#+end_src
+
+If you find it useful, you can extend this dispatcher to support "README.org" or
+make it case insensitive etc. Either way, it is good enough as a basic example.
+
+Consult ~dirvish-preview-dispatch~ for details.
+
+To change the preview dispatcher session-locally, see [[#Transient based help menu (dirvish-menu.el)][dirvish-menu]].
 
 ** Hooks
 
@@ -56,12 +109,48 @@ TODO
 ** Extensions
 *** Transient based help menu (dirvish-menu.el)
 
-TODO
+This extension provides help menu powered by =transient.el= for Dirvish.
+
+~dirvish-dispatch~ is the prefix to invoke the top-level help menu, just like
+~magit-dispatch~ as to =magit= (see Figure 1. in [[https://github.com/alexluigit/dirvish/#screenshots][README.org]]). The menu contains most
+of the built-in Dired commands and all of the Dirvish commands. Some sub-level
+prefix commands such as ~dirvish-marking-menu~ were created because it makes sense
+to group together the Dired/Dirvish commands that serve similar purposes.
+
+An interesting prefix worth mentioning is ~dirvish-setup-menu~, because it enables
+users to change the setup of a session on the fly (see Figure 4. in [[https://github.com/alexluigit/dirvish/#screenshots][README.org]])
+
+The variable ~dirvish-menu-available-prefixs~ holds all available prefixs, bind
+them in ~dirvish-mode-map~ if you like.
 
 *** Multi-stage copy/pasting of files (dirvish-yank.el)
 
-TODO
+Here is a quote from [[https://github.com/Fuco1/dired-hacks][dired-ranger]] that justified the ~dired-ranger-move/paste~ commands:
 
+#+begin_quote
+A feature present in most orthodox file managers is a "two-stage" copy/paste
+process. Roughly, the user first selects some files, "copies" them into a
+clipboard and then pastes them to the target location. This workflow is missing
+in dired.
+
+In dired, user first marks the files, then issues the dired-do-copy command
+which prompts for the destination. The files are then copied there. The
+dired-dwim-target option makes this a bit friendlier---if two dired windows are
+opened, the other one is automatically the default target.
+
+With the multi-stage operations, you can gather files from multiple dired
+buffers into a single "clipboard", then copy or move all of them to the target
+location.
+#+end_quote
+
+The ~dirvish-yank~ command can do similar things as ~dired-ranger-move/paste~,
+meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
+
+- It paste/move files using external processes, hence heavy I/O tasks won't
+  block the main process of Emacs.
+- It's much simpler than ~dired-ranger~ because you mark files using built-in
+  Dired commands such as ~dired-mark~, ~dired-mark-extension~.
+  
 *** Minibuffer file preview (dirvish-peek.el)
 
 ~dirvish-peek-mode~ is an extension which provides ~dirvish-peek-mode~ to preview
@@ -79,27 +168,65 @@ file when narrowing file/directory candidates using minibuffer.
 
 This extension is currently only available for *vertico/selectrum*.
 
-*** Version-control (git) integration for Dirvish (dirvish-vc.el)
+*** Version-control (git) integration (dirvish-vc.el)
 
-TODO
+This extension provides:
+- ~vc-state~ attribute
+- ~git-msg~ attribute
+- ~vc-diff~ preview dispatcher
 
-*** Bulit-in icon support (dirvish-icons.el)
+See Figure 4. in [[https://github.com/alexluigit/dirvish/#screenshots][README.org]]. 
+
+*** Extra commands, attributes, or preview dispatchers (dirvish-extras.el)
+**** Commands
+
+| Command                            | Description                              |
+|------------------------------------+------------------------------------------|
+| ~dirvish-show-history~               | Navigate to recently visited directories |
+| ~dirvish-other-buffer~               | Switch to most recent Dirvish buffer     |
+| ~dirvish-find-file-true-path~        | Switch to most recent Dirvish buffer     |
+| ~dirvish-copy-file-name~             | Switch to most recent Dirvish buffer     |
+| ~dirvish-copy-file-path~             | Switch to most recent Dirvish buffer     |
+| ~dirvish-copy-file-directory~        | Browse all directories using ~fd~ command  |
+| ~dirvish-rename-space-to-underscore~ | Browse all directories using ~fd~ command  |
+| ~dirvish-roam~                       | Browse all directories using ~fd~ command  |
+
+**** Attributes
 
 You don't need [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] anymore since dirvish have built-in icon
 support. Rendering icons natively gives us better integration with line
-highlighting and more room to optimize performance (lazy rendering).
+highlighting and more room to optimize the performance (lazy rendering).
 
 [[./assets/line-comparison.png]]
 
-**** Options
+**** Customization options
 
 | Option                      | Type    | Description                               |
 |-----------------------------+---------+-------------------------------------------|
-| ~dirvish-icon-size~           | Integer | Icon size used for vscode-icon            |
+| ~dirvish-icon-size~           | Integer | Icon size used for =vscode-icon=          |
 | ~dirvish-icon-delimiter~      | String  | The delimiter between icon and filename   |
-| ~dirvish-icon-palette~        | Option  | Palette style used for all-the-icons      |
+| ~dirvish-icon-palette~        | Option  | Palette style used for =all-the-icons=    |
+
+*** Toggle Dirvish in side window (dirvish-side.el)
+
+Use ~dirvish-side~ command to toggle the side Dirvish.
+
+Customize the option ~dirvish-side-scope~ to create scoped Dirvish session with
+~dirvish-side~ command. For example,
+
+#+begin_src emacs-lisp
+(customize-set-variable 'dirvish-side-scope 'perspective)
+#+end_src
+
+will make every =perspective= have an unique ~dirvish-side~ session. A valid scope
+can be one of: ~emacs~, ~tab~, ~frame~, ~persp~ (see [[https://github.com/Bad-ptr/persp-mode.el][persp-mode]]), ~perspective~ (see
+[[https://github.com/nex3/perspective-el][perspective-el]]).
+
+Customize the option ~dirvish-side-display-alist~ to place the side session
+wherever you want.
 
 ** Example config
+*** Dired | Dirvish
 
 #+begin_src emacs-lisp
 (use-package dired
@@ -119,10 +246,53 @@ highlighting and more room to optimize performance (lazy rendering).
   (setq dired-omit-files
         (concat dired-omit-files "\\|^\\..*$")))
 
+(use-package dirvish
+  :custom
+  (dirvish-bookmarks-alist
+   '(("h" "~/"                          "Home")
+     ("d" "~/Downloads/"                "Downloads")
+     ("m" "/mnt/"                       "Drives")
+     ("t" "~/.local/share/Trash/files/" "TrashCan")))
+  :config
+  (dirvish-override-dired-mode)
+  (dirvish-peek-mode)
+  (setq dirvish-attributes '(vscode-icon file-size))
+  :bind
+  (:map dired-mode-map
+        ("SPC" . dirvish-show-history)
+        ("r"   . dirvish-roam)
+        ("b"   . dirvish-goto-bookmark)
+        ("f"   . dirvish-file-info-menu)
+        ("M-a" . dirvish-mark-actions-menu)
+        ("M-s" . dirvish-setup-menu)
+        ("M-f" . dirvish-toggle-fullscreen)
+        ([remap dired-summary] . dirvish-dispatch)
+        ([remap dired-do-copy] . dirvish-yank)
+        ([remap mode-line-other-buffer] . dirvish-other-buffer)))
+#+end_src
+
+*** Complementary packages
+
+These packages and their configurations are only listed here for discoverability.
+
+#+begin_src emacs-lisp
 ;; Addtional syntax highlighting for dired
 (use-package diredfl
   :hook
   (dired-mode . diredfl-mode))
+
+;; Use `vscode-icon' as Dirvish's icon backend
+(use-package vscode-icon
+  :config
+  (push '("jpg" . "image") vscode-icon-file-alist))
+
+;; Or, use `all-the-icons' instead
+;; (use-package all-the-icons)
+
+(use-package dired-subtree
+  :bind
+  (:map dired-mode-map
+        ("TAB" . dired-subtree-toggle)))
 
 ;; Narrow a dired buffer to the files matching a string.
 (use-package dired-narrow
@@ -130,39 +300,19 @@ highlighting and more room to optimize performance (lazy rendering).
   (:map dired-mode-map
         ("N" . dired-narrow)))
 
-;; A poor man's treemacs
-(use-package dired-subtree
-  :bind
-  (:map dired-mode-map
-        ("TAB" . dired-subtree-toggle)))
-
 (use-package dired-filter
   :bind
   (:map dired-mode-map
         ([remap dired-omit-mode] . dired-filter-mode)))
 
+(use-package dired-collapse
+  :bind
+  (:map dired-mode-map
+        ("M-c" . dired-collapse-mode)))
+
 ;; Drop-in replacement for find-dired
 (use-package fd-dired
   :bind
-  ("C-c f" . fd-dired))
-
-(use-package dirvish
-  :config
-  ;; Override dired with dirvish globally
-  (dirvish-override-dired-mode)
-  ;; Enable file preview when narrowing files in minibuffer.
-  ;; This feature only support `vertico/selectrum' for now.
-  (dirvish-peek-mode)
-  :bind
-  (:map dired-mode-map
-        ("SPC" . dirvish-show-history)
-        ("f"   . dirvish-file-info-menu)
-        ("r"   . dirvish-roam)
-        ("M-a" . dirvish-mark-actions-menu)
-        ("M-s" . dirvish-setup-menu)
-        ("M-f" . dirvish-toggle-fullscreen)
-        ([remap dired-summary] . dirvish-dispatch)
-        ([remap dired-do-copy] . dirvish-yank)
-        ([remap mode-line-other-buffer] . dirvish-other-buffer)))
+  ("C-c F" . fd-dired))
 #+end_src
 

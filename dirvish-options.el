@@ -34,15 +34,14 @@ get all available attributes by evaluating:
     text gif image video audio epub archive
     ,(if (require 'pdf-tools nil t) 'pdf-tools 'pdf-preface))
   "List of preview dispatchers.
-Preview dispatchers are used to determine how dirvish show
-preview for different MIME or file extensions.  A preview
-dispatcher is a function that takes current filename and dirvish
-instance as arguments, it gets called at runtime when preview
-window is available.  It can decide what elisp function or shell
-command to use when generating the content in preview buffer for
-certain filetypes, or it can decline to handle the filename
-leaving it for future dispatchers.  For details see
-`dirvish-preview-dispatch'."
+Preview dispatchers are defined by `~dirvish-define-preview'~.  It
+holds a function that takes current filename and dirvish session
+as arguments and gets called at runtime when the preview window
+is available.  It controls how the preview content for certain
+filetypes are generated, or it can decline to handle the file
+name and leaving it for future dispatchers.  If none of the
+dispatchers can handle the preview, the fallback dispatcher named
+`default' is used.  For details see `dirvish-preview-dispatch'."
   :group 'dirvish :type 'hook)
 
 (defcustom dirvish-cache-dir
