@@ -223,11 +223,10 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("d" "~/Downloads/"                "Downloads")
     ("m" "/mnt/"                       "Drives")
     ("t" "~/.local/share/Trash/files/" "TrashCan"))
-  "Predefined DIRs for `dirvish-goto-bookmark'.
-A DIR is a list consists of (KEY PATH DESCRIPTION) where KEY is a
-string passed to `kbd', PATH is the the target for command
-`dirvish-find-file', DESCRIPTION is a optional description for
-the DIR.  See setter of this option for details."
+  "BOOKMARKs for command `dirvish-goto-bookmark'.
+A BOOKMARK is a (KEY PATH DOC) alist where KEY is the key to
+invoke the navigation, PATH is the the argument for command
+`dirvish-find-file', DOC (optional) is the documentation string."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
@@ -266,8 +265,7 @@ A TOGGLE is a list consists of (KEY VAR SCOPE DESCRIPTION) where
 KEY is a string passed to `kbd', VAR is a valid attribute (as in
 `dirvish-attributes') or preview dispatcher (as in
 `dirvish-preview-dispatchers'), SCOPE is either 'attributes or
-'preview-dispatchers, DESCRIPTION is a optional description for
-the VAR.  See setter of this option for details."
+'preview-dps, DESCRIPTION is a optional description for the VAR."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)

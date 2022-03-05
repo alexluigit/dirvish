@@ -15,7 +15,6 @@
 
 (defmacro dirvish-here (&optional path &rest keywords)
   "Open Dirvish with PATH and KEYWORDS.
-
 PATH defaults to variable `buffer-file-name'.
 KEYWORDS are slot key-values for `dirvish-new'."
   (declare (indent defun))
@@ -34,7 +33,6 @@ KEYWORDS are slot key-values for `dirvish-new'."
 
 (defmacro dirvish-debounce (label &rest body)
   "Debouncing the execution of BODY.
-
 The BODY runs after the idle time `dirvish-debouncing-delay'.
 Multiple calls under the same LABEL are ignored."
   (let* ((timer (intern (format "dirvish-%s-debouncing-timer" label)))
@@ -57,7 +55,6 @@ Multiple calls under the same LABEL are ignored."
 
 (defun dirvish--shell-to-string (program &rest args)
   "Execute PROGRAM with arguments ARGS and return output string.
-
 If program returns non zero exit code return nil."
   (let* ((exit-code nil)
          (output
@@ -67,11 +64,9 @@ If program returns non zero exit code return nil."
     (when (eq exit-code 0) output)))
 
 (defun dirvish--display-buffer (buffer alist)
-  "Try displaying BUFFER at one side of the selected frame.
-
- This splits the window at the designated side of the
- frame.  ALIST is window arguments for the new-window, it has the
- same format with `display-buffer-alist'."
+  "Try displaying BUFFER with ALIST.
+This splits the window at the designated side of the frame.
+ALIST is window arguments passed to `window--display-buffer'."
   (let* ((side (cdr (assq 'side alist)))
          (window-configuration-change-hook nil)
          (width (or (cdr (assq 'window-width alist)) 0.5))

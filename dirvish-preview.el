@@ -51,7 +51,6 @@ cache image."
 
 (defun dirvish--preview-process-fill-str-sentinel (proc _exitcode)
   "A sentinel for dirvish preview process.
-
 When PROC finishes, fill preview buffer with process result."
   (when-let ((dv (dirvish-curr)))
     (with-current-buffer (dirvish--get-util-buffer dv 'preview)

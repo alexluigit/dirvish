@@ -79,7 +79,6 @@ directory in another window."
 
 (defun dirvish-find-file (&optional file ignore-hist)
   "Find file in dirvish buffer.
-
 FILE can be a file or a directory, if nil then infer entry from
 variable `buffer-file-name'.  If IGNORE-HIST is non-nil, do not
 update `dirvish-history-ring'."
