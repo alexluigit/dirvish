@@ -33,10 +33,18 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
       ('tab (add-hook 'tab-bar-tab-pre-close-functions #'dirvish-side--remove-state))
       ('frame (add-hook 'delete-frame-functions #'dirvish-side--remove-state))
       ('persp
-       (add-hook 'persp-before-kill-functions #'dirvish-side--remove-state)
-       (add-hook 'persp-activated-functions
-                 (lambda (_scope) (when (car (dirvish-side--get-state)) (dotimes (_ 2) (dirvish-side))))))
-      ('perspective (add-hook 'persp-killed-hook #'dirvish-side--remove-state)))
+       (if (require 'persp-mode nil t)
+           (progn
+             (add-hook 'persp-before-kill-functions #'dirvish-side--remove-state)
+             (add-hook 'persp-activated-functions
+                       (lambda (_scope) (when (car (dirvish-side--get-state)) (dotimes (_ 2) (dirvish-side))))))
+         (set k 'tab)
+         (user-error "Unable to find package `persp-mode'")))
+      ('perspective
+       (if (require 'perspective nil t)
+           (add-hook 'persp-killed-hook #'dirvish-side--remove-state)
+         (set k 'tab)
+         (user-error "Unable to find package `perspective'"))))
     (cl-loop for (_scope . (dv . state)) in dirvish-side--state-alist
              do (when dv (dirvish-deactivate dv)))
     (setq dirvish-side--state-alist '())))
