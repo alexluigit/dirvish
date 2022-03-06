@@ -13,16 +13,6 @@
 (require 'dirvish-options)
 (require 'dired-x)
 
-(defmacro dirvish-here (&optional path &rest keywords)
-  "Open Dirvish with PATH and KEYWORDS.
-PATH defaults to variable `buffer-file-name'.
-KEYWORDS are slot key-values for `dirvish-new'."
-  (declare (indent defun))
-  `(let* ((f (or ,path buffer-file-name))
-          (dir (expand-file-name (if f (file-name-directory f) default-directory))))
-     (dirvish-activate (dirvish-new ,@keywords))
-     (dirvish-find-file dir)))
-
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
   (let ((timer (intern (format "%s-timer" func))))
@@ -41,6 +31,16 @@ Multiple calls under the same LABEL are ignored."
        (defvar ,timer nil)
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer dirvish-debouncing-delay nil ,do-once))))))
+
+(defun dirvish-apply-ansicolor-h (_win pos)
+  "Update dirvish ansicolor in preview window from POS."
+  (with-current-buffer (current-buffer)
+    (ansi-color-apply-on-region
+     pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
+
+(defun dirvish--ensure-path (path)
+  (let ((f (or path buffer-file-name)))
+    (expand-file-name (if f (file-name-directory f) default-directory))))
 
 (defmacro dirvish--hide-dired-header (&rest body)
   "Execute BODY then hide the Dired header."

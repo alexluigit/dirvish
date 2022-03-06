@@ -141,6 +141,14 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
       (set-window-buffer new-window buf))))
 
+(defun dirvish--noselect (dir)
+  "Return the Dirvish buffer at DIR, do not select it."
+  (or dir (setq dir default-directory))
+  (let ((dv (dirvish-activate (dirvish-new :depth -1))))
+    (with-current-buffer (dirvish--buffer-for-dir dv dir)
+      (dirvish-build)
+      (current-buffer))))
+
 (defun dirvish-build ()
   "Build dirvish layout."
   (let ((dv (dirvish-curr)))

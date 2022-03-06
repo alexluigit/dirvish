@@ -99,8 +99,8 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
                 (propertize "Project:" 'face 'bold)
                 (propertize project 'face 'font-lock-string-face))))))
 
-(defun dirvish-side--get-project-root ()
-  (when-let ((pr-curr (project-current))) (project-root pr-curr)))
+(defun dirvish-side--get-project-root (&optional path)
+  (if-let ((pr-curr (project-current))) (project-root pr-curr) path))
 
 ;;;###autoload
 (defun dirvish-side (&optional path)
@@ -121,9 +121,11 @@ otherwise it defaults to `project-current'."
          (dirvish-build))
        (dirvish-side--set-state dv 'visible))
       ('uninitialized
-       (dirvish-here (or path (dirvish-side--get-project-root))
-         :depth -1
-         :type 'side)
+       (dirvish-activate
+        (dirvish-new
+          :path (dirvish-side--get-project-root (dirvish--ensure-path path))
+          :depth -1
+          :type 'side))
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
 
 (provide 'dirvish-side)

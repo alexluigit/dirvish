@@ -38,28 +38,28 @@
       (progn
         (dirvish--add-advices)
         (setq find-directory-functions
-              (cl-substitute #'dirvish-noselect #'dired-noselect find-directory-functions)))
+              (cl-substitute #'dirvish--noselect #'dired-noselect find-directory-functions)))
     (dirvish--remove-advices)
     (setq find-directory-functions
-          (cl-substitute #'dired-noselect #'dirvish-noselect find-directory-functions))))
+          (cl-substitute #'dired-noselect #'dirvish--noselect find-directory-functions))))
 
 ;;;###autoload
 (defun dirvish (&optional path)
-  "Open Dirvish with optional PATH in full frame.
+  "Start a full frame Dirvish session with optional PATH.
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-here path :depth dirvish-depth))
+  (dirvish-activate (dirvish-new :path (dirvish--ensure-path path) :depth dirvish-depth)))
 
 ;;;###autoload
 (defun dirvish-dired (&optional path other-window)
-  "Open a single window dirvish with optional PATH.
+  "Start a Dirvish session with optional PATH in current window.
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'.  Execute it
 in other window when OTHER-WINDOW is non-nil."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish dired: ")) nil))
   (and other-window (switch-to-buffer-other-window dirvish-temp-buffer))
-  (dirvish-here path :depth -1))
+  (dirvish-activate (dirvish-new :path (dirvish--ensure-path path) :depth -1)))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here

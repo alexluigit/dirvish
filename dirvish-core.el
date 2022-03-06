@@ -41,7 +41,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   "Initialize util buffers for DV."
   (dirvish--get-util-buffer dv 'preview
     (setq-local mode-line-format nil)
-    (add-hook 'window-scroll-functions #'dirvish-update-ansicolor-h nil :local))
+    (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil :local))
   (dirvish--get-util-buffer dv 'header
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
@@ -116,17 +116,11 @@ A dirvish preview dispatcher is a function consumed by
 `file' (filename under the cursor) and `dv' (current Dirvish
 session) as argument specified in ARGLIST.  DOCSTRING and BODY is
 the docstring and body for this function."
-  (declare (indent defun))
+  (declare (indent defun) (doc-string 3))
   (let* ((dp-name (intern (format "dirvish-%s-preview-dp" name)))
          (default-arglist '(file dv))
          (ignore-list (cl-set-difference default-arglist arglist)))
     `(progn (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
-
-(defun dirvish-update-ansicolor-h (_win pos)
-  "Update dirvish ansicolor in preview window from POS."
-  (with-current-buffer (current-buffer)
-    (ansi-color-apply-on-region
-     pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
 
 (defun dirvish-hash (&optional frame)
   "Return a hash containing all dirvish instance in FRAME.
@@ -158,6 +152,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
      (:constructor
       make-dirvish
       (&key
+       (path nil)
        (depth dirvish-depth)
        (transient nil)
        (type nil)
@@ -228,6 +223,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
    :documentation "TODO.")
   (attributes-alist
    ()
+   :documentation "TODO.")
+  (path
+   nil
    :documentation "TODO.")
   (index-path
    ""
@@ -384,6 +382,7 @@ If the buffer is not available, create it with `dired-noselect'."
   (dirvish--refresh-slots dv)
   (dirvish--create-root-window dv)
   (set-frame-parameter nil 'dirvish--curr dv)
+  (when-let ((path (dv-path dv))) (dirvish-find-file path))
   (run-hooks 'dirvish-activation-hook)
   dv)
 
