@@ -72,8 +72,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advisor function for `find-dired-sentinel'."
-  (let ((pt-min (point-min))
-        (dv (dirvish-curr))
+  (let ((dv (dirvish-curr))
         (last-dv (with-current-buffer (other-buffer)
                    (when (derived-mode-p 'dirvish-mode) (dirvish-curr))))
         buffer-read-only)
@@ -91,7 +90,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (dirvish-build)))
     ;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-matching-lines "find finished at.*\\|^ +$")
-    (delete-region pt-min (progn (goto-char pt-min) (forward-line 2) (point)))
+    (dirvish--hide-dired-header)
     (and (dirvish-curr) (dirvish-setup 'keep-dired))))
 
 (defun dirvish-fd-dired-ad (fn &rest args)
