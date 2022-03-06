@@ -25,8 +25,8 @@ directory in another window."
         (user-error "Dirvish: you're in root directory")
       (if other-window
           (progn
-            (and other-window (switch-to-buffer-other-window dirvish-temp-buffer))
-            (dirvish-here parent :depth -1))
+            (switch-to-buffer-other-window dirvish-temp-buffer)
+            (dirvish-activate (dirvish-new :path (dirvish--ensure-path parent) :depth -1)))
         (dirvish-find-file parent t)))))
 
 (defun dirvish-sort-by-criteria (criteria)
@@ -85,7 +85,6 @@ update `dirvish-history-ring'."
   (interactive)
   (let* ((entry (or file (dired-get-filename nil t)))
          (bname (buffer-file-name (current-buffer)))
-         (curr-dir (expand-file-name default-directory))
          (dv (dirvish-curr))
          (dv-tran (dv-transient dv))
          (dv-depth (dv-depth dv)))
@@ -99,7 +98,7 @@ update `dirvish-history-ring'."
                         (not (eq hist (ring-ref dirvish-history-ring 0))))
                 (ring-insert dirvish-history-ring hist)))
             (switch-to-buffer (dirvish--buffer-for-dir dv entry))
-            (setq dirvish--child-entry (or bname curr-dir))
+            (setq dirvish--child-entry (or bname (expand-file-name default-directory)))
             (when (dirvish-p dv-tran)
               (dirvish-activate
                (dirvish-new
@@ -107,14 +106,6 @@ update `dirvish-history-ring'."
                  :transient (dv-name dv-tran))))
             (dirvish-build))
         (find-file entry)))))
-
-(defun dirvish-noselect (dir)
-  "Return the Dirvish buffer at DIR, do not select it."
-  (or dir (setq dir default-directory))
-  (let ((dv (dirvish-activate (dirvish-new :depth -1))))
-    (with-current-buffer (dirvish--buffer-for-dir dv dir)
-      (dirvish-build)
-      (current-buffer))))
 
 (provide 'dirvish-commands)
 ;;; dirvish-commands.el ends here
