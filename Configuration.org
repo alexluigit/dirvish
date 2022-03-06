@@ -2,6 +2,9 @@
 #+EMAIL: alexluigit@gmail.com
 #+startup: content
 
+*TL;DR*: Grab the config from [[#Example-config][Example config]]. Read following docs in-depth if
+something doesn't work.
+
 ** Prerequisites
 
 | Package           | Description                | Required |
@@ -85,7 +88,7 @@ to preview the =README.md= file in a directory:
     (let ((readme-file (expand-file-name "README.md" file)))
       (when (file-exists-p readme-file) ; when the README.md exists
         ;; Instruct Dirvish to open the README file as preview
-        `(buffer . (find-file-noselect ,readme-file t nil))))))
+        `(buffer . ,(find-file-noselect readme-file t nil))))))
 
 (add-to-list 'dirvish-preview-dispatchers 'readme)
 #+end_src
