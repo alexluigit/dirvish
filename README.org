@@ -19,18 +19,19 @@ This package gives Dired the following features:
 - Isolated sessions
 - A modern and composable user interface
 
-A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/Alexander-Miller/treemacs][treemacs]], this is Dirvish ;)
+A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/jaypei/neotree][neotree]], this is Dirvish ;)
 
 ** Screenshots
 
 [[main][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/main.png]]
-*Figure 1*. ~dirvish~ as a file browser/manager with live preview
+*Figure 1*. ~dirvish~: A file browser/manager with live preview
 
-[[sessions][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/sessions.png]]
-*Figure 2*. Independent sessions
+https://user-images.githubusercontent.com/16313743/156937611-e31efeac-186e-4b15-a956-697df7655c5a.mp4
+
+*Figure 2*. ~dirvish-dired~: A brand new Dired.
 
 [[side][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/side.png]]
-*Figure 3*. A Dirvish session in side window
+*Figure 3*. ~dirvish-side~: A "neotree" leveraging Dired.
 
 https://user-images.githubusercontent.com/16313743/156892360-2ec3a5e6-0de3-4ee3-b31c-dd6b19ad06ab.mp4
 
@@ -66,10 +67,10 @@ To install it manually, first clone this repository, then add =path/to/dirvish= 
 Start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
 
 - ~dirvish-dired~ creates a session in current window (like ~dired~).
-- ~dirvish~ creates a session that makes use of the whole frame (see Figure 1).
+- ~dirvish~ creates a session that makes use of the whole frame (see *Figure 1*).
 
 You can use ~dirvish-toggle-fullscreen~ command to toggle the fullscreen state of
-any Dirvish session.
+any Dirvish session (see *Figure 2*).
 
 Although based on Dired, Dirvish doesn't change any of your Dired config nor
 rebind any keys in ~dired-mode-map~. As a result, a Dired user already knew how to
@@ -88,7 +89,7 @@ extensions are inactive by default and can be enabled manually if desired.
 
 Currently the following extensions come with the package:
 
-- [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/Alexander-Miller/treemacs][treemacs]].
+- [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
 - [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
 - [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
 - [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: File preview in minibuffer.
@@ -149,8 +150,8 @@ Nonetheless, Dirvish and Dired handle these aspects differently:
   ~dired-find-alternate-file~ or enable ~dired-kill-when-opening-new-dired-buffer~
   which inhibit new buffer generation in some cases, whereas the drawbacks are:
 
-  - It does *NOT* work for some commands such as ~dired-up-directory~
-  - Kill an old buffer also removes all the metadata (such as marks) it holds
+  - It may kill Dired buffers in other windows/tabs/frames
+  - The metadata such as marks, subdirs, subtrees is removed too
   - Performance issue on slow disk (think of revisiting a huge directory)
 
   As a comparison, each Dirvish holds its own directory/preview buffer list.
