@@ -332,6 +332,36 @@ by this instance."
     (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
     (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))
 
+(defun dirvish--render-attributes (dv)
+  "Render attributes in Dirvish session DV's body."
+  (when (> (length dirvish--attrs-alist) 500)
+    (setq-local dirvish--attrs-alist nil))
+  (let* ((attrs (dv-attributes-alist dv))
+         (curr-pos (point))
+         (fr-h (frame-height))
+         (beg (- 0 fr-h))
+         (end (+ (line-number-at-pos) fr-h))
+         (fns (cl-loop with (left-w . right-w) = (cons dirvish-prefix-spaces 0)
+                       for (ov pred fn left right) in attrs
+                       do (remove-overlays (point-min) (point-max) ov t)
+                       for valid = (funcall pred dv)
+                       when valid do (progn (setq left-w (+ left-w (or (eval left) 0)))
+                                            (setq right-w (+ right-w (or (eval right) 0))))
+                       when valid collect (prog1 fn (setq-local dirvish--attrs-width (cons left-w right-w))))))
+    (save-excursion
+      (forward-line beg)
+      (while (and (not (eobp)) (< (line-number-at-pos) end))
+        (when-let ((f-name (dired-get-filename nil t))
+                   (f-beg (and (not (invisible-p (point)))
+                               (dired-move-to-filename nil)))
+                   (f-end (dired-move-to-end-of-filename t)))
+          (let ((f-attrs (file-attributes f-name))
+                (l-beg (line-beginning-position))
+                (l-end (line-end-position))
+                (hl-face (and (eq f-beg curr-pos) 'highlight)))
+            (dolist (fn fns) (funcall fn f-name f-attrs f-beg f-end l-beg l-end hl-face))))
+        (forward-line 1)))))
+
 (defun dirvish--apply-header-style ()
   "Format Dirvish header line."
   (when-let ((dv (dirvish-curr)))
