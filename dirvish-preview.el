@@ -61,10 +61,6 @@ When PROC finishes, fill preview buffer with process result."
         (ansi-color-apply-on-region
          p-min (progn (goto-char p-min) (forward-line (frame-height)) (point)))))))
 
-(defun dirvish--preview-process-update-sentinel (_proc _exitcode)
-  "A process sentinel for updating dirvish preview window."
-  (dirvish-preview-update))
-
 (dirvish-define-preview disable (file)
   "Disable preview in some cases."
   (when (or (not (file-exists-p file))
@@ -81,12 +77,12 @@ When PROC finishes, fill preview buffer with process result."
 (dirvish-define-preview directory-dired (file)
   "Uses Dired to generate directory preview."
   (when (file-directory-p file)
-    `(buffer . (dired-noselect ,file))))
+    `(buffer . ,(dired-noselect file))))
 
 (dirvish-define-preview text (file)
   "Open FILE with `find-file-noselect'."
   (when (string-match "text/" (or (mailcap-file-name-to-mime-type file) ""))
-    `(buffer . (find-file-noselect ,file t nil))))
+    `(buffer . ,(find-file-noselect file t nil))))
 
 (dirvish-define-preview gif (file)
   "Display an animated image FILE."
@@ -155,7 +151,7 @@ When PROC finishes, fill preview buffer with process result."
 (dirvish-define-preview pdf-tools (file)
   "Open FILE with `find-file-noselect'."
   (when (string= (file-name-extension file) "pdf")
-    `(buffer . (find-file-noselect ,file t nil))))
+    `(buffer . ,(find-file-noselect file t nil))))
 
 (dirvish-define-preview archive (file)
   "Display output from corresponding unarchive shell commands."
@@ -183,40 +179,30 @@ When PROC finishes, fill preview buffer with process result."
                  `(buffer . ,buf))))))))
 
 (defun dirvish-preview-dispatch (preview-type payload dv)
-  "Execute dispatcher PAYLOAD according to PREVIEW-TYPE.
+  "Execute dispatcher's PAYLOAD according to PREVIEW-TYPE.
 This function apply the payloads provided by the first
 matched preview dispatcher to the preview buffer, and finally
 return the buffer.
-A PAYLOAD is can be either:
 
-- a buffer which is displayed inside of preview window.
-- a (CMD . ARGS) cons where CMD can be a elisp function or a
-shell command.  In either case, ARGS holds a list of arguments
-for them.
-- a string which is displayed directly in preview buffer.  Need
-  to use in conjunction with `info' PREVIEW-TYPE.
+PREVIEW-TYPE can be one of following values:
 
-A PREVIEW-TYPE can be one of following values:
+- `info', meaning PAYLOAD is a string.
+- `buffer', meaning PAYLOAD is a buffer.
+- `image', meaning PAYLOAD is a image.
+- `image-cache', meaning PAYLOAD is a (IMAGE-CMD . ARGS) cons.
+- `shell', meaning PAYLOAD is a (TEXT-CMD . ARGS) cons.
 
-- `info', which means insert PAYLOAD string to preview buffer.
-- `buffer', meaning either PAYLOAD itself is a buffer
-  or `(apply CMD ARGS)' return a buffer directly as preview
-  buffer.
-- `image', meaning PAYLOAD should be an image to be inserted.
-- `shell', indicates CMD is a shell command, the result of CMD
-  and ARGS will be inserted in preview buffer as content when the
-  shell process exits successfully.
-- `image-cache', similar to `shell', but the CMD should generate
-  a cache image, and when the process exits, it fires up a
-  preview update."
+According to the PAYLOAD, one of these action is applied:
+
+- A string/image PAYLOAD is inserted to the default preview buffer.
+- A buffer PAYLOAD is used as preview buffer directly.
+- A subprocess for IMAGE/TEXT-CMD is issued.  When the subprocess
+finishes, the content in preview buffer is filled with the result
+string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (let ((buf (dirvish--get-util-buffer (dirvish-curr) 'preview))
         (cmd (car-safe payload))
         (args (cdr-safe payload))
-        (process-connection-type nil)
-        (enable-local-variables nil)
-        (inhibit-modification-hooks t)
-        (auto-save-default nil)
-        (delay-mode-hooks t))
+        (process-connection-type nil))
     (when (and (memq preview-type '(shell image-cache))
                (not (executable-find cmd)))
       (setq preview-type 'info
@@ -225,11 +211,12 @@ A PREVIEW-TYPE can be one of following values:
       (erase-buffer) (remove-overlays)
       (cl-case preview-type
         ('info (insert payload))
-        ('buffer (setq buf (if cmd (apply cmd args) payload)))
+        ('buffer (setq buf payload))
         ('image (dirvish-preview--insert-image payload dv))
         ('image-cache
          (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
-           (set-process-sentinel proc #'dirvish--preview-process-update-sentinel)
+           (set-process-sentinel
+            proc (lambda (&rest _) (dirvish-debounce layout (dirvish-preview-update))))
            (insert " [Dirvish] Generating image cache...")))
         ('shell
          (let* ((res-buf (get-buffer-create " *Dirvish preview result*"))
