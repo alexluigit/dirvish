@@ -70,11 +70,11 @@ directory in another window."
           (set-window-configuration (dv-window-conf dv)))
         (setf (dv-depth dv) new-depth)
         (setf (dv-window-conf dv) (current-window-configuration))
+        (setq-local dirvish--child-entry (dv-index-path dv))
         (with-selected-window (dirvish--create-root-window dv)
           (switch-to-buffer buf)
           (dirvish-reclaim)
-          (dirvish-build)
-          (dirvish-update-body-h)))
+          (dirvish-build)))
     (user-error "Dirvish: not in a dirvish buffer")))
 
 (defun dirvish-find-file (&optional file ignore-hist)
