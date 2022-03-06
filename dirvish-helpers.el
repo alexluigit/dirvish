@@ -25,6 +25,7 @@
   "Debouncing the execution of BODY.
 The BODY runs after the idle time `dirvish-debouncing-delay'.
 Multiple calls under the same LABEL are ignored."
+  (declare (indent defun))
   (let* ((timer (intern (format "dirvish-%s-debouncing-timer" label)))
          (do-once `(lambda () (unwind-protect ,@body (setq ,timer nil)))))
     `(progn
