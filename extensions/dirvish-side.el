@@ -88,16 +88,19 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
     (select-window win)))
 
 (defun dirvish-side-header-string-fn ()
-  "Return a string showing current `find/fd' command args."
+  "Return a string showing current project."
   (when-let ((dv (dirvish-curr)))
     (with-current-buffer (window-buffer (dv-root-window dv))
-      (let ((project (cdr-safe (project-current))))
+      (let ((project (dirvish-side--get-project-root)))
         (if project
             (setq project (file-name-base (directory-file-name project)))
           (setq project "-"))
         (format " %s [%s]"
                 (propertize "Project:" 'face 'bold)
                 (propertize project 'face 'font-lock-string-face))))))
+
+(defun dirvish-side--get-project-root ()
+  (when-let ((pr-curr (project-current))) (project-root pr-curr)))
 
 ;;;###autoload
 (defun dirvish-side (&optional path)
@@ -118,7 +121,7 @@ otherwise it defaults to `project-current'."
          (dirvish-build))
        (dirvish-side--set-state dv 'visible))
       ('uninitialized
-       (dirvish-here (or path (cdr-safe (project-current)))
+       (dirvish-here (or path (dirvish-side--get-project-root))
          :depth -1
          :type 'side)
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
