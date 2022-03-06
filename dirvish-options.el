@@ -23,7 +23,7 @@
 The attributes are defined by `dirvish-define-attribute', you can
 get all available attributes by evaluating:
 
-\(progn (mapc #'require `dirvish-extra-libs')
+\(prog1 (mapc #'require `dirvish-extra-libs')
        (describe-variable 'dirvish--available-attrs))"
   :group 'dirvish :type '(repeat dirvish-attribute))
 
