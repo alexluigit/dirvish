@@ -23,14 +23,15 @@ A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/
 
 ** Screenshots
 
-[[main][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/main.png]]
+[[https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/main.png][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/main.png]]
 *Figure 1*. ~dirvish~: A file browser/manager with live preview
 
-https://user-images.githubusercontent.com/16313743/156937611-e31efeac-186e-4b15-a956-697df7655c5a.mp4
+https://user-images.githubusercontent.com/16313743/156968548-cb091eb5-179d-48bd-aa3d-04add862440a.mp4
 
 *Figure 2*. ~dirvish-dired~: A brand new Dired.
 
-[[side][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/side.png]]
+https://user-images.githubusercontent.com/16313743/156969621-c07c3e12-4762-4850-b27d-43c6f4008826.mp4
+
 *Figure 3*. ~dirvish-side~: A "neotree" leveraging Dired.
 
 https://user-images.githubusercontent.com/16313743/156892360-2ec3a5e6-0de3-4ee3-b31c-dd6b19ad06ab.mp4
