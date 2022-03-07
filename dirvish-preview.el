@@ -118,7 +118,7 @@ When PROC finishes, fill preview buffer with process result."
            (cache (dirvish--get-image-cache-for-file file width ".jpg")))
       (if (file-exists-p cache)
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
-        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
+        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s" ,(number-to-string width) "-m"))))))
 
 (dirvish-define-preview audio (file)
   "Use output of `mediainfo' shell command as preview."
@@ -134,7 +134,7 @@ When PROC finishes, fill preview buffer with process result."
            (cache (dirvish--get-image-cache-for-file file width ".jpg")))
       (if (file-exists-p cache)
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
-        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s 0"))))))
+        `(image-cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
 
 (dirvish-define-preview pdf-preface (file dv)
   "Display a pdf preface image with width of DV's preview window."
