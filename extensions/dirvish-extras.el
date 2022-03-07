@@ -86,7 +86,7 @@ Values are interpreted as follows:
                        (bg (face-attribute hl-face :background)))
       (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
     (overlay-put ov 'dirvish-all-the-icons t)
-    (overlay-put ov 'after-string icon-str)))
+    (overlay-put ov 'after-string icon-str) ov))
 
 (dirvish-define-attribute vscode-icon
   :left (length dirvish-icon-delimiter)
