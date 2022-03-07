@@ -100,10 +100,7 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
           (size (nth 2 task))
           (index (car (nth 3 task)))
           (length (cdr (nth 3 task))))
-      (when finished
-        (setq dirvish-yank-queue (cdr dirvish-yank-queue))
-        (unless dirvish-yank-queue
-          (cancel-timer (symbol-value 'dirvish-footer-update-timer))))
+      (when finished (setq dirvish-yank-queue (cdr dirvish-yank-queue)))
       (format " %s: %s total size: %s "
               (if finished "Success" "Progress")
               (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)

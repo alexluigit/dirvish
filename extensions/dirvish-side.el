@@ -15,6 +15,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'project)
 (declare-function get-current-persp "persp-mode")
 (declare-function persp-curr "perspective")
 
