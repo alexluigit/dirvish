@@ -105,21 +105,42 @@ preference or behaves similar to other familiar file explorers.
 See [[file:Configuration.org][Configuration.org]] (included docs for extensions).
 
 ** Related projects
-*** ranger.el
 
-TODO
-
-*** treemacs
-
-TODO
+Generally speaking, =dirvish= should be able to handle most of the file
+exploring/managing tasks, after all it is backed by the superb Dired.  Besides,
+choose =dirvish= over packages listed below gives you:
+1. Unified user interface in all your file managing scenarios.
+2. The ability to toggle fullscreen of any Dirvish session (see *Figure 2. 3.*)
+3. Less package configs to maintain or worry about.
 
 *** neotree
 
-TODO
+=neotree= works pretty well as a simple project explorer. But sadly, compare to
+=dirvish[-side]=, this package is not built on top of Dired, which means you have
+to learn or configure a diffenent set of commands, meanwhile, it is way less
+powerful as Dired/Dirvish in terms of file managing.
+
+And, it seems that this package is not being maintained anymore (last commit at
+2 years ago as of 2022).
+
+*** treemacs
+
+Same as =neotree=, but =treemacs= is a much more mature yet complex package. It can
+even be used as a general rendering backend of any tree-like structures, you may
+find this package useful when you have related needs. It might be an overkill
+for simple project exploring tasks due to its complexity and huge codebase.
 
 *** dired-sidebar
 
-TODO
+=dired-sidebar= and =dirvish-side= do almost exact the same thing: create a file
+explorer at side window that leveraging the power of Dired.  =dired-sidebar= also
+includes some basic integration with serveral 3rd-party packages and other small
+niceties such as file watching.  =dirvish-side=, at least for now, is relatively
+primitive.
+
+*** ranger.el
+
+See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]] for more details.
 
 ** Issues
 
