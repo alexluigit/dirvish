@@ -2,8 +2,8 @@
 #+EMAIL: alexluigit@gmail.com
 #+startup: content
 
-*TL;DR*: Grab the config from [[#Example-config][Example config]]. Read following docs in-depth if
-something doesn't work.
+*TL;DR*: Grab the config from [[#Example-config][Example config]]. Read following docs in-depth if you
+want further customizations.
 
 ** Prerequisites
 
@@ -231,8 +231,8 @@ will make every =perspective= have an unique ~dirvish-side~ session. A valid sco
 can be one of: ~emacs~, ~tab~, ~frame~, ~persp~ (see [[https://github.com/Bad-ptr/persp-mode.el][persp-mode]]), ~perspective~ (see
 [[https://github.com/nex3/perspective-el][perspective-el]]).
 
-Customize the option ~dirvish-side-display-alist~ to place the side session
-wherever you want.
+Customize the option ~dirvish-side-display-alist~ to change the size and position
+of the window.
 
 ** Example config
 *** Dired | Dirvish
