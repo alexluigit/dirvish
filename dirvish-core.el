@@ -40,9 +40,11 @@ If BODY is non-nil, create the buffer and execute BODY in it."
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
   (dirvish--get-util-buffer dv 'preview
+    (setq-local cursor-type nil)
     (setq-local mode-line-format nil)
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil :local))
   (dirvish--get-util-buffer dv 'header
+    (setq-local cursor-type nil)
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
@@ -50,6 +52,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (set (make-local-variable 'face-remapping-alist)
          `((mode-line-inactive :inherit (mode-line-active) :height ,dirvish-header-line-height))))
   (dirvish--get-util-buffer dv 'footer
+    (setq-local cursor-type nil)
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)

@@ -85,7 +85,7 @@ reuse a Dirvish session automatically.
 
 Several small extension packages to Dirvish are maintained in the subdirectory
 extensions/. They are installed together with Dirvish if you pull the package
-from MELPA, Dirvish can work properly with or without it though. These
+from MELPA, Dirvish can work properly with or without them though. These
 extensions are inactive by default and can be enabled manually if desired.
 
 Currently the following extensions come with the package:
