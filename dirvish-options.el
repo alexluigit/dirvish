@@ -125,7 +125,6 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 ;;;; Internal variables
 
 (defconst dirvish-prefix-spaces 2)
-(defconst dirvish-header-line-height 1.99)
 (defconst dirvish-debouncing-delay 0.02)
 (defconst dirvish-preview-image-threshold (* 1024 1024 0.5))
 (defconst dirvish-preview-image-scale 0.92)
@@ -133,6 +132,8 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
 (defconst dirvish-built-in-attrs '(hl-line symlink-target))
+(defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99)))
+(defconst dirvish--footer-remap-alist '((mode-line-inactive mode-line)))
 (defvar dirvish-advice-alist
   '((files         find-file                       dirvish-find-file-ad           :before)
     (dired         dired                           dirvish-dired-ad)
