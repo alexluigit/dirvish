@@ -49,16 +49,14 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
     (setq-local mode-line-format '((:eval (dirvish--apply-header-style))))
-    (set (make-local-variable 'face-remapping-alist)
-         `((mode-line-inactive :inherit (mode-line-active) :height ,dirvish-header-line-height))))
+    (set (make-local-variable 'face-remapping-alist) dirvish--header-remap-alist))
   (dirvish--get-util-buffer dv 'footer
     (setq-local cursor-type nil)
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
     (setq-local mode-line-format '((:eval (dirvish--format-mode-line))))
-    (set (make-local-variable 'face-remapping-alist)
-         '((mode-line-inactive mode-line-active)))))
+    (set (make-local-variable 'face-remapping-alist) dirvish--footer-remap-alist)))
 
 (defun dirvish-reclaim (&optional _window)
   "Reclaim current dirvish."
