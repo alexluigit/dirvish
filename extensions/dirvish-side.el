@@ -18,6 +18,7 @@
 (require 'project)
 (declare-function get-current-persp "persp-mode")
 (declare-function persp-curr "perspective")
+(defconst dirvish--project-root-fn (if (< emacs-major-version 29) #'cdr #'project-root))
 
 (defvar dirvish-side--state-alist '())
 
@@ -80,7 +81,8 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
           (delq (assoc scope dirvish-side--state-alist) dirvish-side--state-alist))))
 
 (defun dirvish-side-quit-window-fn (_dv)
-  (dirvish-side--set-state nil 'uninitialized))
+  (dirvish-side--set-state nil 'uninitialized)
+  (when (window-parameter (selected-window) 'window-side) (delete-window)))
 
 (defun dirvish-side-root-window-fn ()
   "Display `dirvish-temp-buffer' at side window."
@@ -101,7 +103,9 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
                 (propertize project 'face 'font-lock-string-face))))))
 
 (defun dirvish-side--get-project-root (&optional path)
-  (if-let ((pr-curr (project-current))) (project-root pr-curr) path))
+  (if-let ((pr-curr (project-current)))
+      (funcall dirvish--project-root-fn pr-curr)
+    path))
 
 ;;;###autoload
 (defun dirvish-side (&optional path)
