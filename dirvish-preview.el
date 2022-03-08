@@ -8,9 +8,9 @@
 
 ;;; Code:
 
-(declare-function image-get-display-property "image-mode")
 (require 'so-long)
 (require 'mailcap)
+(require 'image-mode)
 (require 'dirvish-core)
 (eval-when-compile (require 'subr-x))
 (mailcap-parse-mimetypes)
