@@ -106,7 +106,8 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
   "Replacement for `dired-dwim-target-next'.
 If ALL-FRAMES, search target directories in all frames."
   (mapcan (lambda (w)
-            (when (or all-frames (eq (window-frame w) (selected-frame)))
+            (when (or all-frames
+                      (eq (and (window-valid-p w) (window-frame w)) (selected-frame)))
               (with-current-buffer (window-buffer w)
                 (list (dired-current-directory)))))
           (delq (selected-window) (dirvish-get-all 'root-window t))))
