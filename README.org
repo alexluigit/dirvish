@@ -162,7 +162,7 @@ Nonetheless, Dirvish and Dired handle these aspects differently:
 
   Each Dirvish has its own window layout along with some other isolated niceties
   such as header string. This makes it easy for Dirvish to adapt itself towards
-  diffenent file management tasks (See [[#Screenshots][screenshots]]).
+  different file management tasks (See [[#Screenshots][screenshots]]).
 
 + Buffer management ::
 
