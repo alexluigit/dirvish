@@ -340,8 +340,6 @@ by this instance."
   (let* ((attrs (dv-attributes-alist dv))
          (curr-pos (point))
          (fr-h (frame-height))
-         (beg (- 0 fr-h))
-         (end (+ (line-number-at-pos) fr-h))
          (fns (cl-loop with (left-w . right-w) = (cons dirvish-prefix-spaces 0)
                        for (ov pred fn left right) in attrs
                        do (remove-overlays (point-min) (point-max) ov t)
@@ -350,8 +348,9 @@ by this instance."
                                             (setq right-w (+ right-w (or (eval right) 0))))
                        when valid collect (prog1 fn (setq-local dirvish--attrs-width (cons left-w right-w))))))
     (save-excursion
-      (forward-line beg)
-      (while (and (not (eobp)) (< (line-number-at-pos) end))
+      (forward-line (- 0 fr-h))
+      (cl-dotimes (_ (* 2 fr-h))
+        (when (eobp) (cl-return))
         (when-let ((f-name (dired-get-filename nil t))
                    (f-beg (and (not (invisible-p (point)))
                                (dired-move-to-filename nil)))
