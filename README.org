@@ -117,7 +117,7 @@ choose =dirvish= over packages listed below gives you:
 
 =neotree= works pretty well as a simple project explorer. But sadly, compare to
 =dirvish[-side]=, this package is not built on top of Dired, which means you have
-to learn or configure a diffenent set of commands, meanwhile, it is way less
+to learn or configure a different set of commands, meanwhile, it is way less
 powerful as Dired/Dirvish in terms of file managing.
 
 And, it seems that this package is not being maintained anymore (last commit at
