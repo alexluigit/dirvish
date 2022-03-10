@@ -107,7 +107,10 @@
 
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
-  (dirvish-deactivate (gethash dirvish--curr-name (dirvish-hash)))
+  ;; FIXME: dv should be always accessible here
+  (if-let ((dv (gethash dirvish--curr-name (dirvish-hash))))
+      (dirvish-deactivate dv)
+    (kill-current-buffer))
   (switch-to-buffer dirvish-temp-buffer))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
