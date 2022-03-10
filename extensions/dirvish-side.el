@@ -54,7 +54,8 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
 (defcustom dirvish-side-display-alist
   '((side . left)
     (slot . -1)
-    (window-width . 0.2))
+    (window-width . 0.2)
+    (window-parameters . ((no-delete-other-windows . t))))
   "Display alist for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
@@ -88,7 +89,6 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
   "Display `dirvish-temp-buffer' at side window."
   (let* ((buf (get-buffer-create dirvish-temp-buffer))
          (win (display-buffer-in-side-window buf dirvish-side-display-alist)))
-    (set-window-parameter win 'no-delete-other-windows t)
     (select-window win)))
 
 (defun dirvish-side-header-string-fn ()
