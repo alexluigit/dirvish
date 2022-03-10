@@ -226,7 +226,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   "Build dirvish layout."
   (let ((dv (dirvish-curr)))
     (unless (dirvish-dired-p dv)
-      (delete-other-windows)
+      (let ((ignore-window-parameters t)) (delete-other-windows))
       (dirvish--build-preview dv)
       (dirvish--build-header dv)
       (dirvish--build-footer dv))
