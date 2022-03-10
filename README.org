@@ -19,7 +19,7 @@ This package gives Dired the following features:
 - Isolated sessions
 - A modern and composable user interface
 
-A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/jaypei/neotree][neotree]], this is Dirvish ;)
+A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/jaypei/emacs-neotree][neotree]], this is Dirvish ;)
 
 ** Screenshots
 
@@ -140,14 +140,13 @@ primitive.
 
 *** ranger.el
 
-See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]] for more details.
+See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]].
 
 ** Issues
 
-- Bugs are expected on Windows since dirvish has not been tested on it.
-- *WIP*: compatibility issues with some third-party dired related packages.
+- There maybe incompatibilities with other third-party Dired packages.
 
-Feel free to report issues.
+Please feel free to report any issues.
 
 ** FAQ
 *** How is Dirvish related to Dired?
