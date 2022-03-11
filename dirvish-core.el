@@ -358,7 +358,7 @@ by this instance."
           (let ((f-attrs (file-attributes f-name))
                 (l-beg (line-beginning-position))
                 (l-end (line-end-position))
-                (hl-face (and (eq f-beg curr-pos) 'highlight)))
+                (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
             (dolist (fn fns) (funcall fn f-name f-attrs f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
 
