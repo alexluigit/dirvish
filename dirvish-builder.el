@@ -25,7 +25,7 @@
 (dirvish-define-attribute hl-line
   :form
   (when hl-face
-    (let ((ov (make-overlay l-beg (1+ l-end)))) (overlay-put ov 'face 'highlight) ov)))
+    (let ((ov (make-overlay l-beg (1+ l-end)))) (overlay-put ov 'face hl-face) ov)))
 
 ;; This hack solves 2 issues:
 ;; 1. Hide " -> " arrow of symlink files as well.
