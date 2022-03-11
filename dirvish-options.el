@@ -94,9 +94,15 @@ STYLE should be one of these:
   :group 'dirvish :type 'symbol
   :options '(nil large normal))
 
+(defface dirvish-hl-line
+  '((((class color) (background light)) :background "#8eecf4")
+    (((class color) (background dark)) :background "#004065"))
+  "Face for Dirvish line highlighting."
+  :group 'dirvish)
+
 (defcustom dirvish-face-remap-alist
-  '((header-line :height 1.04 :box (:line-width 4 :color "#303030"))
-    (highlight :inherit (highlight) :extend t)) ; line highlighting
+  `((header-line :height 1.04 :box (:line-width 4 :color "#303030"))
+    (highlight :inherit (dirvish-hl-line) :extend t))
   "Face remapping alist used in dirvish window.
 See `face-remapping-alist' for more details."
   :group 'dirvish :type 'alist)
