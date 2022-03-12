@@ -179,7 +179,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                               (inhibit-same-window . t)
                               (window-width . ,width)
                               (window-parameters . ((no-other-window . t)))))
-                 (buffer (dired-noselect parent))
+                 (buffer (dirvish--buffer-for-dir dv parent t))
                  (window (display-buffer buffer `(dirvish--display-buffer . ,win-alist))))
             (with-selected-window window
               (setq-local dirvish--child-entry current)

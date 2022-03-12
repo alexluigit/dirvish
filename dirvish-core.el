@@ -219,6 +219,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (root-dir-buf-alist
    ()
    :documentation "TODO.")
+  (parent-dir-buf-alist
+   ()
+   :documentation "TODO.")
   (raw-attributes
    dirvish-attributes
    :documentation "TODO.")
@@ -386,16 +389,17 @@ by this instance."
                                                   ,(string-width fmt-right)))))
                 fmt-right)))))
 
-(defun dirvish--buffer-for-dir (dv entry)
-  "Return the dirvish buffer in DV for ENTRY.
+(defun dirvish--buffer-for-dir (dv entry &optional parent)
+  "Return the root or PARENT buffer in DV for ENTRY.
 If the buffer is not available, create it with `dired-noselect'."
-  (let* ((root-dir-buf (dv-root-dir-buf-alist dv))
-         (buffer (alist-get entry root-dir-buf nil nil #'equal))
+  (let* ((dir-buf (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv)))
+         (buffer (alist-get entry dir-buf nil nil #'equal))
          (sorter (cdr (dv-sort-criteria dv)))
          (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
     (unless buffer
       (setq buffer (dired-noselect entry switches))
-      (push (cons entry buffer) (dv-root-dir-buf-alist dv)))
+      (push (cons entry buffer)
+            (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv))))
     buffer))
 
 (defun dirvish-activate (dv)
