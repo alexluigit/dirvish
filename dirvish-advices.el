@@ -110,7 +110,7 @@ If ALL-FRAMES, search target directories in all frames."
                       (eq (and (window-valid-p w) (window-frame w)) (selected-frame)))
               (with-current-buffer (window-buffer w)
                 (list (dired-current-directory)))))
-          (delq (selected-window) (dirvish-get-all 'root-window t))))
+          (delq (selected-window) (dirvish-get-all 'root-window t t))))
 
 (defun dirvish-wdired-mode-ad (&rest _)
   "Advisor function for `wdired-change-to-wdired-mode'."

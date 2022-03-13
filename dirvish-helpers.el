@@ -40,6 +40,7 @@ Multiple calls under the same LABEL are ignored."
      pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
 
 (defun dirvish--ensure-path (path)
+  "Return a valid file path based on PATH."
   (let ((f (or path buffer-file-name)))
     (expand-file-name (if f (file-name-directory f) default-directory))))
 
