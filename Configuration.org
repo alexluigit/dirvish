@@ -5,12 +5,14 @@
 *TL;DR*: Grab the config from [[#Example-config][Example config]]. Read following docs in-depth if you
 want further customizations.
 
+-----
+
 ** Prerequisites
 
+|-------------------+----------------------------+----------|
 | Package           | Description                | Required |
 |-------------------+----------------------------+----------|
 | =Emacs 27.1=        | Support Emacs 27.1 onward  | Required |
-| =exa=               | Generate directory preview | Optional |
 | =all-the-icons.el=  | Icon support               | Optional |
 | =vscode-icon.el=    | Icon support               | Optional |
 | =pdftoppm=          | Generate pdf preface image | Optional |
@@ -19,9 +21,11 @@ want further customizations.
 | =epub-thumbnailer=  | Generate epub thumbnailer  | Optional |
 | =zipinfo=           | Preview zip files          | Optional |
 | =mediainfo=         | Display media metadata     | Optional |
+|-------------------+----------------------------+----------|
 
 ** Customization options
 
+|--------------------------------+----------+-------------------------------------|
 | Option                         | Type     | Description                         |
 |--------------------------------+----------+-------------------------------------|
 | ~dirvish-cache-dir~              | String   | Cache directory                     |
@@ -35,79 +39,94 @@ want further customizations.
 | ~dirvish-face-remap-alist~       | Alist    | Remapping faces in Dirvish window   |
 | ~dirvish-mode-line-format~       | Cons     | Mode line format in root window     |
 | ~dirvish-attributes~             | List     | See [[#Extra-attributes][Extra attributes]]                |
-| ~dirvish-preview-dispatchers~    | List     | See [[#Preview-dispatchers][Preview dispathers]]              |
+| ~dirvish-preview-dispatchers~    | List     | See [[#Preview-strategies][Preview strategies]]              |
+|--------------------------------+----------+-------------------------------------|
 
 Consult the docstring of the options for details.
 
 ** Extra attributes
 
-List of file attributes such as ~file-size~ showing in Dirvish file lines.  The
-attributes are defined by ~dirvish-define-attribute~, you can get all available
-attributes by evaluating:
+A list of file attributes such as ~file-size~ showing in Dirvish file lines are
+stored in the variable ~dirvish-attributes~.  These attributes are defined by
+~dirvish-define-attribute~, you can get all available attributes by evaluating:
 
 #+begin_src emacs-lisp
-(progn (mapc #'require `dirvish-extra-libs') (describe-variable 'dirvish--available-attrs))
+(prog1 (mapc #'require dirvish-extra-libs) (describe-variable 'dirvish--available-attrs))
 #+end_src
 
-To change the attributes session-locally, see [[#Transient-based-help-menu-(dirvish-menu.el)][dirvish-menu]].
+To change the attributes session locally, see [[#Extensions][dirvish-menu]].
 
-** Preview dispatchers
+** Preview strategies
 
-The variable ~dirvish-preview-dispatchers~ determines how file preview works in
-Dirvish.
-
-Preview dispatchers are defined by ~dirvish-define-preview~. It holds a function
-that takes current filename and dirvish session as arguments and gets called at
-runtime when the preview window is available.  It controls how the preview
-content for certain filetypes are generated, or it can decline to handle the
-file name and leaving it for future dispatchers. If none of the dispatchers can
-handle the preview, the fallback dispatcher named ~default~ is used.
-
-The default value of ~dirvish-preview-dispatchers~ looks something like:
+A preview dispatcher represents a strategy for preview generation on certain
+conditions. The variable ~dirvish-preview-dispatchers~, which holds all the active
+dispatchers, has the default value looks like:
 
 #+begin_src emacs-lisp
-(directory-exa text gif image video audio epub archive pdf-tools)
+(text gif image video audio epub archive pdf-tools)
 #+end_src
 
-Let's say you don't like the preview directory result provided by ~exa~ shell
-command, you can remove the ~directory-exa~ dispatcher like this:
+You can consult ~dirvish-preview-dispatch~ for details.
+To change the preview dispatchers session locally, see [[#Extensions][dirvish-menu]].
+
+Here are two customization examples.
+
+*** Example 1: directory preview using ~exa~ command
+
+Let's say you don't like the default directory preview results provided by
+Dired, you can create your own previewer using ~dirvish-define-preview~:
 
 #+begin_src emacs-lisp
-(setq dirvish-preview-dispatchers (remove 'directory-exa dirvish-preview-dispatchers))
+(dirvish-define-preview exa (file)
+  "Uses `exa' to generate directory preview."
+  (when (file-directory-p file) ; we only interest in directories here
+    `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the output of `exa' command as preview
+
+(add-to-list 'dirvish-preview-dispatchers 'exa)
 #+end_src
 
-This makes Dirvish use the fallback directory previewer, Dired.
+This makes Dirvish use the output from ~exa~ shell command as your preview content
+for a directory entry. The other benefit of doing so is that Dirvish execute
+shell commands asynchronously, therefore preview a huge directory won't block
+the main process of Emacs.
 
-You may also want to create your own dispathers. Here is an sample dispatcher
-to preview the =README.md= file in a directory:
+On a side note, if you don't like the coloring in the preview window, you can
+customize the corresponding faces defined in =ansi-color.el=:
+
+#+begin_src emacs-lisp
+(set-face-attribute 'ansi-color-blue nil :foreground "#FFFFFF")
+#+end_src
+
+[[https://user-images.githubusercontent.com/16313743/158052211-35480266-7bae-4a14-a873-99d272bcf94e.png][https://user-images.githubusercontent.com/16313743/158052211-35480266-7bae-4a14-a873-99d272bcf94e.png]] [screenshot from the ~doom-one~ theme]
+
+*** Example 2: preview =README.md= in a project when it exists
+
+Here we create a dispatcher to preview the =README.md= file in a directory:
 
 #+begin_src emacs-lisp
 (dirvish-define-preview readme (file)
-  "Preview README.md file in a directory when exists."
-  (when (file-directory-p file) ; we only interest in directories in this case
+  "Preview README.md file in a directory when it exists."
+  (when (file-directory-p file)
     (let ((readme-file (expand-file-name "README.md" file)))
       (when (file-exists-p readme-file) ; when the README.md exists
-        ;; Instruct Dirvish to open the README file as preview
-        `(buffer . ,(find-file-noselect readme-file t nil))))))
+        `(buffer . ,(find-file-noselect readme-file t nil)))))) ; use the file buffer as preview
 
 (add-to-list 'dirvish-preview-dispatchers 'readme)
 #+end_src
 
 If you find it useful, you can extend this dispatcher to support "README.org" or
-make it case insensitive etc. Either way, it is good enough as a basic example.
-
-Consult ~dirvish-preview-dispatch~ for details.
-
-To change the preview dispatchers session-locally, see [[#Transient-based-help-menu-(dirvish-menu.el)][dirvish-menu]].
+make it case insensitive etc.
 
 ** Hooks
 
+|----------------------------+-----------------------------------------|
 | Hook                       | Description                             |
 |----------------------------+-----------------------------------------|
 | ~dirvish-activation-hook~    | Hook for dirvish session activation.    |
 | ~dirvish-deactivation-hook~  | Hook for dirvish session deactivation.  |
 | ~dirvish-mode-hook~          | Hook for parent buffer initialization.  |
 | ~dirvish-preview-setup-hook~ | Hook for preview buffer initialization. |
+|----------------------------+-----------------------------------------|
 
 ** Extensions
 *** Transient based help menu (dirvish-menu.el)
@@ -156,18 +175,16 @@ meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
   
 *** Minibuffer file preview (dirvish-peek.el)
 
-~dirvish-peek-mode~ is an extension which provides ~dirvish-peek-mode~ to preview
-file when narrowing file/directory candidates using minibuffer.
+~dirvish-peek-mode~ gives you a preview window when narrowing file candidates
+using minibuffer. It displays file preview for all of the file name narrowing
+commands in the same way as =dirvish= command.
 
-- Why does this feature exist? ::
+https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-908e-f5d91ba316a6.mp4
 
-  *Dirvish* and *minibuffer* seem unrelated at first glance. But when it comes to
-  display a file preview, they actually share the same mechanism, that is: /get
-  file path under the cursor and update preview window accordingly./ Displaying
-  minibuffer file preview in a "dirvish" way, not only a lot of source code can
-  be reused, but also related user configurations.  In other words, you don't
-  have to configure file preview for dirvish and for minibuffer separately, they
-  will always /display the same thing./
+*Figure 5.* A demo of ~find-library~ and ~find-file~ commands after ~dirvish-peek-mode~ enabled.
+
+The ~dirvish-peek-display-alist~ option allows you to control the window placement
+of the peek window.
 
 This extension is currently only available for *vertico/selectrum*.
 
@@ -183,6 +200,7 @@ See Figure 4. in [[https://github.com/alexluigit/dirvish/#screenshots][README.or
 *** Extra commands, attributes, or preview dispatchers (dirvish-extras.el)
 **** Commands
 
+|------------------------------------+------------------------------------------|
 | Command                            | Description                              |
 |------------------------------------+------------------------------------------|
 | ~dirvish-show-history~               | Navigate to recently visited directories |
@@ -193,6 +211,7 @@ See Figure 4. in [[https://github.com/alexluigit/dirvish/#screenshots][README.or
 | ~dirvish-copy-file-directory~        | Copy the parent file path                |
 | ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"      |
 | ~dirvish-roam~                       | Browse all directories using ~fd~ command  |
+|------------------------------------+------------------------------------------|
 
 **** Attributes
 
@@ -210,11 +229,13 @@ attributes.
 
 **** Customization options
 
+|------------------------+---------+-----------------------------------------|
 | Option                 | Type    | Description                             |
 |------------------------+---------+-----------------------------------------|
 | ~dirvish-icon-size~      | Integer | Icon size used for =vscode-icon=          |
 | ~dirvish-icon-delimiter~ | String  | The delimiter between icon and filename |
 | ~dirvish-icon-palette~   | Option  | Palette style used for =all-the-icons=    |
+|------------------------+---------+-----------------------------------------|
 
 *** Toggle Dirvish in side window (dirvish-side.el)
 
@@ -257,6 +278,7 @@ of the window.
 
 (use-package dirvish
   :custom
+  (dirvish-attributes '(vscode-icon file-size))
   (dirvish-bookmarks-alist
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
@@ -265,7 +287,9 @@ of the window.
   :config
   (dirvish-override-dired-mode)
   (dirvish-peek-mode)
-  (setq dirvish-attributes '(vscode-icon file-size))
+  ;; In case you want the details at startup like `dired'
+  ;; :hook
+  ;; (dirvish-mode . (lambda () (dired-hdide-details-mode -1)))
   :bind
   (:map dired-mode-map
         ("SPC" . dirvish-show-history)

@@ -9,22 +9,14 @@
 ;; Package-Requires: ((emacs "27.1"))
 
 ;;; Commentary:
-
-;; `dirvish' is a minimalistic file manager based on `dired-mode'.  It is
-;; inspired by ranger (see https://github.com/ranger/ranger), which is a
-;; terminal file manager that shows a stack of the parent directories, and
-;; updates its parent buffers while navigating the file system with an optional
-;; preview window at side showing the content of the selected file.
-
-;; Unlike `ranger.el', which tries to become an all-around emulation of ranger,
-;; dirvish.el is more bare-bone, meaning it does NOT try to port all "goodness"
-;; from ranger, instead, it tries to:
+;; A minimalistic yet versatile file manager based on Dired.
+;; This package gives Dired the following features:
 ;;
-;;   - provides a better Dired UI
-;;   - make some Dired commands more intuitive
-;;   - keep all your Dired key bindings
+;; - Multiple window layouts
+;; - Isolated sessions
+;; - A modern and composable user interface
 ;;
-;; The name `dirvish' is a tribute to `vim-dirvish'.
+;; A Dired, a ranger, a neotree, this is Dirvish.
 
 ;;; Code:
 
