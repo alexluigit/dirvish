@@ -30,9 +30,7 @@ get all available attributes by evaluating:
 (define-obsolete-variable-alias 'dirvish-preview-cmd-alist 'dirvish-preview-dispatchers "0.9.7")
 
 (defcustom dirvish-preview-dispatchers
-  `(,(if (memq system-type '(windows-nt ms-dos)) 'directory-dired 'directory-exa)
-    text gif image video audio epub archive
-    ,(if (require 'pdf-tools nil t) 'pdf-tools 'pdf-preface))
+  `(text gif image video audio epub archive ,(if (require 'pdf-tools nil t) 'pdf-tools 'pdf-preface))
   "List of preview dispatchers.
 Preview dispatchers are defined by `dirvish-define-preview'.  It
 holds a function that takes current filename and dirvish session

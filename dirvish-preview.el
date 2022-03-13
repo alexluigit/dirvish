@@ -69,16 +69,6 @@ When PROC finishes, fill preview buffer with process result."
                     '("iso" "bin" "exe" "gpg" "elc" "eln")))
     `(info . ,(format "File %s is not readable or in the preview blacklist." file))))
 
-(dirvish-define-preview directory-exa (file)
-  "Uses `exa' to generate directory preview."
-  (when (file-directory-p file)
-    `(shell . ("exa" "--color=always" "-al" ,file))))
-
-(dirvish-define-preview directory-dired (file)
-  "Uses Dired to generate directory preview."
-  (when (file-directory-p file)
-    `(buffer . ,(dired-noselect file))))
-
 (dirvish-define-preview text (file)
   "Open FILE with `find-file-noselect'."
   (when (string-match "text/" (or (mailcap-file-name-to-mime-type file) ""))
@@ -166,7 +156,7 @@ When PROC finishes, fill preview buffer with process result."
         (filesize (file-attribute-size (file-attributes file)))
         (enable-local-variables nil))
     (cond ((file-directory-p file) ; in case user did not specify a directory dispatcher
-           (dirvish-directory-dired-preview-dp file nil))
+           `(buffer . ,(dired-noselect file)))
           ((> filesize threshold) ; do not preview too large files
            `(info . ,(format "File %s is too big for literal preview." file)))
           (t
