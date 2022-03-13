@@ -135,9 +135,10 @@ FRAME defaults to the currently selected frame."
   (or (frame-parameter frame 'dirvish--hash)
       (make-hash-table)))
 
-(defun dirvish-get-all (slot &optional all-frame)
-  "Gather slot value SLOT of all Dirvish in `dirvish-hash' as a flattened list.
-If optional ALL-FRAME is non-nil, collect SLOT for all frames."
+(defun dirvish-get-all (slot &optional all-frame flatten)
+  "Gather slot value SLOT of all Dirvish in `dirvish-hash'.
+If ALL-FRAME is non-nil, collect for all frames.
+If FLATTEN is non-nil, collect them as a flattened list."
   (let* ((dv-slot (intern (format "dv-%s" slot)))
          (all-vals (if all-frame
                        (mapcar (lambda (fr)
@@ -145,7 +146,7 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
                                    (mapcar dv-slot (hash-table-values (dirvish-hash)))))
                                (frame-list))
                      (mapcar dv-slot (hash-table-values (dirvish-hash))))))
-    (delete-dups (flatten-tree all-vals))))
+    (if flatten (delete-dups (flatten-tree all-vals)) (apply #'append all-vals))))
 
 (cl-defstruct
     (dirvish
@@ -180,6 +181,9 @@ If optional ALL-FRAME is non-nil, collect SLOT for all frames."
   (read-only-depth
    dirvish-depth
    :read-only t :documentation "TODO.")
+  (scopes
+   ()
+   :documentation "TODO.")
   (transient
    nil
    :documentation "TODO.")
@@ -263,7 +267,8 @@ restore them after."
     (setq keywords (reverse keywords))
     `(let ((dv (make-dirvish ,@keywords)))
        (unless (frame-parameter nil 'dirvish--hash)
-         (add-hook 'window-selection-change-functions #'dirvish-reclaim)
+         (pcase-dolist (`(,file ,h-name ,h-fn) dirvish-hook-alist)
+           (when (require file nil t) (add-hook h-name h-fn)))
          (set-frame-parameter nil 'dirvish--hash (make-hash-table :test 'equal)))
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given
@@ -330,9 +335,14 @@ by this instance."
          (preview-dps
           (cl-loop for dp-name in (append '(disable) (dv-raw-preview-dps dv) '(default))
                    for dp-func-name = (intern (format "dirvish-%s-preview-dp" dp-name))
-                   collect dp-func-name)))
+                   collect dp-func-name))
+         (scopes (cl-loop with res-plist = `(:dv ,dv)
+                          for (key value) on dirvish-scopes by 'cddr
+                          do (setq res-plist (append res-plist (list key (funcall value))))
+                          finally return res-plist)))
     (setf (dv-attributes-alist dv) attrs-alist)
     (setf (dv-preview-dispatchers dv) preview-dps)
+    (setf (dv-scopes dv) scopes)
     (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
     (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))
 
@@ -402,6 +412,18 @@ If the buffer is not available, create it with `dired-noselect'."
             (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv))))
     buffer))
 
+(defun dirvish--deactivate-for-tab (tab _only-tab)
+  "Deactivate all dvs in TAB."
+  (dolist (scope (dirvish-get-all 'scopes t))
+    (when (eq (plist-get scope :tab) (tab-bar--tab-index tab))
+      (dirvish-deactivate (plist-get scope :dv)))))
+
+(defun dirvish--deactivate-for-frame (frame)
+  "Deactivate all dvs in FRAME."
+  (dolist (scope (dirvish-get-all 'scopes t))
+    (when (eq (plist-get scope :frame) frame)
+      (dirvish-deactivate (plist-get scope :dv)))))
+
 (defun dirvish-activate (dv)
   "Activate dirvish instance DV."
   (setq tab-bar-new-tab-choice "*scratch*")
@@ -423,12 +445,12 @@ If the buffer is not available, create it with `dired-noselect'."
 (defun dirvish-deactivate (dv)
   "Deactivate dirvish instance DV."
   (dirvish-kill dv
-    (unless (dirvish-get-all 'name t)
+    (unless (dirvish-get-all 'name t t)
       (setq other-window-scroll-buffer nil)
       (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
       (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm)))))
   (run-hooks 'dirvish-deactivation-hook)
-  (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t))))
+  (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t))))
 
 (defun dirvish-dired-p (&optional dv)
   "Return t if DV is a `dirvish-dired' instance.

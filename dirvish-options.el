@@ -168,6 +168,11 @@ format as `mode-line-format'.  Set it to nil hides the footer."
     (lsp-mode      lsp-deferred                    dirvish-ignore-ad)
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
     (recentf       recentf-track-closed-file       dirvish-ignore-ad)))
+(defvar dirvish-scopes '(:tab tab-bar--current-tab-index :frame selected-frame))
+(defvar dirvish-hook-alist
+  '((emacs window-selection-change-functions dirvish-reclaim)
+    (emacs tab-bar-tab-pre-close-functions   dirvish--deactivate-for-tab)
+    (emacs delete-frame-functions            dirvish--deactivate-for-frame)))
 (defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
