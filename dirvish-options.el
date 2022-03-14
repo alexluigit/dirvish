@@ -137,6 +137,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-built-in-attrs '(hl-line symlink-target))
 (defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99)))
 (defconst dirvish--footer-remap-alist '((mode-line-inactive mode-line)))
+(defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defvar dirvish-advice-alist
   '((files         find-file                       dirvish-find-file-ad           :before)
     (dired         dired                           dirvish-dired-ad)
