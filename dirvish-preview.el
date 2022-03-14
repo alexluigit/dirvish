@@ -19,14 +19,16 @@
   "Get corresponding image width or HEIGHT in WINDOW."
   (floor (* dirvish-preview-image-scale (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
 
-(defun dirvish--get-image-cache-for-file (file size &optional ext)
+(defun dirvish--get-image-cache-for-file (file size &optional ext no-mkdir)
   "Get image cache filepath for FILE.
 SIZE is window pixelwise width of current dirvish preview window.
 A optional extension EXT, such as \".jpg\", can be given to the
-cache image."
-  (let ((cache (concat dirvish-cache-dir (number-to-string size) file)))
-    (unless (file-exists-p cache)
-      (make-directory (file-name-directory cache) t))
+cache image. A new directory is created unless NO-MKDIR."
+  (let ((cache (concat dirvish-cache-dir (number-to-string size)
+                       (when dirvish--os-windows-p "/")
+                       (replace-regexp-in-string ":" "" file))))
+    (and (not no-mkdir) (not (file-exists-p cache))
+         (make-directory (file-name-directory cache) t))
     (concat cache ext)))
 
 (defun dirvish-preview--insert-image (image dv)
@@ -47,7 +49,7 @@ cache image."
       (setq size (dirvish--preview-image-size win))
       (dolist (file fileset)
         (mapc #'delete-file (file-expand-wildcards
-                             (dirvish--get-image-cache-for-file file size ".*") t))))))
+                             (dirvish--get-image-cache-for-file file size ".*" t) t))))))
 
 (defun dirvish--preview-process-fill-str-sentinel (proc _exitcode)
   "A sentinel for dirvish preview process.
