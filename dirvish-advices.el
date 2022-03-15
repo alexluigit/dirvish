@@ -130,13 +130,12 @@ If ALL-FRAMES, search target directories in all frames."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args)))
 
 (defun dirvish-find-file-ad (&rest _)
-  "Quit Dirvish session if inside one.
-Use it as a `:before' advisor to target function."
-  (let* ((dv (dirvish-curr))
-         (dv-tran (and dv (dv-transient dv))))
-    (if dv-tran
-        (dirvish--end-transient dv-tran)
-      (and dv (dirvish-deactivate dv)))))
+  "Quit Dirvish session if inside one."
+  (when-let* ((dv (dirvish-curr)))
+    (if-let ((transient (dv-transient dv)))
+        (dirvish--end-transient transient)
+      (select-window (funcall (dv-find-file-window-fn dv)))
+      (when (dirvish-live-p dv) (dirvish-deactivate dv)))))
 
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."

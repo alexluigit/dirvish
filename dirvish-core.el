@@ -165,7 +165,9 @@ If FLATTEN is non-nil, collect them as a flattened list."
        (root-window-fn (let ((fn (intern (format "dirvish-%s-root-window-fn" type))))
                          (if (functionp fn) fn #'frame-selected-window)))
        (header-string-fn (let ((fn (intern (format "dirvish-%s-header-string-fn" type))))
-                         (if (functionp fn) fn (symbol-value 'dirvish-header-string-function))))
+                           (if (functionp fn) fn (symbol-value 'dirvish-header-string-function))))
+       (find-file-window-fn (let ((fn (intern (format "dirvish-%s-find-file-window-fn" type))))
+                              (if (functionp fn) fn #'selected-window)))
        (quit-window-fn (let ((fn (intern (format "dirvish-%s-quit-window-fn" type))))
                          (if (functionp fn) fn #'ignore))))))
   "Define dirvish data type."
@@ -213,6 +215,9 @@ If FLATTEN is non-nil, collect them as a flattened list."
    :documentation "is the main dirvish window.")
   (header-string-fn
    (symbol-value 'dirvish-header-string-function)
+   :documentation "TODO.")
+  (find-file-window-fn
+   #'selected-window
    :documentation "TODO.")
   (quit-window-fn
    #'ignore
