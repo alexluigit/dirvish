@@ -59,6 +59,16 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
   "Display alist for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
+(defcustom dirvish-side-open-file-window-function
+  (lambda () (get-mru-window nil nil t))
+  "A function that returns a window for the `find-file' buffer.
+This function is called before opening files in a `dirvish-side'
+session.  For example, if you have `ace-window' installed, you
+can set it to `ace-select-window', which prompts you for a target
+window to place the file buffer.  Note that if this value is
+`selected-window', the session closes after opening a file."
+  :group 'dirvish :type 'function)
+
 (defun dirvish-side--scope ()
   (cl-case dirvish-side-scope
     ('emacs 'emacs)
@@ -80,6 +90,11 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
     (when dv (dirvish-deactivate dv))
     (setq dirvish-side--state-alist
           (delq (assoc scope dirvish-side--state-alist) dirvish-side--state-alist))))
+
+(defun dirvish-side-find-file-window-fn ()
+  (if (window-parameter (selected-window) 'window-side)
+      (funcall dirvish-side-open-file-window-function)
+    (selected-window)))
 
 (defun dirvish-side-quit-window-fn (_dv)
   (dirvish-side--set-state nil 'uninitialized)
