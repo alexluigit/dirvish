@@ -15,10 +15,8 @@
 ;;; Code:
 
 (require 'dirvish)
-(require 'project)
 (declare-function get-current-persp "persp-mode")
 (declare-function persp-curr "perspective")
-(defconst dirvish--project-root-fn (if (< emacs-major-version 29) #'cdr #'project-root))
 
 (defvar dirvish-side--state-alist '())
 
@@ -109,18 +107,13 @@ window to place the file buffer.  Note that if this value is
   "Return a string showing current project."
   (when-let ((dv (dirvish-curr)))
     (with-current-buffer (window-buffer (dv-root-window dv))
-      (let ((project (dirvish-side--get-project-root)))
+      (let ((project (dirvish--get-project-root)))
         (if project
             (setq project (file-name-base (directory-file-name project)))
           (setq project "-"))
         (format " %s [%s]"
                 (propertize "Project:" 'face 'bold)
                 (propertize project 'face 'font-lock-string-face))))))
-
-(defun dirvish-side--get-project-root (&optional path)
-  (if-let ((pr-curr (project-current)))
-      (funcall dirvish--project-root-fn pr-curr)
-    path))
 
 ;;;###autoload
 (defun dirvish-side (&optional path)
@@ -143,7 +136,7 @@ otherwise it defaults to `project-current'."
       ('uninitialized
        (dirvish-activate
         (dirvish-new
-          :path (dirvish-side--get-project-root (dirvish--ensure-path path))
+          :path (or path (dirvish--get-project-root) (dirvish--ensure-path))
           :depth -1
           :type 'side))
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
