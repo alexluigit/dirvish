@@ -81,7 +81,7 @@ directory in another window."
   "Find file in dirvish buffer.
 FILE can be a file or a directory, if nil then infer entry from
 variable `buffer-file-name'.  If IGNORE-HIST is non-nil, do not
-update `dirvish-history-ring'."
+update `dirvish--history-ring'."
   (interactive)
   (let* ((entry (or file (dired-get-filename nil t)))
          (bname (buffer-file-name (current-buffer)))
@@ -93,10 +93,10 @@ update `dirvish-history-ring'."
           (let* ((entry (file-name-as-directory (expand-file-name entry)))
                  (hist (directory-file-name entry))
                  enable-dir-local-variables)
-            (unless ignore-hist
-              (when (or (ring-empty-p dirvish-history-ring)
-                        (not (eq hist (ring-ref dirvish-history-ring 0))))
-                (ring-insert dirvish-history-ring hist)))
+            (when (and dirvish--history-ring (not ignore-hist))
+              (when (or (ring-empty-p dirvish--history-ring)
+                        (not (eq hist (ring-ref dirvish--history-ring 0))))
+                (ring-insert dirvish--history-ring hist)))
             (switch-to-buffer (dirvish--buffer-for-dir dv entry))
             (setq dirvish--child-entry (or bname (expand-file-name default-directory)))
             (when (dirvish-p dv-tran)
