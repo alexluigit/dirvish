@@ -81,7 +81,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
               (with-current-buffer (other-buffer)
                 (and (derived-mode-p 'dirvish-mode) (dv-depth (dirvish-curr)))))
              (new-dv (dirvish-new :type 'find-dired :dedicated t)))
-        (add-to-list 'dirvish-transient-dvs new-dv)
+        (add-to-list 'dirvish--transient-dvs new-dv)
         (setf (dv-transient new-dv) (or last-dv new-dv))
         (dirvish-activate new-dv)
         (setf (dv-depth new-dv) (or last-depth 0))

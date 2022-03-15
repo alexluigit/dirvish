@@ -17,7 +17,7 @@
 
 (defun dirvish--preview-image-size (window &optional height)
   "Get corresponding image width or HEIGHT in WINDOW."
-  (floor (* dirvish-preview-image-scale (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
+  (floor (* dirvish--preview-img-scale (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
 
 (defun dirvish--get-image-cache-for-file (file size &optional ext no-mkdir)
   "Get image cache filepath for FILE.
@@ -96,7 +96,7 @@ When PROC finishes, fill preview buffer with process result."
            (cache (dirvish--get-image-cache-for-file file width ".jpg")))
       (cond ((file-exists-p cache)
              `(image . ,(create-image cache nil nil :max-width width :max-height height)))
-            ((or (< (nth 7 (file-attributes file)) dirvish-preview-image-threshold)
+            ((or (< (nth 7 (file-attributes file)) dirvish--preview-img-threshold)
                  (string-prefix-p (expand-file-name dirvish-cache-dir) file))
              `(image . ,(create-image file nil nil :max-width width :max-height height)))
             (t `(image-cache . ("convert" "-resize" ,(number-to-string width) ,file ,cache)))))))

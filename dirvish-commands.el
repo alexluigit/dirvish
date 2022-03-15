@@ -11,8 +11,6 @@
 ;;; Code:
 
 (require 'dirvish-builder)
-(require 'ring)
-(require 'dired)
 
 (defun dirvish-up-directory (&optional other-window)
   "Run Dirvish on parent directory of current directory.

@@ -11,7 +11,6 @@
 ;;; Code:
 
 (require 'dirvish-options)
-(require 'dired-x)
 (require 'project)
 
 (defmacro dirvish-repeat (func delay interval &rest args)
@@ -19,12 +18,12 @@
   (let ((timer (intern (format "%s-timer" func))))
     `(progn
        (defvar ,timer nil)
-       (add-to-list 'dirvish-repeat-timers ',timer)
+       (add-to-list 'dirvish--repeat-timers ',timer)
        (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
 
 (defmacro dirvish-debounce (label &rest body)
   "Debouncing the execution of BODY.
-The BODY runs after the idle time `dirvish-debouncing-delay'.
+The BODY runs after the idle time `dirvish--debouncing-delay'.
 Multiple calls under the same LABEL are ignored."
   (declare (indent defun))
   (let* ((timer (intern (format "dirvish-%s-debouncing-timer" label)))
@@ -32,7 +31,7 @@ Multiple calls under the same LABEL are ignored."
     `(progn
        (defvar ,timer nil)
        (unless (timerp ,timer)
-         (setq ,timer (run-with-idle-timer dirvish-debouncing-delay nil ,do-once))))))
+         (setq ,timer (run-with-idle-timer dirvish--debouncing-delay nil ,do-once))))))
 
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."

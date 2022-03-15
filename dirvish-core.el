@@ -289,7 +289,7 @@ by this instance."
        (let ((conf (dv-window-conf ,dv)))
          (when (and (not (dirvish-dired-p ,dv)) (window-configuration-p conf))
            (set-window-configuration conf))
-         (setq dirvish-transient-dvs (delete dv dirvish-transient-dvs))
+         (setq dirvish--transient-dvs (delete dv dirvish--transient-dvs))
          (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
            (mapc #'kill-when-live (dv-dired-buffers ,dv))
            (mapc #'kill-when-live (dv-preview-buffers ,dv))
@@ -331,7 +331,7 @@ by this instance."
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
   (when dirvish-attributes (mapc #'require dirvish-extra-libs))
-  (let* ((attr-names (append dirvish-built-in-attrs (dv-raw-attributes dv)))
+  (let* ((attr-names (append dirvish--builtin-attrs (dv-raw-attributes dv)))
          (attrs-alist
           (cl-loop for name in attr-names
                    for attr = (cdr-safe (assoc name dirvish--available-attrs))
@@ -358,7 +358,7 @@ by this instance."
   (let* ((attrs (dv-attributes-alist dv))
          (curr-pos (point))
          (fr-h (frame-height))
-         (fns (cl-loop with (left-w . right-w) = (cons dirvish-prefix-spaces 0)
+         (fns (cl-loop with (left-w . right-w) = (cons dirvish--prefix-spaces 0)
                        for (ov pred fn left right) in attrs
                        do (remove-overlays (point-min) (point-max) ov t)
                        for valid = (funcall pred dv)
@@ -452,8 +452,8 @@ If the buffer is not available, create it with `dired-noselect'."
   (dirvish-kill dv
     (unless (dirvish-get-all 'name t t)
       (setq other-window-scroll-buffer nil)
-      (setq tab-bar-new-tab-choice dirvish-saved-new-tab-choice)
-      (dolist (tm dirvish-repeat-timers) (cancel-timer (symbol-value tm)))))
+      (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+      (dolist (tm dirvish--repeat-timers) (cancel-timer (symbol-value tm)))))
   (run-hooks 'dirvish-deactivation-hook)
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t))))
 
