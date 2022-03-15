@@ -289,7 +289,7 @@ of the window.
   (dirvish-peek-mode)
   ;; In case you want the details at startup like `dired'
   ;; :hook
-  ;; (dirvish-mode . (lambda () (dired-hdide-details-mode -1)))
+  ;; (dirvish-mode . (lambda () (dired-hide-details-mode -1)))
   :bind
   (:map dired-mode-map
         ("SPC" . dirvish-show-history)
