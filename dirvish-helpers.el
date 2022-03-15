@@ -12,6 +12,7 @@
 
 (require 'dirvish-options)
 (require 'dired-x)
+(require 'project)
 
 (defmacro dirvish-repeat (func delay interval &rest args)
   "Execute FUNC with ARGS in every INTERVAL after DELAY."
@@ -39,7 +40,7 @@ Multiple calls under the same LABEL are ignored."
     (ansi-color-apply-on-region
      pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
 
-(defun dirvish--ensure-path (path)
+(defun dirvish--ensure-path (&optional path)
   "Return a valid file path based on PATH."
   (let ((f (or path buffer-file-name)))
     (expand-file-name (if f (file-name-directory f) default-directory))))
@@ -82,6 +83,10 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--ensure-temp-buffer ()
   "Ensure a temporary buffer."
   (get-buffer-create " *Dirvish-temp*"))
+
+(defun dirvish--get-project-root ()
+  "Get root path of current project."
+  (car-safe (last (project-current))))
 
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."

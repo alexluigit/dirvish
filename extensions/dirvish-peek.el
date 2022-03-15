@@ -80,7 +80,7 @@ invoked when file name under cursor in minibuffer changed."
       ('file
        (setq cand (expand-file-name cand)))
       ('project-file
-       (setq cand (expand-file-name cand (or (cdr-safe (project-current))
+       (setq cand (expand-file-name cand (or (dirvish--get-project-root)
                                              (car (minibuffer-history-value))))))
       ('library
        (setq cand (file-truename (or (ignore-errors (find-library-name cand)) "")))))
