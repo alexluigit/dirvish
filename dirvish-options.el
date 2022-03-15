@@ -47,9 +47,12 @@ dispatchers can handle the preview, the fallback dispatcher named
   "Preview / thumbnail cache directory for dirvish."
   :group 'dirvish :type 'string)
 
+(defvar dirvish--history-ring nil)
 (defcustom dirvish-history-length 30
-  "Length of history dirvish will track."
-  :group 'dirvish :type 'integer)
+  "Length of directory visiting history Dirvish will track.
+Set it to nil disables the history tracking."
+  :group 'dirvish :type '(choice (integer nil))
+  :set (lambda (k v) (set k v) (setq dirvish--history-ring (and v (make-ring v)))))
 
 (defcustom dirvish-depth 1
   "Level of directories to traverse up."
@@ -171,7 +174,6 @@ format as `mode-line-format'.  Set it to nil hides the footer."
   '((emacs window-selection-change-functions dirvish-reclaim)
     (emacs tab-bar-tab-pre-close-functions   dirvish--deactivate-for-tab)
     (emacs delete-frame-functions            dirvish--deactivate-for-frame)))
-(defvar dirvish-history-ring (make-ring dirvish-history-length))
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
 (defvar dirvish-extra-libs '(dirvish-extras dirvish-vc))

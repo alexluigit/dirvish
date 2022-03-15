@@ -146,11 +146,11 @@ Values are interpreted as follows:
       (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
 
 ;;;###autoload
-(defun dirvish-show-history (&optional history)
-  "Select a target directory from HISTORY and open it in Dirvish."
+(defun dirvish-show-history ()
+  "Open a target directory from `dirvish--history-ring'."
   (interactive)
-  (setq history (or history (ring-elements dirvish-history-ring)))
-  (let* ((history-w/metadata (dirvish--append-metadata 'file history))
+  (unless (ring-p dirvish--history-ring) (user-error "Dirvish: history tracking has been disabled"))
+  (let* ((history-w/metadata (dirvish--append-metadata 'file (ring-elements dirvish--history-ring)))
          (result (completing-read "Recently visited: " history-w/metadata)))
       (when result (dirvish-find-file result))))
 
@@ -158,7 +158,8 @@ Values are interpreted as follows:
 (defun dirvish-other-buffer ()
   "Switch to the most recently visited dirvish buffer."
   (interactive)
-  (dirvish-find-file (ring-ref dirvish-history-ring 1)))
+  (unless (ring-p dirvish--history-ring) (user-error "Dirvish: history tracking has been disabled"))
+  (dirvish-find-file (ring-ref dirvish--history-ring 1)))
 
 ;;;###autoload
 (defun dirvish-find-file-true-path ()
