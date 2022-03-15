@@ -88,10 +88,6 @@
   (when-let ((dv (and (dirvish-live-p) (dirvish-curr))))
     (unless (dv-transient dv) (dirvish-build))))
 
-(defun dirvish-hide-details-h ()
-  "Hide other parent windows when showing Dired details."
-  (if dired-hide-details-mode (dirvish-build) (dirvish--enlarge)))
-
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
@@ -161,8 +157,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (depth (if (dv-dedicated dv) 0 (dv-depth dv)))
          (i 0))
     (dirvish-setup dirvish--curr-name)
-    (unless (dirvish-dired-p dv)
-      (add-hook 'dired-hide-details-mode-hook #'dirvish-hide-details-h nil :local))
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)
@@ -183,7 +177,9 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                  (window (display-buffer buffer `(dirvish--display-buffer . ,win-alist))))
             (with-selected-window window
               (setq-local dirvish--child-entry current)
-              (dirvish-setup))))))))
+              (dirvish-setup)
+              ;; always hide details in parent windows
+              (let (dired-hide-details-mode-hook) (dired-hide-details-mode t)))))))))
 
 (defun dirvish--build-preview (dv)
  "Create a window showing preview for DV."
