@@ -157,6 +157,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (depth (if (dv-dedicated dv) 0 (dv-depth dv)))
          (i 0))
     (dirvish-setup dirvish--curr-name)
+    (when (window-parameter (selected-window) 'window-side)
+      (setq-local window-size-fixed 'width))
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)
