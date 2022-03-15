@@ -111,7 +111,7 @@
   (if-let ((dv (gethash dirvish--curr-name (dirvish-hash))))
       (dirvish-deactivate dv)
     (kill-current-buffer))
-  (switch-to-buffer dirvish-temp-buffer))
+  (switch-to-buffer (dirvish--ensure-temp-buffer)))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.

@@ -101,10 +101,9 @@ window to place the file buffer.  Note that if this value is
   (when (window-parameter (selected-window) 'window-side) (delete-window)))
 
 (defun dirvish-side-root-window-fn ()
-  "Display `dirvish-temp-buffer' at side window."
-  (let* ((buf (get-buffer-create dirvish-temp-buffer))
-         (win (display-buffer-in-side-window buf dirvish-side-display-alist)))
-    (select-window win)))
+  "Display a window according to `dirvish-side-display-alist'."
+  (select-window
+   (display-buffer-in-side-window (dirvish--ensure-temp-buffer) dirvish-side-display-alist)))
 
 (defun dirvish-side-header-string-fn ()
   "Return a string showing current project."

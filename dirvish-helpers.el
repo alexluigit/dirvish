@@ -79,6 +79,10 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
+(defun dirvish--ensure-temp-buffer ()
+  "Ensure a temporary buffer."
+  (get-buffer-create " *Dirvish-temp*"))
+
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))

@@ -25,7 +25,7 @@ directory in another window."
         (user-error "Dirvish: you're in root directory")
       (if other-window
           (progn
-            (switch-to-buffer-other-window dirvish-temp-buffer)
+            (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
             (dirvish-activate (dirvish-new :path (dirvish--ensure-path parent) :depth -1)))
         (dirvish-find-file parent t)))))
 

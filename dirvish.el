@@ -50,7 +50,7 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'.  Execute it
 in other window when OTHER-WINDOW is non-nil."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish dired: ")) nil))
-  (and other-window (switch-to-buffer-other-window dirvish-temp-buffer))
+  (and other-window (switch-to-buffer-other-window (dirvish--ensure-temp-buffer)))
   (dirvish-activate (dirvish-new :path (dirvish--ensure-path path) :depth -1)))
 
 (provide 'dirvish)
