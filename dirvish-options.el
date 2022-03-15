@@ -133,7 +133,6 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish-preview-image-scale 0.92)
 (defconst dirvish-footer-repeat 0.1)
 (defconst dirvish-saved-new-tab-choice tab-bar-new-tab-choice)
-(defconst dirvish-temp-buffer (generate-new-buffer " *Dirvish temp*"))
 (defconst dirvish-built-in-attrs '(hl-line symlink-target))
 (defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99)))
 (defconst dirvish--footer-remap-alist '((mode-line-inactive mode-line)))
