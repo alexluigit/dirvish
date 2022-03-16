@@ -223,6 +223,50 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
       (dirvish-build)
       (current-buffer))))
 
+(defun dirvish--noselect-async-sentinel (proc _state)
+  "Sentinel for `dirvish--noselect-async''s Dired PROC."
+  (with-current-buffer (process-buffer proc)
+    (let (buffer-read-only)
+      (delete-region (point-min) (+ (point-min) (process-get proc 'len)))
+      (delete-region (progn (goto-char (point-max)) (forward-line -1) (point)) (point-max)))
+    (dirvish--hide-dired-header)
+    (dirvish-debounce layout (dirvish-update-body-h))))
+
+(defun dirvish--noselect-async (entry dired-switches)
+  "Open ENTRY with DIRED-SWITCHES asynchronously."
+  (with-current-buffer (generate-new-buffer "Dirvish-cache")
+    (let* ((info "[DIRVISH] caching directory...\n")
+           (buf (prog1 (current-buffer) (insert info)))
+           (async-cmd `(with-current-buffer (dired-noselect ,entry ,dired-switches)
+                         (buffer-substring-no-properties (point-min) (point-max))))
+           (proc (start-process (buffer-name buf) buf "emacs" "-q" "-batch" "--eval"
+                                (format "(message \"%%s\" %S)" async-cmd))))
+      (setq default-directory entry)
+      (setq dired-subdir-alist (list (cons entry (point-min-marker))))
+      (dirvish-mode)
+      (dirvish-setup t)
+      (set-process-sentinel proc #'dirvish--noselect-async-sentinel)
+      (process-put proc 'len (length info))
+      (setq revert-buffer-function #'ignore) ; TODO
+      (setq-local dirvish--dired-async-p t)
+      buf)))
+
+(defun dirvish--buffer-for-dir (dv entry &optional parent)
+  "Return the root or PARENT buffer in DV for ENTRY.
+If the buffer is not available, create it with `dired-noselect'."
+  (let* ((dir-buf (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv)))
+         (buffer (alist-get entry dir-buf nil nil #'equal))
+         (sorter (cdr (dv-sort-criteria dv)))
+         (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
+    (unless buffer
+      (let ((files-count (length (directory-files entry nil nil t))))
+        (if (> files-count dirvish-async-listing-threshold)
+            (setq buffer (dirvish--noselect-async entry switches))
+          (setq buffer (dired-noselect entry switches))))
+      (push (cons entry buffer)
+            (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv))))
+    buffer))
+
 (defun dirvish-build ()
   "Build dirvish layout."
   (let ((dv (dirvish-curr)))
