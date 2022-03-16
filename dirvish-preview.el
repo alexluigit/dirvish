@@ -67,8 +67,7 @@ When PROC finishes, fill preview buffer with process result."
   "Disable preview in some cases."
   (when (or (not (file-exists-p file))
             (not (file-readable-p file))
-            (member (file-name-extension file)
-                    '("iso" "bin" "exe" "gpg" "elc" "eln")))
+            (member (file-name-extension file) dirvish-preview-disabled-exts))
     `(info . ,(format "File %s is not readable or in the preview blacklist." file))))
 
 (dirvish-define-preview text (file)

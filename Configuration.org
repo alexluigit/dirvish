@@ -38,8 +38,9 @@ want further customizations.
 | ~dirvish-header-string-function~ | Function | Default header string               |
 | ~dirvish-face-remap-alist~       | Alist    | Remapping faces in Dirvish window   |
 | ~dirvish-mode-line-format~       | Cons     | Mode line format in root window     |
-| ~dirvish-attributes~             | List     | See [[#Extra-attributes][Extra attributes]]                |
+| ~dirvish-preview-disabled-exts~  | List     | Disable preview for some filetypes  |
 | ~dirvish-preview-dispatchers~    | List     | See [[#Preview-strategies][Preview strategies]]              |
+| ~dirvish-attributes~             | List     | See [[#Extra-attributes][Extra attributes]]                |
 |--------------------------------+----------+-------------------------------------|
 
 Consult the docstring of the options for details.

@@ -42,6 +42,11 @@ dispatchers can handle the preview, the fallback dispatcher named
 `default' is used.  For details see `dirvish-preview-dispatch'."
   :group 'dirvish :type 'hook)
 
+(defcustom dirvish-preview-disabled-exts
+  '("iso" "bin" "exe" "gpg" "elc" "eln")
+  "Do not preview files end with these extensions."
+  :group 'dirvish :type 'list)
+
 (defcustom dirvish-cache-dir
   (concat (or (getenv "XDG_CACHE_HOME") (concat (getenv "HOME") "/.cache")) "/dirvish/")
   "Preview / thumbnail cache directory for dirvish."
