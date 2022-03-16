@@ -10,6 +10,7 @@
 
 ;;; Code:
 
+(declare-function dirvish-find-file "dirvish-commands")
 (require 'dirvish-helpers)
 (require 'face-remap)
 (require 'ansi-color)
@@ -377,6 +378,8 @@ by this instance."
                 (l-beg (line-beginning-position))
                 (l-end (line-end-position))
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
+            (when dirvish--dired-async-p
+              (let (buffer-read-only) (dired-insert-set-properties l-beg l-end)))
             (dolist (fn fns) (funcall fn f-name f-attrs f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
 
@@ -403,19 +406,6 @@ by this instance."
                             `((space :align-to (- (+ right right-fringe right-margin)
                                                   ,(string-width fmt-right)))))
                 fmt-right)))))
-
-(defun dirvish--buffer-for-dir (dv entry &optional parent)
-  "Return the root or PARENT buffer in DV for ENTRY.
-If the buffer is not available, create it with `dired-noselect'."
-  (let* ((dir-buf (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv)))
-         (buffer (alist-get entry dir-buf nil nil #'equal))
-         (sorter (cdr (dv-sort-criteria dv)))
-         (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
-    (unless buffer
-      (setq buffer (dired-noselect entry switches))
-      (push (cons entry buffer)
-            (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv))))
-    buffer))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
   "Deactivate all dvs in TAB."

@@ -52,6 +52,12 @@ dispatchers can handle the preview, the fallback dispatcher named
   "Preview / thumbnail cache directory for dirvish."
   :group 'dirvish :type 'string)
 
+(defcustom dirvish-async-listing-threshold most-positive-fixnum
+  "Threshold to invoke async directory listing.
+For example, if the value is 10000, then directories with over
+10000 files will be opened asynchronously."
+  :group 'dirvish :type 'integer)
+
 (defvar dirvish--history-ring nil)
 (defcustom dirvish-history-length 30
   "Length of directory visiting history Dirvish will track.
@@ -122,7 +128,7 @@ See `face-remapping-alist' for more details."
   "Template for displaying mode line in Dirvish instance.
 The value is a (LEFT . RIGHT) cons where LEFT/RIGHT has the same
 format as `mode-line-format'.  Set it to nil hides the footer."
-  :group 'dirvish :type '(choice nil cons))
+  :group 'dirvish :type '(choice (nil cons)))
 
 (defvar dirvish-preview-setup-hook nil
   "Hook functions for preview buffer initialization.")
@@ -185,6 +191,7 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defvar dirvish--transient-dvs '())
 (defvar dirvish--repeat-timers '())
 (defvar dirvish--available-attrs '())
+(defvar-local dirvish--dired-async-p nil)
 (defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)
 (defvar-local dirvish--vc-backend nil)
