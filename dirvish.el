@@ -14,9 +14,8 @@
 ;;
 ;; - Multiple window layouts
 ;; - Isolated sessions
+;; - Asynchronous directory listing
 ;; - A modern and composable user interface
-;;
-;; A Dired, a ranger, a neotree, this is Dirvish.
 
 ;;; Code:
 

@@ -25,24 +25,24 @@ want further customizations.
 
 ** Customization options
 
-|--------------------------------+----------+-------------------------------------|
-| Option                         | Type     | Description                         |
-|--------------------------------+----------+-------------------------------------|
-| ~dirvish-cache-dir~              | String   | Cache directory                     |
-| ~dirvish-trash-dir-alist~        | Alist    | Setup multiple trash cans           |
-| ~dirvish-history-length~         | Integer  | Maximum number of items in history  |
-| ~dirvish-depth~                  | Integer  | Level of dirs to traverse up        |
-| ~dirvish-parent-max-width~       | Float    | Max width of parent windows         |
-| ~dirvish-preview-width~          | Float    | Width of preview window             |
-| ~dirvish-header-style~           | Option   | Style for full-frame Dirvish header |
-| ~dirvish-header-string-function~ | Function | Default header string               |
-| ~dirvish-face-remap-alist~       | Alist    | Remapping faces in Dirvish window   |
-| ~dirvish-mode-line-format~       | Cons     | Mode line format in root window     |
-| ~dirvish-preview-disabled-exts~  | List     | Disable preview for some filetypes  |
-| ~dirvish-preview-dispatchers~    | List     | See [[#Preview-strategies][Preview strategies]]              |
-| ~dirvish-attributes~             | List     | See [[#Extra-attributes][Extra attributes]]                |
-|--------------------------------+----------+-------------------------------------|
-
+|---------------------------------+----------+--------------------------------------|
+| Option                          | Type     | Description                          |
+|---------------------------------+----------+--------------------------------------|
+| ~dirvish-cache-dir~               | String   | Cache directory                      |
+| ~dirvish-trash-dir-alist~         | Alist    | Setup multiple trash cans            |
+| ~dirvish-history-length~          | Integer  | Maximum number of items in history   |
+| ~dirvish-depth~                   | Integer  | Level of dirs to traverse up         |
+| ~dirvish-parent-max-width~        | Float    | Max width of parent windows          |
+| ~dirvish-preview-width~           | Float    | Width of preview window              |
+| ~dirvish-header-style~            | Option   | Style for full-frame Dirvish header  |
+| ~dirvish-header-string-function~  | Function | Default header string                |
+| ~dirvish-face-remap-alist~        | Alist    | Remapping faces in Dirvish window    |
+| ~dirvish-mode-line-format~        | Cons     | Mode line format in root window      |
+| ~dirvish-async-listing-threshold~ | Integer  | List huge directories asynchronously |
+| ~dirvish-preview-disabled-exts~   | List     | Disable preview for some filetypes   |
+| ~dirvish-preview-dispatchers~     | List     | See [[#Preview-strategies][Preview strategies]]               |
+| ~dirvish-attributes~              | List     | See [[#Extra-attributes][Extra attributes]]                 |
+|---------------------------------+----------+--------------------------------------|
 Consult the docstring of the options for details.
 
 ** Extra attributes
@@ -79,7 +79,7 @@ Dired, you can create your own previewer using ~dirvish-define-preview~:
 
 #+begin_src emacs-lisp
 (dirvish-define-preview exa (file)
-  "Uses `exa' to generate directory preview."
+  "Use `exa' to generate directory preview."
   (when (file-directory-p file) ; we only interest in directories here
     `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the output of `exa' command as preview
 
@@ -141,7 +141,11 @@ prefix commands such as ~dirvish-marking-menu~ were created because it makes sen
 to group together the Dired/Dirvish commands that serve similar purposes.
 
 An interesting prefix worth mentioning is ~dirvish-setup-menu~, because it enables
-users to change the setup of a session on the fly (see Figure 4. in [[https://github.com/alexluigit/dirvish/#screenshots][README.org]])
+users to change the setup of a session on the fly.
+
+https://user-images.githubusercontent.com/16313743/156892360-2ec3a5e6-0de3-4ee3-b31c-dd6b19ad06ab.mp4
+
+*Figure 5*. Compose the user interface like a breeze
 
 The variable ~dirvish-menu-available-prefixs~ holds all available prefixs, bind
 them in ~dirvish-mode-map~ if you like.
@@ -182,7 +186,7 @@ commands in the same way as =dirvish= command.
 
 https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-908e-f5d91ba316a6.mp4
 
-*Figure 5.* A demo of ~find-library~ and ~find-file~ commands after ~dirvish-peek-mode~ enabled.
+*Figure 6.* A demo of ~find-library~ and ~find-file~ commands after ~dirvish-peek-mode~ enabled.
 
 The ~dirvish-peek-display-alist~ option allows you to control the window placement
 of the peek window.
@@ -196,7 +200,7 @@ This extension provides:
 - ~git-msg~ attribute
 - ~vc-diff~ preview dispatcher
 
-See Figure 4. in [[https://github.com/alexluigit/dirvish/#screenshots][README.org]]. 
+See [[#Extensions][Figure 5]].
 
 *** Extra commands, attributes, or preview dispatchers (dirvish-extras.el)
 **** Commands
@@ -285,8 +289,11 @@ of the window.
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
+  ;; List directories that has over 10000 files asynchronously
+  ;; This feature is disabled by default
+  ;; (dirvish-async-listing-threshold 10000)
   :config
-  (dirvish-override-dired-mode)
+  (dirvish-override-dired-mode) ; only available for vertico/selectrum users for now
   (dirvish-peek-mode)
   ;; In case you want the details at startup like `dired'
   ;; :hook
