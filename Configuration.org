@@ -91,14 +91,15 @@ for a directory entry. The other benefit of doing so is that Dirvish execute
 shell commands asynchronously, therefore preview a huge directory won't block
 the main process of Emacs.
 
-On a side note, if you don't like the coloring in the preview window, you can
-customize the corresponding faces defined in =ansi-color.el=:
+On a side note, you can customize the corresponding =ansi-color= faces to change
+the coloring in the preview window.
 
 #+begin_src emacs-lisp
 (set-face-attribute 'ansi-color-blue nil :foreground "#FFFFFF")
 #+end_src
 
-[[https://user-images.githubusercontent.com/16313743/158052211-35480266-7bae-4a14-a873-99d272bcf94e.png][https://user-images.githubusercontent.com/16313743/158052211-35480266-7bae-4a14-a873-99d272bcf94e.png]] [screenshot from the ~doom-one~ theme]
+[[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
+[screenshot from the ~doom-one~ theme]
 
 *** Example 2: preview =README.md= in a project when it exists
 
@@ -191,7 +192,7 @@ https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-
 The ~dirvish-peek-display-alist~ option allows you to control the window placement
 of the peek window.
 
-This extension is currently only available for *vertico/selectrum*.
+~dirvish-peek-mode~ currently supports =vertico=, =selectrum= and =icomplete[-vertical]=.
 
 *** Version-control (git) integration (dirvish-vc.el)
 
@@ -293,7 +294,7 @@ of the window.
   ;; This feature is disabled by default
   ;; (dirvish-async-listing-threshold 10000)
   :config
-  (dirvish-override-dired-mode) ; only available for vertico/selectrum users for now
+  (dirvish-override-dired-mode)
   (dirvish-peek-mode)
   ;; In case you want the details at startup like `dired'
   ;; :hook
