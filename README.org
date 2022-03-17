@@ -17,6 +17,7 @@ This package gives Dired the following features:
 
 - Multiple window layouts
 - Isolated sessions
+- Asynchronous directory listing
 - A modern and composable user interface
 
 A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/jaypei/emacs-neotree][neotree]], this is Dirvish ;)
@@ -34,9 +35,9 @@ https://user-images.githubusercontent.com/16313743/156969621-c07c3e12-4762-4850-
 
 *Figure 3*. ~dirvish-side~: A "neotree" leveraging Dired.
 
-https://user-images.githubusercontent.com/16313743/156892360-2ec3a5e6-0de3-4ee3-b31c-dd6b19ad06ab.mp4
+https://user-images.githubusercontent.com/16313743/158773638-e6252372-8eff-4035-a4b7-8bd456185cda.mp4
 
-*Figure 4*. Compose the user interface like a breeze
+*Figure 4*. Huge directories no longer hung up Emacs
 
 ** Installation
 
