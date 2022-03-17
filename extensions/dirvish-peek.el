@@ -1,4 +1,4 @@
-;;; dirvish-peek.el --- Minibuffer file preview powered by dirvish -*- lexical-binding: t -*-
+;;; dirvish-peek.el --- Minibuffer file preview powered by Dirvish -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
@@ -10,23 +10,32 @@
 
 ;;; Commentary:
 
-;; This package is a Dirvish extension, which provides minibuffer file preview
-;; in a `dirvish' style.
+;; `dirvish-peek-mode' gives you a preview window when narrowing file candidates using minibuffer.
 
 ;;; Code:
 
 (declare-function selectrum--get-candidate "selectrum")
 (declare-function selectrum--get-full "selectrum")
-(declare-function selectrum--update "selectrum")
 (declare-function vertico--candidate "vertico")
-(declare-function vertico--exhibit "vertico")
-
-(defvar dirvish--peek-ad-sym 'vertico--exhibit)
-(defvar dirvish--peek-cand-fn #'vertico--candidate)
 (defvar selectrum--current-candidate-index)
-
 (require 'dirvish)
 (require 'find-func)
+
+(defvar dirvish-peek--cand-fn nil)
+(defcustom dirvish-peek-backend
+  (or (require 'vertico nil t) (require 'selectrum nil t) 'icomplete)
+  "Completion UI for `dirvish-peek-mode'.
+These completion UI system are supported: `vertico', `selectrum',
+`icomplete\[-vertical-mode\]' (built-in)."
+  :group 'dirvish :type 'symbol
+  :set
+  (lambda (k v)
+    (set k v)
+    (setq dirvish-peek--cand-fn
+          (pcase v
+            ('vertico #'vertico--candidate)
+            ('selectrum (lambda () (selectrum--get-full (selectrum--get-candidate selectrum--current-candidate-index))))
+            ('icomplete (lambda () (car completion-all-sorted-completions)))))))
 
 (defcustom dirvish-peek-categories '(file project-file library)
   "Minibuffer metadata categories to show file preview."
@@ -39,7 +48,7 @@
   "Display alist for preview window of `dirvish-peek'."
   :group 'dirvish :type 'alist)
 
-(defun dirvish--peek-create ()
+(defun dirvish-peek--create ()
   "Create dirvish minibuffer preview window.
 The window is created only when metadata in current minibuffer is
 one of categories in `dirvish-peek-categories'."
@@ -51,16 +60,16 @@ one of categories in `dirvish-peek-categories'."
          (category (completion-metadata-get meta 'category))
          (preview-category (and (memq category dirvish-peek-categories) category))
          new-dv)
-    (when (and preview-category
-               (not (and old-dv (dv-preview-window old-dv))))
-      (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
-      (push (selected-window) (dv-dired-windows new-dv))
-      (setf (dv-preview-window new-dv)
-            (display-buffer-in-side-window (dirvish--ensure-temp-buffer) dirvish-peek-display-alist)))
-    (set-frame-parameter nil 'dirvish--peek
-                         `(:category ,preview-category :old ,old-dv :new ,new-dv))))
+    (when preview-category
+      (add-hook 'post-command-hook #'dirvish-peek-update-h nil t)
+      (unless (and old-dv (dv-preview-window old-dv))
+        (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
+        (push (selected-window) (dv-dired-windows new-dv))
+        (setf (dv-preview-window new-dv)
+              (display-buffer-in-side-window (dirvish--ensure-temp-buffer) dirvish-peek-display-alist))))
+    (set-frame-parameter nil 'dirvish--peek `(:category ,preview-category :old ,old-dv :new ,new-dv))))
 
-(defun dirvish--peek-teardown ()
+(defun dirvish-peek--teardown ()
   "Teardown dirvish minibuffer preview window."
   (let* ((dv-mini (frame-parameter nil 'dirvish--peek))
          (old-dv (plist-get dv-mini :old))
@@ -68,14 +77,11 @@ one of categories in `dirvish-peek-categories'."
     (when new-dv (dirvish-deactivate new-dv))
     (set-frame-parameter nil 'dirvish--curr old-dv)))
 
-(defun dirvish--peek-update-advice (&rest _)
-  "Apply FN with ARGS, then update dirvish minibuffer preview window.
-
-Used as an advice for `vertico--exhibit' or `selectrum--update',
-invoked when file name under cursor in minibuffer changed."
-  (when-let* ((category (plist-get
-                         (frame-parameter nil 'dirvish--peek) :category))
-              (cand (funcall dirvish--peek-cand-fn)))
+(defun dirvish-peek-update-h ()
+  "Hook for `post-command-hook' to update peek window."
+  (when-let* ((category
+               (plist-get (frame-parameter nil 'dirvish--peek) :category))
+              (cand (funcall dirvish-peek--cand-fn)))
     (pcase category
       ('file
        (setq cand (expand-file-name cand)))
@@ -91,25 +97,14 @@ invoked when file name under cursor in minibuffer changed."
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode
-  "Show dirvish preview when minibuffer candidates are files/dirs."
+  "Show file preview when narrowing candidates using minibuffer."
   :group 'dirvish :global t
   (if dirvish-peek-mode
       (progn
-        (add-hook 'minibuffer-setup-hook #'dirvish--peek-create)
-        (add-hook 'minibuffer-exit-hook #'dirvish--peek-teardown)
-        (advice-add dirvish--peek-ad-sym :after #'dirvish--peek-update-advice))
-    (remove-hook 'minibuffer-setup-hook #'dirvish--peek-create)
-    (remove-hook 'minibuffer-exit-hook #'dirvish--peek-teardown)
-    (advice-remove dirvish--peek-ad-sym #'dirvish--peek-update-advice)))
-
-(with-eval-after-load 'selectrum
-  (let ((enabled dirvish-peek-mode))
-    (and enabled (dirvish-peek-mode -1))
-    (setq dirvish--peek-ad-sym 'selectrum--update)
-    (setq dirvish--peek-cand-fn
-          (lambda () (selectrum--get-full (selectrum--get-candidate
-                                      selectrum--current-candidate-index))))
-    (and enabled (dirvish-peek-mode +1))))
+        (add-hook 'minibuffer-setup-hook #'dirvish-peek--create)
+        (add-hook 'minibuffer-exit-hook #'dirvish-peek--teardown))
+    (remove-hook 'minibuffer-setup-hook #'dirvish-peek--create)
+    (remove-hook 'minibuffer-exit-hook #'dirvish-peek--teardown)))
 
 (provide 'dirvish-peek)
 ;;; dirvish-peek.el ends here
