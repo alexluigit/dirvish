@@ -192,7 +192,7 @@ https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-
 The ~dirvish-peek-display-alist~ option allows you to control the window placement
 of the peek window.
 
-~dirvish-peek-mode~ currently supports =vertico=, =selectrum= and =icomplete[-vertical]=.
+~dirvish-peek-mode~ currently supports =vertico=, =selectrum=, =ivy= and =icomplete[-vertical]=.
 
 *** Version-control (git) integration (dirvish-vc.el)
 

@@ -10,23 +10,25 @@
 
 ;;; Commentary:
 
-;; `dirvish-peek-mode' gives you a preview window when narrowing file candidates using minibuffer.
+;; `dirvish-peek-mode' gives you file preview when narrowing candidates using minibuffer.
 
 ;;; Code:
 
+(declare-function vertico--candidate "vertico")
 (declare-function selectrum--get-candidate "selectrum")
 (declare-function selectrum--get-full "selectrum")
-(declare-function vertico--candidate "vertico")
 (defvar selectrum--current-candidate-index)
+(declare-function ivy-state-current "vertico")
+(defvar ivy-last)
 (require 'dirvish)
 (require 'find-func)
 
 (defvar dirvish-peek--cand-fn nil)
 (defcustom dirvish-peek-backend
-  (or (require 'vertico nil t) (require 'selectrum nil t) 'icomplete)
-  "Completion UI for `dirvish-peek-mode'.
-These completion UI system are supported: `vertico', `selectrum',
-`icomplete\[-vertical-mode\]' (built-in)."
+  (or (require 'vertico nil t) (require 'selectrum nil t) (require 'ivy nil t) 'icomplete)
+  "Completion framework for `dirvish-peek-mode'.
+These framework are supported: `vertico', `selectrum', `ivy', or
+the inbuilt `icomplete\[-vertical-mode\]'."
   :group 'dirvish :type 'symbol
   :set
   (lambda (k v)
@@ -35,6 +37,7 @@ These completion UI system are supported: `vertico', `selectrum',
           (pcase v
             ('vertico #'vertico--candidate)
             ('selectrum (lambda () (selectrum--get-full (selectrum--get-candidate selectrum--current-candidate-index))))
+            ('ivy (lambda () (ivy-state-current ivy-last)))
             ('icomplete (lambda () (car completion-all-sorted-completions)))))))
 
 (defcustom dirvish-peek-categories '(file project-file library)
@@ -61,7 +64,7 @@ one of categories in `dirvish-peek-categories'."
          (preview-category (and (memq category dirvish-peek-categories) category))
          new-dv)
     (when preview-category
-      (add-hook 'post-command-hook #'dirvish-peek-update-h nil t)
+      (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
       (unless (and old-dv (dv-preview-window old-dv))
         (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
         (push (selected-window) (dv-dired-windows new-dv))
