@@ -142,11 +142,7 @@ prefix commands such as ~dirvish-marking-menu~ were created because it makes sen
 to group together the Dired/Dirvish commands that serve similar purposes.
 
 An interesting prefix worth mentioning is ~dirvish-setup-menu~, because it enables
-users to change the setup of a session on the fly.
-
-https://user-images.githubusercontent.com/16313743/156892360-2ec3a5e6-0de3-4ee3-b31c-dd6b19ad06ab.mp4
-
-*Figure 5*. Compose the user interface like a breeze
+users to change the setup of a session on the fly (See *Figure 6* and *7* in this page).
 
 The variable ~dirvish-menu-available-prefixs~ holds all available prefixs, bind
 them in ~dirvish-mode-map~ if you like.
@@ -187,7 +183,7 @@ commands in the same way as =dirvish= command.
 
 https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-908e-f5d91ba316a6.mp4
 
-*Figure 6.* A demo of ~find-library~ and ~find-file~ commands after ~dirvish-peek-mode~ enabled.
+*Figure 5.* A demo of ~find-library~ and ~find-file~ commands after ~dirvish-peek-mode~ enabled.
 
 The ~dirvish-peek-display-alist~ option allows you to control the window placement
 of the peek window.
@@ -196,12 +192,18 @@ of the peek window.
 
 *** Version-control (git) integration (dirvish-vc.el)
 
-This extension provides:
-- ~vc-state~ attribute
-- ~git-msg~ attribute
-- ~vc-diff~ preview dispatcher
+|-----------+-------------------------------------------------|
+| Attribute | Description                                     |
+|-----------+-------------------------------------------------|
+| ~vc-state~  | A VC state indicator (such as "M" for modified) |
+| ~git-msg~   | Show git commit messages after the file name    |
+|-----------+-------------------------------------------------|
+This extension also provides the ~vc-diff~ preview dispatcher which shows changes
+between the working tree and the index of selected files at preview window.
 
-See [[#Extensions][Figure 5]].
+https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-ad5d-ae4a088a69b4.mp4
+
+*Figure 6*. Toggle =vc-state= (attribute), =git-msg= (attribute) and =vc-diff= (preview dispatcher).
 
 *** Extra commands, attributes, or preview dispatchers (dirvish-extras.el)
 **** Commands
@@ -218,7 +220,6 @@ See [[#Extensions][Figure 5]].
 | ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"      |
 | ~dirvish-roam~                       | Browse all directories using ~fd~ command  |
 |------------------------------------+------------------------------------------|
-
 **** Attributes
 
 |----------------+------------------------------------------|
@@ -229,13 +230,9 @@ See [[#Extensions][Figure 5]].
 | ~file-size~      | Human readable file size at right fringe |
 | ~expanded-state~ | Directory expanded state indicator       |
 |----------------+------------------------------------------|
-Add either ~vscode-icon~ or ~all-the-icons~ to ~dirvish-attributes~ to show icons in
-Dirvish buffer. Note that [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired-mode]], if present, is automatically
-being turned off in Dirvish.  The icon solution provided by Dirvish has better
-performance and integrate flawlessly with line highlighting along with other
-attributes.
+https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-84a8-d568517f0b50.mp4
 
-[[icon-comparison][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/icon-comparison.png]]
+*Figure 7*. Toggle =expanded-state=, =all-the-icons=, =file-size= attributes
 
 **** Customization options
 
@@ -290,9 +287,11 @@ of the window.
 
 (use-package dirvish
   :custom
+  ;; Feel free to replace `all-the-icons' with `vscode-icon'.
   (dirvish-attributes '(expanded-state all-the-icons file-size))
-  ;; Maybe the icons are too big in your eyes
+  ;; Maybe the icons are too big to your eyes
   ;; (dirvish-all-the-icons-height 0.8)
+  ;; Go back home? Just press `bh'
   (dirvish-bookmarks-alist
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
@@ -368,8 +367,14 @@ These packages are only listed here for discoverability.
 
 *** Additional notes on 3rd-party packages
 
-The package =all-the-icons-dired= is *NOT* required at all unless you want to use
+The package [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] is *NOT* required at all unless you want to use
 Dirvish with ~dirvish-override-dired-mode~ *disabled*. In fact, I'd advise *against*
 using this package along with Dirvish, because it breaks the lazy-rendering
 mechanism of Dirvish. More specifically, it retrives icons for all the files in
 the directory eagerly which hangs up Emacs on large directories.
+
+Besides, Dirvish handles line highlighting by its own rather than using the
+inbuilt ~hl-line-mode~, because of this, Dirvish's icon solution integrates
+flawlessly with line highlighting along with other attributes.
+
+[[icon-comparison][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/icon-comparison.png]]
