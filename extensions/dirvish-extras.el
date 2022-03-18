@@ -43,29 +43,36 @@
 (defvar dirvish--vscode-icon-directory
   (concat (and (boundp 'vscode-icon-dir) vscode-icon-dir)
           (if (and (fboundp 'vscode-icon-can-scale-image-p) (vscode-icon-can-scale-image-p)) "128/" "23/")))
-(defconst dirvish--all-the-icons-offset 0.01)
 (require 'dired)
 (require 'dirvish-helpers)
 
 (defcustom dirvish-icon-delimiter " "
-  "A string attached to the icon."
+  "A string attached to the icon (for both backends)."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-icon-size 32
-  "Icon size used for vscode-icon backend."
-  :group 'dirvish :type 'integer)
+(defcustom dirvish-all-the-icons-offset 0.01
+  "Icon's vertical offset used for `all-the-icons' backend.
+Set it to nil to use the default offset from `all-the-icons'."
+  :group 'dirvish :type '(choice (float nil)))
 
-(define-obsolete-variable-alias 'dirvish-icon-monochrome 'dirvish-icon-palette "0.9.9")
+(defcustom dirvish-all-the-icons-height nil
+  "Icon height used for `all-the-icons' backend.
+The height of the icon is scaled to this value (try 0.8).
+Set it to nil to use the default height from `all-the-icons'."
+  :group 'dirvish :type '(choice (float nil)))
 
-(defcustom dirvish-icon-palette 'all-the-icons
-  "Palette used for file all-the-icons backend.
-
+(defcustom dirvish-all-the-icons-palette 'all-the-icons
+  "Coloring style used for file `all-the-icons' backend.
 Values are interpreted as follows:
 - 'all-the-icons, meaning let `all-the-icons.el' to do the coloring.
 - A face that is used for all the icons.
 - nil, inherit face at point."
   :group 'dirvish :type '(choice face symbol nil))
 
+(defcustom dirvish-vscode-icon-size 32
+  "Icon (image pixel) size used for `vscode-icon' backend.
+The value should be a integer between 23 to 128."
+  :group 'dirvish :type 'integer)
 (defface dirvish-file-size-face
   '((t (:inherit font-lock-doc-face)))
   "Face for file size overlays."
@@ -74,9 +81,11 @@ Values are interpreted as follows:
 (dirvish-define-attribute all-the-icons
   :left (+ (length dirvish-icon-delimiter) 2)
   :form
-  (let* ((offset `(:v-adjust ,dirvish--all-the-icons-offset))
-         (icon-face (unless (eq dirvish-icon-palette 'all-the-icons) `(:face ,dirvish-icon-palette)))
-         (icon-attrs (append icon-face offset))
+  (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
+         (height `(:height ,dirvish-all-the-icons-height))
+         (face (unless (eq dirvish-all-the-icons-palette 'all-the-icons)
+                 `(:face ,dirvish-all-the-icons-palette)))
+         (icon-attrs (append face offset height))
          (icon (if (file-directory-p f-name)
                    (apply #'all-the-icons-icon-for-dir f-name icon-attrs)
                  (apply #'all-the-icons-icon-for-file f-name icon-attrs)))
@@ -85,13 +94,12 @@ Values are interpreted as follows:
     (when-let (hl-face (fg (face-attribute hl-face :foreground))
                        (bg (face-attribute hl-face :background)))
       (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
-    (overlay-put ov 'dirvish-all-the-icons t)
     (overlay-put ov 'after-string icon-str) ov))
 
 (dirvish-define-attribute vscode-icon
-  :left (length dirvish-icon-delimiter)
+  :left (1+ (length dirvish-icon-delimiter))
   :form
-  (let* ((vscode-icon-size dirvish-icon-size)
+  (let* ((vscode-icon-size dirvish-vscode-icon-size)
          (icon-info
           (dirvish-get-attribute-create f-name :vscode-icon nil
             (let ((default-directory dirvish--vscode-icon-directory))
@@ -112,11 +120,10 @@ Values are interpreted as follows:
          (icon (cond ((not (file-directory-p f-name)) icon-info)
                      ((dirvish--subtree-expanded-p) (cdr icon-info))
                      (t (car icon-info))))
-         (after-str dirvish-icon-delimiter)
          (ov (make-overlay (1- f-beg) f-beg)))
-    (when hl-face (setq after-str (propertize after-str 'face hl-face)))
     (overlay-put ov 'display icon)
-    (overlay-put ov 'after-string after-str) ov))
+    (overlay-put ov 'before-string (propertize " " 'face hl-face))
+    (overlay-put ov 'after-string (propertize dirvish-icon-delimiter 'face hl-face)) ov))
 
 (dirvish-define-attribute file-size
   :if (and (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)

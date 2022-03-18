@@ -221,10 +221,14 @@ See [[#Extensions][Figure 5]].
 
 **** Attributes
 
-- ~vscode-icon~ attribute
-- ~all-the-icons~ attribute
-- ~file-size~ attribute
-
+|----------------+------------------------------------------|
+| Attribute      | Description                              |
+|----------------+------------------------------------------|
+| ~all-the-icons~  | File icons provided by =all-the-icons=     |
+| ~vscode-icon~    | File icons provided by =vscode-icon=       |
+| ~file-size~      | Human readable file size at right fringe |
+| ~expanded-state~ | Directory expanded state indicator       |
+|----------------+------------------------------------------|
 Add either ~vscode-icon~ or ~all-the-icons~ to ~dirvish-attributes~ to show icons in
 Dirvish buffer. Note that [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired-mode]], if present, is automatically
 being turned off in Dirvish.  The icon solution provided by Dirvish has better
@@ -235,14 +239,15 @@ attributes.
 
 **** Customization options
 
-|------------------------+---------+-----------------------------------------|
-| Option                 | Type    | Description                             |
-|------------------------+---------+-----------------------------------------|
-| ~dirvish-icon-size~      | Integer | Icon size used for =vscode-icon=          |
-| ~dirvish-icon-delimiter~ | String  | The delimiter between icon and filename |
-| ~dirvish-icon-palette~   | Option  | Palette style used for =all-the-icons=    |
-|------------------------+---------+-----------------------------------------|
-
+|-------------------------------+---------+--------------------------------------------|
+| Option                        | Type    | Description                                |
+|-------------------------------+---------+--------------------------------------------|
+| ~dirvish-icon-delimiter~        | String  | The delimiter between icon and filename    |
+| ~dirvish-all-the-icons-height~  | Float   | Height applied to =all-the-icons=            |
+| ~dirvish-all-the-icons-offset~  | Float   | Vertical offset applied to =all-the-icons=   |
+| ~dirvish-all-the-icons-palette~ | Option  | Coloring style applied to =all-the-icons=    |
+| ~dirvish-vscode-icon-size~      | Integer | Pixelwise size applied to =vscode-icon=      |
+|-------------------------------+---------+--------------------------------------------|
 *** Toggle Dirvish in side window (dirvish-side.el)
 
 Use ~dirvish-side~ command to toggle the side Dirvish.
@@ -284,7 +289,9 @@ of the window.
 
 (use-package dirvish
   :custom
-  (dirvish-attributes '(vscode-icon file-size))
+  (dirvish-attributes '(expanded-state all-the-icons file-size))
+  ;; Maybe these icons are too big in your eyes
+  ;; (dirvish-all-the-icons-height 0.8)
   (dirvish-bookmarks-alist
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
@@ -315,7 +322,7 @@ of the window.
 
 *** Complementary packages
 
-These packages and their configurations are only listed here for discoverability.
+These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
 ;; Addtional syntax highlighting for dired
@@ -323,13 +330,13 @@ These packages and their configurations are only listed here for discoverability
   :hook
   (dired-mode . diredfl-mode))
 
-;; Use `vscode-icon' as Dirvish's icon backend
-(use-package vscode-icon
-  :config
-  (push '("jpg" . "image") vscode-icon-file-alist))
+;; Use `all-the-icons' as Dirvish's icon backend
+(use-package all-the-icons)
 
-;; Or, use `all-the-icons' instead
-;; (use-package all-the-icons)
+;; Or, use `vscode-icon' instead
+;; (use-package vscode-icon
+;;   :config
+;;   (push '("jpg" . "image") vscode-icon-file-alist))
 
 (use-package dired-subtree
   :bind
@@ -358,3 +365,10 @@ These packages and their configurations are only listed here for discoverability
   ("C-c F" . fd-dired))
 #+end_src
 
+*** Additional notes on 3rd-party packages
+
+The package =all-the-icons-dired= is *NOT* required at all unless you want to use
+Dirvish with ~dirvish-override-dired-mode~ *disabled*. In fact, I'd advise *against*
+using this package along with Dirvish, because it breaks the lazy-rendering
+mechanism of Dirvish. More specifically, it retrives icons for all the files in
+the directory eagerly which hangs up Emacs on large directories.
