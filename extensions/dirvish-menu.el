@@ -258,6 +258,7 @@ invoke the navigation, PATH is the the argument for command
     ("s" file-size      attributes   "File size (right-aligned)")
     ("g" vc-state       attributes   "VC state (left-aligned)")
     ("m" git-msg        attributes   "Git commit messages")
+    ("e" expanded-state attributes   "Node expanded state")
     ("d" vc-diff        preview-dps  "VC diff")
     ("0" 0              column       "main column only")
     ("1" 1              column       "main + 1 parent (ranger like)")

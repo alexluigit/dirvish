@@ -247,6 +247,7 @@ attributes.
 | ~dirvish-all-the-icons-offset~  | Float   | Vertical offset applied to =all-the-icons=   |
 | ~dirvish-all-the-icons-palette~ | Option  | Coloring style applied to =all-the-icons=    |
 | ~dirvish-vscode-icon-size~      | Integer | Pixelwise size applied to =vscode-icon=      |
+| ~dirvish-expanded-state-style~  | Option  | String/icon used for folder expanded state |
 |-------------------------------+---------+--------------------------------------------|
 *** Toggle Dirvish in side window (dirvish-side.el)
 
@@ -290,7 +291,7 @@ of the window.
 (use-package dirvish
   :custom
   (dirvish-attributes '(expanded-state all-the-icons file-size))
-  ;; Maybe these icons are too big in your eyes
+  ;; Maybe the icons are too big in your eyes
   ;; (dirvish-all-the-icons-height 0.8)
   (dirvish-bookmarks-alist
    '(("h" "~/"                          "Home")
