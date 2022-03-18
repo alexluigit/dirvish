@@ -85,7 +85,9 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--get-project-root ()
   "Get root path of current project."
-  (car-safe (last (project-current))))
+  (if (< emacs-major-version 29)
+      (cdr-safe (project-current))
+    (when-let ((pj (project-current))) (project-root pj))))
 
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
