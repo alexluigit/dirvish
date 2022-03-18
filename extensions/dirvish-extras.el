@@ -111,17 +111,15 @@ The value can be one of: `plus', `arrow', `chevron'."
   :form
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
          (height `(:height ,dirvish-all-the-icons-height))
-         (face (unless (eq dirvish-all-the-icons-palette 'all-the-icons)
-                 `(:face ,dirvish-all-the-icons-palette)))
+         (face (cond (hl-face `(:face ,hl-face))
+                     ((eq dirvish-all-the-icons-palette 'all-the-icons) nil)
+                     (t `(:face ,dirvish-all-the-icons-palette))))
          (icon-attrs (append face offset height))
          (icon (if (file-directory-p f-name)
                    (apply #'all-the-icons-icon-for-dir f-name icon-attrs)
                  (apply #'all-the-icons-icon-for-file f-name icon-attrs)))
-         (icon-str (concat icon dirvish-icon-delimiter))
+         (icon-str (concat icon (propertize dirvish-icon-delimiter 'face hl-face)))
          (ov (make-overlay (1- f-beg) f-beg)))
-    (when-let (hl-face (fg (face-attribute hl-face :foreground))
-                       (bg (face-attribute hl-face :background)))
-      (add-face-text-property 0 (length icon-str) `(:background ,bg :foreground ,fg) t icon-str))
     (overlay-put ov 'after-string icon-str) ov))
 
 (dirvish-define-attribute vscode-icon
