@@ -73,9 +73,37 @@ Values are interpreted as follows:
   "Icon (image pixel) size used for `vscode-icon' backend.
 The value should be a integer between 23 to 128."
   :group 'dirvish :type 'integer)
+
+(defvar dirvish--expanded-state-fn nil)
+(defcustom dirvish-expanded-state-style 'chevron
+  "Icon/string used for directory expanded state.
+The value can be one of: `plus', `arrow', `chevron'."
+  :group 'dirvish :type 'symbol
+  :set
+  (lambda (k v)
+    (set k v)
+    (setq dirvish--expanded-state-fn
+          (pcase v
+            ('plus (lambda (s f) (propertize (if s "-" "+") 'face f)))
+            ('arrow (lambda (s f) (propertize (if s "▾" "▸") 'face f)))
+            ('chevron
+             (if (require 'all-the-icons nil t)
+                 (lambda (s f) (all-the-icons-octicon
+                           (format "chevron-%s" (if s "down" "right"))
+                           :height (* (or dirvish-all-the-icons-height 1) 0.8)
+                           :v-adjust 0.1 :face f))
+               (set k 'arrow)
+               (lambda (s f) (propertize (if s "▾" "▸") 'face f))
+               (user-error "Dirvish: chevron expanded state require package `all-the-icons'")))))))
+
 (defface dirvish-file-size-face
   '((t (:inherit font-lock-doc-face)))
   "Face for file size overlays."
+  :group 'dirvish)
+
+(defface dirvish-expanded-state-face
+  '((t (:inherit font-lock-doc-face)))
+  "Face for expanded state overlays."
   :group 'dirvish)
 
 (dirvish-define-attribute all-the-icons
@@ -151,6 +179,20 @@ The value should be a integer between 23 to 128."
            (ov (make-overlay ov-pos ov-pos)))
       (add-face-text-property 0 f-size-len face t f-size-str)
       (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
+
+(dirvish-define-attribute expanded-state
+  :if (eq (dv-root-window dv) (selected-window))
+  :left 1
+  :form
+  (let ((state-str (if (file-directory-p f-name)
+                       (funcall dirvish--expanded-state-fn
+                                (dirvish--subtree-expanded-p)
+                                'dirvish-expanded-state-face)
+                     (propertize " ")))
+        (ov (make-overlay (1+ l-beg) (1+ l-beg))))
+    (when hl-face
+      (add-face-text-property 0 1 hl-face t state-str))
+    (overlay-put ov 'after-string state-str) ov))
 
 ;;;###autoload
 (defun dirvish-show-history ()
