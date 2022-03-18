@@ -250,8 +250,8 @@ invoke the navigation, PATH is the the argument for command
                     `(lambda () (interactive) (dirvish-find-file ,path))))])))))
 
 (define-obsolete-function-alias 'dirvish-ui-config 'dirvish-setup-menu "1.0.0")
-
-(defconst dirvish--icon-backend (or (require 'vscode-icon nil t) (require 'all-the-icons nil t)))
+(defconst dirvish--icon-backend (cond ((memq 'all-the-icons dirvish-attributes) 'all-the-icons)
+                                      ((memq 'vscode-icon dirvish-attributes) 'vscode-icon)))
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-setup-menu-alist
   `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attributes "File icons"))

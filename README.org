@@ -66,10 +66,10 @@ To install it manually, first clone this repository, then add =path/to/dirvish= 
 Start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
 
 - ~dirvish-dired~ creates a session in current window (like ~dired~).
-- ~dirvish~ creates a session that makes use of the whole frame (see *Figure 1*).
+- ~dirvish~ creates a session that makes use of the whole frame.
 
 ~dirvish-toggle-fullscreen~ allows you to toggle the fullscreen state of the
-current session (see *Figure 2*).
+current session.
 
 Dirvish doesn't change any of your Dired config nor rebind any keys in
 ~dired-mode-map~. As a result, a Dired user already knew how to use Dirvish. (see
