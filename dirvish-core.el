@@ -233,7 +233,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
    ()
    :documentation "TODO.")
   (raw-attributes
-   dirvish-attributes
+   (purecopy dirvish-attributes)
    :documentation "TODO.")
   (attributes-alist
    ()
@@ -245,7 +245,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
    ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
   (raw-preview-dps
-   dirvish-preview-dispatchers
+   (purecopy dirvish-preview-dispatchers)
    :documentation "TODO.")
   (preview-dispatchers
    ()
