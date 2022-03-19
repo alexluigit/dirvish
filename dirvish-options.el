@@ -188,6 +188,8 @@ format as `mode-line-format'.  Set it to nil hides the footer."
 (defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99)))
 (defconst dirvish--footer-remap-alist '((mode-line-inactive mode-line)))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
+(defconst dirvish--subtree-prefix-len
+  (condition-case nil (length (or (bound-and-true-p dired-subtree-line-prefix) "  ")) (error 2)))
 (defvar dirvish--transient-dvs '())
 (defvar dirvish--repeat-timers '())
 (defvar dirvish--available-attrs '())
