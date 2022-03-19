@@ -16,6 +16,7 @@ A minimalistic yet versatile file manager based on *Dired*.
 This package gives Dired the following features:
 
 - Multiple window layouts
+- Always available file preview
 - Isolated sessions
 - Asynchronous directory listing
 - A modern and composable user interface
@@ -108,7 +109,7 @@ Generally speaking, Dirvish should be able to handle most of the file
 exploring/managing tasks, after all it is backed by the superb Dired.  Besides,
 choose Dirvish over packages listed below gives you:
 1. An unified user interface in all your file managing scenarios.
-2. The ability to toggle fullscreen of any Dirvish session (see *Figure 2. 3.*)
+2. File preview at your disposal.
 3. Less package configs to maintain or worry about.
 
 *** neotree
