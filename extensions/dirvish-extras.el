@@ -156,7 +156,7 @@ The value can be one of: `plus', `arrow', `chevron'."
   :right 6
   :form
   (unless (file-directory-p f-name)
-    (let* ((depth (* 2 (dirvish--get-subtree-depth)))
+    (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
            (width (window-width))
            (f-size-raw (file-size-human-readable (if f-attrs (file-attribute-size f-attrs) 0)))
            (f-size-str (let* ((str-spc (concat f-size-raw " ")) (len (- 6 (length str-spc))))

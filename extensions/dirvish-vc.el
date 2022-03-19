@@ -66,7 +66,7 @@ This variable is consumed by `vc-state' attribute in Dirvish."
                    (if (and msg (not (string= "" msg))) (substring msg 0 -1) ""))))
          (face (or hl-face 'dirvish-git-commit-message-face))
          (width (window-width))
-         (depth (* 2 (dirvish--get-subtree-depth)))
+         (depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
          (f-base-str (buffer-substring f-beg f-end))
          (f-base-len (dirvish--actual-string-length f-base-str))
          (remained (- width f-base-len depth (car dirvish--attrs-width) (cdr dirvish--attrs-width)))
