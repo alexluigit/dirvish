@@ -47,9 +47,8 @@ Consult the docstring of the options for details.
 
 ** Extra attributes
 
-A list of file attributes such as ~file-size~ showing in Dirvish file lines are
-stored in the variable ~dirvish-attributes~.  These attributes are defined by
-~dirvish-define-attribute~, you can get all available attributes by evaluating:
+A list of file attributes such as ~file-size~ showing in file lines are stored in
+the variable ~dirvish-attributes~. Evaluate this to get all available attributes:
 
 #+begin_src emacs-lisp
 (prog1 (mapc #'require dirvish-extra-libs) (describe-variable 'dirvish--available-attrs))
@@ -59,7 +58,7 @@ To change the attributes session locally, see [[#Extensions][dirvish-menu]].
 
 ** Preview strategies
 
-A preview dispatcher represents a strategy for preview generation on certain
+A preview dispatcher represents a strategy for file preview on certain
 conditions. The variable ~dirvish-preview-dispatchers~, which holds all the active
 dispatchers, has the default value looks like:
 
@@ -67,15 +66,16 @@ dispatchers, has the default value looks like:
 (text gif image video audio epub archive pdf-tools)
 #+end_src
 
-You can consult ~dirvish-preview-dispatch~ for details.
-To change the preview dispatchers session locally, see [[#Extensions][dirvish-menu]].
+Each dispatcher in this list handles the validation and preview content
+generation for the corresponding filetype. Consult ~dirvish-define-preview~ and
+~dirvish-preview-dispatch~ for details.
 
 Here are two customization examples.
 
 *** Example 1: directory preview using ~exa~ command
 
-Let's say you don't like the default directory preview results provided by
-Dired, you can create your own previewer using ~dirvish-define-preview~:
+Let's assume you don't like the default directory preview results provided by
+Dired, you can create a directory previewer that utilizes the ~exa~ command:
 
 #+begin_src emacs-lisp
 (dirvish-define-preview exa (file)
@@ -276,15 +276,6 @@ of the window.
   (setq dired-listing-switches
         "-AGhlv --group-directories-first --time-style=long-iso"))
 
-(use-package dired-x
-  ;; Enable dired-omit-mode by default
-  ;; :hook
-  ;; (dired-mode . dired-omit-mode)
-  :config
-  ;; Make dired-omit-mode hide all "dotfiles"
-  (setq dired-omit-files
-        (concat dired-omit-files "\\|^\\..*$")))
-
 (use-package dirvish
   :custom
   ;; Feel free to replace `all-the-icons' with `vscode-icon'.
@@ -325,6 +316,15 @@ of the window.
 These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
+(use-package dired-x
+  ;; Enable dired-omit-mode by default
+  ;; :hook
+  ;; (dired-mode . dired-omit-mode)
+  :config
+  ;; Make dired-omit-mode hide all "dotfiles"
+  (setq dired-omit-files
+        (concat dired-omit-files "\\|^\\..*$")))
+
 ;; Addtional syntax highlighting for dired
 (use-package diredfl
   :hook
@@ -338,6 +338,7 @@ These packages are only listed here for discoverability.
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 
+;; Tree browser
 (use-package dired-subtree
   :bind
   (:map dired-mode-map
@@ -369,12 +370,13 @@ These packages are only listed here for discoverability.
 
 The package [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] is *NOT* required at all unless you want to use
 Dirvish with ~dirvish-override-dired-mode~ *disabled*. In fact, I'd advise *against*
-using this package along with Dirvish, because it breaks the lazy-rendering
-mechanism of Dirvish. More specifically, it retrives icons for all the files in
-the directory eagerly which hangs up Emacs on large directories.
+using this package along with Dirvish. The reason is Dirvish implements
+lazy-rendering on some UI elements including icons, whereas =all-the-icons-dired=
+retrives icons for all the files in a directory /eagerly/ which hangs up Emacs on
+large directories.
 
 Besides, Dirvish handles line highlighting by its own rather than using the
-inbuilt ~hl-line-mode~, because of this, Dirvish's icon solution integrates
+inbuilt ~hl-line-mode~. Because of this, Dirvish's icon solution integrates
 flawlessly with line highlighting along with other attributes.
 
 [[icon-comparison][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/icon-comparison.png]]
