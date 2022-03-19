@@ -298,17 +298,18 @@ of the window.
   ;; :hook
   ;; (dirvish-mode . (lambda () (dired-hide-details-mode -1)))
   :bind
-  (:map dired-mode-map
-        ("SPC" . dirvish-show-history)
-        ("r"   . dirvish-roam)
-        ("b"   . dirvish-goto-bookmark)
-        ("f"   . dirvish-file-info-menu)
-        ("M-a" . dirvish-mark-actions-menu)
-        ("M-s" . dirvish-setup-menu)
-        ("M-f" . dirvish-toggle-fullscreen)
-        ([remap dired-summary] . dirvish-dispatch)
-        ([remap dired-do-copy] . dirvish-yank)
-        ([remap mode-line-other-buffer] . dirvish-other-buffer)))
+  (nil ; Bind `dirvish', `dirvish-dired' and `dirvish-side' as you see fit
+   :map dired-mode-map
+   ("SPC" . dirvish-show-history)
+   ("r"   . dirvish-roam)
+   ("b"   . dirvish-goto-bookmark)
+   ("f"   . dirvish-file-info-menu)
+   ("M-a" . dirvish-mark-actions-menu)
+   ("M-s" . dirvish-setup-menu)
+   ("M-f" . dirvish-toggle-fullscreen)
+   ([remap dired-summary] . dirvish-dispatch)
+   ([remap dired-do-copy] . dirvish-yank)
+   ([remap mode-line-other-buffer] . dirvish-other-buffer)))
 #+end_src
 
 *** Complementary packages

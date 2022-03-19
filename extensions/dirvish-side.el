@@ -19,6 +19,7 @@
 (declare-function persp-curr "perspective")
 
 (defvar dirvish-side--state-alist '())
+(defvar dirvish-side-scope-fn nil)
 
 (defcustom dirvish-side-scope 'tab
   "SCOPE for Dirvish side window.
@@ -30,19 +31,26 @@ SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
   (lambda (k v)
     (set k v)
     (cl-case v
-      ('tab (add-hook 'tab-bar-tab-pre-close-functions #'dirvish-side--remove-state))
-      ('frame (add-hook 'delete-frame-functions #'dirvish-side--remove-state))
+      ('tab
+       (add-hook 'tab-bar-tab-pre-close-functions #'dirvish-side--remove-state)
+       (setq dirvish-side-scope-fn #'tab-bar--current-tab-index))
+      ('frame
+       (add-hook 'delete-frame-functions #'dirvish-side--remove-state)
+       (setq dirvish-side-scope-fn #'selected-frame))
       ('persp
        (if (require 'persp-mode nil t)
            (progn
              (add-hook 'persp-before-kill-functions #'dirvish-side--remove-state)
              (add-hook 'persp-activated-functions
-                       (lambda (_scope) (when (car (dirvish-side--get-state)) (dotimes (_ 2) (dirvish-side))))))
+                       (lambda (_scope) (when (car (dirvish-side--get-state)) (dotimes (_ 2) (dirvish-side)))))
+             (setq dirvish-side-scope-fn (lambda () (or (get-current-persp) 'none))))
          (set k 'tab)
          (user-error "Unable to find package `persp-mode'")))
       ('perspective
        (if (require 'perspective nil t)
-           (add-hook 'persp-killed-hook #'dirvish-side--remove-state)
+           (progn
+             (add-hook 'persp-killed-hook #'dirvish-side--remove-state)
+             (setq dirvish-side-scope-fn #'persp-curr))
          (set k 'tab)
          (user-error "Unable to find package `perspective'"))))
     (cl-loop for (_scope . (dv . state)) in dirvish-side--state-alist
@@ -67,22 +75,17 @@ window to place the file buffer.  Note that if this value is
 `selected-window', the session closes after opening a file."
   :group 'dirvish :type 'function)
 
-(defun dirvish-side--scope ()
-  (cl-case dirvish-side-scope
-    ('emacs 'emacs)
-    ('tab (tab-bar--current-tab-index))
-    ('frame (selected-frame))
-    ('persp (or (get-current-persp) 'none))
-    ('perspective (persp-curr))))
-
 (defun dirvish-side--get-state ()
-  (or (alist-get (dirvish-side--scope) dirvish-side--state-alist)
+  "Get state of side session for current scope."
+  (or (alist-get (funcall dirvish-side-scope-fn) dirvish-side--state-alist)
       (cons nil 'uninitialized)))
 
 (defun dirvish-side--set-state (dv state)
-  (setf (alist-get (dirvish-side--scope) dirvish-side--state-alist) (cons dv state)))
+  "Set state of current scope to DV and its STATE."
+  (setf (alist-get (funcall dirvish-side-scope-fn) dirvish-side--state-alist) (cons dv state)))
 
 (defun dirvish-side--remove-state (scope &rest _)
+  "Remove invalid state info within SCOPE."
   (let* ((dv-w/state (alist-get scope dirvish-side--state-alist))
          (dv (car-safe dv-w/state)))
     (when dv (dirvish-deactivate dv))
@@ -90,11 +93,13 @@ window to place the file buffer.  Note that if this value is
           (delq (assoc scope dirvish-side--state-alist) dirvish-side--state-alist))))
 
 (defun dirvish-side-find-file-window-fn ()
+  "Return a window for opening files in `dirvish-side'."
   (if (window-parameter (selected-window) 'window-side)
       (funcall dirvish-side-open-file-window-function)
     (selected-window)))
 
 (defun dirvish-side-quit-window-fn (_dv)
+  "Quit window action for `dirvish-side'."
   (dirvish-side--set-state nil 'uninitialized)
   (when (window-parameter (selected-window) 'window-side) (delete-window)))
 
@@ -117,7 +122,13 @@ window to place the file buffer.  Note that if this value is
 
 ;;;###autoload
 (defun dirvish-side (&optional path)
-  "Open Dirvish in side window with optional PATH.
+  "Toggle a Dirvish session at the side window.
+- If the side window is visible hide it.
+- If a side session within the current `dirvish-side-scope'
+  exists but is not visible, show it.
+- If there is no session exists within the scope,
+  create the session with PATH and display it.
+
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish side: "))))
@@ -136,7 +147,9 @@ otherwise it defaults to `project-current'."
       ('uninitialized
        (dirvish-activate
         (dirvish-new
-          :path (or path (dirvish--get-project-root) (dirvish--ensure-path))
+          :path (or (and path (file-name-directory path))
+                    (dirvish--get-project-root)
+                    (dirvish--ensure-path))
           :depth -1
           :type 'side))
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
