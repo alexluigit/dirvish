@@ -21,14 +21,16 @@
 ;; - `dirvish-roam'
 ;;
 ;; Attributes
-;; - `file-size' attribute at right fringe
-;; - `vs-icon' attribute
+;; - `file-size' attribute
+;; - `expanded-state' attribute
+;; - `vscode-icon' attribute
 ;; - `all-the-icons' attribute
 
 ;;; Code:
 
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
+(declare-function all-the-icons-octicon "all-the-icons")
 (declare-function vscode-icon-can-scale-image-p "vscode-icon")
 (declare-function vscode-icon-file "vscode-icon")
 (declare-function vscode-icon-dir-exists-p "vscode-icon")
