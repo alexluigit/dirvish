@@ -175,7 +175,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("H"   "Hardlink"                             dired-do-hardlink)
     ("P"   "Print"                                dired-do-print)
     ("X"   "Delete flagged"                       dired-do-flagged-delete)
-    ("F"   "Search file contents"                 dired-do-find-regexp)
+    ("A"   "Search file contents"                 dired-do-find-regexp)
     ("R"   "Replace file contents"                dired-do-find-regexp-and-replace)
     ("B"   "Byte compile elisp"                   dired-do-byte-compile)
     ("L"   "Load elisp"                           dired-do-load)
