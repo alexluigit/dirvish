@@ -1,31 +1,25 @@
 #+AUTHOR: Alex Lu
 #+EMAIL: alexluigit@gmail.com
 #+startup: content
+#+html: <img src="https://user-images.githubusercontent.com/16313743/159204052-c8caf89d-c44f-42c7-a177-4cd2491eaab6.svg" align="center" width="100%">
+-----
+#+html: <p align="center"><i>A minimalistic yet versatile file manager based on</i> <b>Dired</b></p>
 
-* *Dirvish*
-
-[[https://melpa.org/#/dirvish][file:https://melpa.org/packages/dirvish-badge.svg]]
-[[https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml][file:https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml/badge.svg]]
-
-#+begin_quote
-A minimalistic yet versatile file manager based on *Dired*.
-#+end_quote
-
-** Introduction
+* Introduction
 
 This package gives Dired the following features:
 
-- Multiple window layouts
-- Always available file preview
-- Isolated sessions
-- Asynchronous directory listing
-- A modern and composable user interface
++ Multiple window layouts
++ Always available file preview
++ Isolated sessions
++ Asynchronous directory listing
++ A modern and composable user interface
 
 A Dired, a [[https://github.com/ranger/ranger][ranger]], a [[https://github.com/jaypei/emacs-neotree][neotree]], this is Dirvish ;)
 
-** Screenshots
+* Screenshots
 
-[[https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/main.png][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/main.png]]
+[[https://user-images.githubusercontent.com/16313743/159170480-1901925c-e4dc-4c43-a280-348890bdfcf4.png][https://user-images.githubusercontent.com/16313743/159170480-1901925c-e4dc-4c43-a280-348890bdfcf4.png]]
 *Figure 1*. ~dirvish~: A file browser/manager with live preview
 
 https://user-images.githubusercontent.com/16313743/156968548-cb091eb5-179d-48bd-aa3d-04add862440a.mp4
@@ -40,18 +34,18 @@ https://user-images.githubusercontent.com/16313743/158773638-e6252372-8eff-4035-
 
 *Figure 4*. Huge directories no longer hung up Emacs
 
-** Installation
+* Installation
 
 Dirvish is available on [[https://melpa.org][Melpa]], you can install it directly via ~package-install~
 if you have melpa in your ~package-archives~.
 
-*** For =straight.el= users
+** For =straight.el= users
 
 #+begin_src emacs-lisp
 (straight-use-package 'dirvish)
 #+end_src
 
-*** Manual install
+** Manual install
 
 To install it manually, first clone this repository, then add =path/to/dirvish= to your ~load-path~.
 
@@ -62,7 +56,7 @@ To install it manually, first clone this repository, then add =path/to/dirvish= 
 (require 'dirvish)
 #+end_src
 
-** Quickstart
+* Quickstart
 
 Start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
 
@@ -80,7 +74,7 @@ It is also recommended to enable ~dirvish-override-dired-mode~, which makes all
 your Dired entry commands including ~dired[-other-window/tab/frame]~ initialize or
 reuse a Dirvish session automatically.
 
-** Extensions
+* Extensions
 
 Several small extension packages to Dirvish are maintained in the subdirectory
 extensions/. They are installed together with Dirvish if you pull the package
@@ -99,11 +93,11 @@ Currently the following extensions come with the package:
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
 
-** Customization
+* Customization
 
 See [[file:Configuration.org][Configuration.org]] (included docs for extensions).
 
-** Related projects
+* Related projects
 
 Generally speaking, Dirvish should be able to handle most of the file
 exploring/managing tasks, after all it is backed by the superb Dired.  Besides,
@@ -112,21 +106,21 @@ choose Dirvish over packages listed below gives you:
 2. File preview at your disposal.
 3. Less package configs to maintain or worry about.
 
-*** neotree
+** neotree
 
 =neotree= works pretty well as a simple project explorer. But sadly, compare to
 =dirvish[-side]=, this package is not built on top of Dired, which means you have
 to learn or configure a different set of commands, meanwhile, it is way less
 powerful as Dired/Dirvish in terms of file managing.
 
-*** treemacs
+** treemacs
 
 Same as =neotree=, but =treemacs= is a much more mature yet complex package. It can
 even be used as a general rendering backend of any tree-like structures, you may
 find this package useful when you have related needs. It might be an overkill
 for simple project exploring tasks due to its complexity and huge codebase.
 
-*** dired-sidebar
+** dired-sidebar
 
 =dired-sidebar= and =dirvish-side= do almost exact the same thing: create a file
 explorer at side window that leveraging the power of Dired.  =dired-sidebar= also
@@ -134,18 +128,18 @@ includes some basic integration with serveral 3rd-party packages and other small
 niceties such as file watching.  =dirvish-side=, at least for now, is relatively
 primitive.
 
-*** ranger.el
+** ranger.el
 
 See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]].
 
-** Issues
+* Issues
 
 - There maybe incompatibilities with other third-party Dired packages.
 
 Please feel free to report any issues.
 
-** FAQ
-*** How is Dirvish related to Dired?
+* FAQ
+** How is Dirvish related to Dired?
 
 A Dirvish session holds a set of buffers with ~dirvish-mode~ as its ~major-mode~. As
 discussed above, since ~dirvish-mode~ is a derived mode from ~dired-mode~, most of
@@ -178,13 +172,17 @@ Nonetheless, Dirvish and Dired handle these aspects differently:
   ~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option doesn't
   work in Dirvish.
 
-*** How do I customize the preview content?
+** How do I customize the preview content?
 
 See [[https://github.com/alexluigit/dirvish/blob/main/Configuration.org#preview-strategies][Preview strategies]].
 
-** Acknowledgements
+* Acknowledgements
 
 This package is inspired a lot by [[https://github.com/ralesi/ranger.el][ranger.el]], thanks @ralesi for creating and
 maintaining it.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
+-----
+[[https://melpa.org/#/dirvish][file:https://melpa.org/packages/dirvish-badge.svg]]
+[[https://stable.melpa.org/#/dirvish][file:https://stable.melpa.org/packages/dirvish-badge.svg]]
+[[https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml][file:https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml/badge.svg]]
