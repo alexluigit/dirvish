@@ -40,13 +40,11 @@
 (defvar vscode-icon-dir)
 (require 'all-the-icons nil t)
 (require 'vscode-icon nil t)
-(require 'dirvish-commands)
+(require 'dirvish)
 
 (defvar dirvish--vscode-icon-directory
   (concat (and (boundp 'vscode-icon-dir) vscode-icon-dir)
           (if (and (fboundp 'vscode-icon-can-scale-image-p) (vscode-icon-can-scale-image-p)) "128/" "23/")))
-(require 'dired)
-(require 'dirvish-helpers)
 
 (defcustom dirvish-icon-delimiter " "
   "A string attached to the icon (for both backends)."

@@ -21,7 +21,7 @@
 (require 'seq)
 (require 'subr-x)
 (require 'transient)
-(require 'dirvish-builder)
+(require 'dirvish)
 (defvar dirvish-menu-available-prefixs '(dirvish-setup-menu dirvish-goto-bookmark))
 
 (defgroup dirvish-menu nil
