@@ -380,14 +380,26 @@ These packages are only listed here for discoverability.
 *** Additional notes on 3rd-party packages
 
 The package [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] is *NOT* required at all unless you want to use
-Dirvish with ~dirvish-override-dired-mode~ *disabled*. In fact, I'd advise *against*
-using this package along with Dirvish. The reason is Dirvish implements
-lazy-rendering on some UI elements including icons, whereas =all-the-icons-dired=
-retrives icons for all the files in a directory /eagerly/ which hangs up Emacs on
-large directories.
+Dirvish with ~dirvish-override-dired-mode~ *disabled*.
+
+In fact, I'd advise *against* using this package along with Dirvish. The reason is
+Dirvish implements lazy-rendering on some UI elements including icons, whereas
+=all-the-icons-dired= retrives icons for all the files in a directory /eagerly/
+which hangs up Emacs on large directories.
 
 Besides, Dirvish handles line highlighting by its own rather than using the
 inbuilt ~hl-line-mode~. Because of this, Dirvish's icon solution integrates
 flawlessly with line highlighting along with other attributes.
 
 [[icon-comparison][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/icon-comparison.png]]
+
+If you insist on doing so, you'll end up with duplicate icon columns. Here's a
+workaround for it:
+
+#+begin_src emacs-lisp
+(defun turn-off-all-the-icons-dired ()
+  (all-the-icons-dired-mode -1)
+  (setq-local tab-width 2))
+
+(add-hook 'dirvish-mode-hook #'turn-off-all-the-icons-dired)
+#+end_src
