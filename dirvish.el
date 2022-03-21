@@ -20,9 +20,6 @@
 
 ;;; Code:
 
-(declare-function all-the-icons-dired-mode "all-the-icons-dired")
-(defvar fd-dired-input-fd-args)
-(defvar fd-dired-buffer-name-format)
 (require 'so-long)
 (require 'mailcap)
 (require 'image-mode)
@@ -209,6 +206,7 @@ Set it to nil to use the default `mode-line-format'."
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
 (defvar dirvish-extra-libs '(dirvish-extras dirvish-vc))
+(defvar fd-dired-buffer-name-format)
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--preview-img-threshold (* 1024 1024 0.5))
@@ -465,7 +463,7 @@ the docstring and body for this function."
     `(progn (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
 
 (cl-defmacro dirvish-define-mode-line (name &optional docstring &rest body)
-  "Define a mode line segments with NAME and BODY."
+  "Define a mode line segment NAME with BODY and DOCSTRING."
   (declare (indent defun) (doc-string 2))
   (let ((ml-name (intern (format "dirvish-%s-ml" name))))
     `(defun ,ml-name () ,docstring ,@body)))
@@ -1231,6 +1229,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (if-let ((dv (gethash dirvish--curr-name (dirvish-hash))))
       (dirvish-deactivate dv)
     (kill-current-buffer))
+  (dirvish-deactivate (dirvish-curr))
   (switch-to-buffer (dirvish--ensure-temp-buffer)))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
@@ -1250,12 +1249,9 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish--hide-dired-header))
   (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
-  (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `dirvish--render-symlink-target'
+  (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
   (setq cursor-type nil)
   (set-window-fringes nil 1 1)
-  (when (bound-and-true-p all-the-icons-dired-mode)
-    (all-the-icons-dired-mode -1)
-    (setq-local tab-width 2))
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory)))
   (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
