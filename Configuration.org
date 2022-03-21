@@ -352,6 +352,16 @@ These packages are only listed here for discoverability.
         ("N" . dired-narrow)))
 
 (use-package dired-filter
+  :after dirvish
+  :config
+  (dirvish-define-mode-line filter "Describe filters."
+    (when dired-filter-mode
+      (format " %s %s " (propertize "Filters:" 'face 'bold)
+              (dired-filter--describe-filters))))
+  :custom
+  (dired-filter-show-filters nil)
+  (dired-filter-revert 'always)
+  (dirvish-mode-line-format '(:left (sort filter) :right (yank index)))
   :bind
   (:map dired-mode-map
         ([remap dired-omit-mode] . dired-filter-mode)))

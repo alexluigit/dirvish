@@ -17,7 +17,7 @@
 
 (require 'dirvish)
 
-(defvar dirvish-yank-queue '())
+(defvar dirvish-yank--queue '())
 
 (defun dirvish--yank (&optional mode)
   "Paste marked files/directory to current directory according to MODE.
@@ -76,7 +76,7 @@ This function is a helper for `dirvish--yank'."
     (and abort (user-error "Dirvish: yank aborted"))
     (let ((size (dirvish--get-filesize (mapcar #'car new-fileset)))
           (leng (length new-fileset)))
-      (add-to-list 'dirvish-yank-queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
+      (add-to-list 'dirvish-yank--queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
     (dirvish-repeat dirvish--yank-status-update 0 dirvish--repeat-interval)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
@@ -93,22 +93,9 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
     (push (cons file name) place))
   place)
 
-(defun dirvish--yank-status (&optional _entry)
-  "Get current yank task progress."
-  (when-let* ((task (car-safe dirvish-yank-queue)))
-    (let ((finished (car task))
-          (size (nth 2 task))
-          (index (car (nth 3 task)))
-          (length (cdr (nth 3 task))))
-      (when finished (setq dirvish-yank-queue (cdr dirvish-yank-queue)))
-      (format " %s: %s total size: %s "
-              (if finished "Success" "Progress")
-              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
-              (propertize size 'face 'font-lock-builtin-face)))))
-
 (defun dirvish--yank-status-update ()
   "Update current yank task progress."
-  (when-let* ((task (car-safe dirvish-yank-queue)))
+  (when-let* ((task (car-safe dirvish-yank--queue)))
     (let ((io-buf (nth 1 task))
           (progress (car (nth 3 task)))
           (length (cdr (nth 3 task)))
@@ -120,29 +107,32 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
         (setq progress length))
       (when (eq progress length)
         (when (dirvish-curr) (revert-buffer))
-        (setf (nth 0 (car-safe dirvish-yank-queue)) t)
-        (when (eq (length dirvish-yank-queue) 1)
+        (setf (nth 0 (car-safe dirvish-yank--queue)) t)
+        (when (eq (length dirvish-yank--queue) 1)
           (cancel-timer (symbol-value 'dirvish--yank-status-update-timer))))
-      (setcar (nth 3 (car-safe dirvish-yank-queue)) progress))))
+      (setcar (nth 3 (car-safe dirvish-yank--queue)) progress))))
 
-(defun dirvish-yank-progress-activate ()
-  "Display file IO progress in dirvish footer."
-  (when (dirvish--yank-status)
-    (dirvish-repeat dirvish--yank-status-update 0 dirvish--repeat-interval)))
+;;;###autoload (autoload 'dirvish-yank-ml "dirvish-yank" nil t)
+(dirvish-define-mode-line yank "Current move/paste task progress."
+  (when-let* ((task (car-safe dirvish-yank--queue)))
+    (let ((finished (car task))
+          (size (nth 2 task))
+          (index (car (nth 3 task)))
+          (length (cdr (nth 3 task))))
+      (when finished (setq dirvish-yank--queue (cdr dirvish-yank--queue)))
+      (format " %s: %s total size: %s "
+              (if finished "Success" "Progress")
+              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
+              (propertize size 'face 'font-lock-builtin-face)))))
 
 ;;;###autoload
-(defun dirvish-yank-display-progress ()
-  "Display yank progress in dirvish footer."
-  (let ((right-seg (cdr-safe dirvish-mode-line-format)))
-    (setq dirvish-mode-line-format
-          (cons (car-safe dirvish-mode-line-format)
-                (push '(:eval (dirvish--yank-status)) right-seg)))
-    (add-hook 'dirvish-activation-hook #'dirvish-yank-progress-activate)))
+(defun dirvish-yank-retrive-progress-h ()
+  "Retrieve progress of current paste/move task."
+  (when (dirvish-yank-ml) (dirvish-repeat dirvish--yank-status-update 0 0.5)))
 
 ;;;###autoload
 (defun dirvish-yank (&optional arg)
   "Paste marked files/directory to current directory.
-
 With optional prefix ARG, delete source files/directories."
   (interactive "P")
   (if arg (dirvish--yank 'move) (dirvish--yank)))
