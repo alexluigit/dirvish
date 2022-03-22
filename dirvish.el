@@ -1461,7 +1461,8 @@ directory in another window."
         (with-selected-window (dirvish--create-root-window dv)
           (switch-to-buffer buf)
           (dirvish-reclaim)
-          (dirvish-build)))
+          (dirvish-build)
+          (dirvish-debounce layout (dirvish-preview-update))))
     (user-error "Dirvish: not in a dirvish buffer")))
 
 (defun dirvish-find-file (&optional file ignore-hist)
