@@ -8,6 +8,8 @@
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 ;; Package-Requires: ((emacs "27.1"))
 
+;; This file is not part of GNU Emacs.
+
 ;;; Commentary:
 ;; A minimalistic yet versatile file manager based on Dired.
 ;; This package gives Dired the following features:
