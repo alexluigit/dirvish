@@ -26,10 +26,6 @@ want further customizations.
 It is recommended to use the latest version of these packages/applications,
 otherwise the preview functionality may not work correctly.
 
-If you are using an older version of =ffmpegthumbnailer=, such as 2.1.1 on Ubuntu
-installed from =apt=, the video thumbnailer won't get generated, a workaround can
-be found [[https://github.com/alexluigit/dirvish/issues/19][here]].
-
 ** Customization options
 
 |---------------------------------+----------+--------------------------------------|
