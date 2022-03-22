@@ -1225,11 +1225,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
-  ;; FIXME: dv should be always accessible here
-  (if-let ((dv (gethash dirvish--curr-name (dirvish-hash))))
-      (dirvish-deactivate dv)
-    (kill-current-buffer))
-  (dirvish-deactivate (dirvish-curr))
+  (dirvish-deactivate (gethash dirvish--curr-name (dirvish-hash)))
   (switch-to-buffer (dirvish--ensure-temp-buffer)))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
