@@ -953,6 +953,16 @@ cache image. A new directory is created unless NO-MKDIR."
       (goto-char 1)
       (insert (make-string h-offset ?\n) (make-string w-offset ?\s)))))
 
+(defun dirvish-preview--inhibit-long-line (file)
+  "Preview FILE unless it contains long lines."
+  (let ((buf (find-file-noselect file t)))
+    (with-current-buffer buf
+      (if (funcall so-long-predicate)
+          (progn
+            (kill-buffer buf)
+            `(info . ,(format "File %s contains very long lines, preview skipped." file)))
+        `(buffer . ,buf)))))
+
 (defun dirvish-clean-preview-images (fileset)
   "Clean image cache for FILESET."
   (let ((win (dv-preview-window (dirvish-curr))) size)
@@ -984,7 +994,7 @@ When PROC finishes, fill preview buffer with process result."
 (dirvish-define-preview text (file)
   "Open FILE with `find-file-noselect'."
   (when (string-match "text/" (or (mailcap-file-name-to-mime-type file) ""))
-    `(buffer . ,(find-file-noselect file t nil))))
+    (dirvish-preview--inhibit-long-line file)))
 
 (dirvish-define-preview gif (file)
   "Display an animated image FILE."
@@ -1071,14 +1081,7 @@ When PROC finishes, fill preview buffer with process result."
            `(buffer . ,(dired-noselect file)))
           ((> filesize threshold) ; do not preview too large files
            `(info . ,(format "File %s is too big for literal preview." file)))
-          (t
-           (let ((buf (find-file-noselect file t nil)))
-             (with-current-buffer buf
-               (if (so-long-detected-long-line-p) ; do not preview files containing too long lines
-                   (progn
-                     (kill-buffer buf)
-                     `(info . ,(format "File %s contains very long lines, preview skipped." file)))
-                 `(buffer . ,buf))))))))
+          (t (dirvish-preview--inhibit-long-line file)))))
 
 (defun dirvish-preview-dispatch (preview-type payload dv)
   "Execute dispatcher's PAYLOAD according to PREVIEW-TYPE.
