@@ -219,6 +219,8 @@ Set it to nil to use the default `mode-line-format'."
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--subtree-prefix-len
   (condition-case nil (length (or (bound-and-true-p dired-subtree-line-prefix) "  ")) (error 2)))
+(defconst dirvish-preview--video-use-embed-thumb
+  (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defvar dirvish--transient-dvs '())
 (defvar dirvish--repeat-timers '())
 (defvar dirvish--available-attrs '())
@@ -1030,7 +1032,8 @@ When PROC finishes, fill preview buffer with process result."
            (cache (dirvish--get-image-cache-for-file file width ".jpg")))
       (if (file-exists-p cache)
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
-        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s" ,(number-to-string width) "-m"))))))
+        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s" ,(number-to-string width)
+                         ,(if dirvish-preview--video-use-embed-thumb "-m" "")))))))
 
 (dirvish-define-preview audio (file)
   "Use output of `mediainfo' shell command as preview."
