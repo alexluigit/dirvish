@@ -339,7 +339,7 @@ These packages are only listed here for discoverability.
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 
-;; Tree browser
+;; Turn Dired into a tree browser
 (use-package dired-subtree
   :bind
   (:map dired-mode-map
@@ -351,17 +351,21 @@ These packages are only listed here for discoverability.
   (:map dired-mode-map
         ("N" . dired-narrow)))
 
+;; `ibuffer' like file filtering system
 (use-package dired-filter
   :after dirvish
   :config
+  ;; Define our own mode line segment
   (dirvish-define-mode-line filter "Describe filters."
     (when dired-filter-mode
       (format " %s %s " (propertize "Filters:" 'face 'bold)
               (dired-filter--describe-filters))))
   :custom
+  ;; Do not touch the header line
   (dired-filter-show-filters nil)
-  (dired-filter-revert 'always)
+  ;; Instead, use our mode line segment defined above
   (dirvish-mode-line-format '(:left (sort filter) :right (yank index)))
+  (dired-filter-revert 'always)
   :bind
   (:map dired-mode-map
         ([remap dired-omit-mode] . dired-filter-mode)))
