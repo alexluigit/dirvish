@@ -21,6 +21,19 @@
 (defvar dirvish-side--state-alist '())
 (defvar dirvish-side-scope-fn nil)
 
+(defcustom dirvish-side-attributes dirvish-attributes
+  "Same as `dirvish-attributes', but for side sessions."
+  :group 'dirvish :type '(repeat dirvish-attribute))
+
+(defcustom dirvish-side-preview-dispatchers dirvish-preview-dispatchers
+  "Same as `dirvish-preview-dispatchers', but for side sessions."
+  :group 'dirvish :type 'list)
+
+(defcustom dirvish-side-mode-line-format dirvish-mode-line-format
+  "Same as `dirvish-mode-line-format', but for side sessions."
+  :group 'dirvish :type 'plist
+  :set (lambda (k v) (set k v) (setq dirvish-side--ml-fmt (dirvish--mode-line-fmt-setter v))))
+
 (defcustom dirvish-side-scope 'tab
   "SCOPE for Dirvish side window.
 Every SCOPE only have one (toggleable) side Dirvish session.
@@ -150,6 +163,9 @@ otherwise it defaults to `project-current'."
           :path (or (and path (file-name-directory path))
                     (dirvish--get-project-root)
                     (dirvish--ensure-path))
+          :attributes dirvish-side-attributes
+          :preview-dispatchers dirvish-side-preview-dispatchers
+          :mode-line-format dirvish-side--ml-fmt
           :depth -1
           :type 'side))
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
