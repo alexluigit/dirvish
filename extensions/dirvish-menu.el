@@ -53,8 +53,8 @@
          (curr-val (funcall slot-name dv))
          (new-val (if (eq value 'On) (push item curr-val) (delq item curr-val))))
     (cl-case slot-name
-      ('dv-raw-attributes (setf (dv-raw-attributes dv) new-val))
-      ('dv-raw-preview-dps (setf (dv-raw-preview-dps dv) new-val)))
+      ('dv-attributes (setf (dv-attributes dv) new-val))
+      ('dv-preview-dispatchers (setf (dv-preview-dispatchers dv) new-val)))
     (dirvish--refresh-slots dv)
     (revert-buffer)))
 

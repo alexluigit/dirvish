@@ -503,6 +503,8 @@ If FLATTEN is non-nil, collect them as a flattened list."
        (transient nil)
        (type nil)
        (dedicated nil)
+       (attributes (purecopy dirvish-attributes))
+       (preview-dispatchers (purecopy dirvish-preview-dispatchers))
        (mode-line-format dirvish--ml-fmt)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
@@ -576,7 +578,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (parent-dir-buf-alist
    ()
    :documentation "TODO.")
-  (raw-attributes
+  (attributes
    (purecopy dirvish-attributes)
    :documentation "TODO.")
   (attributes-alist
@@ -588,10 +590,10 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (index-path
    ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
-  (raw-preview-dps
+  (preview-dispatchers
    (purecopy dirvish-preview-dispatchers)
    :documentation "TODO.")
-  (preview-dispatchers
+  (preview-dispatcher-fns
    ()
    :documentation "Preview dispatchers used for preview in this instance.")
   (mode-line-format
@@ -679,14 +681,14 @@ by this instance."
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
   (when dirvish-attributes (mapc #'require dirvish-extra-libs))
-  (let* ((attr-names (append dirvish--builtin-attrs (dv-raw-attributes dv)))
+  (let* ((attr-names (append dirvish--builtin-attrs (dv-attributes dv)))
          (attrs-alist
           (cl-loop for name in attr-names
                    for attr = (cdr-safe (assoc name dirvish--available-attrs))
                    collect (cl-destructuring-bind (&key overlay if fn left right &allow-other-keys)
                                attr (list overlay if fn left right))))
-         (preview-dps
-          (cl-loop for dp-name in (append '(disable) (dv-raw-preview-dps dv) '(default))
+         (preview-dispatcher-fns
+          (cl-loop for dp-name in (append '(disable) (dv-preview-dispatchers dv) '(default))
                    for dp-func-name = (intern (format "dirvish-%s-preview-dp" dp-name))
                    collect dp-func-name))
          (scopes (cl-loop with res-plist = `(:dv ,dv)
@@ -694,7 +696,7 @@ by this instance."
                           do (setq res-plist (append res-plist (list key (funcall value))))
                           finally return res-plist)))
     (setf (dv-attributes-alist dv) attrs-alist)
-    (setf (dv-preview-dispatchers dv) preview-dps)
+    (setf (dv-preview-dispatcher-fns dv) preview-dispatcher-fns)
     (setf (dv-scopes dv) scopes)
     (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
     (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))
@@ -1147,7 +1149,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
       (let* ((orig-buffer-list (buffer-list))
              (index (dv-index-path dv))
              (file (if (file-directory-p index) (file-name-as-directory index) index))
-             (buffer (cl-loop for dispatcher in (dv-preview-dispatchers dv)
+             (buffer (cl-loop for dispatcher in (dv-preview-dispatcher-fns dv)
                               for (dv-type . payload) = (funcall dispatcher file dv)
                               for buf = (dirvish-preview-dispatch dv-type payload dv)
                               until dv-type
