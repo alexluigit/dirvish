@@ -137,28 +137,27 @@ STYLE should be one of these:
 See `face-remapping-alist' for more details."
   :group 'dirvish :type 'alist)
 
-(defvar dirvish--mode-line-fmt nil)
+(defvar dirvish--ml-fmt nil)
+(defun dirvish--mode-line-fmt-setter (fmt)
+  "Compose the `mode-line-format' for Dirvish from FMT."
+  (cl-labels ((expand (l) (cl-loop for s in l
+                                   collect `(:eval (,(intern (format "dirvish-%s-ml" s)))))))
+    (let ((fmt-left (or (expand (plist-get fmt :left)) mode-line-format))
+          (fmt-right (expand (plist-get fmt :right))))
+      `((:eval (let* ((buf (window-buffer (dv-root-window (dirvish-curr))))
+                      (str-right (format-mode-line ',fmt-right nil nil buf)))
+                 (concat (format-mode-line ',fmt-left nil nil buf)
+                         (propertize " " 'display
+                                     `((space :align-to (- (+ right right-fringe right-margin)
+                                                           ,(string-width str-right)))))
+                         str-right)))))))
 (defcustom dirvish-mode-line-format
   '(:left (sort omit) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
 The SEGMENTs are defined by `dirvish-define-mode-line'.
 Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist
-  :set
-  (lambda (k v)
-    (set k v)
-    (cl-labels ((expand (l) (cl-loop for s in l
-                                     collect `(:eval (,(intern (format "dirvish-%s-ml" s)))))))
-      (let ((fmt-left (or (expand (plist-get v :left)) mode-line-format))
-            (fmt-right (expand (plist-get v :right))))
-        (setq dirvish--mode-line-fmt
-              `((:eval (let* ((buf (window-buffer (dv-root-window (dirvish-curr))))
-                              (str-right (format-mode-line ',fmt-right nil nil buf)))
-                         (concat (format-mode-line ',fmt-left nil nil buf)
-                                 (propertize " " 'display
-                                             `((space :align-to (- (+ right right-fringe right-margin)
-                                                                   ,(string-width str-right)))))
-                                 str-right)))))))))
+  :set (lambda (k v) (set k v) (setq dirvish--ml-fmt (dirvish--mode-line-fmt-setter v))))
 
 (defvar dirvish-preview-setup-hook nil
   "Hook functions for preview buffer initialization.")
@@ -398,7 +397,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
-    (setq-local mode-line-format dirvish--mode-line-fmt)
+    (setq-local mode-line-format (dv-mode-line-format dv))
     (set (make-local-variable 'face-remapping-alist) dirvish--footer-remap-alist)))
 
 (defun dirvish-reclaim (&optional _window)
@@ -504,6 +503,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
        (transient nil)
        (type nil)
        (dedicated nil)
+       (mode-line-format dirvish--ml-fmt)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
        (read-only-depth (if (>= depth 0) depth dirvish-depth))
@@ -594,6 +594,9 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-dispatchers
    ()
    :documentation "Preview dispatchers used for preview in this instance.")
+  (mode-line-format
+   dirvish--ml-fmt
+   :documentation "TODO.")
   (ls-switches
    dired-listing-switches
    :documentation "is the list switches passed to `ls' command.")
@@ -1261,7 +1264,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (push (selected-window) (dv-dired-windows dv))
     (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
-    (setq mode-line-format (and owp dirvish--mode-line-fmt))
+    (setq mode-line-format (and owp (dv-mode-line-format dv)))
     (setq header-line-format (and owp `((:eval (funcall #',(dv-header-string-fn dv)))))))
   (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
@@ -1325,7 +1328,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish-build--footer (dv)
   "Create a window showing footer for DV."
-  (when dirvish-mode-line-format
+  (when (dv-mode-line-format dv)
     (let* ((inhibit-modification-hooks t)
            (buf (dirvish--get-util-buffer dv 'footer))
            (win-alist `((side . below)
