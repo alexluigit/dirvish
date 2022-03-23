@@ -384,24 +384,25 @@ These packages are only listed here for discoverability.
   ("C-c F" . fd-dired))
 #+end_src
 
-*** Additional notes on 3rd-party packages
+** Additional notes on 3rd-party packages
+*** all-the-icons-dired.el
 
-The package [[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]] is *NOT* required at all unless you want to use
+This package ([[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]]) is *NOT* required at all unless you want to use
 Dirvish with ~dirvish-override-dired-mode~ *disabled*.
 
 In fact, I'd advise *against* using this package along with Dirvish. The reason is
-Dirvish implements lazy-rendering on some UI elements including icons, whereas
-=all-the-icons-dired= retrives icons for all the files in a directory /eagerly/
-which hangs up Emacs on large directories.
+that it trys to retrive icons for all the files in a directory /eagerly/, which
+hangs up Emacs on large directories. Dirvish, on the contrary, renders UI
+elements (including icons of course) *lazily* whenever applicable.
 
 Besides, Dirvish handles line highlighting by its own rather than using the
 inbuilt ~hl-line-mode~. Because of this, Dirvish's icon solution integrates
 flawlessly with line highlighting along with other attributes.
 
-[[icon-comparison][https://raw.githubusercontent.com/alexluigit/binaries/main/dirvish/assets/icon-comparison.png]]
+[[icon-comparison][https://user-images.githubusercontent.com/16313743/159666549-02209e1b-80f9-491d-b7f4-8db1358511e1.png]]
 
-If you insist on doing so, you'll end up with duplicate icon columns. Here's a
-workaround for it:
+You'll end up with two icon columns if you insist on using this package. Here's a
+workaround (you'll still get stuck at large directories though):
 
 #+begin_src emacs-lisp
 (defun turn-off-all-the-icons-dired ()
@@ -410,3 +411,9 @@ workaround for it:
 
 (add-hook 'dirvish-mode-hook #'turn-off-all-the-icons-dired)
 #+end_src
+
+*** treemacs-icons-dired.el
+
+Apart from similar concerns mentioned in the above =all-the-icons-dired.el=
+section, this package ([[https://melpa.org/#/treemacs-icons-dired][treemacs-icons-dired]]) also introduces duplicate icon
+columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.com/alexluigit/dirvish/issues/16][here]].
