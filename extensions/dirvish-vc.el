@@ -84,6 +84,15 @@ This variable is consumed by `vc-state' attribute in Dirvish."
                (vc-diff)))
     '(buffer . "*vc-diff*")))
 
+;;;###autoload (autoload 'dirvish-vc-info-ml "dirvish-vc")
+(dirvish-define-mode-line vc-info
+  (when dirvish--vc-backend
+    (let ((ml-str (vc-call-backend dirvish--vc-backend 'mode-line-string default-directory)))
+      (cl-destructuring-bind (backend branch) (split-string ml-str ":\\|-")
+        (format " %s: %s "
+                (propertize backend 'face 'bold)
+                (propertize (or branch "") 'face 'font-lock-builtin-face))))))
+
 (defun dirvish--magit-on-files (fn &optional fileset)
   "Execute magit function FN to FILESET."
   (unless (featurep 'magit) (user-error "Dirvish: install magit.el to use this command"))
