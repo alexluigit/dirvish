@@ -344,6 +344,8 @@ These packages are only listed here for discoverability.
 
 ;; Turn Dired into a tree browser
 (use-package dired-subtree
+  :config
+  (setq dired-subtree-use-backgrounds nil)
   :bind
   (:map dired-mode-map
         ("TAB" . dired-subtree-toggle)))

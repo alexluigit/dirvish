@@ -1,0 +1,33 @@
+* 1.2.0
+** Breaking changes
+
++ support asynchronous Dired listing.
++ scope awareness
+
+** Changes since 1.0.0
+
++ =side=: enable isolated atts/preview-dps/mode-line-format
++ =side=: add ~dirvish-side-open-file-window-function~ option
++ =vc=: add ~vc-info~ mode line segment
++ =extras=: add ~expand-state~ attribute
++ =peek=: support ~ivy-mode~ and builtin ~icomplete[-vertical]-mode~
++ =core=: allow user to disable the history tracking
++ =core=: add ~dirvish-hl-line~ face
+
+** Fixes since 1.0.0
+
++ [[https://github.com/alexluigit/dirvish/issues/15][#15]]:  ensure correct cache image path on Windows
++ [[https://github.com/alexluigit/dirvish/issues/19][#19]]:  video thumbnail generation
++ =vc=:   adjust position of ~vc-state~ attribute
++ =side=: ensure preview update on fullscreen toggle
++ =side=: use fixed width for side window
++ =side=: keep the side window alive on =delete-other-windows=
++ =core=: avoid void session error on window quit
++ =core=: error at initialization when ~dired-hide-details-mode~ is turned off
++ =core=: ensure retriving dwim-target from live window
++ =core=: hide cursor in utility buffers
+
+* 1.0.0
+
+First release.
+
