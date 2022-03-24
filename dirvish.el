@@ -182,7 +182,6 @@ Set it to nil to use the default `mode-line-format'."
     (dired         dired-up-directory              dirvish-up-directory           :override)
     (dired         dired-sort-toggle-or-edit       dirvish-sort-by-criteria       :override)
     (dired         +dired/quit-all                 quit-window                    :override)
-    (dired         dired-view-file                 dirvish--enlarge               :before)
     (dired         dired-internal-do-deletions     dirvish-deletion-ad)
     (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
     (wdired        wdired-change-to-wdired-mode    dirvish-wdired-mode-ad         :after)
@@ -197,7 +196,6 @@ Set it to nil to use the default `mode-line-format'."
     (evil          evil-refresh-cursor             dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor             dirvish-refresh-cursor-ad)
     (fd-dired      fd-dired                        dirvish-fd-dired-ad)
-    (magit         magit-status-setup-buffer       dirvish--enlarge               :before)
     (lsp-mode      lsp-deferred                    dirvish-ignore-ad)))
 (defvar dirvish-scopes '(:tab tab-bar--current-tab-index :frame selected-frame))
 (defvar dirvish-hook-alist
@@ -670,14 +668,6 @@ by this instance."
       (setq r-win (next-window)))
     (setf (dv-root-window dv) r-win)
     r-win))
-
-(defun dirvish--enlarge (&rest _)
-  "Kill all dirvish parent windows except the root one."
-  (when (dirvish-curr)
-    (cl-dolist (win (dv-dired-windows (dirvish-curr)))
-      (and (not (eq win (dv-root-window (dirvish-curr))))
-           (window-live-p win)
-           (delete-window win)))))
 
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
@@ -1212,12 +1202,6 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
           (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
 
-(defun dirvish-rebuild-parents-h (frame)
-  "Rebuild dirvish layout in FRAME."
-  (dirvish-reclaim frame)
-  (when-let ((dv (and (dirvish-live-p) (dirvish-curr))))
-    (unless (dv-transient dv) (dirvish-build))))
-
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
@@ -1254,7 +1238,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
-  (or dirvish--attrs-hash (setq-local dirvish--attrs-hash (make-hash-table :test #'equal)))
+  (or dirvish--attrs-hash (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
   (setq cursor-type nil)
   (set-window-fringes nil 1 1)
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
@@ -1268,7 +1252,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (setq-local dirvish--curr-name (dv-name dv))
     (setq mode-line-format (and owp (dv-mode-line-format dv)))
     (setq header-line-format (and owp `((:eval (funcall #',(dv-header-string-fn dv)))))))
-  (add-hook 'window-buffer-change-functions #'dirvish-rebuild-parents-h nil :local)
+  (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
   (add-hook 'quit-window-hook #'dirvish-quit-h nil :local)
   (run-hooks 'dirvish-mode-hook))
