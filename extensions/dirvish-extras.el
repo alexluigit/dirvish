@@ -158,9 +158,13 @@ The value can be one of: `plus', `arrow', `chevron'."
   (unless (file-directory-p f-name)
     (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
            (width (window-width))
-           (f-size-raw (file-size-human-readable (if f-attrs (file-attribute-size f-attrs) 0)))
-           (f-size-str (let* ((str-spc (concat f-size-raw " ")) (len (- 6 (length str-spc))))
-                         (if (> len 0) (concat (make-string len ?\ ) str-spc) str-spc)))
+           (f-size-str
+            (concat (dirvish-get-attribute-create f-name :file-size nil
+                      (let* ((info (file-size-human-readable
+                                    (if f-attrs (file-attribute-size f-attrs) 0)))
+                             (spc (concat info " "))
+                             (len (- 6 (length spc))))
+                        (if (> len 0) (concat (make-string len ?\ ) spc) spc)))))
            (f-size-len (length f-size-str))
            (f-base-str (buffer-substring f-beg f-end))
            (f-base-len (dirvish--actual-string-length f-base-str))
