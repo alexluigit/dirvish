@@ -29,6 +29,7 @@
   "Same as `dirvish-preview-dispatchers', but for side sessions."
   :group 'dirvish :type 'list)
 
+(defvar dirvish-side--ml-fmt nil)
 (defcustom dirvish-side-mode-line-format dirvish-mode-line-format
   "Same as `dirvish-mode-line-format', but for side sessions."
   :group 'dirvish :type 'plist
