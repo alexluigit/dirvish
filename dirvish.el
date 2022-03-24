@@ -230,7 +230,7 @@ Set it to nil to use the default `mode-line-format'."
 (defvar-local dirvish--curr-name nil)
 (defvar-local dirvish--vc-backend nil)
 (defvar-local dirvish--attrs-width `(,dirvish--prefix-spaces . 0))
-(defvar-local dirvish--attrs-alist nil)
+(defvar-local dirvish--attrs-hash nil)
 (put 'dired-subdir-alist 'permanent-local t)
 (put 'dirvish--child-entry 'permanent-local t)
 (put 'dirvish--curr-name 'permanent-local t)
@@ -442,15 +442,16 @@ Optional keywords LEFT, RIGHT and DOC are supported."
        (defun ,render ,args (ignore ,@args) (let ((ov ,form)) (and ov (overlay-put ov ',ov t)))))))
 
 (defmacro dirvish-get-attribute-create (file attribute force &rest body)
-  "Get FILE's ATTRIBUTE from `dirvish--attrs-alist'.
+  "Get FILE's ATTRIBUTE from `dirvish--attrs-hash'.
 When FORCE or the attribute does not exist, set it with BODY."
   (declare (indent defun))
-  `(let ((f-name ,file)
-         (item (alist-get f-name dirvish--attrs-alist nil nil #'string=)))
-     (unless item (push (list f-name :init t) dirvish--attrs-alist))
-     (when (or ,force (not (plist-get item ,attribute)))
-       (plist-put (alist-get f-name dirvish--attrs-alist nil nil #'string=) ,attribute ,@body))
-     (plist-get (alist-get f-name dirvish--attrs-alist nil nil #'string=) ,attribute)))
+  `(let* ((f-name ,file)
+          (hash (or (gethash f-name dirvish--attrs-hash) '(:init t)))
+          (attr (plist-get hash ,attribute)))
+     (when (or ,force (not attr))
+       (setq attr ,@body)
+       (puthash f-name (append hash (list ,attribute attr)) dirvish--attrs-hash))
+     attr))
 
 (cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
   "Define a Dirvish preview dispatcher NAME.
@@ -624,7 +625,7 @@ restore them after."
        (unless (frame-parameter nil 'dirvish--hash)
          (pcase-dolist (`(,file ,h-name ,h-fn) dirvish-hook-alist)
            (when (require file nil t) (add-hook h-name h-fn)))
-         (set-frame-parameter nil 'dirvish--hash (make-hash-table :test 'equal)))
+         (set-frame-parameter nil 'dirvish--hash (make-hash-table)))
        (puthash (dv-name dv) dv (dirvish-hash))
        ,(when args `(save-excursion ,@args)) ; Body form given
        dv)))
@@ -703,8 +704,6 @@ by this instance."
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (when (> (length dirvish--attrs-alist) 500)
-    (setq-local dirvish--attrs-alist nil))
   (let* ((attrs (dv-attributes-alist dv))
          (curr-pos (point))
          (fr-h (frame-height))
@@ -1255,6 +1254,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
+  (or dirvish--attrs-hash (setq-local dirvish--attrs-hash (make-hash-table :test #'equal)))
   (setq cursor-type nil)
   (set-window-fringes nil 1 1)
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
