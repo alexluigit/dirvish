@@ -56,10 +56,11 @@ the inbuilt `icomplete\[-vertical-mode\]'."
 The window is created only when metadata in current minibuffer is
 one of categories in `dirvish-peek-categories'."
   (let* ((old-dv (dirvish-curr))
-         (meta (completion-metadata
-                (buffer-substring-no-properties (field-beginning) (point))
-                minibuffer-completion-table
-                minibuffer-completion-predicate))
+         (meta (ignore-errors
+                 (completion-metadata
+                  (buffer-substring-no-properties (field-beginning) (point))
+                  minibuffer-completion-table
+                  minibuffer-completion-predicate)))
          (category (completion-metadata-get meta 'category))
          (preview-category (and (memq category dirvish-peek-categories) category))
          new-dv)
