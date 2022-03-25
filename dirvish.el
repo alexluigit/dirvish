@@ -132,7 +132,7 @@ STYLE should be one of these:
   :group 'dirvish)
 
 (defcustom dirvish-face-remap-alist
-  '((header-line :height 1.04 :box (:line-width 4 :color "#303030")))
+  '((header-line :height 1.05 :inherit (mode-line)))
   "Face remapping alist used in dirvish window.
 See `face-remapping-alist' for more details."
   :group 'dirvish :type 'alist)
