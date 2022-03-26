@@ -1199,7 +1199,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 
 (dirvish-define-mode-line index "Current file's index and total files count."
   (let ((cur-pos (- (line-number-at-pos (point)) 1))
-          (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
+        (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
 
 (defun dirvish-update-body-h ()
@@ -1207,7 +1207,9 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-line -1)) ((bobp) (forward-line 1)))
     (dired-move-to-filename)
-    (dirvish--render-attributes dv)
+    (if (file-remote-p default-directory)
+        (dirvish-debounce layout (force-mode-line-update))
+      (dirvish--render-attributes dv))
     (when-let ((filename (dired-get-filename nil t)))
       (setf (dv-index-path dv) filename)
       (dirvish-debounce layout
@@ -1224,7 +1226,8 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
-  (dirvish-preview--clean-cache-images (dired-get-marked-files))
+  (unless (file-remote-p default-directory)
+    (dirvish-preview--clean-cache-images (dired-get-marked-files)))
   (dirvish--hide-dired-header)
   (dirvish-update-body-h))
 
@@ -1239,14 +1242,16 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
   (or dirvish--attrs-hash (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
-  (setq cursor-type nil)
   (set-window-fringes nil 1 1)
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory)))
   (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))
-    (dirvish--render-attributes dv)
+    (if (file-remote-p default-directory)
+        (setq-local cursor-type t)
+      (setq cursor-type nil)
+      (dirvish--render-attributes dv))
     (push (selected-window) (dv-dired-windows dv))
     (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
@@ -1262,7 +1267,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current))
          (parent-dirs ())
-         (depth (if (dv-dedicated dv) 0 (dv-depth dv)))
+         (depth (if (or (file-remote-p current) (dv-dedicated dv)) 0 (dv-depth dv)))
          (i 0))
     (dirvish-setup dirvish--curr-name)
     (when (window-parameter (selected-window) 'window-side)
