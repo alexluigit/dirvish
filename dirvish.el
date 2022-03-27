@@ -1487,7 +1487,7 @@ update `dirvish--history-ring'."
                (dirvish-new
                  :depth dv-depth
                  :transient (dv-name dv-tran))))
-            (dirvish-build))
+            (unless (derived-mode-p 'dirvish-mode) (dirvish-build)))
         (find-file entry)))))
 
 ;;;###autoload
