@@ -504,6 +504,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
        (dedicated nil)
        (attributes (purecopy dirvish-attributes))
        (preview-dispatchers (purecopy dirvish-preview-dispatchers))
+       (ls-switches dired-listing-switches)
        (mode-line-format dirvish--ml-fmt)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
@@ -790,17 +791,23 @@ DV defaults to the current dirvish instance if not provided."
   "Advisor for FN `dired-subtree-remove'."
   (dirvish--hide-dired-header (funcall fn))) ; See `dired-hacks' #170
 
-(defun dirvish-dired-ad (fn dirname &optional switches)
+(defun dirvish--activate-dired (dirname switches &optional depth)
+  "Start a Dirvish session with DIRNAME and SWITCHES.
+DEPTH defaults to -1 (same as `dirvish-dired') if not specified."
+  (dirvish-activate
+   (dirvish-new
+     :path (dirvish--ensure-path dirname)
+     :depth (or depth -1)
+     :ls-switches (or switches dired-listing-switches)))
+  (dired-goto-file (expand-file-name dirname)))
+
+(defun dirvish-dired-ad (_fn dirname &optional switches)
   "Override `dired' command.
 FN refers to original `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (when-let ((dv (dirvish-curr))) (dirvish-deactivate dv))
-  (apply fn dirname (and switches (list switches)))
-  (dirvish-activate (dirvish-new :depth -1))
-  (when switches
-    (setf (dv-ls-switches (dirvish-curr)) switches))
-  (dirvish-find-file dirname))
+  (dirvish--activate-dired dirname switches))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
@@ -809,9 +816,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when-let ((dv (dirvish-curr)))
     (unless (dirvish-dired-p dv) (dirvish-deactivate dv)))
   (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
-  (dirvish-activate (dirvish-new :depth -1))
-  (when switches (setf (dv-ls-switches (dirvish-curr)) switches))
-  (dirvish-find-file dirname))
+  (dirvish--activate-dired dirname switches))
 
 (defun dirvish-dired-other-tab-ad (dirname &optional switches)
   "Override `dired-other-tab' command.
@@ -819,9 +824,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab (dirvish--ensure-temp-buffer))
   (dirvish-drop)
-  (dirvish-activate (dirvish-new :depth -1))
-  (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
-  (dirvish-find-file dirname))
+  (dirvish--activate-dired dirname switches))
 
 (defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
@@ -829,9 +832,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
   (let (after-focus-change-function)
     (switch-to-buffer-other-frame (dirvish--ensure-temp-buffer))
-    (dirvish-activate (dirvish-new :depth dirvish-depth))
-    (and switches (setf (dv-ls-switches (dirvish-curr)) switches))
-    (dirvish-find-file dirname)))
+    (dirvish--activate-dired dirname switches dirvish-depth)))
 
 (defun dirvish-dired-jump-ad (_fn &optional other-window file-name)
   "An advisor for `dired-jump' command.
