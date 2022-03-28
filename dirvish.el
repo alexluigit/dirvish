@@ -1377,8 +1377,8 @@ If the buffer is not available, create it with `dired-noselect'."
          (sorter (cdr (dv-sort-criteria dv)))
          (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
     (unless buffer
-      (let ((files-count (length (directory-files entry nil nil t))))
-        (if (> files-count dirvish-async-listing-threshold)
+      (let ((count (if (file-remote-p entry) 0 (length (directory-files entry nil nil t)))))
+        (if (> count dirvish-async-listing-threshold)
             (setq buffer (dirvish--noselect-async entry switches))
           (setq buffer (dired-noselect entry switches))))
       (push (cons entry buffer)
