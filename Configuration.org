@@ -295,6 +295,7 @@ of the window.
   ;; This feature is disabled by default
   ;; (dirvish-async-listing-threshold 10000)
   :config
+  ;; Place this line under :init to ensure the overriding at startup, see #22
   (dirvish-override-dired-mode)
   (dirvish-peek-mode)
   ;; In case you want the details at startup like `dired'

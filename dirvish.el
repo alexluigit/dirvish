@@ -191,11 +191,13 @@ Set it to nil to use the default `mode-line-format'."
     (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
     (recentf       recentf-track-closed-file       dirvish-ignore-ad)
-    (winner        winner-save-old-configurations  dirvish-ignore-ad)
-    (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
+    (winner        winner-save-old-configurations  dirvish-ignore-ad)))
+(defvar dirvish-extra-advice-alist
+  '((dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
     (evil          evil-refresh-cursor             dirvish-refresh-cursor-ad)
     (meow          meow--update-cursor             dirvish-refresh-cursor-ad)
     (fd-dired      fd-dired                        dirvish-fd-dired-ad)
+    (flycheck      flycheck-buffer                 dirvish-ignore-ad)
     (lsp-mode      lsp-deferred                    dirvish-ignore-ad)))
 (defvar dirvish-scopes '(:tab tab-bar--current-tab-index :frame selected-frame))
 (defvar dirvish-hook-alist
@@ -404,8 +406,10 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (if dirvish--curr-name
         (progn
           (dirvish--init-util-buffers (dirvish-curr))
-          (or dirvish-override-dired-mode (dirvish--add-advices)))
-      (or dirvish-override-dired-mode (dirvish--remove-advices)))
+          (or dirvish-override-dired-mode (dirvish--add-advices))
+          (dirvish--add-advices dirvish-extra-advice-alist))
+      (or dirvish-override-dired-mode (dirvish--remove-advices))
+      (dirvish--remove-advices dirvish-extra-advice-alist))
     (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
       (set-frame-parameter nil 'dirvish--curr dv) dv)))
 
@@ -917,14 +921,16 @@ If ALL-FRAMES, search target directories in all frames."
   "Only apply FN with ARGS outside of Dirvish."
   (unless (dirvish-curr) (apply fn args)))
 
-(defun dirvish--add-advices ()
-  "Add all advices listed in `dirvish-advice-alist'."
-  (pcase-dolist (`(,file ,sym ,fn ,place) dirvish-advice-alist)
+(defun dirvish--add-advices (&optional ad-alist)
+  "Add all advices listed in AD-ALIST.
+The AD-ALIST defaults to `dirvish-advice-alist'."
+  (pcase-dolist (`(,file ,sym ,fn ,place) (or ad-alist dirvish-advice-alist))
     (when (require file nil t) (advice-add sym (or place :around) fn))))
 
-(defun dirvish--remove-advices ()
-  "Remove all advices listed in `dirvish-advice-alist'."
-  (pcase-dolist (`(,_ ,sym ,fn) dirvish-advice-alist) (advice-remove sym fn)))
+(defun dirvish--remove-advices (&optional ad-alist)
+  "Remove all advices listed in AD-ALIST.
+The AD-ALIST defaults to `dirvish-advice-alist'."
+  (pcase-dolist (`(,_ ,sym ,fn) (or ad-alist dirvish-advice-alist)) (advice-remove sym fn)))
 
 ;;;; Preview
 
