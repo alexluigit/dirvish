@@ -554,6 +554,9 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-buffers
    ()
    :documentation "holds all file preview buffers in this instance.")
+  (preview-proc-initialized
+   ()
+   :documentation "TODO")
   (window-conf
    (current-window-configuration)
    :documentation "is the window configuration given by `current-window-configuration'.")
@@ -1121,10 +1124,12 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
         ('buffer (setq buf payload))
         ('image (dirvish-preview--insert-image payload dv))
         ('image-cache
-         (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
-           (set-process-sentinel
-            proc (lambda (&rest _) (dirvish-debounce layout (dirvish-preview-update))))
-           (insert " [Dirvish] Generating image cache...")))
+         (unless (member (dv-index-path dv) (dv-preview-proc-initialized dv))
+           (push (dv-index-path dv) (dv-preview-proc-initialized dv))
+           (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
+             (set-process-sentinel
+              proc (lambda (&rest _) (dirvish-debounce layout (dirvish-preview-update))))))
+         (insert " [Dirvish] Generating image cache..."))
         ('shell
          (let* ((res-buf (get-buffer-create " *Dirvish preview result*"))
                 (proc (apply #'start-process "dirvish-preview-process" res-buf cmd args)))
@@ -1233,7 +1238,8 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
   (unless (file-remote-p default-directory)
-    (dirvish-preview--clean-cache-images (dired-get-marked-files)))
+    (dirvish-preview--clean-cache-images (dired-get-marked-files))
+    (setf (dv-preview-proc-initialized (dirvish-curr)) nil))
   (dirvish--hide-dired-header)
   (dirvish-update-body-h))
 
