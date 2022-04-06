@@ -216,25 +216,36 @@ The value can be one of: `plus', `arrow', `chevron'."
 (defun dirvish-find-file-true-path ()
   "Open truename of (maybe) symlink file under the cursor."
   (interactive)
-  (dired-jump nil (file-truename (dired-get-filename))))
+  (dired-jump nil (file-truename (dired-get-filename nil t))))
+
+(defun dirvish--kill-and-echo (string)
+  "Echo last killed STRING."
+  (kill-new string)
+  (message "%s" (format "%s%s" (propertize "Copied: " 'face 'font-lock-builtin-face) string)))
+
+;;;###autoload
+(defun dirvish-copy-file-true-path ()
+  "Copy truename of (maybe) symlink file under the cursor."
+  (interactive)
+  (dirvish--kill-and-echo (file-truename (dired-get-filename nil t))))
 
 ;;;###autoload
 (defun dirvish-copy-file-name ()
   "Copy filename under the cursor."
   (interactive)
-  (message "Copied file NAME: %s" (dired-copy-filename-as-kill)))
+  (dirvish--kill-and-echo (dired-get-filename t t)))
 
 ;;;###autoload
 (defun dirvish-copy-file-path ()
   "Copy filename under the cursor."
   (interactive)
-  (message "Copied file PATH: %s" (kill-new (dired-get-filename nil t))))
+  (dirvish--kill-and-echo (dired-get-filename nil t)))
 
 ;;;###autoload
 (defun dirvish-copy-file-directory ()
   "Copy the current directory's (`default-directory''s) absolute path."
   (interactive)
-  (message "Copied file DIRECTORY: %s" (kill-new (expand-file-name default-directory))))
+  (dirvish--kill-and-echo (expand-file-name default-directory)))
 
 ;;;###autoload
 (defun dirvish-rename-space-to-underscore ()

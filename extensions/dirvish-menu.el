@@ -193,8 +193,9 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("n"   "copy file NAME"                       dirvish-copy-file-name)
     ("p"   "copy file PATH"                       dirvish-copy-file-path)
     ("d"   "copy file DIRECTORY"                  dirvish-copy-file-directory)
-    ("t"   "show file TYPE"                       dired-show-file-type)
-    ("l"   "find symlink's truename"              dirvish-find-file-true-path)])
+    ("s"   "copy symlink's truename"              dirvish-copy-file-true-path)
+    ("S"   "goto symlink's truename"              dirvish-find-file-true-path)
+    ("t"   "show file TYPE"                       dired-show-file-type)])
   (renaming
    ["File renaming"
     ("u"   "Upper-case file name"                 dired-upcase)
