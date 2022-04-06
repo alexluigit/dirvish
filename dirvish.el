@@ -1027,7 +1027,7 @@ When PROC finishes, fill preview buffer with process result."
             ((or (< (nth 7 (file-attributes file)) dirvish--preview-img-threshold)
                  (string-prefix-p (concat (expand-file-name dirvish-cache-dir) "images/") file))
              `(image . ,(create-image file nil nil :max-width width :max-height height)))
-            (t `(image-cache . ("convert" "-resize" ,(number-to-string width) ,file ,cache)))))))
+            (t `(image-cache . ("convert" ,file "-define" "jpeg:extent=400kb" "-resize" ,(number-to-string width) ,cache)))))))
 
 (dirvish-define-preview video (file dv)
   "Display a video thumbnail with width of DV's preview window."
