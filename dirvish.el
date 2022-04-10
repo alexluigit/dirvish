@@ -215,7 +215,7 @@ Set it to nil to use the default `mode-line-format'."
 (defconst dirvish--repeat-interval 0.1)
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
-(defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99)))
+(defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99 :box ())))
 (defconst dirvish--footer-remap-alist '((mode-line-inactive mode-line)))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--subtree-prefix-len
