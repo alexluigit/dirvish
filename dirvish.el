@@ -330,12 +330,10 @@ ALIST is window arguments passed to `window--display-buffer'."
                      (progn (forward-line 1) (dirvish--get-subtree-depth)))))
 
 (defun dirvish--get-filesize (fileset)
-  "Determine file size of provided list of files in FILESET."
-  (unless (executable-find "du") (user-error "`du' executable not found"))
-  (with-temp-buffer
-    (apply #'call-process "du" nil t nil "-sch" fileset)
-    (format "%s" (progn (re-search-backward "\\(^[0-9.,]+[a-zA-Z]*\\).*total$")
-                        (match-string 1)))))
+  "Return file size of FILESET in bytes."
+  (cl-labels ((f-name (f) (if (file-directory-p f) (directory-files-recursively f ".*") f))
+              (f-size (f) (file-attribute-size (file-attributes f))))
+    (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
 
 (defun dirvish--get-trash-dir ()
   "Get trash directory for current disk."
