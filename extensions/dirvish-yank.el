@@ -74,9 +74,7 @@ This function is a helper for `dirvish--yank'."
                     (?q (setq abort t) (setq new-fileset ()))))
               (setq new-fileset (dirvish--yank-push-task file target paste-name new-fileset)))))))
     (and abort (user-error "Dirvish: yank aborted"))
-    (let ((size (dirvish--get-filesize (mapcar #'car new-fileset)))
-          (leng (length new-fileset)))
-      (add-to-list 'dirvish-yank--queue `(nil ,io-buffer ,size ,(cons 0 leng) ,mode)))
+    (add-to-list 'dirvish-yank--queue `(nil ,io-buffer ,(cons 0 (length new-fileset)) ,mode))
     (dirvish-repeat dirvish--yank-status-update 0 dirvish--repeat-interval)
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
@@ -97,9 +95,9 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
   "Update current yank task progress."
   (when-let* ((task (car-safe dirvish-yank--queue)))
     (let ((io-buf (nth 1 task))
-          (progress (car (nth 3 task)))
-          (length (cdr (nth 3 task)))
-          (mode (nth 4 task))
+          (progress (car (nth 2 task)))
+          (length (cdr (nth 2 task)))
+          (mode (nth 3 task))
           (proc-exit "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"))
       (if (or (eq mode 'copy) (eq mode 'move))
           (setq progress (with-current-buffer io-buf
@@ -110,20 +108,17 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
         (setf (nth 0 (car-safe dirvish-yank--queue)) t)
         (when (eq (length dirvish-yank--queue) 1)
           (cancel-timer (symbol-value 'dirvish--yank-status-update-timer))))
-      (setcar (nth 3 (car-safe dirvish-yank--queue)) progress))))
+      (setcar (nth 2 (car-safe dirvish-yank--queue)) progress))))
 
 ;;;###autoload (autoload 'dirvish-yank-ml "dirvish-yank" nil t)
 (dirvish-define-mode-line yank "Current move/paste task progress."
   (when-let* ((task (car-safe dirvish-yank--queue)))
     (let ((finished (car task))
-          (size (nth 2 task))
-          (index (car (nth 3 task)))
-          (length (cdr (nth 3 task))))
+          (index (car (nth 2 task)))
+          (length (cdr (nth 2 task))))
       (when finished (setq dirvish-yank--queue (cdr dirvish-yank--queue)))
-      (format " %s: %s total size: %s "
-              (if finished "Success" "Progress")
-              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)
-              (propertize size 'face 'font-lock-builtin-face)))))
+      (format "Task progress: %s "
+              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)))))
 
 ;;;###autoload
 (defun dirvish-yank-retrive-progress-h ()
