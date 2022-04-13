@@ -17,14 +17,15 @@
 ;; - `dirvish-copy-file-name'
 ;; - `dirvish-copy-file-path'
 ;; - `dirvish-copy-file-directory'
+;; - `dirvish-total-file-size'
 ;; - `dirvish-rename-space-to-underscore'
 ;; - `dirvish-roam'
 ;;
 ;; Attributes
-;; - `file-size' attribute
-;; - `expanded-state' attribute
-;; - `vscode-icon' attribute
-;; - `all-the-icons' attribute
+;; - `file-size'
+;; - `expanded-state'
+;; - `vscode-icon'
+;; - `all-the-icons'
 
 ;;; Code:
 
@@ -246,6 +247,17 @@ The value can be one of: `plus', `arrow', `chevron'."
   "Copy the current directory's (`default-directory''s) absolute path."
   (interactive)
   (dirvish--kill-and-echo (expand-file-name default-directory)))
+
+;;;###autoload
+(defun dirvish-total-file-size (&optional fileset)
+  "Echo total file size of FILESET.
+FILESET defaults to `dired-get-marked-files'."
+  (interactive)
+  (let* ((fileset (or fileset (dired-get-marked-files)))
+         (count (propertize (number-to-string (length fileset))
+                            'face 'font-lock-builtin-face))
+         (size (file-size-human-readable (dirvish--get-filesize fileset))))
+    (message "%s" (format "Total size of %s entries: %s" count size))))
 
 ;;;###autoload
 (defun dirvish-rename-space-to-underscore ()
