@@ -123,8 +123,7 @@ according to the filename."
 
 (defun dirvish-side-quit-window-fn (_dv)
   "Quit window action for `dirvish-side'."
-  (dirvish-side--set-state nil 'uninitialized)
-  (when (window-parameter (selected-window) 'window-side) (delete-window)))
+  (dirvish-side--set-state nil 'uninitialized))
 
 (defun dirvish-side-root-window-fn ()
   "Display a window according to `dirvish-side-display-alist'."
@@ -159,12 +158,13 @@ otherwise it defaults to `project-current'."
     (cl-case state
       ('visible
        (unless (dirvish-dired-p dv) (dirvish-toggle-fullscreen))
-       (delete-window (get-buffer-window (cdar (dv-root-dir-buf-alist dv))))
+       (delete-window (dv-root-window dv))
        (dirvish-side--set-state dv 'exists))
       ('exists
-       (let ((followed (buffer-file-name)))
+       (let ((followed (buffer-file-name))
+             (last (file-name-directory (or (dv-index-path dv) default-directory))))
          (with-selected-window (dirvish--create-root-window dv)
-           (switch-to-buffer (cdar (dv-root-dir-buf-alist dv)))
+           (switch-to-buffer (dirvish--buffer-for-dir dv last))
            (dirvish-reclaim)
            (if (and dirvish-side-follow-buffer-file followed)
                (dirvish-find-file (file-name-directory followed))
