@@ -159,6 +159,25 @@ Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k v) (setq dirvish--ml-fmt (dirvish--mode-line-fmt-setter v))))
 
+(defcustom dirvish-enabled-features-on-remote '()
+  "Enabled Dirvish features on remote hosts.
+The value is a list of features, each designated by a symbol.
+
+The default (a nil value or an empty list) denotes the most
+minimalistic UI, only line highlighting is applied.
+
+The `extras' feature allows the display of all attributes defined
+in `dirvish-extras' on remote hosts.
+
+The `vc' feature allows the display of all attributes defined in
+`dirvish-vc' on remote hosts.
+
+If you have slow ssh connection, do NOT mess up with this option."
+  :group 'dirvish
+  :type '(set :tag "Features"
+              (choice (const :tag "Show attributes" extras)
+                      (const :tag "VC attributes/preview-handlers" vc))))
+
 (defvar dirvish-preview-setup-hook nil
   "Hook functions for preview buffer initialization.")
 
@@ -225,6 +244,7 @@ Set it to nil to use the default `mode-line-format'."
 (defvar dirvish--transient-dvs '())
 (defvar dirvish--repeat-timers '())
 (defvar dirvish--available-attrs '())
+(defvar-local dirvish--dir-local-p t)
 (defvar-local dirvish--dired-async-p nil)
 (defvar-local dirvish--child-entry nil)
 (defvar-local dirvish--curr-name nil)
@@ -420,6 +440,7 @@ following arguments:
 
 - `f-name'  from `dired-get-filename'
 - `f-attrs' from `file-attributes'
+- `f-type'  from `file-directory-p' ('dir or 'file)
 - `f-beg'   from `dired-move-to-filename'
 - `f-end'   from `dired-move-to-end-of-filename'
 - `l-beg'   from `line-beginning-position'
@@ -430,7 +451,7 @@ Optional keywords LEFT, RIGHT and DOC are supported."
   (let* ((ov (intern (format "dirvish-%s-ov" name)))
          (pred (intern (format "dirvish-attribute-%s-pred" name)))
          (render (intern (format "dirvish-attribute-%s-rd" name)))
-         (args '(f-name f-attrs f-beg f-end l-beg l-end hl-face))
+         (args '(f-name f-attrs f-type f-beg f-end l-beg l-end hl-face))
          (pred-body (if (> (length if) 0) if t)))
     `(progn
        (add-to-list
@@ -698,7 +719,9 @@ by this instance."
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (let* ((attrs (dv-attributes-alist dv))
+  (let* ((get-meta-p (or dirvish--dir-local-p
+                         (memq 'extras dirvish-enabled-features-on-remote)))
+         (attrs (dv-attributes-alist dv))
          (curr-pos (point))
          (fr-h (frame-height))
          (fns (cl-loop with (left-w . right-w) = (cons dirvish--prefix-spaces 0)
@@ -716,13 +739,16 @@ by this instance."
                    (f-beg (and (not (invisible-p (point)))
                                (dired-move-to-filename nil)))
                    (f-end (dired-move-to-end-of-filename t)))
-          (let ((f-attrs (file-attributes f-name))
+          (let ((f-attrs (and get-meta-p (dirvish-get-attribute-create f-name :builtin nil
+                                           (file-attributes f-name))))
+                (f-type (and get-meta-p (dirvish-get-attribute-create f-name :dir-p nil
+                                          (if (file-directory-p f-name) 'dir 'file))))
                 (l-beg (line-beginning-position))
                 (l-end (line-end-position))
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
             (when dirvish--dired-async-p
               (let (buffer-read-only) (dired-insert-set-properties l-beg l-end)))
-            (dolist (fn fns) (funcall fn f-name f-attrs f-beg f-end l-beg l-end hl-face))))
+            (dolist (fn fns) (funcall fn f-name f-attrs f-type f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
 
 (defun dirvish--apply-header-style ()
@@ -1216,13 +1242,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-line -1)) ((bobp) (forward-line 1)))
     (dired-move-to-filename)
-    (if (file-remote-p default-directory)
-        (let ((ov (make-overlay (line-beginning-position) (1+ (line-end-position)))))
-          (remove-overlays (point-min) (point-max) 'dirvish-hl-line t)
-          (overlay-put ov 'face 'dirvish-hl-line)
-          (overlay-put ov 'dirvish-hl-line t)
-          (dirvish-debounce modeline (force-mode-line-update)))
-      (dirvish--render-attributes dv))
+    (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
       (setf (dv-index-path dv) filename)
       (dirvish-debounce layout
@@ -1252,6 +1272,11 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish-mode)
     (setq-local revert-buffer-function #'dirvish-revert)
     (dirvish--hide-dired-header))
+  (setq-local dirvish--dir-local-p (not (file-remote-p default-directory)))
+  (and (not dirvish--curr-name)
+       (or dirvish--dir-local-p
+           (memq 'vc dirvish-enabled-features-on-remote))
+       (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory))))
   (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
@@ -1262,9 +1287,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))
-    (unless (file-remote-p default-directory)
-      (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory)))
-      (dirvish--render-attributes dv))
+    (dirvish--render-attributes dv)
     (push (selected-window) (dv-dired-windows dv))
     (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))

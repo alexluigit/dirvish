@@ -109,6 +109,8 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (dirvish-define-attribute all-the-icons
   :left (+ (length dirvish-icon-delimiter) 2)
+  :if (or dirvish--dir-local-p
+          (memq 'extras dirvish-enabled-features-on-remote))
   :form
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
          (height `(:height ,dirvish-all-the-icons-height))
@@ -116,7 +118,7 @@ The value can be one of: `plus', `arrow', `chevron'."
                      ((eq dirvish-all-the-icons-palette 'all-the-icons) nil)
                      (t `(:face ,dirvish-all-the-icons-palette))))
          (icon-attrs (append face offset height))
-         (icon (if (file-directory-p f-name)
+         (icon (if (eq f-type 'dir)
                    (apply #'all-the-icons-icon-for-dir f-name icon-attrs)
                  (apply #'all-the-icons-icon-for-file f-name icon-attrs)))
          (icon-str (concat icon (propertize dirvish-icon-delimiter 'face hl-face)))
@@ -125,12 +127,14 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (dirvish-define-attribute vscode-icon
   :left (1+ (length dirvish-icon-delimiter))
+  :if (or dirvish--dir-local-p
+          (memq 'extras dirvish-enabled-features-on-remote))
   :form
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
          (icon-info
           (dirvish-get-attribute-create f-name :vscode-icon nil
             (let ((default-directory dirvish--vscode-icon-directory))
-              (if (file-directory-p f-name)
+              (if (eq f-type 'dir)
                   (let* ((base-name (file-name-base f-name))
                          (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist)) base-name))
                          (icon-path (vscode-icon-dir-exists-p icon-base))
@@ -153,10 +157,12 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string (propertize dirvish-icon-delimiter 'face hl-face)) ov))
 
 (dirvish-define-attribute file-size
-  :if (and (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
+  :if (and (or dirvish--dir-local-p
+               (memq 'extras dirvish-enabled-features-on-remote))
+           (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
   :right 6
   :form
-  (unless (file-directory-p f-name)
+  (unless (eq f-type 'dir)
     (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
            (width (window-width))
            (f-size-str
@@ -184,10 +190,12 @@ The value can be one of: `plus', `arrow', `chevron'."
       (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
 
 (dirvish-define-attribute expanded-state
-  :if (eq (dv-root-window dv) (selected-window))
+  :if (and (or dirvish--dir-local-p
+               (memq 'extras dirvish-enabled-features-on-remote))
+           (eq (dv-root-window dv) (selected-window)))
   :left 1
   :form
-  (let ((state-str (if (file-directory-p f-name)
+  (let ((state-str (if (eq f-type 'dir)
                        (funcall dirvish--expanded-state-fn
                                 (dirvish--subtree-expanded-p)
                                 'dirvish-expanded-state-face)
