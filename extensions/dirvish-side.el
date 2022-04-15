@@ -89,6 +89,13 @@ window to place the file buffer.  Note that if this value is
 `selected-window', the session closes after opening a file."
   :group 'dirvish :type 'function)
 
+(defcustom dirvish-side-follow-buffer-file nil
+  "Whether to follow current buffer's filename.
+If this variable is non-nil, when the current buffer is visiting
+a file, the summoned side sessions updates its index path
+according to the filename."
+  :group 'dirvish :type 'boolean)
+
 (defun dirvish-side--get-state ()
   "Get state of side session for current scope."
   (or (alist-get (funcall dirvish-side-scope-fn) dirvish-side--state-alist)
@@ -153,11 +160,14 @@ otherwise it defaults to `project-current'."
        (delete-window (get-buffer-window (cdar (dv-root-dir-buf-alist dv))))
        (dirvish-side--set-state dv 'exists))
       ('exists
-       (with-selected-window (dirvish--create-root-window dv)
-         (switch-to-buffer (cdar (dv-root-dir-buf-alist dv)))
-         (dirvish-reclaim)
-         (dirvish-build))
-       (dirvish-side--set-state dv 'visible))
+       (let ((followed (buffer-file-name)))
+         (with-selected-window (dirvish--create-root-window dv)
+           (switch-to-buffer (cdar (dv-root-dir-buf-alist dv)))
+           (dirvish-reclaim)
+           (if (and dirvish-side-follow-buffer-file followed)
+               (dirvish-find-file (file-name-directory followed))
+             (dirvish-build)))
+         (dirvish-side--set-state dv 'visible)))
       ('uninitialized
        (dirvish-activate
         (dirvish-new
