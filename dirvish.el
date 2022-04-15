@@ -1011,8 +1011,10 @@ When PROC finishes, fill preview buffer with process result."
   (when-let ((dv (dirvish-curr)))
     (with-current-buffer (dirvish--get-util-buffer dv 'preview)
       (erase-buffer) (remove-overlays)
-      (let ((result-str (with-current-buffer (process-buffer proc) (buffer-string)))
-            (p-min (point-min)))
+      (let* ((proc-buf (process-buffer proc))
+             (result-str (with-current-buffer proc-buf (buffer-string)))
+             (p-min (point-min)))
+        (with-current-buffer proc-buf (erase-buffer))
         (insert result-str)
         (ansi-color-apply-on-region
          p-min (progn (goto-char p-min) (forward-line (frame-height)) (point)))))))
@@ -1146,7 +1148,7 @@ According to the PAYLOAD, one of these action is applied:
 - A subprocess for IMAGE/TEXT-CMD is issued.  When the subprocess
 finishes, the content in preview buffer is filled with the result
 string of TEXT-CMD or the generated cache image of IMAGE-CMD."
-  (let ((buf (dirvish--get-util-buffer (dirvish-curr) 'preview))
+  (let ((buf (dirvish--get-util-buffer dv 'preview))
         (cmd (car-safe payload))
         (args (cdr-safe payload))
         (process-connection-type nil))
@@ -1161,16 +1163,16 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
         ('buffer (setq buf payload))
         ('image (dirvish-preview--insert-image payload dv))
         ('image-cache
-         (unless (member (dv-index-path dv) (dv-preview-proc-initialized dv))
-           (push (dv-index-path dv) (dv-preview-proc-initialized dv))
-           (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
-             (set-process-sentinel
-              proc (lambda (&rest _) (dirvish-debounce layout (dirvish-preview-update))))))
+         (let ((filename (dv-index-path dv)))
+           (unless (member filename (dv-preview-proc-initialized dv))
+             (push filename (dv-preview-proc-initialized dv))
+             (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
+               (set-process-sentinel
+                proc (lambda (&rest _) (dirvish-debounce layout (dirvish-preview-update)))))))
          (insert " [Dirvish] Generating image cache..."))
         ('shell
          (let* ((res-buf (get-buffer-create " *Dirvish preview result*"))
                 (proc (apply #'start-process "dirvish-preview-process" res-buf cmd args)))
-           (with-current-buffer res-buf (erase-buffer) (remove-overlays))
            (set-process-sentinel proc 'dirvish-preview--fill-string-sentinel))))
       buf)))
 
