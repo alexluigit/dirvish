@@ -704,7 +704,7 @@ by this instance."
                    collect (cl-destructuring-bind (&key overlay if fn left right &allow-other-keys)
                                attr (list overlay if fn left right))))
          (preview-dispatcher-fns
-          (cl-loop for dp-name in (append '(disable) (dv-preview-dispatchers dv) '(default))
+          (cl-loop for dp-name in (append '(remote disable) (dv-preview-dispatchers dv) '(default))
                    for dp-func-name = (intern (format "dirvish-%s-preview-dp" dp-name))
                    collect dp-func-name))
          (scopes (cl-loop with res-plist = `(:dv ,dv)
@@ -1015,10 +1015,17 @@ When PROC finishes, fill preview buffer with process result."
         (ansi-color-apply-on-region
          p-min (progn (goto-char p-min) (forward-line (frame-height)) (point)))))))
 
+(dirvish-define-preview remote (file)
+  "Preview files with `ls' or `cat' for remote files."
+  (unless dirvish--dir-local-p
+    (let ((local (file-remote-p file 'localname)))
+      `(shell . ("ssh" ,(file-remote-p file 'host) "test" "-d" ,local
+                 "&&" "ls" "-Alh" "--group-directories-first" "" ,local
+                 "||" "cat" ,local)))))
+
 (dirvish-define-preview disable (file)
   "Disable preview in some cases."
-  (when (or (file-remote-p file)
-            (not (file-exists-p file))
+  (when (or (not (file-exists-p file))
             (not (file-readable-p file))
             (member (file-name-extension file) dirvish-preview-disabled-exts))
     `(info . ,(format "Preview for %s has been disabled" file))))
