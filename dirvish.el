@@ -351,7 +351,9 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--get-filesize (fileset)
   "Return file size of FILESET in bytes."
-  (cl-labels ((f-name (f) (if (file-directory-p f) (directory-files-recursively f ".*") f))
+  (cl-labels ((f-name (f) (if (file-directory-p f)
+                              (directory-files-recursively f ".*" nil t)
+                            f))
               (f-size (f) (file-attribute-size (file-attributes f))))
     (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
 
@@ -493,8 +495,8 @@ the docstring and body for this function."
 
 (defun dirvish-hash (&optional frame)
   "Return a hash containing all Dirvish sessions in FRAME.
-The keys are the dirvish's names. The values are structs created
-by `make-dirvish'. FRAME defaults to the selected frame."
+The keys are the dirvish's names.  The values are structs created
+by `make-dirvish'.  FRAME defaults to the selected frame."
   ;; XXX: This must return a non-nil value to avoid breaking frames initialized
   ;; with after-make-frame-functions bound to nil.
   (or (frame-parameter frame 'dirvish--hash) (make-hash-table)))
