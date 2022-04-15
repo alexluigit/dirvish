@@ -37,8 +37,10 @@
 
 (defcustom dirvish-side-scope 'tab
   "SCOPE for Dirvish side window.
-Every SCOPE only have one (toggleable) side Dirvish session.
-SCOPE can be `emacs', `tab', `frame', `persp', or `perspective'."
+Every SCOPE only have one (toggleable) side Dirvish session.  For
+example, set it to `perspective' will make every `perspective'
+have an unique `dirvish-side' session.  SCOPE can be `emacs',
+`tab', `frame', `persp', or `perspective'."
   :group 'dirvish :type 'symbol
   :options '(emacs tab frame persp)
   :set
