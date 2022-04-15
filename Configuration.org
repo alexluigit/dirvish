@@ -28,24 +28,25 @@ otherwise the preview functionality may not work correctly.
 
 ** Customization options
 
-|---------------------------------+----------+--------------------------------------|
-| Option                          | Type     | Description                          |
-|---------------------------------+----------+--------------------------------------|
-| ~dirvish-cache-dir~               | String   | Cache directory                      |
-| ~dirvish-trash-dir-alist~         | Alist    | Setup multiple trash cans            |
-| ~dirvish-history-length~          | Integer  | Maximum number of items in history   |
-| ~dirvish-depth~                   | Integer  | Level of dirs to traverse up         |
-| ~dirvish-parent-max-width~        | Float    | Max width of parent windows          |
-| ~dirvish-preview-width~           | Float    | Width of preview window              |
-| ~dirvish-header-style~            | Option   | Style for full-frame Dirvish header  |
-| ~dirvish-header-string-function~  | Function | Default header string                |
-| ~dirvish-face-remap-alist~        | Alist    | Remapping faces in Dirvish window    |
-| ~dirvish-mode-line-format~        | Cons     | Mode line format in root window      |
-| ~dirvish-async-listing-threshold~ | Integer  | List huge directories asynchronously |
-| ~dirvish-preview-disabled-exts~   | List     | Disable preview for some filetypes   |
-| ~dirvish-preview-dispatchers~     | List     | See [[#Preview-strategies][Preview strategies]]               |
-| ~dirvish-attributes~              | List     | See [[#Extra-attributes][Extra attributes]]                 |
-|---------------------------------+----------+--------------------------------------|
+|------------------------------------+----------+------------------------------------------|
+| Option                             | Type     | Description                              |
+|------------------------------------+----------+------------------------------------------|
+| ~dirvish-cache-dir~                  | String   | Cache directory                          |
+| ~dirvish-trash-dir-alist~            | Alist    | Setup multiple trash cans                |
+| ~dirvish-history-length~             | Integer  | Maximum number of items in history       |
+| ~dirvish-depth~                      | Integer  | Level of dirs to traverse up             |
+| ~dirvish-parent-max-width~           | Float    | Max width of parent windows              |
+| ~dirvish-preview-width~              | Float    | Width of preview window                  |
+| ~dirvish-header-style~               | Option   | Style for full-frame Dirvish header      |
+| ~dirvish-header-string-function~     | Function | Default header string                    |
+| ~dirvish-face-remap-alist~           | Alist    | Remapping faces in Dirvish window        |
+| ~dirvish-mode-line-format~           | Cons     | Mode line format in root window          |
+| ~dirvish-async-listing-threshold~    | Integer  | List huge directories asynchronously     |
+| ~dirvish-preview-disabled-exts~      | List     | Disable preview for some filetypes       |
+| ~dirvish-enabled-features-on-remote~ | List     | Enabled Dirvish features on remote hosts |
+| ~dirvish-preview-dispatchers~        | List     | See [[#Preview-strategies][Preview strategies]]                   |
+| ~dirvish-attributes~                 | List     | See [[#Extra-attributes][Extra attributes]]                     |
+|------------------------------------+----------+------------------------------------------|
 Consult the docstring of the options for details.
 
 ** Extra attributes
@@ -250,22 +251,19 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 | ~dirvish-expanded-state-style~  | Option  | String/icon used for folder expanded state |
 |-------------------------------+---------+--------------------------------------------|
 *** Toggle Dirvish in side window (dirvish-side.el)
+**** Customization options
 
-Use ~dirvish-side~ command to toggle the side Dirvish.
-
-Customize the option ~dirvish-side-scope~ to create scoped Dirvish session with
-~dirvish-side~ command. For example,
-
-#+begin_src emacs-lisp
-(customize-set-variable 'dirvish-side-scope 'perspective)
-#+end_src
-
-will make every =perspective= have an unique ~dirvish-side~ session. A valid scope
-can be one of: ~emacs~, ~tab~, ~frame~, ~persp~ (see [[https://github.com/Bad-ptr/persp-mode.el][persp-mode]]), ~perspective~ (see
-[[https://github.com/nex3/perspective-el][perspective-el]]).
-
-Customize the option ~dirvish-side-display-alist~ to change the size and position
-of the window.
+|----------------------------------------+----------+----------------------------------|
+| Option                                 | Type     | Description                      |
+|----------------------------------------+----------+----------------------------------|
+| ~dirvish-side-attributes~                | List     | See ~dirvish-attributes~           |
+| ~dirvish-side-preview-dispatchers~       | List     | See ~dirvish-preview-dispatchers~  |
+| ~dirvish-side-mode-line-format~          | Plist    | See ~dirvish-mode-line-format~     |
+| ~dirvish-side-display-alist~             | Alist    | Size and position of side window |
+| ~dirvish-side-open-file-window-function~ | Function | Target window for ~find-file~      |
+| ~dirvish-side-follow-buffer-file~        | Boolean  | Follow current ~buffer-file-name~  |
+| ~dirvish-side-scope~                     | List     | Scope for side sessions          |
+|----------------------------------------+----------+----------------------------------|
 
 ** Example config
 *** Dired | Dirvish

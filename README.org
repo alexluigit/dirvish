@@ -122,11 +122,11 @@ for simple project exploring tasks due to its complexity and huge codebase.
 
 ** dired-sidebar
 
-=dired-sidebar= and =dirvish-side= do almost exact the same thing: create a file
-explorer at side window that leveraging the power of Dired.  =dired-sidebar= also
-includes some basic integration with serveral 3rd-party packages and other small
-niceties such as file watching.  =dirvish-side=, at least for now, is relatively
-primitive.
+=dired-sidebar=, which is also a file explorer at side window that leveraging the
+power of Dired, is a promising alternative to =dirvish-side=.  The problem with
+=dired-sidebar= is that all the niceities this package provided are only applied
+to the side Dired instance, one needs to do some extra works to make the regular
+Dired and =dired-sidebar= look consistent.
 
 ** ranger.el
 
