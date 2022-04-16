@@ -125,13 +125,15 @@ according to the filename."
   "Quit window action for `dirvish-side'."
   (dirvish-side--set-state nil 'uninitialized))
 
-(defun dirvish-side-root-window-fn ()
-  "Display a window according to `dirvish-side-display-alist'."
-  (let ((win (display-buffer-in-side-window
-              (dirvish--ensure-temp-buffer) dirvish-side-display-alist)))
-    (cl-loop for (key . value) in dirvish-side-window-parameters
-             do (set-window-parameter win key value))
-    (select-window win)))
+(defun dirvish-side-root-window-fn (dv)
+  "Display DV's window according to `dirvish-side-display-alist'."
+  (if (>= (dv-depth dv) 0)
+      (frame-selected-window)
+    (let ((win (display-buffer-in-side-window
+                (dirvish--ensure-temp-buffer) dirvish-side-display-alist)))
+      (cl-loop for (key . value) in dirvish-side-window-parameters
+               do (set-window-parameter win key value))
+      (select-window win))))
 
 (defun dirvish-side-header-string-fn ()
   "Return a string showing current project."
