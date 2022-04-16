@@ -534,7 +534,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
        (read-only-depth (if (>= depth 0) depth dirvish-depth))
        (root-window-fn (let ((fn (intern (format "dirvish-%s-root-window-fn" type))))
-                         (if (functionp fn) fn #'frame-selected-window)))
+                         (if (functionp fn) fn (lambda (_dv) (frame-selected-window)))))
        (header-string-fn (let ((fn (intern (format "dirvish-%s-header-string-fn" type))))
                            (if (functionp fn) fn (symbol-value 'dirvish-header-string-function))))
        (find-file-window-fn (let ((fn (intern (format "dirvish-%s-find-file-window-fn" type))))
@@ -690,12 +690,9 @@ by this instance."
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
-  (let ((depth (dv-depth dv))
-        (r-win (funcall (dv-root-window-fn dv))))
-    (when (and (>= depth 0) (window-parameter r-win 'window-side))
-      (setq r-win (next-window)))
-    (setf (dv-root-window dv) r-win)
-    r-win))
+  (let ((win (funcall (dv-root-window-fn dv) dv)))
+    (setf (dv-root-window dv) win)
+    win))
 
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
