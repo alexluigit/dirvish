@@ -525,7 +525,6 @@ If FLATTEN is non-nil, collect them as a flattened list."
        (depth dirvish-depth)
        (transient nil)
        (type nil)
-       (dedicated nil)
        (attributes (purecopy dirvish-attributes))
        (preview-dispatchers (purecopy dirvish-preview-dispatchers))
        (ls-switches dired-listing-switches)
@@ -561,9 +560,6 @@ If FLATTEN is non-nil, collect them as a flattened list."
    nil
    :documentation "TODO.")
   (type
-   nil
-   :documentation "TODO")
-  (dedicated
    nil
    :documentation "TODO")
   (dired-buffers
@@ -882,7 +878,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
       (let* ((last-depth
               (with-current-buffer (other-buffer)
                 (and (derived-mode-p 'dirvish-mode) (dv-depth (dirvish-curr)))))
-             (new-dv (dirvish-new :type 'find-dired :dedicated t)))
+             (new-dv (dirvish-new :type 'find-dired)))
         (add-to-list 'dirvish--transient-dvs new-dv)
         (setf (dv-transient new-dv) (or last-dv new-dv))
         (dirvish-activate new-dv)
@@ -899,6 +895,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
   "Advisor function for FN `fd-dired' with its ARGS."
   (when (and (dirvish-curr) (eq (dv-type (dirvish-curr)) 'find-dired))
     (dirvish-deactivate (dirvish-curr)))
+  (and (window-dedicated-p) (other-window 1))
   ;; HACK for *FD* window placement. `fd-dired-display-in-current-window' does not behave as described.
   (let ((display-buffer-alist '(("^ ?\\*Fd.*$" (display-buffer-same-window))))
         (fd-dired-buffer-name-format "*%s*"))
@@ -1312,8 +1309,10 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent current))
          (parent-dirs ())
-         (depth (if (or (file-remote-p current) (dv-dedicated dv)) 0 (dv-depth dv)))
+         (depth (dv-depth dv))
          (i 0))
+    (when (or (file-remote-p current) (eq (dv-type dv) 'find-dired))
+      (setq depth 0))
     (dirvish-setup dirvish--curr-name)
     (when (window-parameter (selected-window) 'window-side)
       (setq-local window-size-fixed 'width))
