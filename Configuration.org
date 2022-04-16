@@ -260,6 +260,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 | ~dirvish-side-preview-dispatchers~       | List     | See ~dirvish-preview-dispatchers~  |
 | ~dirvish-side-mode-line-format~          | Plist    | See ~dirvish-mode-line-format~     |
 | ~dirvish-side-display-alist~             | Alist    | Size and position of side window |
+| ~dirvish-side-window-parameters~         | Alist    | Window parameters of side window |
 | ~dirvish-side-open-file-window-function~ | Function | Target window for ~find-file~      |
 | ~dirvish-side-follow-buffer-file~        | Boolean  | Follow current ~buffer-file-name~  |
 | ~dirvish-side-scope~                     | List     | Scope for side sessions          |
