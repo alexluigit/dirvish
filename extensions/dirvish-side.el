@@ -73,12 +73,12 @@ have an unique `dirvish-side' session.  SCOPE can be `emacs',
              do (when dv (dirvish-deactivate dv)))
     (setq dirvish-side--state-alist '())))
 
-(defcustom dirvish-side-display-alist
-  '((side . left)
-    (slot . -1)
-    (window-width . 0.2)
-    (window-parameters . ((no-delete-other-windows . t))))
+(defcustom dirvish-side-display-alist '((side . left) (slot . -1) (window-width . 0.2))
   "Display alist for `dirvish-side' window."
+  :group 'dirvish :type 'alist)
+
+(defcustom dirvish-side-window-parameters '((no-delete-other-windows . t))
+  "Window parameters for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
 (defcustom dirvish-side-open-file-window-function
@@ -127,8 +127,11 @@ according to the filename."
 
 (defun dirvish-side-root-window-fn ()
   "Display a window according to `dirvish-side-display-alist'."
-  (select-window
-   (display-buffer-in-side-window (dirvish--ensure-temp-buffer) dirvish-side-display-alist)))
+  (let ((win (display-buffer-in-side-window
+              (dirvish--ensure-temp-buffer) dirvish-side-display-alist)))
+    (cl-loop for (key . value) in dirvish-side-window-parameters
+             do (set-window-parameter win key value))
+    (select-window win)))
 
 (defun dirvish-side-header-string-fn ()
   "Return a string showing current project."
@@ -158,8 +161,12 @@ otherwise it defaults to `project-current'."
     (cl-case state
       ('visible
        (unless (dirvish-dired-p dv) (dirvish-toggle-fullscreen))
-       (delete-window (dv-root-window dv))
-       (dirvish-side--set-state dv 'exists))
+       (dirvish-side--set-state dv 'exists)
+       (let ((win (dv-root-window dv)))
+         (unless (window-live-p win)
+           (user-error
+            "Session closed unexpectedly, call `%s' again to reset" this-command))
+         (delete-window win)))
       ('exists
        (let ((followed (buffer-file-name))
              (last (file-name-directory (or (dv-index-path dv) default-directory))))
