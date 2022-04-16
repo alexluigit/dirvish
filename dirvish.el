@@ -277,6 +277,16 @@ Multiple calls under the same LABEL are ignored."
        (unless (timerp ,timer)
          (setq ,timer (run-with-idle-timer dirvish--debouncing-delay nil ,do-once))))))
 
+(defmacro dirvish-with-no-dedication (&rest body)
+  "Run BODY after undedicating window."
+  (declare (debug (&rest form)))
+  `(progn
+     (let* ((window (get-buffer-window (current-buffer)))
+            (dedicated (window-dedicated-p window)))
+       (set-window-dedicated-p window nil)
+       ,@body
+       (set-window-dedicated-p window dedicated))))
+
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
   (with-current-buffer (current-buffer)
@@ -610,6 +620,9 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (path
    nil
    :documentation "TODO.")
+  (index-dir
+   ""
+   :documentation "is the `default-directory' in ROOT-WINDOW.")
   (index-path
    ""
    :documentation "is the file path under cursor in ROOT-WINDOW.")
@@ -1498,7 +1511,7 @@ directory in another window."
         (setf (dv-window-conf dv) (current-window-configuration))
         (setq-local dirvish--child-entry (dv-index-path dv))
         (with-selected-window (dirvish--create-root-window dv)
-          (switch-to-buffer buf)
+          (dirvish-with-no-dedication (switch-to-buffer buf))
           (dirvish-reclaim)
           (dirvish-build)
           (dirvish-debounce layout (dirvish-preview-update))))
@@ -1513,8 +1526,7 @@ update `dirvish--history-ring'."
   (let* ((entry (or file (dired-get-filename nil t)))
          (bname (buffer-file-name (current-buffer)))
          (dv (dirvish-curr))
-         (dv-tran (dv-transient dv))
-         (dv-depth (dv-depth dv)))
+         (dv-tran (dv-transient dv)))
     (when entry
       (if (file-directory-p entry)
           (let* ((entry (file-name-as-directory (expand-file-name entry)))
@@ -1524,14 +1536,14 @@ update `dirvish--history-ring'."
               (when (or (ring-empty-p dirvish--history-ring)
                         (not (eq hist (ring-ref dirvish--history-ring 0))))
                 (ring-insert dirvish--history-ring hist)))
-            (switch-to-buffer (dirvish--buffer-for-dir dv entry))
-            (setq dirvish--child-entry (or bname (expand-file-name default-directory)))
-            (when (dirvish-p dv-tran)
-              (dirvish-activate
-               (dirvish-new
-                 :depth dv-depth
-                 :transient (dv-name dv-tran))))
-            (dirvish-build))
+            (setf (dv-index-dir dv) entry)
+            (dirvish-with-no-dedication
+             (switch-to-buffer (dirvish--buffer-for-dir dv entry))
+             (setq dirvish--child-entry (or bname (expand-file-name default-directory)))
+             (when (dirvish-p dv-tran)
+               (dirvish-activate
+                (dirvish-new :depth (dv-depth dv) :transient (dv-name dv-tran))))
+             (dirvish-build)))
         (find-file entry)))))
 
 ;;;###autoload

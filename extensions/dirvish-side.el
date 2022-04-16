@@ -133,6 +133,7 @@ according to the filename."
                 (dirvish--ensure-temp-buffer) dirvish-side-display-alist)))
       (cl-loop for (key . value) in dirvish-side-window-parameters
                do (set-window-parameter win key value))
+      (set-window-dedicated-p win t)
       (select-window win))))
 
 (defun dirvish-side-header-string-fn ()
@@ -171,13 +172,14 @@ otherwise it defaults to `project-current'."
          (delete-window win)))
       ('exists
        (let ((followed (buffer-file-name))
-             (last (file-name-directory (or (dv-index-path dv) default-directory))))
+             (last (dv-index-dir dv)))
          (with-selected-window (dirvish--create-root-window dv)
-           (switch-to-buffer (dirvish--buffer-for-dir dv last))
+           (dirvish-with-no-dedication
+            (switch-to-buffer (dirvish--buffer-for-dir dv last)))
            (dirvish-reclaim)
            (if (and dirvish-side-follow-buffer-file followed)
                (dirvish-find-file (file-name-directory followed))
-             (dirvish-build)))
+             (dirvish-find-file last)))
          (dirvish-side--set-state dv 'visible)))
       ('uninitialized
        (dirvish-activate
