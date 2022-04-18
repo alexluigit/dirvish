@@ -473,16 +473,14 @@ Optional keywords LEFT, RIGHT and DOC are supported."
        (defun ,pred (dv) (ignore dv) ,pred-body)
        (defun ,render ,args (ignore ,@args) (let ((ov ,form)) (and ov (overlay-put ov ',ov t)))))))
 
-(defmacro dirvish-get-attribute-create (file attribute force &rest body)
+(defmacro dirvish-attribute-cache (file attribute &rest body)
   "Get FILE's ATTRIBUTE from `dirvish--attrs-hash'.
-When FORCE or the attribute does not exist, set it with BODY."
+When the attribute does not exist, set it with BODY."
   (declare (indent defun))
-  `(let* ((f-name ,file)
-          (hash (or (gethash f-name dirvish--attrs-hash) '(:init t)))
-          (attr (plist-get hash ,attribute)))
-     (when (or ,force (not attr))
-       (setq attr ,@body)
-       (puthash f-name (append hash (list ,attribute attr)) dirvish--attrs-hash))
+  `(let* ((hash (gethash ,file dirvish--attrs-hash))
+          (cached (plist-get hash ,attribute))
+          (attr (or cached ,@body)))
+     (unless cached (puthash ,file (append hash (list ,attribute attr)) dirvish--attrs-hash))
      attr))
 
 (cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
@@ -748,9 +746,9 @@ by this instance."
                    (f-beg (and (not (invisible-p (point)))
                                (dired-move-to-filename nil)))
                    (f-end (dired-move-to-end-of-filename t)))
-          (let ((f-attrs (and get-meta-p (dirvish-get-attribute-create f-name :builtin nil
+          (let ((f-attrs (and get-meta-p (dirvish-attribute-cache f-name :builtin
                                            (file-attributes f-name))))
-                (f-type (and get-meta-p (dirvish-get-attribute-create f-name :dir-p nil
+                (f-type (and get-meta-p (dirvish-attribute-cache f-name :dir-p
                                           (if (file-directory-p f-name) 'dir 'file))))
                 (l-beg (line-beginning-position))
                 (l-end (line-end-position))

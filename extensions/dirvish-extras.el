@@ -132,7 +132,7 @@ The value can be one of: `plus', `arrow', `chevron'."
   :form
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
          (icon-info
-          (dirvish-get-attribute-create f-name :vscode-icon nil
+          (dirvish-attribute-cache f-name :vscode-icon
             (let ((default-directory dirvish--vscode-icon-directory))
               (if (eq f-type 'dir)
                   (let* ((base-name (file-name-base f-name))
@@ -166,7 +166,7 @@ The value can be one of: `plus', `arrow', `chevron'."
     (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
            (width (window-width))
            (f-size-str
-            (concat (dirvish-get-attribute-create f-name :file-size nil
+            (concat (dirvish-attribute-cache f-name :file-size
                       (let* ((info (file-size-human-readable
                                     (if f-attrs (file-attribute-size f-attrs) 0)))
                              (spc (concat info " "))
