@@ -73,7 +73,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   (let ((dv (dirvish-curr)))
     (setf (dv-depth dv) level)
     (setf (dv-fullscreen-depth dv) level)
-    (dirvish-build)))
+    (dirvish-build dv)))
 
 (defmacro dirvish-menu--transient-define-multi (spec)
   "Define transient command with core information from SPEC."
@@ -310,7 +310,7 @@ KEY is a string passed to `kbd', VAR is a valid attribute (as in
             ["Layout:" :if (lambda () (and (derived-mode-p 'dirvish-mode) (not (dirvish-dired-p))))
              ,@(mapcar #'column-option column-alist)]
             ["Actions:"
-             ("RET" "Confirm and quit" (lambda () (interactive) (dirvish-build) (revert-buffer)))]))))))
+             ("RET" "Confirm and quit" (lambda () (interactive) (dirvish-build (dirvish-curr)) (revert-buffer)))]))))))
 
 (provide 'dirvish-menu)
 ;;; dirvish-menu.el ends here
