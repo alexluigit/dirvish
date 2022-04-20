@@ -420,14 +420,14 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
     (setq-local mode-line-format '((:eval (dirvish--apply-header-style))))
-    (set (make-local-variable 'face-remapping-alist) dirvish--header-remap-alist))
+    (setq-local face-remapping-alist dirvish--header-remap-alist))
   (dirvish--get-util-buffer dv 'footer
     (setq-local cursor-type nil)
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
     (setq-local mode-line-format (dv-mode-line-format dv))
-    (set (make-local-variable 'face-remapping-alist) dirvish--footer-remap-alist)))
+    (setq-local face-remapping-alist dirvish--footer-remap-alist)))
 
 (defun dirvish-reclaim (&optional _window)
   "Reclaim current dirvish."
@@ -1294,7 +1294,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
        (or dirvish--dir-local-p
            (memq 'vc dirvish-enabled-features-on-remote))
        (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory))))
-  (set (make-local-variable 'face-remapping-alist) dirvish-face-remap-alist)
+  (setq-local face-remapping-alist dirvish-face-remap-alist)
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
   (setq-local cursor-type nil)
