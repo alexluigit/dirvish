@@ -98,6 +98,22 @@ a file, the summoned side sessions updates its index path
 according to the filename."
   :group 'dirvish :type 'boolean)
 
+(defcustom dirvish-side-follow-project-switch t
+  "Whether visible side session update index on project switch.
+If this variable is non-nil, the visible `dirvish-side' session
+will visit the latest `project-root' after executing
+`project-switch-project' or `projectile-switch-project'."
+  :group 'dirvish :type 'boolean
+  :set
+  (lambda (key enabled)
+    (set key enabled)
+    (if enabled
+        (progn
+          (advice-add 'project-switch-project :after #'dirvish-side-find-file)
+          (add-hook 'projectile-after-switch-project-hook #'dirvish-side-find-file))
+      (advice-remove 'project-switch-project #'dirvish-side-find-file)
+      (remove-hook 'projectile-after-switch-project-hook #'dirvish-side-find-file))))
+
 (defun dirvish-side--get-state ()
   "Get state of side session for current scope."
   (or (alist-get (funcall dirvish-side-scope-fn) dirvish-side--state-alist)
@@ -148,6 +164,21 @@ according to the filename."
                 (propertize "Project:" 'face 'bold)
                 (propertize project 'face 'font-lock-string-face))))))
 
+(defun dirvish-side-find-file (&optional filename)
+  "Visit FILENAME in current visible `dirvish-side' session."
+  (cl-destructuring-bind (dv . state) (dirvish-side--get-state)
+    (let ((win (and dv (dv-root-window dv)))
+          (dirname (or (and filename (file-name-directory filename))
+                       (dirvish--get-project-root))))
+      (when (and (eq state 'visible) (window-live-p win) dirname)
+        (with-selected-window win
+          (dirvish-reclaim)
+          (dirvish-with-no-dedication
+           (switch-to-buffer (dirvish--buffer-for-dir dv dirname)))
+          (when (and filename (not (file-directory-p filename)))
+            (setq-local dirvish--child-entry filename))
+          (dirvish-build dv))))))
+
 ;;;###autoload
 (defun dirvish-side (&optional path)
   "Toggle a Dirvish session at the side window.
@@ -178,8 +209,11 @@ otherwise it defaults to `project-current'."
             (switch-to-buffer (dirvish--buffer-for-dir dv last)))
            (dirvish-reclaim)
            (if (and dirvish-side-follow-buffer-file followed)
-               (dirvish-find-file (file-name-directory followed))
-             (dirvish-find-file last)))
+               (progn
+                 (dirvish-find-file (file-name-directory followed))
+                 (dired-goto-file followed)
+                 (dirvish-update-body-h))
+             (dirvish-build dv)))
          (dirvish-side--set-state dv 'visible)))
       ('uninitialized
        (dirvish-activate
