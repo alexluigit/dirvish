@@ -896,7 +896,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (setf (dv-depth new-dv) (or last-depth 0))
         (setq-local dirvish--curr-name (dv-name new-dv))
         (dirvish-reclaim)
-        (dirvish-build)))
+        (dirvish-build new-dv)))
     ;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-matching-lines "find finished at.*\\|^ +$")
     (dirvish--hide-dired-header)
@@ -1388,7 +1388,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (or dir (setq dir default-directory))
   (let ((dv (dirvish-activate (dirvish-new :depth -1))))
     (with-current-buffer (dirvish--buffer-for-dir dv dir)
-      (dirvish-build)
+      (dirvish-build dv)
       (current-buffer))))
 
 (defun dirvish--noselect-async-sentinel (proc _state)
@@ -1435,15 +1435,14 @@ If the buffer is not available, create it with `dired-noselect'."
             (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv))))
     buffer))
 
-(defun dirvish-build ()
-  "Build dirvish layout."
-  (let ((dv (dirvish-curr)))
-    (unless (dirvish-dired-p dv)
-      (let ((ignore-window-parameters t)) (delete-other-windows))
-      (dirvish-build--preview dv)
-      (dirvish-build--header dv)
-      (dirvish-build--footer dv))
-    (dirvish-build--parents dv)))
+(defun dirvish-build (dv)
+  "Build layout for Dirvish session DV."
+  (unless (dirvish-dired-p dv)
+    (let ((ignore-window-parameters t)) (delete-other-windows))
+    (dirvish-build--preview dv)
+    (dirvish-build--header dv)
+    (dirvish-build--footer dv))
+  (dirvish-build--parents dv))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
@@ -1511,7 +1510,7 @@ directory in another window."
         (with-selected-window (dirvish--create-root-window dv)
           (dirvish-with-no-dedication (switch-to-buffer buf))
           (dirvish-reclaim)
-          (dirvish-build)
+          (dirvish-build dv)
           (dirvish-debounce layout (dirvish-preview-update))))
     (user-error "Dirvish: not in a dirvish buffer")))
 
@@ -1522,13 +1521,13 @@ variable `buffer-file-name'.  If IGNORE-HIST is non-nil, do not
 update `dirvish--history-ring'."
   (interactive)
   (let* ((entry (or file (dired-get-filename nil t)))
-         (bname (buffer-file-name (current-buffer)))
          (dv (dirvish-curr))
          (dv-tran (dv-transient dv)))
     (when entry
       (if (file-directory-p entry)
           (let* ((entry (file-name-as-directory (expand-file-name entry)))
                  (hist (directory-file-name entry))
+                 (bname (buffer-file-name (current-buffer)))
                  enable-dir-local-variables)
             (when (and dirvish--history-ring (not ignore-hist))
               (when (or (ring-empty-p dirvish--history-ring)
@@ -1537,11 +1536,11 @@ update `dirvish--history-ring'."
             (setf (dv-index-dir dv) entry)
             (dirvish-with-no-dedication
              (switch-to-buffer (dirvish--buffer-for-dir dv entry))
-             (setq dirvish--child-entry (or bname (expand-file-name default-directory)))
+             (setq-local dirvish--child-entry (or dirvish--child-entry bname))
              (when (dirvish-p dv-tran)
                (dirvish-activate
                 (dirvish-new :depth (dv-depth dv) :transient (dv-name dv-tran))))
-             (dirvish-build)))
+             (dirvish-build dv)))
         (find-file entry)))))
 
 ;;;###autoload
