@@ -290,6 +290,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
+  ;; (dirvish-mode-line-format '(:left (sort filter) :right (yank index)))
   ;; List directories that has over 10000 files asynchronously
   ;; This feature is disabled by default
   ;; (dirvish-async-listing-threshold 10000)
@@ -297,6 +298,11 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
   ;; Place this line under :init to ensure the overriding at startup, see #22
   (dirvish-override-dired-mode)
   (dirvish-peek-mode)
+  ;; Define mode line segment for `dired-filter'
+  ;; (dirvish-define-mode-line filter "Describe filters."
+  ;;   (when (bound-and-true-p dired-filter-mode)
+  ;;     (format " %s %s " (propertize "Filters:" 'face 'bold)
+  ;;             (dired-filter--describe-filters))))
   ;; In case you want the details at startup like `dired'
   ;; :hook
   ;; (dirvish-mode . (lambda () (dired-hide-details-mode -1)))
@@ -360,16 +366,9 @@ These packages are only listed here for discoverability.
 (use-package dired-filter
   :after dirvish
   :config
-  ;; Define our own mode line segment
-  (dirvish-define-mode-line filter "Describe filters."
-    (when dired-filter-mode
-      (format " %s %s " (propertize "Filters:" 'face 'bold)
-              (dired-filter--describe-filters))))
   :custom
   ;; Do not touch the header line
   (dired-filter-show-filters nil)
-  ;; Instead, use our mode line segment defined above
-  (dirvish-mode-line-format '(:left (sort filter) :right (yank index)))
   (dired-filter-revert 'always)
   :bind
   (:map dired-mode-map
