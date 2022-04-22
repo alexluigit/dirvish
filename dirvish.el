@@ -190,7 +190,7 @@ If you have slow ssh connection, do NOT mess up with this option."
 ;;;; Internal variables
 
 (defvar dirvish-advice-alist
-  '((files         find-file                       dirvish-find-file-ad           :before)
+  '((files         find-file                       dirvish-find-file-ad           :filter-args)
     (dired         dired                           dirvish-dired-ad)
     (dired         dired-jump                      dirvish-dired-jump-ad)
     (dired         dired-find-file                 dirvish-find-file              :override)
@@ -915,12 +915,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
   "Replacement for `dired-dwim-target-next'.
 If ALL-FRAMES, search target directories in all frames."
-  (mapcan (lambda (w)
-            (when (or all-frames
-                      (eq (and (window-valid-p w) (window-frame w)) (selected-frame)))
-              (with-current-buffer (window-buffer w)
-                (list (dired-current-directory)))))
-          (delq (selected-window) (dirvish-get-all 'root-window t t))))
+  (delq (dired-current-directory) (dirvish-get-all 'index-dir all-frames t)))
 
 (defun dirvish-wdired-mode-ad (&rest _)
   "Advisor function for `wdired-change-to-wdired-mode'."
@@ -939,13 +934,17 @@ If ALL-FRAMES, search target directories in all frames."
   "Advice function for FN `dired-internal-do-deletions' with its ARGS."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args)))
 
-(defun dirvish-find-file-ad (&rest _)
-  "Quit Dirvish session if inside one."
-  (when-let* ((dv (dirvish-curr)))
-    (if-let ((transient (dv-transient dv)))
-        (dirvish--end-transient transient)
-      (select-window (funcall (dv-find-file-window-fn dv)))
-      (when (dirvish-live-p dv) (dirvish-deactivate dv)))))
+(defun dirvish-find-file-ad (args)
+  "Advice for `find-file' with its ARGS."
+  (when-let ((dv (dirvish-curr)))
+    (cond ((> (length (get-buffer-window-list nil nil t)) 1)
+           (switch-to-buffer "*scratch*")
+           (dirvish-drop)
+           (when (string= (car args) "") (setf (car args) (dv-index-dir dv))))
+          ((dv-transient dv) (dirvish--end-transient (dv-transient dv)))
+          (t (select-window (funcall (dv-find-file-window-fn dv)))
+             (when (dirvish-live-p dv) (dirvish-deactivate dv)))))
+  args)
 
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
@@ -1385,8 +1384,9 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."
-  (or dir (setq dir default-directory))
-  (let ((dv (dirvish-activate (dirvish-new :depth -1))))
+  (let ((dv (dirvish-activate (dirvish-new :depth -1)))
+        (dir (file-name-as-directory (or dir default-directory))))
+    (setf (dv-index-dir dv) dir)
     (with-current-buffer (dirvish--buffer-for-dir dv dir)
       (dirvish-build dv)
       (current-buffer))))
