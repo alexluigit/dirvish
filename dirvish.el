@@ -1536,7 +1536,7 @@ update `dirvish--history-ring'."
             (setf (dv-index-dir dv) entry)
             (dirvish-with-no-dedication
              (switch-to-buffer (dirvish--buffer-for-dir dv entry))
-             (setq-local dirvish--child-entry (or dirvish--child-entry bname))
+             (setq-local dirvish--child-entry (or bname entry))
              (when (dirvish-p dv-tran)
                (dirvish-activate
                 (dirvish-new :depth (dv-depth dv) :transient (dv-name dv-tran))))
