@@ -213,9 +213,9 @@ If you have slow ssh connection, do NOT mess up with this option."
     (winner        winner-save-old-configurations  dirvish-ignore-ad)))
 (defvar dirvish-extra-advice-alist
   '((dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
-    (evil          evil-refresh-cursor             dirvish-refresh-cursor-ad)
-    (meow          meow--update-cursor             dirvish-refresh-cursor-ad)
     (fd-dired      fd-dired                        dirvish-fd-dired-ad)
+    (evil          evil-refresh-cursor             dirvish-ignore-ad)
+    (meow          meow--update-cursor             dirvish-ignore-ad)
     (flycheck      flycheck-buffer                 dirvish-ignore-ad)
     (lsp-mode      lsp-deferred                    dirvish-ignore-ad)))
 (defvar dirvish-scopes '(:tab tab-bar--current-tab-index :frame selected-frame))
@@ -816,11 +816,6 @@ by this instance."
 DV defaults to the current dirvish instance if not provided."
   (when-let ((dv (or dv (dirvish-curr)))) (eq (dv-depth dv) -1)))
 
-(defun dirvish-live-p (&optional dv)
-  "Return t if selected window is occupied by Dirvish DV.
-DV defaults to the current dirvish instance if not provided."
-  (when-let ((dv (or dv (dirvish-curr)))) (memq (selected-window) (dv-dired-windows dv))))
-
 ;;;; Advices
 
 (defun dirvish-subtree-remove-ad (fn &rest _)
@@ -925,11 +920,6 @@ If ALL-FRAMES, search target directories in all frames."
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h :local))
 
-(defun dirvish-refresh-cursor-ad (fn &rest args)
-  "Only apply FN with ARGS when editing filenames in dirvish."
-  (unless (and (not (eq major-mode 'wdired-mode)) (dirvish-live-p))
-    (apply fn args)))
-
 (defun dirvish-deletion-ad (fn &rest args)
   "Advice function for FN `dired-internal-do-deletions' with its ARGS."
   (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args)))
@@ -943,12 +933,13 @@ If ALL-FRAMES, search target directories in all frames."
            (when (string= (car args) "") (setf (car args) (dv-index-dir dv))))
           ((dv-transient dv) (dirvish--end-transient (dv-transient dv)))
           (t (select-window (funcall (dv-find-file-window-fn dv)))
-             (when (dirvish-live-p dv) (dirvish-deactivate dv)))))
+             (when dirvish--curr-name (dirvish-deactivate (dirvish-curr))))))
   args)
 
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
-  (unless (dirvish-curr) (apply fn args)))
+  (when (or (not (dirvish-curr)) (derived-mode-p 'wdired-mode))
+    (apply fn args)))
 
 (defun dirvish--add-advices (&optional ad-alist)
   "Add all advices listed in AD-ALIST.
@@ -992,7 +983,8 @@ cache image. A new directory is created unless NO-MKDIR."
 
 (defun dirvish-preview--inhibit-long-line (file)
   "Preview FILE unless it contains long lines."
-  (let ((buf (find-file-noselect file t)))
+  (let* ((enable-local-variables nil)
+         (buf (find-file-noselect file t)))
     (with-current-buffer buf
       (if (funcall so-long-predicate)
           (progn
