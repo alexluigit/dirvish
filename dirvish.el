@@ -185,7 +185,6 @@ If you have slow ssh connection, do NOT mess up with this option."
     (dired         dired-other-tab                 dirvish-dired-other-tab-ad     :override)
     (dired         dired-other-frame               dirvish-dired-other-frame-ad   :override)
     (dired         dired-up-directory              dirvish-up-directory           :override)
-    (dired         dired-sort-toggle-or-edit       dirvish-sort-by-criteria       :override)
     (dired         +dired/quit-all                 quit-window                    :override)
     (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
     (wdired        wdired-change-to-wdired-mode    dirvish-wdired-mode-ad         :after)
@@ -614,10 +613,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
    :documentation "TODO.")
   (ls-switches
    dired-listing-switches
-   :documentation "is the list switches passed to `ls' command.")
-  (sort-criteria
-   (cons "default" "")
-   :documentation "is the addtional sorting flag added to `dired-list-switches'."))
+   :documentation "is the list switches passed to `ls' command."))
 
 (defmacro dirvish-new (&rest args)
   "Create a new dirvish struct and put it into `dirvish-hash'.
@@ -656,7 +652,8 @@ by this instance."
          (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
            (mapc #'kill-when-live (dv-dired-buffers ,dv))
            (mapc #'kill-when-live (dv-preview-buffers ,dv))
-           (dolist (type '(preview footer header)) (kill-when-live (dirvish--get-util-buffer ,dv type))))
+           (dolist (type '(preview footer header))
+             (kill-when-live (dirvish--get-util-buffer ,dv type))))
          (funcall (dv-quit-window-fn ,dv) ,dv))
      (remhash (dv-name ,dv) (dirvish-hash))
      (dirvish-reclaim)
@@ -931,7 +928,8 @@ The AD-ALIST defaults to `dirvish-advice-alist'."
 
 (defun dirvish-preview--image-size (window &optional height)
   "Get corresponding image width or HEIGHT in WINDOW."
-  (floor (* dirvish--preview-img-scale (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
+  (floor (* dirvish--preview-img-scale
+            (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
 
 (defun dirvish-preview--cache-image-path (file size &optional ext no-mkdir)
   "Get image cache filepath for FILE.
@@ -1034,7 +1032,8 @@ When PROC finishes, fill preview buffer with process result."
             ((or (< (nth 7 (file-attributes file)) dirvish--preview-img-threshold)
                  (string-prefix-p (concat (expand-file-name dirvish-cache-dir) "images/") file))
              `(image . ,(create-image file nil nil :max-width width :max-height height)))
-            (t `(image-cache . ("convert" ,file "-define" "jpeg:extent=400kb" "-resize" ,(number-to-string width) ,cache)))))))
+            (t `(image-cache . ("convert" ,file "-define" "jpeg:extent=400kb" "-resize"
+                                ,(number-to-string width) ,cache)))))))
 
 (dirvish-define-preview video (file dv)
   "Display a video thumbnail with width of DV's preview window."
@@ -1207,10 +1206,17 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
               (propertize default-directory 'face 'dired-header)))))
 
 (dirvish-define-mode-line sort "Current sort criteria."
-  (format " %s %s "
-          (propertize "Sort:" 'face 'bold)
-          (or (and dired-sort-inhibit (propertize "inhibited" 'face 'font-lock-warning-face))
-              (propertize (car (dv-sort-criteria (dirvish-curr))) 'face 'font-lock-type-face))))
+  (let* ((switches (split-string dired-actual-switches))
+         (crit (cond (dired-sort-inhibit "inhibited")
+                     ((member "-t" switches) "modification time")
+                     ((member "-tu" switches) "access time")
+                     ((member "-tU" switches) "creation time")
+                     ((member "-S" switches) "size")
+                     ((member "-X" switches) "extensions")
+                     (t "default")))
+         (sort (concat crit (if (member "-r" switches) " [R]"))))
+    (format " %s %s " (propertize "Sort:" 'face 'bold)
+            (propertize sort 'face 'font-lock-type-face))))
 
 (dirvish-define-mode-line omit "A `dired-omit-mode' indicator."
   (and dired-omit-mode (propertize "[Omit]" 'face 'bold)))
@@ -1391,8 +1397,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 If the buffer is not available, create it with `dired-noselect'."
   (let* ((dir-buf (if parent (dv-parent-dir-buf-alist dv) (dv-root-dir-buf-alist dv)))
          (buffer (alist-get entry dir-buf nil nil #'equal))
-         (sorter (cdr (dv-sort-criteria dv)))
-         (switches (string-join (list (dv-ls-switches dv) sorter) " ")))
+         (switches (dv-ls-switches dv)))
     (unless buffer
       (let ((count (if (file-remote-p entry) 0 (length (directory-files entry nil nil t)))))
         (if (> count dirvish-async-listing-threshold)
@@ -1431,31 +1436,6 @@ directory in another window."
             (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
             (dirvish-activate (dirvish-new :path (dirvish--ensure-path parent) :depth -1)))
         (dirvish-find-file parent t)))))
-
-(defun dirvish-sort-by-criteria (criteria)
-  "Call `dired-sort-other' by different `CRITERIA'."
-  (interactive
-   (list
-    (read-char-choice
-     "Sort by (d/D)efault (e/E)xt (s/S)ize (t/T)ime (m/M)odified: "
-     '(?q ?d ?D ?e ?E ?s ?S ?t ?T ?m ?M))))
-  (when dired-sort-inhibit (user-error "Dirvish: cannot sort this buffer"))
-  (unless (eq criteria ?q)
-    (let* ((c (char-to-string criteria))
-           (revp (string-equal c (upcase c)))
-           (cc (downcase c))
-           (sort-flag
-            (cond
-             ((string-equal cc "d") '("default" . ""))
-             ((string-equal cc "m") '("modified" . " -c"))
-             ((string-equal cc "e") '("ext" . " -X"))
-             ((string-equal cc "t") '("time" . " -t"))
-             ((string-equal cc "s") '("size" . " -S"))))
-           (name (concat (car sort-flag) (when revp " [R]")))
-           (order (concat (cdr sort-flag) (when revp " -r")))
-           (dv (dirvish-curr)))
-      (setf (dv-sort-criteria dv) (cons name order))
-      (dired-sort-other (string-join (list (dv-ls-switches dv) order) " ")))))
 
 (defun dirvish-toggle-fullscreen ()
   "Toggle fullscreen of current Dirvish."
