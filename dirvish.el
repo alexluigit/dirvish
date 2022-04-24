@@ -96,20 +96,6 @@ Set it to nil disables the history tracking."
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-trash-dir-alist nil
-  "An alist of (DISK . TRASH-DIR).
-Where DISK is path to a disk and TRASH-DIR is its corresponding
-trash directory.
-For example, if you set it to:
-
-'((\"/mnt/HDD/\" . \".Trash/files\")
-  (\"/mnt/CloudDrive\" . \".recycle\"))
-
-Dirvish take /mnt/HDD/.Trash/files as your trash can when you are
-in /mnt/HDD directory or its child entries. This can speed up
-file deletion when you have multiple disk drives."
-  :group 'dirvish :type 'alist)
-
 (defcustom dirvish-header-string-function 'dirvish-default-header-string-fn
   "Function that returns content (a string) in Dirvish header."
   :group 'dirvish :type 'function)
@@ -201,7 +187,6 @@ If you have slow ssh connection, do NOT mess up with this option."
     (dired         dired-up-directory              dirvish-up-directory           :override)
     (dired         dired-sort-toggle-or-edit       dirvish-sort-by-criteria       :override)
     (dired         +dired/quit-all                 quit-window                    :override)
-    (dired         dired-internal-do-deletions     dirvish-deletion-ad)
     (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
     (wdired        wdired-change-to-wdired-mode    dirvish-wdired-mode-ad         :after)
     (wdired        wdired-exit                     dirvish-setup                  :after)
@@ -367,12 +352,6 @@ ALIST is window arguments passed to `window--display-buffer'."
                             f))
               (f-size (f) (file-attribute-size (file-attributes f))))
     (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
-
-(defun dirvish--get-trash-dir ()
-  "Get trash directory for current disk."
-  (cl-dolist (dir dirvish-trash-dir-alist)
-    (when (string-prefix-p (car dir) (dired-current-directory))
-      (cl-return (concat (car dir) (cdr dir))))))
 
 (defun dirvish--append-metadata (metadata completions)
   "Append METADATA for minibuffer COMPLETIONS."
@@ -919,10 +898,6 @@ If ALL-FRAMES, search target directories in all frames."
   (dolist (ov (mapcar #'car (dv-attributes-alist (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h :local))
-
-(defun dirvish-deletion-ad (fn &rest args)
-  "Advice function for FN `dired-internal-do-deletions' with its ARGS."
-  (let ((trash-directory (dirvish--get-trash-dir))) (apply fn args)))
 
 (defun dirvish-find-file-ad (args)
   "Advice for `find-file' with its ARGS."
