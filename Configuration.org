@@ -32,7 +32,6 @@ otherwise the preview functionality may not work correctly.
 | Option                             | Type     | Description                              |
 |------------------------------------+----------+------------------------------------------|
 | ~dirvish-cache-dir~                  | String   | Cache directory                          |
-| ~dirvish-trash-dir-alist~            | Alist    | Setup multiple trash cans                |
 | ~dirvish-history-length~             | Integer  | Maximum number of items in history       |
 | ~dirvish-depth~                      | Integer  | Level of dirs to traverse up             |
 | ~dirvish-parent-max-width~           | Float    | Max width of parent windows              |
