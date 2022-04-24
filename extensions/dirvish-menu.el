@@ -223,6 +223,40 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
         (transient-show-popup t))
     (dirvish-top-level-menu)))
 
+;;;###autoload (autoload 'dirvish-sort-by-criteria "dirvish-menu" nil t)
+(defcustom dirvish-sort-keys
+  '(("n" ""       "name")
+    ("N" "-r"     "name (reverse)")
+    ("m" "-t"     "modification time")
+    ("M" "-t -r"  "modification time (oldest first)")
+    ("a" "-tu"    "access time")
+    ("A" "-tu -r" "access time (oldest first)")
+    ("c" "-tU"    "creation time")
+    ("C" "-tU -r" "creation time (oldest first)")
+    ("s" "-S"     "size")
+    ("S" "-S -r"  "size (smallest first)")
+    ("e" "-X"     "extensions")
+    ("E" "-X -r"  "extensions (reverse)"))
+  "SORT-KEYs for command `dirvish-sort-by-criteria'.
+A SORT-KEY is a (KEY FLAG DOC) alist where KEY is the key to
+invoke the sort function, FLAG is the the sort flag for
+`dired-sort-other', DOC (optional) is the documentation string."
+  :group 'dirvish :type 'alist
+  :set
+  (lambda (k v)
+    (set k v)
+    (eval
+     `(transient-define-prefix dirvish-sort-by-criteria ()
+        "Sort Dirvish buffer by different criteria."
+        ["Sort by: "
+         ,@(cl-loop
+            for (key flag desc) in v
+            collect
+            (list key desc
+                  `(lambda () (interactive)
+                     (dired-sort-other
+                      (concat (dv-ls-switches (dirvish-curr)) " " ,flag)))))]))))
+
 ;;;###autoload (autoload 'dirvish-goto-bookmark "dirvish-menu" nil t)
 (defcustom dirvish-bookmarks-alist
   '(("h" "~/"                          "Home")
