@@ -225,7 +225,10 @@ otherwise it defaults to `project-current'."
           :preview-dispatchers dirvish-side-preview-dispatchers
           :mode-line-format dirvish-side--ml-fmt
           :depth -1
-          :type 'side))
+          :root-window-fn #'dirvish-side-root-window-fn
+          :header-string-fn #'dirvish-side-header-string-fn
+          :find-file-window-fn #'dirvish-side-find-file-window-fn
+          :quit-window-fn #'dirvish-side-quit-window-fn))
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
 
 (provide 'dirvish-side)

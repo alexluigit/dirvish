@@ -96,7 +96,7 @@ Set it to nil disables the history tracking."
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-header-string-function 'dirvish-default-header-string-fn
+(defcustom dirvish-header-string-function 'dirvish-default-header-string
   "Function that returns content (a string) in Dirvish header."
   :group 'dirvish :type 'function)
 
@@ -510,22 +510,18 @@ If FLATTEN is non-nil, collect them as a flattened list."
        (path nil)
        (depth dirvish-depth)
        (transient nil)
-       (type nil)
+       (no-parents nil)
        (attributes (purecopy dirvish-attributes))
        (preview-dispatchers (purecopy dirvish-preview-dispatchers))
        (ls-switches dired-listing-switches)
        (mode-line-format dirvish--ml-fmt)
+       (root-window-fn (lambda (_dv) (frame-selected-window)))
+       (header-string-fn (symbol-value 'dirvish-header-string-function))
+       (find-file-window-fn #'selected-window)
+       (quit-window-fn #'ignore)
        &aux
        (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
-       (read-only-depth (if (>= depth 0) depth dirvish-depth))
-       (root-window-fn (let ((fn (intern (format "dirvish-%s-root-window-fn" type))))
-                         (if (functionp fn) fn (lambda (_dv) (frame-selected-window)))))
-       (header-string-fn (let ((fn (intern (format "dirvish-%s-header-string-fn" type))))
-                           (if (functionp fn) fn (symbol-value 'dirvish-header-string-function))))
-       (find-file-window-fn (let ((fn (intern (format "dirvish-%s-find-file-window-fn" type))))
-                              (if (functionp fn) fn #'selected-window)))
-       (quit-window-fn (let ((fn (intern (format "dirvish-%s-quit-window-fn" type))))
-                         (if (functionp fn) fn #'ignore))))))
+       (read-only-depth (if (>= depth 0) depth dirvish-depth)))))
   "Define dirvish data type."
   (name
    (cl-gensym)
@@ -545,7 +541,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (transient
    nil
    :documentation "TODO.")
-  (type
+  (no-parents
    nil
    :documentation "TODO")
   (dired-buffers
@@ -856,11 +852,13 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (last-dv (with-current-buffer (other-buffer)
                    (when (derived-mode-p 'dirvish-mode) (dirvish-curr))))
         buffer-read-only)
-    (unless (and dv (eq (dv-type dv) 'find-dired))
-      (let* ((last-depth
-              (with-current-buffer (other-buffer)
-                (and (derived-mode-p 'dirvish-mode) (dv-depth (dirvish-curr)))))
-             (new-dv (dirvish-new :type 'find-dired)))
+    (unless (and dv (eq (dv-header-string-fn dv) #'dirvish-find-dired-header-string))
+      (let ((last-depth
+             (with-current-buffer (other-buffer)
+               (and (derived-mode-p 'dirvish-mode) (dv-depth (dirvish-curr)))))
+            (new-dv (dirvish-new
+                      :header-string-fn #'dirvish-find-dired-header-string
+                      :no-parents t)))
         (add-to-list 'dirvish--transient-dvs new-dv)
         (setf (dv-transient new-dv) (or last-dv new-dv))
         (dirvish-activate new-dv)
@@ -875,8 +873,9 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
 
 (defun dirvish-fd-dired-ad (fn &rest args)
   "Advisor function for FN `fd-dired' with its ARGS."
-  (when (and (dirvish-curr) (eq (dv-type (dirvish-curr)) 'find-dired))
-    (dirvish-deactivate (dirvish-curr)))
+  (when-let ((dv (dirvish-curr)))
+    (when (eq (dv-header-string-fn dv) #'dirvish-find-dired-header-string)
+      (dirvish-deactivate dv)))
   (and (window-dedicated-p) (other-window 1))
   ;; HACK for *FD* window placement. `fd-dired-display-in-current-window' does not behave as described.
   (let ((display-buffer-alist '(("^ ?\\*Fd.*$" (display-buffer-same-window))))
@@ -1182,7 +1181,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
-(defun dirvish-default-header-string-fn ()
+(defun dirvish-default-header-string ()
   "Compose header string."
   (when-let ((dv (dirvish-curr)))
     (let* ((index (dv-index-path dv))
@@ -1196,7 +1195,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
               (propertize path-tail 'face 'dired-mark)
               (propertize file-name 'face 'font-lock-constant-face)))))
 
-(defun dirvish-find-dired-header-string-fn ()
+(defun dirvish-find-dired-header-string ()
   "Return a string showing current `find/fd' command args."
   (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
     (when-let ((args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
@@ -1294,7 +1293,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
          (parent-dirs ())
          (depth (dv-depth dv))
          (i 0))
-    (when (or (file-remote-p current) (eq (dv-type dv) 'find-dired))
+    (when (or (file-remote-p current) (dv-no-parents dv))
       (setq depth 0))
     (dirvish-setup dirvish--curr-name)
     (when (window-parameter (selected-window) 'window-side)
