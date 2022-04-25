@@ -215,7 +215,6 @@ If you have slow ssh connection, do NOT mess up with this option."
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--preview-img-threshold (* 1024 1024 0.4))
 (defconst dirvish--preview-img-scale 0.92)
-(defconst dirvish--repeat-interval 0.1)
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99 :box ())))
@@ -226,7 +225,6 @@ If you have slow ssh connection, do NOT mess up with this option."
 (defconst dirvish-preview--video-use-embed-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defvar dirvish--transient-dvs '())
-(defvar dirvish--repeat-timers '())
 (defvar dirvish--available-attrs '())
 (defvar-local dirvish--dir-local-p t)
 (defvar-local dirvish--dired-async-p nil)
@@ -240,14 +238,6 @@ If you have slow ssh connection, do NOT mess up with this option."
 (put 'dirvish--curr-name 'permanent-local t)
 
 ;;;; Helpers
-
-(defmacro dirvish-repeat (func delay interval &rest args)
-  "Execute FUNC with ARGS in every INTERVAL after DELAY."
-  (let ((timer (intern (format "%s-timer" func))))
-    `(progn
-       (defvar ,timer nil)
-       (add-to-list 'dirvish--repeat-timers ',timer)
-       (setq ,timer (run-with-timer ,delay ,interval ',func ,@args)))))
 
 (defmacro dirvish-debounce (label &rest body)
   "Debouncing the execution of BODY.
@@ -769,9 +759,7 @@ by this instance."
 
 (defun dirvish-deactivate (dv)
   "Deactivate dirvish instance DV."
-  (dirvish-kill dv
-    (unless (dirvish-get-all 'name t t)
-      (dolist (tm dirvish--repeat-timers) (cancel-timer (symbol-value tm)))))
+  (dirvish-kill dv)
   (run-hooks 'dirvish-deactivation-hook)
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t))))
 
