@@ -411,12 +411,15 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   "Reclaim current dirvish."
   (unless (active-minibuffer-window)
     (if dirvish--curr-name
-        (progn
+        (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
           (setq tab-bar-new-tab-choice "*scratch*")
-          (dirvish--init-util-buffers (dirvish-curr))
+          (unless (dirvish-dired-p dv)
+            (setq other-window-scroll-buffer (window-buffer (dv-preview-window dv))))
+          (dirvish--init-util-buffers dv)
           (or dirvish-override-dired-mode (dirvish--add-advices))
           (dirvish--add-advices dirvish-extra-advice-alist))
       (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+      (setq other-window-scroll-buffer nil)
       (or dirvish-override-dired-mode (dirvish--remove-advices))
       (dirvish--remove-advices dirvish-extra-advice-alist))
     (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
@@ -768,7 +771,6 @@ by this instance."
   "Deactivate dirvish instance DV."
   (dirvish-kill dv
     (unless (dirvish-get-all 'name t t)
-      (setq other-window-scroll-buffer nil)
       (dolist (tm dirvish--repeat-timers) (cancel-timer (symbol-value tm)))))
   (run-hooks 'dirvish-deactivation-hook)
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t))))
