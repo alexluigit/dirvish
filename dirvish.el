@@ -213,7 +213,7 @@ If you have slow ssh connection, do NOT mess up with this option."
 (defvar fd-dired-buffer-name-format)
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
-(defconst dirvish--preview-img-threshold (* 1024 1024 0.5))
+(defconst dirvish--preview-img-threshold (* 1024 1024 0.4))
 (defconst dirvish--preview-img-scale 0.92)
 (defconst dirvish--repeat-interval 0.1)
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
@@ -556,9 +556,6 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-buffers
    ()
    :documentation "holds all file preview buffers in this instance.")
-  (preview-proc-initialized
-   ()
-   :documentation "TODO")
   (window-conf
    (current-window-configuration)
    :documentation "is the window configuration given by `current-window-configuration'.")
@@ -1031,7 +1028,7 @@ When PROC finishes, fill preview buffer with process result."
             ((or (< (nth 7 (file-attributes file)) dirvish--preview-img-threshold)
                  (string-prefix-p (concat (expand-file-name dirvish-cache-dir) "images/") file))
              `(image . ,(create-image file nil nil :max-width width :max-height height)))
-            (t `(image-cache . ("convert" ,file "-define" "jpeg:extent=400kb" "-resize"
+            (t `(image-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
                                 ,(number-to-string width) ,cache)))))))
 
 (dirvish-define-preview video (file dv)
@@ -1133,10 +1130,9 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
         ('buffer (setq buf payload))
         ('image (dirvish-preview--insert-image payload dv))
         ('image-cache
-         (let ((filename (dv-index-path dv)))
-           (unless (member filename (dv-preview-proc-initialized dv))
-             (push filename (dv-preview-proc-initialized dv))
-             (let ((proc (apply #'start-process "dirvish-preview-process" buf cmd args)))
+         (let ((procname (concat (dv-index-path dv) "-" (buffer-name buf))))
+           (unless (member procname (mapcar #'process-name (process-list)))
+             (let ((proc (apply #'start-process procname buf cmd args)))
                (set-process-sentinel
                 proc (lambda (&rest _) (dirvish-debounce layout (dirvish-preview-update)))))))
          (insert " [Dirvish] Generating image cache..."))
@@ -1248,8 +1244,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
   (unless (file-remote-p default-directory)
-    (dirvish-preview--clean-cache-images (dired-get-marked-files))
-    (setf (dv-preview-proc-initialized (dirvish-curr)) nil))
+    (dirvish-preview--clean-cache-images (dired-get-marked-files)))
   (dirvish--hide-dired-header)
   (dirvish-update-body-h))
 
