@@ -17,7 +17,8 @@
 
 (require 'dirvish)
 
-(defvar dirvish-yank--queue '())
+(defvar dirvish-yank--progress (cons 0 0))
+(defvar dirvish-yank--status-timer nil)
 
 (defun dirvish--yank (&optional mode)
   "Paste marked files/directory to current directory according to MODE.
@@ -42,7 +43,7 @@ MODE can be `'copy', `'move', `symlink', or `relalink'."
 This function is a helper for `dirvish--yank'."
   (let* ((target (dired-current-directory))
          (process-connection-type nil)
-         (io-buffer (generate-new-buffer " *Dirvish I/O*"))
+         (io-buffer (dirvish--ensure-temp-buffer "yank"))
          (paste-func
           (cl-case mode
             ('copy (lambda (fr to) (start-process "" io-buffer "cp" "-f" "-r" "-v" fr to)))
@@ -74,8 +75,10 @@ This function is a helper for `dirvish--yank'."
                     (?q (setq abort t) (setq new-fileset ()))))
               (setq new-fileset (dirvish--yank-push-task file target paste-name new-fileset)))))))
     (and abort (user-error "Dirvish: yank aborted"))
-    (add-to-list 'dirvish-yank--queue `(nil ,io-buffer ,(cons 0 (length new-fileset)) ,mode))
-    (dirvish-repeat dirvish--yank-status-update 0 dirvish--repeat-interval)
+    (setcdr dirvish-yank--progress (+ (cdr dirvish-yank--progress) (length new-fileset)))
+    (setq dirvish-yank--status-timer
+          (or dirvish-yank--status-timer
+              (run-with-timer 0 0.1 #'dirvish-yank--status-update)))
     (cl-dolist (file new-fileset)
       (funcall paste-func (car file) (cdr file)))
     (cl-dolist (buf (dirvish-get-all 'dired-buffers t t))
@@ -91,39 +94,29 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
     (push (cons file name) place))
   place)
 
-(defun dirvish--yank-status-update ()
+(defun dirvish-yank--status-update ()
   "Update current yank task progress."
-  (when-let* ((task (car-safe dirvish-yank--queue)))
-    (let ((io-buf (nth 1 task))
-          (progress (car (nth 2 task)))
-          (length (cdr (nth 2 task)))
-          (mode (nth 3 task))
-          (proc-exit "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*"))
-      (if (or (eq mode 'copy) (eq mode 'move))
-          (setq progress (with-current-buffer io-buf
-                           (how-many proc-exit (point-min) (point-max))))
-        (setq progress length))
-      (when (eq progress length)
-        (when (dirvish-curr) (revert-buffer))
-        (setf (nth 0 (car-safe dirvish-yank--queue)) t)
-        (when (eq (length dirvish-yank--queue) 1)
-          (cancel-timer (symbol-value 'dirvish--yank-status-update-timer))))
-      (setcar (nth 2 (car-safe dirvish-yank--queue)) progress))))
+  (with-current-buffer (dirvish--ensure-temp-buffer "yank")
+    (let* ((proc-exit "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*")
+           (progress (how-many proc-exit (point-min) (point-max))))
+      (if (eq progress (cdr dirvish-yank--progress))
+          (progn
+            (erase-buffer)
+            (setq dirvish-yank--progress (cons 0 0))
+            (cancel-timer (symbol-value 'dirvish-yank--status-timer))
+            (setq dirvish-yank--status-timer nil)
+            (when-let (dv (dirvish-curr))
+              (with-current-buffer (window-buffer (dv-root-window dv))
+                (revert-buffer))))
+        (setcar dirvish-yank--progress progress)))))
 
 ;;;###autoload (autoload 'dirvish-yank-ml "dirvish-yank" nil t)
 (dirvish-define-mode-line yank "Current move/paste task progress."
-  (when-let* ((task (car-safe dirvish-yank--queue)))
-    (let ((finished (car task))
-          (index (car (nth 2 task)))
-          (length (cdr (nth 2 task))))
-      (when finished (setq dirvish-yank--queue (cdr dirvish-yank--queue)))
-      (format "Task progress: %s "
-              (propertize (format "%s / %s" index length) 'face 'font-lock-keyword-face)))))
-
-;;;###autoload
-(defun dirvish-yank-retrive-progress-h ()
-  "Retrieve progress of current paste/move task."
-  (when (dirvish-yank-ml) (dirvish-repeat dirvish--yank-status-update 0 0.5)))
+  (cl-destructuring-bind (progress . total) dirvish-yank--progress
+    (when (> total 0)
+      (format "%s%s " (propertize "Task progress: " 'face 'bold)
+              (propertize (format "%s of %s" progress total)
+                          'face 'font-lock-keyword-face)))))
 
 ;;;###autoload
 (defun dirvish-yank (&optional arg)

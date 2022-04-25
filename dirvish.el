@@ -307,9 +307,9 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--ensure-temp-buffer ()
-  "Ensure a temporary buffer."
-  (get-buffer-create " *Dirvish-temp*"))
+(defun dirvish--ensure-temp-buffer (&optional type)
+  "Return a temporary buffer with optional TYPE."
+  (get-buffer-create (format " *Dirvish-%s*" (or type "temp"))))
 
 (defun dirvish--get-project-root ()
   "Get root path of current project."
@@ -1120,7 +1120,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
                 proc (lambda (&rest _) (dirvish-debounce layout (dirvish-preview-update)))))))
          (insert " [Dirvish] Generating image cache..."))
         ('shell
-         (let* ((res-buf (get-buffer-create " *Dirvish preview result*"))
+         (let* ((res-buf (dirvish--ensure-temp-buffer "shell-output"))
                 (proc (apply #'start-process "dirvish-preview-process" res-buf cmd args)))
            (set-process-sentinel proc 'dirvish-preview--fill-string-sentinel))))
       buf)))
