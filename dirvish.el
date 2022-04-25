@@ -412,9 +412,11 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   (unless (active-minibuffer-window)
     (if dirvish--curr-name
         (progn
+          (setq tab-bar-new-tab-choice "*scratch*")
           (dirvish--init-util-buffers (dirvish-curr))
           (or dirvish-override-dired-mode (dirvish--add-advices))
           (dirvish--add-advices dirvish-extra-advice-alist))
+      (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
       (or dirvish-override-dired-mode (dirvish--remove-advices))
       (dirvish--remove-advices dirvish-extra-advice-alist))
     (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
@@ -547,9 +549,6 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (dired-buffers
    ()
    :documentation "holds all dired buffers in this instance.")
-  (dired-windows
-   ()
-   :documentation "holds all dired windows in this instance.")
   (preview-window
    nil
    :documentation "is the window to display preview buffer.")
@@ -754,17 +753,12 @@ by this instance."
 
 (defun dirvish-activate (dv)
   "Activate dirvish instance DV."
-  (setq tab-bar-new-tab-choice "*scratch*")
-  (when-let (old-dv (dirvish-curr))
-    (cond ((dv-transient dv) nil)
-          ((and (not (dirvish-dired-p old-dv))
-                (not (dirvish-dired-p dv)))
-           (dirvish-deactivate dv)
-           (user-error "Dirvish: using current session"))
-          ((memq (selected-window) (dv-dired-windows old-dv))
-           (dirvish-deactivate old-dv))))
-  (dirvish--refresh-slots dv)
-  (dirvish--create-root-window dv)
+  (let ((old (dirvish-curr)))
+    (dirvish--refresh-slots dv)
+    (dirvish--create-root-window dv)
+    (when (and old (not (dv-transient dv))
+               (eq (dv-root-window old) (dv-root-window dv)))
+      (dirvish-deactivate old)))
   (set-frame-parameter nil 'dirvish--curr dv)
   (when-let ((path (dv-path dv))) (dirvish-find-file path))
   (run-hooks 'dirvish-activation-hook)
@@ -775,7 +769,6 @@ by this instance."
   (dirvish-kill dv
     (unless (dirvish-get-all 'name t t)
       (setq other-window-scroll-buffer nil)
-      (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
       (dolist (tm dirvish--repeat-timers) (cancel-timer (symbol-value tm)))))
   (run-hooks 'dirvish-deactivation-hook)
   (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t))))
@@ -1271,7 +1264,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))
     (dirvish--render-attributes dv)
-    (push (selected-window) (dv-dired-windows dv))
     (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
     (setq mode-line-format (and owp (dv-mode-line-format dv)))

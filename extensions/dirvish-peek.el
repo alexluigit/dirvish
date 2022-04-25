@@ -68,7 +68,6 @@ one of categories in `dirvish-peek-categories'."
       (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
       (unless (and old-dv (dv-preview-window old-dv))
         (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
-        (push (selected-window) (dv-dired-windows new-dv))
         (setf (dv-preview-window new-dv)
               (display-buffer-in-side-window (dirvish--ensure-temp-buffer) dirvish-peek-display-alist))
         (dirvish--add-advices dirvish-extra-advice-alist)))
