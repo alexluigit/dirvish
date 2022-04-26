@@ -173,6 +173,7 @@ will visit the latest `project-root' after executing
       (when (and (eq state 'visible) (window-live-p win) dirname)
         (with-selected-window win
           (dirvish-reclaim)
+          (setf (dv-index-dir dv) dirname)
           (dirvish-with-no-dedication
            (switch-to-buffer (dirvish--buffer-for-dir dv dirname)))
           (when (and filename (not (file-directory-p filename)))
