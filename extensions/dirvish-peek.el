@@ -70,7 +70,7 @@ one of categories in `dirvish-peek-categories'."
         (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
         (setf (dv-preview-window new-dv)
               (display-buffer-in-side-window (dirvish--ensure-temp-buffer) dirvish-peek-display-alist))
-        (dirvish--add-advices dirvish-extra-advice-alist)))
+        (dirvish--add-advices)))
     (set-frame-parameter nil 'dirvish--peek `(:category ,preview-category :old ,old-dv :new ,new-dv))))
 
 (defun dirvish-peek--teardown ()

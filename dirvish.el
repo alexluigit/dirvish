@@ -176,9 +176,8 @@ If you have slow ssh connection, do NOT mess up with this option."
 ;;;; Internal variables
 
 (defvar dirvish-advice-alist
-  '((files         find-file                       dirvish-find-file-ad           :filter-args)
-    (dired         dired                           dirvish-dired-ad)
-    (dired         dired-jump                      dirvish-dired-jump-ad)
+  '((dired         dired                           dirvish-dired-ad               :override)
+    (dired         dired-jump                      dirvish-dired-jump-ad          :override)
     (dired         dired-find-file                 dirvish-find-file              :override)
     (dired         dired-find-alternate-file       dirvish-find-file              :override)
     (dired         dired-other-window              dirvish-dired-other-window-ad  :override)
@@ -192,12 +191,12 @@ If you have slow ssh connection, do NOT mess up with this option."
     (wdired        wdired-finish-edit              dirvish-setup                  :after)
     (wdired        wdired-abort-changes            dirvish-setup                  :after)
     (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
+    (files         find-file                       dirvish-find-file-ad           :filter-args)
+    (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
+    (fd-dired      fd-dired                        dirvish-fd-dired-ad)
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
     (recentf       recentf-track-closed-file       dirvish-ignore-ad)
-    (winner        winner-save-old-configurations  dirvish-ignore-ad)))
-(defvar dirvish-extra-advice-alist
-  '((dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
-    (fd-dired      fd-dired                        dirvish-fd-dired-ad)
+    (winner        winner-save-old-configurations  dirvish-ignore-ad)
     (evil          evil-refresh-cursor             dirvish-ignore-ad)
     (meow          meow--update-cursor             dirvish-ignore-ad)
     (flycheck      flycheck-buffer                 dirvish-ignore-ad)
@@ -406,12 +405,11 @@ If BODY is non-nil, create the buffer and execute BODY in it."
           (unless (dirvish-dired-p dv)
             (setq other-window-scroll-buffer (window-buffer (dv-preview-window dv))))
           (dirvish--init-util-buffers dv)
-          (or dirvish-override-dired-mode (dirvish--add-advices))
-          (dirvish--add-advices dirvish-extra-advice-alist))
+          (dirvish--add-advices))
       (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
       (setq other-window-scroll-buffer nil)
-      (or dirvish-override-dired-mode (dirvish--remove-advices))
-      (dirvish--remove-advices dirvish-extra-advice-alist))
+      (dirvish--remove-advices
+       (and dirvish-override-dired-mode '(dired find-dired fd-dired))))
     (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
       (set-frame-parameter nil 'dirvish--curr dv) dv)))
 
@@ -787,12 +785,10 @@ DEPTH defaults to -1 (same as `dirvish-dired') if not specified."
      :ls-switches (or switches dired-listing-switches)))
   (dired-goto-file (expand-file-name dirname)))
 
-(defun dirvish-dired-ad (_fn dirname &optional switches)
+(defun dirvish-dired-ad (dirname &optional switches)
   "Override `dired' command.
-FN refers to original `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (when-let ((dv (dirvish-curr))) (dirvish-deactivate dv))
   (dirvish--activate-dired dirname switches))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
@@ -820,8 +816,8 @@ DIRNAME and SWITCHES are the same args in `dired'."
     (switch-to-buffer-other-frame (dirvish--ensure-temp-buffer))
     (dirvish--activate-dired dirname switches dirvish-depth)))
 
-(defun dirvish-dired-jump-ad (_fn &optional other-window file-name)
-  "An advisor for `dired-jump' command.
+(defun dirvish-dired-jump-ad (&optional other-window file-name)
+  "Override `dired-jump' command.
 OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg (read-file-name "Dirvish jump to: "))))
@@ -895,16 +891,20 @@ If ALL-FRAMES, search target directories in all frames."
   (when (or (not (dirvish-curr)) (derived-mode-p 'wdired-mode))
     (apply fn args)))
 
-(defun dirvish--add-advices (&optional ad-alist)
-  "Add all advices listed in AD-ALIST.
-The AD-ALIST defaults to `dirvish-advice-alist'."
-  (pcase-dolist (`(,file ,sym ,fn ,place) (or ad-alist dirvish-advice-alist))
-    (when (require file nil t) (advice-add sym (or place :around) fn))))
+(defun dirvish--add-advices (&optional packages)
+  "Add all advices listed in `dirvish-advice-alist'.
+If PACKAGES, only add advices for these packages."
+  (when packages (dolist (package packages) (require package)))
+  (pcase-dolist (`(,pkg ,sym ,fn ,place) dirvish-advice-alist)
+    (when (or (and packages (memq pkg packages))
+              (and (not packages) (require pkg nil t)))
+      (advice-add sym (or place :around) fn))))
 
-(defun dirvish--remove-advices (&optional ad-alist)
-  "Remove all advices listed in AD-ALIST.
-The AD-ALIST defaults to `dirvish-advice-alist'."
-  (pcase-dolist (`(,_ ,sym ,fn) (or ad-alist dirvish-advice-alist)) (advice-remove sym fn)))
+(defun dirvish--remove-advices (&optional exclude-packages)
+  "Remove all advices listed in `dirvish-advice-alist'.
+If EXCLUDE-PACKAGES, do not remove advices for these packages."
+  (pcase-dolist (`(,pkg ,sym ,fn) dirvish-advice-alist)
+    (unless (memq pkg exclude-packages) (advice-remove sym fn))))
 
 ;;;; Preview
 
@@ -1475,7 +1475,7 @@ update `dirvish--history-ring'."
   :group 'dirvish :global t
   (if dirvish-override-dired-mode
       (progn
-        (dirvish--add-advices)
+        (dirvish--add-advices '(dired find-dired))
         (setq find-directory-functions
               (cl-substitute #'dirvish--noselect #'dired-noselect find-directory-functions)))
     (dirvish--remove-advices)
