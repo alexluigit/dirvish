@@ -22,7 +22,8 @@
 (require 'subr-x)
 (require 'transient)
 (require 'dirvish)
-(defvar dirvish-menu-available-prefixs '(dirvish-setup-menu dirvish-goto-bookmark))
+(defvar dirvish-menu-available-prefixs
+  '(dirvish-setup-menu dirvish-goto-bookmark dirvish-sort-by-criteria))
 
 (defgroup dirvish-menu nil
   "Useful preset transient commands."

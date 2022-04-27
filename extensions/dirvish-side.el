@@ -73,7 +73,8 @@ have an unique `dirvish-side' session.  SCOPE can be `emacs',
              do (when dv (dirvish-deactivate dv)))
     (setq dirvish-side--state-alist '())))
 
-(defcustom dirvish-side-display-alist '((side . left) (slot . -1) (window-width . 0.2))
+(defcustom dirvish-side-display-alist
+  '((side . left) (slot . -1) (window-width . 0.2))
   "Display alist for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
@@ -166,7 +167,7 @@ will visit the latest `project-root' after executing
 
 (defun dirvish-side-find-file (&optional filename)
   "Visit FILENAME in current visible `dirvish-side' session."
-  (cl-destructuring-bind (dv . state) (dirvish-side--get-state)
+  (pcase-let ((`(,dv . ,state) (dirvish-side--get-state)))
     (let ((win (and dv (dv-root-window dv)))
           (dirname (or (and filename (file-name-directory filename))
                        (dirvish--get-project-root))))
@@ -192,7 +193,7 @@ will visit the latest `project-root' after executing
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish side: "))))
-  (cl-destructuring-bind (dv . state) (dirvish-side--get-state)
+  (pcase-let ((`(,dv . ,state) (dirvish-side--get-state)))
     (cl-case state
       ('visible
        (unless (dirvish-dired-p dv) (dirvish-toggle-fullscreen))

@@ -413,7 +413,6 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
       (set-frame-parameter nil 'dirvish--curr dv) dv)))
 
-;;;###autoload
 (cl-defmacro dirvish-define-attribute (name &key if form left right doc)
   "Define a Dirvish attribute NAME.
 An attribute contains a pair of predicate/rendering functions
@@ -929,7 +928,7 @@ cache image. A new directory is created unless NO-MKDIR."
   "Insert IMAGE at preview window of DV."
   (insert " ")
   (add-text-properties 1 2 `(display ,image rear-nonsticky t keymap ,image-map))
-  (cl-destructuring-bind (i-width . i-height) (image-size (image-get-display-property))
+  (pcase-let ((`(,i-width . ,i-height) (image-size (image-get-display-property))))
     (let* ((p-window (dv-preview-window dv))
            (w-offset (max (round (/ (- (window-width p-window) i-width) 2)) 0))
            (h-offset (max (round (/ (- (window-height p-window) i-height) 2)) 0)))
