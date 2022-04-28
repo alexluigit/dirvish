@@ -303,6 +303,7 @@ ALIST is window arguments passed to `window--display-buffer'."
          (size (or height (ceiling (* (frame-width) width))))
          (split-width-threshold 0)
          (mode-line-format nil)
+         (ignore-window-parameters t)
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
