@@ -164,6 +164,14 @@ If you have slow ssh connection, do NOT mess up with this option."
               (choice (const :tag "Show attributes" extras)
                       (const :tag "VC attributes/preview-handlers" vc))))
 
+(defcustom dirvish-hide-details t
+  "Whether to enable `dired-hide-details-mode' in root window.
+The value can be a boolean or a function that takes current
+Dirvish session as its argument."
+  :group 'dirvish :type '(choice (const :tag "Always hide details" t)
+                                 (const :tag "Never hide details" nil)
+                                 (function :tag "Custom function")))
+
 (defvar dirvish-preview-setup-hook nil
   "Hook functions for preview buffer initialization.")
 
@@ -1261,9 +1269,13 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (or dirvish--attrs-hash (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
   (set-window-fringes nil 1 1)
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
-  (let (dired-hide-details-mode-hook) (dired-hide-details-mode t))
   (let* ((dv (dirvish-curr))
          (owp (dirvish-dired-p dv)))
+    (cond ((functionp dirvish-hide-details)
+           (funcall dirvish-hide-details dv))
+          (dirvish-hide-details
+           (let (dired-hide-details-mode-hook)
+             (dired-hide-details-mode t))))
     (dirvish--render-attributes dv)
     (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
