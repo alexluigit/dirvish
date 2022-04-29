@@ -23,31 +23,28 @@
 (require 'transient)
 (require 'dirvish)
 (defvar dirvish-menu-available-prefixs
-  '(dirvish-setup-menu dirvish-goto-bookmark dirvish-sort-by-criteria))
+  '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-goto-bookmark))
 
-(defgroup dirvish-menu nil
-  "Useful preset transient commands."
-  :prefix "dirvish-menu-"
-  :group 'dirvish)
-
-(defclass dirvish--toggle (transient-infix)
+(defclass dirvish-menu:toggle (transient-infix)
   ((variable  :initarg :variable)
    (scope     :initarg :scope nil))
   "[Experimental] Class for Dirvish toggles.")
 
-(cl-defmethod transient-format-description ((obj dirvish--toggle))
+(cl-defmethod transient-format-description ((obj dirvish-menu:toggle))
   (or (oref obj description) (symbol-name (oref obj variable))))
 
-(cl-defmethod transient-format-value ((obj dirvish--toggle))
-  (propertize (prin1-to-string (oref obj value)) 'face 'transient-value))
+(cl-defmethod transient-format-value ((obj dirvish-menu:toggle))
+  (let* ((val (prin1-to-string (oref obj value)))
+         (face (if (equal val "On") 'transient-argument 'transient-inactive-value)))
+    (propertize val 'face face)))
 
-(cl-defmethod transient-init-value ((obj dirvish--toggle))
+(cl-defmethod transient-init-value ((obj dirvish-menu:toggle))
   (oset obj value (if (memq (oref obj variable) (funcall (oref obj scope) (dirvish-curr))) 'On 'Off)))
 
-(cl-defmethod transient-infix-read ((obj dirvish--toggle))
+(cl-defmethod transient-infix-read ((obj dirvish-menu:toggle))
   (oset obj value (if (eq (oref obj value) 'On) 'Off 'On)))
 
-(cl-defmethod transient-infix-set ((obj dirvish--toggle) value)
+(cl-defmethod transient-infix-set ((obj dirvish-menu:toggle) value)
   (let* ((dv (dirvish-curr))
          (item (oref obj variable))
          (slot-name (oref obj scope))
@@ -324,7 +321,7 @@ KEY is a string passed to `kbd', VAR is a valid attribute (as in
                            (infix-scope (intern (format "dv-%s" slot-name)))
                            (infix-desc (nth 3 i)))
                       (eval `(transient-define-infix ,infix-name ()
-                               :class 'dirvish--toggle
+                               :class 'dirvish-menu:toggle
                                :variable ',infix-var
                                :scope ',infix-scope
                                :description ,infix-desc))))
