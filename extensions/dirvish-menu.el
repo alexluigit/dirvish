@@ -88,6 +88,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
                  ,@args))))
         spec)))
 
+;;;###autoload (autoload 'dirvish-ls-switches-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-mark-actions-menu "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
@@ -99,7 +100,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("e"   "Open file"                           dired-find-file)
      ("o"   "Open file other window"              dired-find-file-other-window)
      ("w"   "Get file information"                dirvish-file-info-menu)
-     ("s"   "Sort files"                          dired-sort-toggle-or-edit)
+     ("s"   "Setup listing switches"              dirvish-ls-switches-menu)
      ("v"   "View this file"                      dired-view-file)
      ("g"   "Refresh buffer"                      revert-buffer)]
     ["I/O commands"
@@ -137,6 +138,43 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (featurep 'dired-subtree)))
      ("M-c" "Collapse paths"                      dired-collapse-mode :if (lambda () (featurep 'dired-collapse)))
      ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))]])
+  (ls-switches
+   :init-value
+   (lambda (o) (oset o value (split-string (or dired-actual-switches ""))))
+   [:description
+    (lambda ()
+      (let ((title "setup listing switches")
+            (note "lowercased switches also work in"))
+        (format "%s\n%s %s" (dirvish-menu--format-heading title)
+                (propertize note 'face 'font-lock-doc-face)
+                (propertize "dired-hide-details-mode" 'face 'font-lock-doc-markup-face))))
+    ["options"
+     ("a" dirvish-menu--ls-filter)
+     ("s" dirvish-menu--ls-sort)
+     ("i" dirvish-menu--ls-indicator-style)
+     ("t" dirvish-menu--ls-time)
+     ("T" dirvish-menu--ls-time-style)
+     ("B" "scale sizes when printing, eg. 10K" "--block-size=")
+     "toggles"
+     ("r" "reverse order while sorting" "--reverse")
+     ("d" "list directories ontop" "--group-directories-first")
+     ("~" "hide backups files (eg. foo~)" "--ignore-backups")
+     ("A" "show the author" "--author")
+     ("C" "show security context" "--context")
+     ("H" "human readable file size" "--human-readable")
+     ("G" "hide group names" "--no-group")
+     ("O" "hide owner names" "-g")
+     ("L" "info for link references or link itself" "--dereference")
+     ("N" "numeric user and group IDs" "--numeric-uid-gid")
+     ("P" "powers of 1000 for file size rather than 1024" "--si")
+     ("I" "show index number" "--inode")
+     ("S" "show the allocated size" "--size")
+     "Actions"
+     ("RET" "  apply to this buffer" dirvish-menu--apply-switches-to-buffer)
+     ("M-RET" "apply to this session" dirvish-menu--apply-switches-to-session)
+     ("C-r" "  reset this buffer" dirvish-menu--reset-switches-for-buffer)
+     ("M-r" "  reset this session" dirvish-menu--reset-switches-for-session)
+     ("C-l" "  clear choices" dirvish-menu--clear-switches-choices :transient t)]])
   (file-attributes
    ["Change file attributes"
     ("R"   "Name"                                 dired-do-rename)
@@ -221,39 +259,75 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
         (transient-show-popup t))
     (dirvish-top-level-menu)))
 
-;;;###autoload (autoload 'dirvish-sort-by-criteria "dirvish-menu" nil t)
-(defcustom dirvish-sort-keys
-  '(("n" ""       "name")
-    ("N" "-r"     "name (reverse)")
-    ("m" "-t"     "modification time")
-    ("M" "-t -r"  "modification time (oldest first)")
-    ("a" "-tu"    "access time")
-    ("A" "-tu -r" "access time (oldest first)")
-    ("c" "-tU"    "creation time")
-    ("C" "-tU -r" "creation time (oldest first)")
-    ("s" "-S"     "size")
-    ("S" "-S -r"  "size (smallest first)")
-    ("e" "-X"     "extensions")
-    ("E" "-X -r"  "extensions (reverse)"))
-  "SORT-KEYs for command `dirvish-sort-by-criteria'.
-A SORT-KEY is a (KEY FLAG DOC) alist where KEY is the key to
-invoke the sort function, FLAG is the the sort flag for
-`dired-sort-other', DOC (optional) is the documentation string."
-  :group 'dirvish :type 'alist
-  :set
-  (lambda (k v)
-    (set k v)
-    (eval
-     `(transient-define-prefix dirvish-sort-by-criteria ()
-        "Sort Dirvish buffer by different criteria."
-        ["Sort by: "
-         ,@(cl-loop
-            for (key flag desc) in v
-            collect
-            (list key desc
-                  `(lambda () (interactive)
-                     (dired-sort-other
-                      (concat (dv-ls-switches (dirvish-curr)) " " ,flag)))))]))))
+(defun dirvish-menu--clear-switches-choices ()
+  "Reload the listing switches setup UI."
+  (interactive)
+  (transient-setup 'dirvish-ls-switches-menu))
+
+(defun dirvish-menu--apply-switches-to-buffer (&optional switches)
+  "Apply listing SWITCHES to current buffer."
+  (interactive)
+  (let* ((args (transient-args transient-current-command))
+         (switches (or switches (string-join (append '("-l") args) " "))))
+    (setq dired-actual-switches switches)
+    (revert-buffer)))
+
+(defun dirvish-menu--apply-switches-to-session (&optional switches)
+  "Apply listing SWITCHES to current session."
+  (interactive)
+  (let* ((dv (dirvish-curr))
+         (args (transient-args transient-current-command))
+         (switches (or switches (string-join (append '("-l") args) " "))))
+    (dolist (buf (mapcar #'cdr (dv-root-dir-buf-alist dv)))
+      (with-current-buffer buf
+        (setq dired-actual-switches switches)
+        (revert-buffer)))
+    (setf (dv-ls-switches dv) switches)))
+
+(defun dirvish-menu--reset-switches-for-buffer ()
+  "Reset listing switches for current buffer."
+  (interactive)
+  (dirvish-menu--apply-switches-to-buffer dired-listing-switches))
+
+(defun dirvish-menu--reset-switches-for-session ()
+  "Reset listing switches for current buffer."
+  (interactive)
+  (dirvish-menu--apply-switches-to-session dired-listing-switches))
+
+(transient-define-infix dirvish-menu--ls-filter ()
+  :description "show all files"
+  :class 'transient-switches
+  :argument-format "--%s"
+  :argument-regexp "\\(--\\(all\\|almost-all\\)\\)"
+  :choices '("all" "almost-all"))
+
+(transient-define-infix dirvish-menu--ls-sort ()
+  :description "sort by"
+  :class 'transient-switches
+  :argument-format "--sort=%s"
+  :argument-regexp "\\(--sort=\\(time\\|none\\|extension\\|size\\|version\\|width\\)\\)"
+  :choices '("time" "none" "extension" "size" "version" "width"))
+
+(transient-define-infix dirvish-menu--ls-time ()
+  :description "show time as | sort files with"
+  :class 'transient-switches
+  :argument-format "--time=%s"
+  :argument-regexp "\\(--time=\\(use\\|birth\\|ctime\\)\\)"
+  :choices '("use" "birth" "ctime"))
+
+(transient-define-infix dirvish-menu--ls-time-style ()
+  :description "time style"
+  :class 'transient-switches
+  :argument-format "--time-style=%s"
+  :argument-regexp "\\(--time-style=\\(full-iso\\|long-iso\\|iso\\|locale\\|+\\)\\)"
+  :choices '("full-iso" "long-iso" "iso" "locale" "+"))
+
+(transient-define-infix dirvish-menu--ls-indicator-style ()
+  :description "add indicator"
+  :class 'transient-switches
+  :argument-format "--indicator-style=%s"
+  :argument-regexp "\\(--indicator-style=\\(slash\\|file-type\\|classify\\)\\)"
+  :choices '("slash" "file-type" "classify"))
 
 ;;;###autoload (autoload 'dirvish-goto-bookmark "dirvish-menu" nil t)
 (defcustom dirvish-bookmarks-alist
