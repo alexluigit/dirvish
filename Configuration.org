@@ -274,8 +274,11 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
   (setq dired-recursive-deletes 'always)
   (setq delete-by-moving-to-trash t)
   (setq dired-dwim-target t)
+  ;; Make sure to use the long name of flags when exists
+  ;; eg. use "--almost-all" instead of "-A"
+  ;; Otherwise some commands won't work properly
   (setq dired-listing-switches
-        "-AGhlv --group-directories-first --time-style=long-iso"))
+        "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group"))
 
 (use-package dirvish
   :custom
@@ -315,7 +318,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
    ("M-a" . dirvish-mark-actions-menu)
    ("M-s" . dirvish-setup-menu)
    ("M-f" . dirvish-toggle-fullscreen)
-   ([remap dired-sort-toggle-or-edit] . dirvish-sort-by-criteria)
+   ([remap dired-sort-toggle-or-edit] . dirvish-ls-switches-menu)
    ([remap dired-summary] . dirvish-dispatch)
    ([remap dired-do-copy] . dirvish-yank)
    ([remap mode-line-other-buffer] . dirvish-other-buffer)))
