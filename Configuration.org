@@ -28,24 +28,25 @@ otherwise the preview functionality may not work correctly.
 
 ** Customization options
 
-|------------------------------------+----------+------------------------------------------|
-| Option                             | Type     | Description                              |
-|------------------------------------+----------+------------------------------------------|
-| ~dirvish-cache-dir~                  | String   | Cache directory                          |
-| ~dirvish-history-length~             | Integer  | Maximum number of items in history       |
-| ~dirvish-depth~                      | Integer  | Level of dirs to traverse up             |
-| ~dirvish-parent-max-width~           | Float    | Max width of parent windows              |
-| ~dirvish-preview-width~              | Float    | Width of preview window                  |
-| ~dirvish-header-style~               | Option   | Style for full-frame Dirvish header      |
-| ~dirvish-header-string-function~     | Function | Default header string                    |
-| ~dirvish-face-remap-alist~           | Alist    | Remapping faces in Dirvish window        |
-| ~dirvish-mode-line-format~           | Cons     | Mode line format in root window          |
-| ~dirvish-async-listing-threshold~    | Integer  | List huge directories asynchronously     |
-| ~dirvish-preview-disabled-exts~      | List     | Disable preview for some filetypes       |
-| ~dirvish-enabled-features-on-remote~ | List     | Enabled Dirvish features on remote hosts |
-| ~dirvish-preview-dispatchers~        | List     | See [[#Preview-strategies][Preview strategies]]                   |
-| ~dirvish-attributes~                 | List     | See [[#Extra-attributes][Extra attributes]]                     |
-|------------------------------------+----------+------------------------------------------|
+|------------------------------------+------------------------------------------|
+| Option                             | Description                              |
+|------------------------------------+------------------------------------------|
+| ~dirvish-cache-dir~                  | Cache directory                          |
+| ~dirvish-history-length~             | Maximum number of items in history       |
+| ~dirvish-depth~                      | Level of dirs to traverse up             |
+| ~dirvish-parent-max-width~           | Max width of parent windows              |
+| ~dirvish-preview-width~              | Width of preview window                  |
+| ~dirvish-header-style~               | Style for full-frame Dirvish header      |
+| ~dirvish-header-string-function~     | Default header string                    |
+| ~dirvish-hide-details~               | Hide details as you see fit              |
+| ~dirvish-face-remap-alist~           | Remapping faces in Dirvish window        |
+| ~dirvish-mode-line-format~           | Mode line format in root window          |
+| ~dirvish-async-listing-threshold~    | List huge directories asynchronously     |
+| ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
+| ~dirvish-enabled-features-on-remote~ | Enabled Dirvish features on remote hosts |
+| ~dirvish-preview-dispatchers~        | See [[#Preview-strategies][Preview strategies]]                   |
+| ~dirvish-attributes~                 | See [[#Extra-attributes][Extra attributes]]                     |
+|------------------------------------+------------------------------------------|
 Consult the docstring of the options for details.
 
 ** Extra attributes
@@ -239,31 +240,31 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 
 **** Customization options
 
-|-------------------------------+---------+--------------------------------------------|
-| Option                        | Type    | Description                                |
-|-------------------------------+---------+--------------------------------------------|
-| ~dirvish-icon-delimiter~        | String  | The delimiter between icon and filename    |
-| ~dirvish-all-the-icons-height~  | Float   | Height applied to =all-the-icons=            |
-| ~dirvish-all-the-icons-offset~  | Float   | Vertical offset applied to =all-the-icons=   |
-| ~dirvish-all-the-icons-palette~ | Option  | Coloring style applied to =all-the-icons=    |
-| ~dirvish-vscode-icon-size~      | Integer | Pixelwise size applied to =vscode-icon=      |
-| ~dirvish-expanded-state-style~  | Option  | String/icon used for folder expanded state |
-|-------------------------------+---------+--------------------------------------------|
+|-------------------------------+--------------------------------------------|
+| Option                        | Description                                |
+|-------------------------------+--------------------------------------------|
+| ~dirvish-icon-delimiter~        | The delimiter between icon and filename    |
+| ~dirvish-all-the-icons-height~  | Height applied to =all-the-icons=            |
+| ~dirvish-all-the-icons-offset~  | Vertical offset applied to =all-the-icons=   |
+| ~dirvish-all-the-icons-palette~ | Coloring style applied to =all-the-icons=    |
+| ~dirvish-vscode-icon-size~      | Pixelwise size applied to =vscode-icon=      |
+| ~dirvish-expanded-state-style~  | String/icon used for folder expanded state |
+|-------------------------------+--------------------------------------------|
 *** Toggle Dirvish in side window (dirvish-side.el)
 **** Customization options
 
-|----------------------------------------+----------+----------------------------------|
-| Option                                 | Type     | Description                      |
-|----------------------------------------+----------+----------------------------------|
-| ~dirvish-side-attributes~                | List     | See ~dirvish-attributes~           |
-| ~dirvish-side-preview-dispatchers~       | List     | See ~dirvish-preview-dispatchers~  |
-| ~dirvish-side-mode-line-format~          | Plist    | See ~dirvish-mode-line-format~     |
-| ~dirvish-side-display-alist~             | Alist    | Size and position of side window |
-| ~dirvish-side-window-parameters~         | Alist    | Window parameters of side window |
-| ~dirvish-side-open-file-window-function~ | Function | Target window for ~find-file~      |
-| ~dirvish-side-follow-buffer-file~        | Boolean  | Follow current ~buffer-file-name~  |
-| ~dirvish-side-scope~                     | List     | Scope for side sessions          |
-|----------------------------------------+----------+----------------------------------|
+|----------------------------------------+----------------------------------|
+| Option                                 | Description                      |
+|----------------------------------------+----------------------------------|
+| ~dirvish-side-attributes~                | See ~dirvish-attributes~           |
+| ~dirvish-side-preview-dispatchers~       | See ~dirvish-preview-dispatchers~  |
+| ~dirvish-side-mode-line-format~          | See ~dirvish-mode-line-format~     |
+| ~dirvish-side-display-alist~             | Size and position of side window |
+| ~dirvish-side-window-parameters~         | Window parameters of side window |
+| ~dirvish-side-open-file-window-function~ | Target window for ~find-file~      |
+| ~dirvish-side-follow-buffer-file~        | Follow current ~buffer-file-name~  |
+| ~dirvish-side-scope~                     | Scope for side sessions          |
+|----------------------------------------+----------------------------------|
 
 ** Example config
 *** Dired | Dirvish
@@ -296,6 +297,8 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
   ;; List directories that has over 10000 files asynchronously
   ;; This feature is disabled by default
   ;; (dirvish-async-listing-threshold 10000)
+  ;; In case you want the details at startup like `dired'
+  ;; (dirvish-hide-details nil)
   :config
   ;; Place this line under :init to ensure the overriding at startup, see #22
   (dirvish-override-dired-mode)
@@ -305,9 +308,6 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
   ;;   (when (bound-and-true-p dired-filter-mode)
   ;;     (format " %s %s " (propertize "Filters:" 'face 'bold)
   ;;             (dired-filter--describe-filters))))
-  ;; In case you want the details at startup like `dired'
-  ;; :hook
-  ;; (dirvish-mode . (lambda () (dired-hide-details-mode -1)))
   :bind
   (nil ; Bind `dirvish', `dirvish-dired' and `dirvish-side' as you see fit
    :map dired-mode-map
