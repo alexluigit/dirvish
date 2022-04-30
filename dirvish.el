@@ -947,6 +947,7 @@ cache image. A new directory is created unless NO-MKDIR."
 (defun dirvish-preview--inhibit-long-line (file)
   "Preview FILE unless it contains long lines."
   (let* ((enable-local-variables nil)
+         (vc-follow-symlinks t)
          (buf (find-file-noselect file t)))
     (with-current-buffer buf
       (if (funcall so-long-predicate)
