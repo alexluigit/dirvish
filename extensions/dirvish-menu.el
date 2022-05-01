@@ -329,6 +329,53 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   :argument-regexp "\\(--indicator-style=\\(slash\\|file-type\\|classify\\)\\)"
   :choices '("slash" "file-type" "classify"))
 
+(defun dirvish-quicksort--do-sort (switches)
+  "Sort current buffer with dired sort SWITCHES."
+  (let* ((regexp "\\(--time=\\w+\\|--sort=\\w+\\|--reverse\\)\\( \\)?")
+         (others (replace-regexp-in-string regexp "" dired-actual-switches))
+         (new-switches (concat others " " switches)))
+    (setq dired-actual-switches new-switches)
+    (revert-buffer)))
+
+(define-obsolete-function-alias 'dirvish-sort-by-criteria 'dirvish-quicksort "1.2.0")
+;;;###autoload (autoload 'dirvish-quicksort "dirvish-menu" nil t)
+(defcustom dirvish-quicksort-keys
+  '(("n" ""                                   "name (a-z)")
+    ("N" "--reverse"                          "name (z-a)")
+    ("e" "--sort=extension"                   "extension (a-z)")
+    ("E" "--sort=extension --reverse"         "extension (z-a)")
+    ("s" "--sort=size"                        "size (largest first)")
+    ("S" "--sort=size --reverse"              "size (smallest first)")
+    ("v" "--sort=version"                     "version number (earliest first)")
+    ("V" "--sort=version --reverse"           "version number (latest first)")
+    ("w" "--sort=width"                       "width (shortest first)")
+    ("W" "--sort=width --reverse"             "width (longest first)")
+    ("m" "--sort=time"                        "modification time (newest first)")
+    ("M" "--sort=time --reverse"              "modification time (oldest first)")
+    ("a" "--sort=time --time=use"             "access time (newest first)")
+    ("A" "--sort=time --time=use --reverse"   "access time (oldest first)")
+    ("b" "--sort=time --time=birth"           "birth time (newest first)")
+    ("B" "--sort=time --time=birth --reverse" "birth time (oldest first)")
+    ("c" "--sort=time --time=ctime"           "change time (newest first)")
+    ("C" "--sort=time --time=ctime --reverse" "change time (oldest first)"))
+  "SORT-KEYs for command `dirvish-quicksort'.
+A SORT-KEY is a (KEY SWITCHES DOC) alist where KEY is the key to
+invoke the sort function, SWITCHES is the the sort flags for
+`dired-sort-other', DOC is the documentation string."
+  :group 'dirvish :type 'alist
+  :set
+  (lambda (k v)
+    (set k v)
+    (eval
+     `(transient-define-prefix dirvish-quicksort ()
+        "Sort Dirvish buffer by different criteria."
+        ["Sort by: "
+         ,@(cl-loop
+            for (key switches desc) in v collect
+            (list key desc `(lambda ()
+                              (interactive)
+                              (dirvish-quicksort--do-sort ,switches))))]))))
+
 ;;;###autoload (autoload 'dirvish-goto-bookmark "dirvish-menu" nil t)
 (defcustom dirvish-bookmarks-alist
   '(("h" "~/"                          "Home")
