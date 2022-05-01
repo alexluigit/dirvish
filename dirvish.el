@@ -1357,11 +1357,15 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."
-  (let ((dv (dirvish-activate (dirvish-new :depth -1)))
-        (dir (file-name-as-directory (or dir default-directory))))
+  (let* ((dir (file-name-as-directory (expand-file-name dir)))
+         (reuse (cl-loop
+                 for name in (dirvish-get-all 'name nil t)
+                 for dv = (gethash name (dirvish-hash))
+                 thereis (and (equal (dv-index-dir dv) dir) dv)))
+         (dv (or reuse (dirvish-activate (dirvish-new :depth -1)))))
     (setf (dv-index-dir dv) dir)
     (with-current-buffer (dirvish--buffer-for-dir dv dir)
-      (dirvish-build dv)
+      (or reuse (dirvish-build dv))
       (current-buffer))))
 
 (defun dirvish--noselect-async-sentinel (proc _state)
