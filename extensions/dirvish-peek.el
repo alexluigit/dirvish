@@ -67,7 +67,7 @@ one of categories in `dirvish-peek-categories'."
     (when preview-category
       (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
       (unless (and old-dv (dv-preview-window old-dv))
-        (setq new-dv (dirvish-activate (dirvish-new :depth -1)))
+        (setq new-dv (dirvish-new nil :depth -1))
         (setf (dv-preview-window new-dv)
               (display-buffer-in-side-window (dirvish--ensure-temp-buffer) dirvish-peek-display-alist))
         (dirvish--add-advices)))
@@ -78,7 +78,7 @@ one of categories in `dirvish-peek-categories'."
   (let* ((dv-mini (frame-parameter nil 'dirvish--peek))
          (old-dv (plist-get dv-mini :old))
          (new-dv (plist-get dv-mini :new)))
-    (when new-dv (dirvish-deactivate new-dv))
+    (when new-dv (dirvish-kill new-dv))
     (set-frame-parameter nil 'dirvish--curr old-dv)))
 
 (defun dirvish-peek-update-h ()
