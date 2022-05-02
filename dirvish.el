@@ -231,6 +231,7 @@ Dirvish session as its argument."
   (condition-case nil (length (or (bound-and-true-p dired-subtree-line-prefix) "  ")) (error 2)))
 (defconst dirvish-preview--video-use-embed-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
+(defvar dirvish--hash (make-hash-table))
 (defvar dirvish--transient-dvs '())
 (defvar dirvish--available-attrs '())
 (defvar-local dirvish--dir-local-p t)
@@ -363,10 +364,9 @@ ALIST is window arguments passed to `window--display-buffer'."
 ;;;; Core
 
 (defun dirvish-curr (&optional frame)
-  "Get current dirvish instance in FRAME.
-FRAME defaults to current frame."
+  "Get current Dirvish session in FRAME (defaults to selected)."
   (if dirvish--curr-name
-      (gethash dirvish--curr-name (dirvish-hash))
+      (gethash dirvish--curr-name dirvish--hash)
     (frame-parameter frame 'dirvish--curr)))
 
 (defun dirvish-drop (&optional frame)
@@ -409,7 +409,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
   "Reclaim current dirvish."
   (unless (active-minibuffer-window)
     (if dirvish--curr-name
-        (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
+        (let ((dv (gethash dirvish--curr-name dirvish--hash)))
           (setq tab-bar-new-tab-choice "*scratch*")
           (unless (dirvish-dired-p dv)
             (setq other-window-scroll-buffer (window-buffer (dv-preview-window dv))))
@@ -419,7 +419,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
       (setq other-window-scroll-buffer nil)
       (dirvish--remove-advices
        (and dirvish-override-dired-mode '(dired find-dired fd-dired))))
-    (let ((dv (gethash dirvish--curr-name (dirvish-hash))))
+    (let ((dv (gethash dirvish--curr-name dirvish--hash)))
       (set-frame-parameter nil 'dirvish--curr dv) dv)))
 
 (cl-defmacro dirvish-define-attribute (name &key if form left right doc)
@@ -481,26 +481,20 @@ the docstring and body for this function."
   (let ((ml-name (intern (format "dirvish-%s-ml" name))))
     `(defun ,ml-name () ,docstring ,@body)))
 
-(defun dirvish-hash (&optional frame)
-  "Return a hash containing all Dirvish sessions in FRAME.
-The keys are the dirvish's names.  The values are structs created
-by `make-dirvish'.  FRAME defaults to the selected frame."
-  ;; XXX: This must return a non-nil value to avoid breaking frames initialized
-  ;; with after-make-frame-functions bound to nil.
-  (or (frame-parameter frame 'dirvish--hash) (make-hash-table)))
-
 (defun dirvish-get-all (slot &optional all-frame flatten)
-  "Gather slot value SLOT of all Dirvish in `dirvish-hash'.
+  "Gather slot value SLOT of all Dirvish in `dirvish--hash'.
 If ALL-FRAME is non-nil, collect for all frames.
 If FLATTEN is non-nil, collect them as a flattened list."
-  (let* ((dv-slot (intern (format "dv-%s" slot)))
-         (all-vals (if all-frame
-                       (mapcar (lambda (fr)
-                                 (with-selected-frame fr
-                                   (mapcar dv-slot (hash-table-values (dirvish-hash)))))
-                               (frame-list))
-                     (mapcar dv-slot (hash-table-values (dirvish-hash))))))
-    (if flatten (delete-dups (flatten-tree all-vals)) (apply #'append all-vals))))
+  (cl-loop
+   with dv-slot = (intern (format "dv-%s" slot))
+   with h-vals = (hash-table-values dirvish--hash)
+   with s-vals = (mapcar dv-slot h-vals)
+   for h-val in h-vals
+   when (or all-frame (eq (plist-get (dv-scopes h-val) :frame)
+                          (selected-frame)))
+   for s-val in s-vals
+   if flatten append (delete-dups (flatten-tree s-val))
+   else collect s-val))
 
 (cl-defstruct
     (dirvish
@@ -607,7 +601,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
    :documentation "is the list switches passed to `ls' command."))
 
 (defmacro dirvish-new (kill-old &rest args)
-  "Create a new dirvish struct and put it into `dirvish-hash'.
+  "Create a new dirvish struct and put it into `dirvish--hash'.
 ARGS is a list of keyword arguments followed by an optional BODY.
 The keyword arguments set the fields of the dirvish struct.
 If BODY is given, it is executed to set the window configuration
@@ -622,11 +616,10 @@ restore them after."
     (setq keywords (reverse keywords))
     `(let ((old (dirvish-curr))
            (new (make-dirvish ,@keywords)))
-       (unless (frame-parameter nil 'dirvish--hash)
+       (unless (hash-table-keys dirvish--hash)
          (pcase-dolist (`(,file ,h-name ,h-fn) dirvish-hook-alist)
-           (when (require file nil t) (add-hook h-name h-fn)))
-         (set-frame-parameter nil 'dirvish--hash (make-hash-table)))
-       (puthash (dv-name new) new (dirvish-hash))
+           (when (require file nil t) (add-hook h-name h-fn))))
+       (puthash (dv-name new) new dirvish--hash)
        (dirvish--refresh-slots new)
        (dirvish--create-root-window new)
        (when (and old ,kill-old (not (dv-transient new))
@@ -642,7 +635,7 @@ restore them after."
        new)))
 
 (defun dirvish-kill (dv)
-  "Kill a dirvish instance DV and remove it from `dirvish-hash'.
+  "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 DV defaults to current dirvish instance if not given."
   (unwind-protect
       (let ((conf (dv-window-conf dv)))
@@ -655,7 +648,7 @@ DV defaults to current dirvish instance if not given."
           (dolist (type '(preview footer header))
             (kill-when-live (dirvish--get-util-buffer dv type))))
         (funcall (dv-quit-window-fn dv) dv))
-    (remhash (dv-name dv) (dirvish-hash))
+    (remhash (dv-name dv) dirvish--hash)
     (dirvish-reclaim)
     (run-hooks 'dirvish-deactivation-hook)
     (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t)))))
@@ -663,10 +656,9 @@ DV defaults to current dirvish instance if not given."
 (defun dirvish--end-transient (tran)
   "End transient of Dirvish instance or name TRAN."
   (cl-loop
-   with hash = (dirvish-hash)
-   with tran-dv = (if (dirvish-p tran) tran (gethash tran hash))
-   for dv-name in (mapcar #'dv-name (hash-table-values hash))
-   for dv = (gethash dv-name hash)
+   with tran-dv = (if (dirvish-p tran) tran (gethash tran dirvish--hash))
+   for dv-name in (mapcar #'dv-name (hash-table-values dirvish--hash))
+   for dv = (gethash dv-name dirvish--hash)
    for dv-tran = (dv-transient dv) do
    (when (or (eq dv-tran tran) (eq dv-tran tran-dv))
      (dirvish-kill dv))
@@ -749,8 +741,8 @@ DV defaults to current dirvish instance if not given."
       (propertize str 'display `((height ,ht) (raise ,(if large-header-p 0.25 0.35)))))))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
-  "Deactivate all dvs in TAB."
-  (dolist (scope (dirvish-get-all 'scopes t))
+  "Deactivate all Dirvish sessions in TAB."
+  (dolist (scope (dirvish-get-all 'scopes))
     (when (eq (plist-get scope :tab) (tab-bar--tab-index tab))
       (dirvish-kill (plist-get scope :dv)))))
 
@@ -793,7 +785,6 @@ DIRNAME and SWITCHES are same with command `dired'."
 DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab (dirvish--ensure-temp-buffer))
-  (dirvish-drop)
   (dirvish-new t
     :path (dirvish--ensure-path dirname) :ls-switches switches))
 
@@ -1220,7 +1211,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
-  (dirvish-kill (gethash dirvish--curr-name (dirvish-hash)))
+  (dirvish-kill (gethash dirvish--curr-name dirvish--hash))
   (switch-to-buffer (dirvish--ensure-temp-buffer)))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
@@ -1341,7 +1332,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (let* ((dir (file-name-as-directory (expand-file-name dir)))
          (reuse (cl-loop
                  for name in (dirvish-get-all 'name nil t)
-                 for dv = (gethash name (dirvish-hash))
+                 for dv = (gethash name dirvish--hash)
                  thereis (and (equal (dv-index-dir dv) dir) dv)))
          (dv (or reuse (dirvish-new nil :depth -1))))
     (setf (dv-index-dir dv) dir)
