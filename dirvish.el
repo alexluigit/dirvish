@@ -1235,7 +1235,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
        (or dirvish--dir-local-p
            (memq 'vc dirvish-enabled-features-on-remote))
        (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory))))
-  (setq-local face-remapping-alist dirvish-face-remap-alist)
+  (when dirvish-face-remap-alist
+    (setq-local face-remapping-alist dirvish-face-remap-alist))
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
   (setq-local cursor-type nil)
