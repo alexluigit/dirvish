@@ -844,7 +844,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
   "Replacement for `dired-dwim-target-next'.
 If ALL-FRAMES, search target directories in all frames."
-  (delq (dired-current-directory) (dirvish-get-all 'index-dir all-frames t)))
+  (delete (dired-current-directory) (dirvish-get-all 'index-dir all-frames t)))
 
 (defun dirvish-wdired-mode-ad (&rest _)
   "Advisor function for `wdired-change-to-wdired-mode'."
