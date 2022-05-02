@@ -606,13 +606,13 @@ If FLATTEN is non-nil, collect them as a flattened list."
    dired-listing-switches
    :documentation "is the list switches passed to `ls' command."))
 
-(defmacro dirvish-new (&rest args)
+(defmacro dirvish-new (kill-old &rest args)
   "Create a new dirvish struct and put it into `dirvish-hash'.
 ARGS is a list of keyword arguments followed by an optional BODY.
 The keyword arguments set the fields of the dirvish struct.
 If BODY is given, it is executed to set the window configuration
 for the dirvish.
-
+When KILL-OLD is non-nil, avoid overlapping sessions.
 Save point, and current buffer before executing BODY, and then
 restore them after."
   (declare (indent defun))
@@ -620,35 +620,45 @@ restore them after."
     (while (keywordp (car args))
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
-    `(let ((dv (make-dirvish ,@keywords)))
+    `(let ((old (dirvish-curr))
+           (new (make-dirvish ,@keywords)))
        (unless (frame-parameter nil 'dirvish--hash)
          (pcase-dolist (`(,file ,h-name ,h-fn) dirvish-hook-alist)
            (when (require file nil t) (add-hook h-name h-fn)))
          (set-frame-parameter nil 'dirvish--hash (make-hash-table)))
-       (puthash (dv-name dv) dv (dirvish-hash))
+       (puthash (dv-name new) new (dirvish-hash))
+       (dirvish--refresh-slots new)
+       (dirvish--create-root-window new)
+       (when (and old ,kill-old (not (dv-transient new))
+                  (eq (dv-root-window old) (dv-root-window new)))
+         (unless (or (dirvish-dired-p old) (dirvish-dired-p new))
+           (dirvish-kill new)
+           (user-error "Dirvish: using existed session"))
+         (dirvish-kill old))
+       (set-frame-parameter nil 'dirvish--curr new)
+       (when-let ((path (dv-path new))) (dirvish-find-file path))
+       (run-hooks 'dirvish-activation-hook)
        ,(when args `(save-excursion ,@args)) ; Body form given
-       dv)))
+       new)))
 
-(defmacro dirvish-kill (dv &rest body)
+(defun dirvish-kill (dv)
   "Kill a dirvish instance DV and remove it from `dirvish-hash'.
-DV defaults to current dirvish instance if not given.  If BODY is
-given, it is executed to unset the window configuration brought
-by this instance."
-  (declare (indent defun))
-  `(unwind-protect
-       (let ((conf (dv-window-conf ,dv)))
-         (when (and (not (dirvish-dired-p ,dv)) (window-configuration-p conf))
-           (set-window-configuration conf))
-         (setq dirvish--transient-dvs (delete dv dirvish--transient-dvs))
-         (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
-           (mapc #'kill-when-live (dv-dired-buffers ,dv))
-           (mapc #'kill-when-live (dv-preview-buffers ,dv))
-           (dolist (type '(preview footer header))
-             (kill-when-live (dirvish--get-util-buffer ,dv type))))
-         (funcall (dv-quit-window-fn ,dv) ,dv))
-     (remhash (dv-name ,dv) (dirvish-hash))
-     (dirvish-reclaim)
-     ,@body))
+DV defaults to current dirvish instance if not given."
+  (unwind-protect
+      (let ((conf (dv-window-conf dv)))
+        (when (and (not (dirvish-dired-p dv)) (window-configuration-p conf))
+          (set-window-configuration conf))
+        (setq dirvish--transient-dvs (delete dv dirvish--transient-dvs))
+        (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
+          (mapc #'kill-when-live (dv-dired-buffers dv))
+          (mapc #'kill-when-live (dv-preview-buffers dv))
+          (dolist (type '(preview footer header))
+            (kill-when-live (dirvish--get-util-buffer dv type))))
+        (funcall (dv-quit-window-fn dv) dv))
+    (remhash (dv-name dv) (dirvish-hash))
+    (dirvish-reclaim)
+    (run-hooks 'dirvish-deactivation-hook)
+    (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t)))))
 
 (defun dirvish--end-transient (tran)
   "End transient of Dirvish instance or name TRAN."
@@ -660,7 +670,7 @@ by this instance."
    for dv-tran = (dv-transient dv) do
    (when (or (eq dv-tran tran) (eq dv-tran tran-dv))
      (dirvish-kill dv))
-   finally (dirvish-deactivate tran-dv)))
+   finally (dirvish-kill tran-dv)))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -742,35 +752,13 @@ by this instance."
   "Deactivate all dvs in TAB."
   (dolist (scope (dirvish-get-all 'scopes t))
     (when (eq (plist-get scope :tab) (tab-bar--tab-index tab))
-      (dirvish-deactivate (plist-get scope :dv)))))
+      (dirvish-kill (plist-get scope :dv)))))
 
 (defun dirvish--deactivate-for-frame (frame)
   "Deactivate all dvs in FRAME."
   (dolist (scope (dirvish-get-all 'scopes t))
     (when (eq (plist-get scope :frame) frame)
-      (dirvish-deactivate (plist-get scope :dv)))))
-
-(defun dirvish-activate (dv)
-  "Activate dirvish instance DV."
-  (let ((old (dirvish-curr)))
-    (dirvish--refresh-slots dv)
-    (dirvish--create-root-window dv)
-    (when (and old (not (dv-transient dv))
-               (eq (dv-root-window old) (dv-root-window dv)))
-      (unless (or (dirvish-dired-p old) (dirvish-dired-p dv))
-        (dirvish-deactivate dv)
-        (user-error "Dirvish: using existed session"))
-      (dirvish-deactivate old)))
-  (set-frame-parameter nil 'dirvish--curr dv)
-  (when-let ((path (dv-path dv))) (dirvish-find-file path))
-  (run-hooks 'dirvish-activation-hook)
-  dv)
-
-(defun dirvish-deactivate (dv)
-  "Deactivate dirvish instance DV."
-  (dirvish-kill dv)
-  (run-hooks 'dirvish-deactivation-hook)
-  (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t))))
+      (dirvish-kill (plist-get scope :dv)))))
 
 (defun dirvish-dired-p (&optional dv)
   "Return t if DV is a `dirvish-dired' instance.
@@ -783,30 +771,22 @@ DV defaults to the current dirvish instance if not provided."
   "Advisor for FN `dired-subtree-remove'."
   (dirvish--hide-dired-header (funcall fn))) ; See `dired-hacks' #170
 
-(defun dirvish--activate-dired (dirname switches &optional depth)
-  "Start a Dirvish session with DIRNAME and SWITCHES.
-DEPTH defaults to -1 (same as `dirvish-dired') if not specified."
-  (dirvish-activate
-   (dirvish-new
-     :path (dirvish--ensure-path dirname)
-     :depth (or depth -1)
-     :ls-switches (or switches dired-listing-switches)))
-  (dired-goto-file (expand-file-name dirname)))
-
 (defun dirvish-dired-ad (dirname &optional switches)
   "Override `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (dirvish--activate-dired dirname switches))
+  (dirvish-new t
+    :path (dirvish--ensure-path dirname) :depth -1 :ls-switches switches))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (when-let ((dv (dirvish-curr)))
-    (unless (dirvish-dired-p dv) (dirvish-deactivate dv)))
+    (unless (dirvish-dired-p dv) (dirvish-kill dv)))
   (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
-  (dirvish--activate-dired dirname switches))
+  (dirvish-new t
+    :path (dirvish--ensure-path dirname) :depth -1 :ls-switches switches))
 
 (defun dirvish-dired-other-tab-ad (dirname &optional switches)
   "Override `dired-other-tab' command.
@@ -814,7 +794,8 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab (dirvish--ensure-temp-buffer))
   (dirvish-drop)
-  (dirvish--activate-dired dirname switches))
+  (dirvish-new t
+    :path (dirvish--ensure-path dirname) :ls-switches switches))
 
 (defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
@@ -822,7 +803,8 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
   (let (after-focus-change-function)
     (switch-to-buffer-other-frame (dirvish--ensure-temp-buffer))
-    (dirvish--activate-dired dirname switches dirvish-depth)))
+    (dirvish-new t
+      :path (dirvish--ensure-path dirname) :ls-switches switches :depth dirvish-depth)))
 
 (defun dirvish-dired-jump-ad (&optional other-window file-name)
   "Override `dired-jump' command.
@@ -843,12 +825,11 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
       (let ((last-depth
              (with-current-buffer (other-buffer)
                (and (derived-mode-p 'dirvish-mode) (dv-depth (dirvish-curr)))))
-            (new-dv (dirvish-new
+            (new-dv (dirvish-new nil
                       :header-string-fn #'dirvish-find-dired-header-string
                       :no-parents t)))
         (add-to-list 'dirvish--transient-dvs new-dv)
         (setf (dv-transient new-dv) (or last-dv new-dv))
-        (dirvish-activate new-dv)
         (setf (dv-depth new-dv) (or last-depth 0))
         (setq-local dirvish--curr-name (dv-name new-dv))
         (dirvish-reclaim)
@@ -862,7 +843,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
   "Advisor function for FN `fd-dired' with its ARGS."
   (when-let ((dv (dirvish-curr)))
     (when (eq (dv-header-string-fn dv) #'dirvish-find-dired-header-string)
-      (dirvish-deactivate dv)))
+      (dirvish-kill dv)))
   (and (window-dedicated-p) (other-window 1))
   ;; HACK for *FD* window placement. `fd-dired-display-in-current-window' does not behave as described.
   (let ((display-buffer-alist '(("^ ?\\*Fd.*$" (display-buffer-same-window))))
@@ -891,7 +872,7 @@ If ALL-FRAMES, search target directories in all frames."
            (when (string= (car args) "") (setf (car args) (dv-index-dir dv))))
           ((dv-transient dv) (dirvish--end-transient (dv-transient dv)))
           (t (select-window (funcall (dv-find-file-window-fn dv)))
-             (when dirvish--curr-name (dirvish-deactivate (dirvish-curr))))))
+             (when dirvish--curr-name (dirvish-kill (dirvish-curr))))))
   args)
 
 (defun dirvish-ignore-ad (fn &rest args)
@@ -1239,7 +1220,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
-  (dirvish-deactivate (gethash dirvish--curr-name (dirvish-hash)))
+  (dirvish-kill (gethash dirvish--curr-name (dirvish-hash)))
   (switch-to-buffer (dirvish--ensure-temp-buffer)))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
@@ -1362,7 +1343,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                  for name in (dirvish-get-all 'name nil t)
                  for dv = (gethash name (dirvish-hash))
                  thereis (and (equal (dv-index-dir dv) dir) dv)))
-         (dv (or reuse (dirvish-activate (dirvish-new :depth -1)))))
+         (dv (or reuse (dirvish-new nil :depth -1))))
     (setf (dv-index-dir dv) dir)
     (with-current-buffer (dirvish--buffer-for-dir dv dir)
       (or reuse (dirvish-build dv))
@@ -1438,7 +1419,7 @@ directory in another window."
       (if other-window
           (progn
             (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
-            (dirvish-activate (dirvish-new :path (dirvish--ensure-path parent) :depth -1)))
+            (dirvish-new nil :path (dirvish--ensure-path parent) :depth -1))
         (dirvish-find-file parent t)))))
 
 (defun dirvish-toggle-fullscreen ()
@@ -1489,8 +1470,7 @@ update `dirvish--history-ring'."
              (switch-to-buffer (dirvish--buffer-for-dir dv entry))
              (setq-local dirvish--child-entry (or bname entry))
              (when (dirvish-p dv-tran)
-               (dirvish-activate
-                (dirvish-new :depth (dv-depth dv) :transient (dv-name dv-tran))))
+               (dirvish-new nil :depth (dv-depth dv) :transient (dv-name dv-tran)))
              (dirvish-build dv)))
         (find-file entry)))))
 
@@ -1513,7 +1493,7 @@ update `dirvish--history-ring'."
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-activate (dirvish-new :path (dirvish--ensure-path path) :depth dirvish-depth)))
+  (dirvish-new t :path (dirvish--ensure-path path) :depth dirvish-depth))
 
 ;;;###autoload
 (defun dirvish-dired (&optional path other-window)
@@ -1523,7 +1503,7 @@ otherwise it defaults to variable `buffer-file-name'.  Execute it
 in other window when OTHER-WINDOW is non-nil."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish dired: ")) nil))
   (and other-window (switch-to-buffer-other-window (dirvish--ensure-temp-buffer)))
-  (dirvish-activate (dirvish-new :path (dirvish--ensure-path path) :depth -1)))
+  (dirvish-new t :path (dirvish--ensure-path path) :depth -1))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here

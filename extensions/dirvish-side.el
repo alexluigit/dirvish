@@ -70,7 +70,7 @@ have an unique `dirvish-side' session.  SCOPE can be `emacs',
          (set k 'tab)
          (user-error "Unable to find package `perspective'"))))
     (cl-loop for (_scope . (dv . state)) in dirvish-side--state-alist
-             do (when dv (dirvish-deactivate dv)))
+             do (when dv (dirvish-kill dv)))
     (setq dirvish-side--state-alist '())))
 
 (defcustom dirvish-side-display-alist
@@ -128,7 +128,7 @@ will visit the latest `project-root' after executing
   "Remove invalid state info within SCOPE."
   (let* ((dv-w/state (alist-get scope dirvish-side--state-alist))
          (dv (car-safe dv-w/state)))
-    (when dv (dirvish-deactivate dv))
+    (when dv (dirvish-kill dv))
     (setq dirvish-side--state-alist
           (delq (assoc scope dirvish-side--state-alist) dirvish-side--state-alist))))
 
@@ -218,19 +218,18 @@ otherwise it defaults to `project-current'."
              (dirvish-build dv)))
          (dirvish-side--set-state dv 'visible)))
       ('uninitialized
-       (dirvish-activate
-        (dirvish-new
-          :path (or (and path (file-name-directory path))
-                    (dirvish--get-project-root)
-                    (dirvish--ensure-path))
-          :attributes dirvish-side-attributes
-          :preview-dispatchers dirvish-side-preview-dispatchers
-          :mode-line-format dirvish-side--ml-fmt
-          :depth -1
-          :root-window-fn #'dirvish-side-root-window-fn
-          :header-string-fn #'dirvish-side-header-string-fn
-          :find-file-window-fn #'dirvish-side-find-file-window-fn
-          :quit-window-fn #'dirvish-side-quit-window-fn))
+       (dirvish-new t
+         :path (or (and path (file-name-directory path))
+                   (dirvish--get-project-root)
+                   (dirvish--ensure-path))
+         :attributes dirvish-side-attributes
+         :preview-dispatchers dirvish-side-preview-dispatchers
+         :mode-line-format dirvish-side--ml-fmt
+         :depth -1
+         :root-window-fn #'dirvish-side-root-window-fn
+         :header-string-fn #'dirvish-side-header-string-fn
+         :find-file-window-fn #'dirvish-side-find-file-window-fn
+         :quit-window-fn #'dirvish-side-quit-window-fn)
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
 
 (provide 'dirvish-side)
