@@ -39,7 +39,6 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-header-style~               | Style for full-frame Dirvish header      |
 | ~dirvish-header-string-function~     | Default header string                    |
 | ~dirvish-hide-details~               | Hide details as you see fit              |
-| ~dirvish-face-remap-alist~           | Remapping faces in Dirvish window        |
 | ~dirvish-mode-line-format~           | Mode line format in root window          |
 | ~dirvish-async-listing-threshold~    | List huge directories asynchronously     |
 | ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |

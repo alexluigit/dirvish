@@ -117,12 +117,6 @@ STYLE should be one of these:
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
-(defcustom dirvish-face-remap-alist
-  '((header-line :height 1.05 :inherit (mode-line)))
-  "Face remapping alist used in dirvish window.
-See `face-remapping-alist' for more details."
-  :group 'dirvish :type 'alist)
-
 (defvar dirvish--ml-fmt nil)
 (defun dirvish--mode-line-fmt-setter (fmt)
   "Compose the `mode-line-format' for Dirvish from FMT."
@@ -1235,8 +1229,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
        (or dirvish--dir-local-p
            (memq 'vc dirvish-enabled-features-on-remote))
        (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory))))
-  (when dirvish-face-remap-alist
-    (setq-local face-remapping-alist dirvish-face-remap-alist))
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
   (setq-local cursor-type nil)
