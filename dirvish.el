@@ -88,7 +88,7 @@ Set it to nil disables the history tracking."
   "Level of directories to traverse up."
   :group 'dirvish :type 'integer)
 
-(defcustom dirvish-parent-max-width 0.12
+(defcustom dirvish-parent-max-width 0.1
   "The max width allocated to showing parent windows."
   :group 'dirvish :type 'float)
 
