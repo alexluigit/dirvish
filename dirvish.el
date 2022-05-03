@@ -120,17 +120,17 @@ STYLE should be one of these:
 (defvar dirvish--ml-fmt nil)
 (defun dirvish--mode-line-fmt-setter (fmt)
   "Compose the `mode-line-format' for Dirvish from FMT."
-  (cl-labels ((expand (l) (cl-loop for s in l
-                                   collect `(:eval (,(intern (format "dirvish-%s-ml" s)))))))
-    (let ((fmt-left (or (expand (plist-get fmt :left)) mode-line-format))
-          (fmt-right (expand (plist-get fmt :right))))
-      `((:eval (let* ((buf (window-buffer (dv-root-window (dirvish-curr))))
-                      (str-right (format-mode-line ',fmt-right nil nil buf)))
-                 (concat (format-mode-line ',fmt-left nil nil buf)
-                         (propertize " " 'display
-                                     `((space :align-to (- (+ right right-fringe right-margin)
-                                                           ,(string-width str-right)))))
-                         str-right)))))))
+  (cl-labels ((expand (part)
+                (cl-loop for s in (plist-get fmt part) collect
+                         `(:eval (,(intern (format "dirvish-%s-ml" s)))))))
+    `((:eval
+       (let ((str-right (format-mode-line ',(expand :right))))
+         (concat (format-mode-line ',(or (expand :left) mode-line-format))
+                 (propertize
+                  " " 'display
+                  `((space :align-to (- (+ right right-fringe right-margin)
+                                        ,(string-width str-right)))))
+                 str-right))))))
 (defcustom dirvish-mode-line-format
   '(:left (sort omit) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
@@ -219,7 +219,6 @@ Dirvish session as its argument."
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99 :box ())))
-(defconst dirvish--footer-remap-alist '((mode-line-inactive mode-line)))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--subtree-prefix-len
   (condition-case nil (length (or (bound-and-true-p dired-subtree-line-prefix) "  ")) (error 2)))
@@ -390,14 +389,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
     (setq-local mode-line-format '((:eval (dirvish--apply-header-style))))
-    (setq-local face-remapping-alist dirvish--header-remap-alist))
-  (dirvish--get-util-buffer dv 'footer
-    (setq-local cursor-type nil)
-    (setq-local header-line-format nil)
-    (setq-local window-size-fixed 'height)
-    (setq-local face-font-rescale-alist nil)
-    (setq-local mode-line-format (dv-mode-line-format dv))
-    (setq-local face-remapping-alist dirvish--footer-remap-alist)))
+    (setq-local face-remapping-alist dirvish--header-remap-alist)))
 
 (defun dirvish-reclaim (&optional _window)
   "Reclaim current dirvish."
@@ -639,7 +631,7 @@ DV defaults to current dirvish instance if not given."
         (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
           (mapc #'kill-when-live (dv-dired-buffers dv))
           (mapc #'kill-when-live (dv-preview-buffers dv))
-          (dolist (type '(preview footer header))
+          (dolist (type '(preview header))
             (kill-when-live (dirvish--get-util-buffer dv type))))
         (funcall (dv-quit-window-fn dv) dv))
     (remhash (dv-name dv) dirvish--hash)
@@ -1199,7 +1191,6 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
     (when-let ((filename (dired-get-filename nil t)))
       (setf (dv-index-path dv) filename)
       (dirvish-debounce layout
-        (with-current-buffer (dirvish--get-util-buffer dv 'footer) (force-mode-line-update))
         (with-current-buffer (dirvish--get-util-buffer dv 'header) (force-mode-line-update))
         (dirvish-preview-update)))))
 
@@ -1236,7 +1227,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (set-window-fringes nil 1 1)
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (let* ((dv (dirvish-curr))
-         (owp (dirvish-dired-p dv)))
+         (owp (dirvish-dired-p dv))
+         (ml-fmt (dv-mode-line-format dv)))
     (cond ((functionp dirvish-hide-details)
            (funcall dirvish-hide-details dv))
           (dirvish-hide-details
@@ -1245,7 +1237,9 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish--render-attributes dv)
     (push (current-buffer) (dv-dired-buffers dv))
     (setq-local dirvish--curr-name (dv-name dv))
-    (setq mode-line-format (and owp (dv-mode-line-format dv)))
+    (cond ((not (eq (selected-window) (dv-root-window dv)))
+           (setq mode-line-format nil))
+          (ml-fmt (setq mode-line-format ml-fmt)))
     (setq header-line-format (and owp `((:eval (funcall #',(dv-header-string-fn dv)))))))
   (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil :local)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
@@ -1304,17 +1298,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (let* ((inhibit-modification-hooks t)
            (buf (dirvish--get-util-buffer dv 'header))
            (win-alist `((side . above)
-                        (window-height . -2)
-                        (window-parameters . ((no-other-window . t)))))
-           (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
-      (set-window-buffer new-window buf))))
-
-(defun dirvish-build--footer (dv)
-  "Create a window showing footer for DV."
-  (when (dv-mode-line-format dv)
-    (let* ((inhibit-modification-hooks t)
-           (buf (dirvish--get-util-buffer dv 'footer))
-           (win-alist `((side . below)
                         (window-height . -2)
                         (window-parameters . ((no-other-window . t)))))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
@@ -1381,8 +1364,7 @@ If the buffer is not available, create it with `dired-noselect'."
   (unless (dirvish-dired-p dv)
     (let ((ignore-window-parameters t)) (delete-other-windows))
     (dirvish-build--preview dv)
-    (dirvish-build--header dv)
-    (dirvish-build--footer dv))
+    (dirvish-build--header dv))
   (dirvish-build--parents dv))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
