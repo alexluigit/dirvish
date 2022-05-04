@@ -431,7 +431,9 @@ Optional keywords LEFT, RIGHT and DOC are supported."
         'dirvish--available-attrs
         (cons ',name '(:doc ,doc :left ,left :right ,right :overlay ,ov :if ,pred :fn ,render)))
        (defun ,pred (dv) (ignore dv) ,pred-body)
-       (defun ,render ,args (ignore ,@args) (let ((ov ,form)) (and ov (overlay-put ov ',ov t)))))))
+       (defun ,render ,args
+         (ignore ,@args)
+         (let ((ov ,form)) (and ov (overlay-put ov ',ov t)))))))
 
 (defmacro dirvish-attribute-cache (file attribute &rest body)
   "Get FILE's ATTRIBUTE from `dirvish--attrs-hash'.
@@ -477,109 +479,39 @@ If FLATTEN is non-nil, collect them as a flattened list."
    if flatten append (delete-dups (flatten-tree s-val))
    else collect s-val))
 
-(cl-defstruct
-    (dirvish
-     (:conc-name dv-)
-     (:constructor
-      make-dirvish
-      (&key
-       (path nil)
-       (depth dirvish-depth)
-       (transient nil)
-       (no-parents nil)
-       (attributes (purecopy dirvish-attributes))
-       (preview-dispatchers (purecopy dirvish-preview-dispatchers))
-       (ls-switches dired-listing-switches)
-       (mode-line-format dirvish--ml-fmt)
-       (root-window-fn (lambda (_dv) (frame-selected-window)))
-       (header-string-fn (symbol-value 'dirvish-header-string-function))
-       (find-file-window-fn #'selected-window)
-       (quit-window-fn #'ignore)
-       &aux
-       (fullscreen-depth (if (>= depth 0) depth dirvish-depth))
-       (read-only-depth (if (>= depth 0) depth dirvish-depth)))))
+(cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
-  (name
-   (cl-gensym)
-   :documentation "is a symbol that is unique for every instance.")
-  (depth
-   dirvish-depth
-   :documentation "TODO.")
-  (fullscreen-depth
-   dirvish-depth
-   :documentation "TODO.")
-  (read-only-depth
-   dirvish-depth
-   :read-only t :documentation "TODO.")
-  (scopes
-   ()
-   :documentation "TODO.")
-  (transient
-   nil
-   :documentation "TODO.")
-  (no-parents
-   nil
-   :documentation "TODO")
-  (dired-buffers
-   ()
-   :documentation "holds all dired buffers in this instance.")
-  (preview-window
-   nil
-   :documentation "is the window to display preview buffer.")
-  (preview-buffers
-   ()
-   :documentation "holds all file preview buffers in this instance.")
-  (window-conf
-   (current-window-configuration)
-   :documentation "is the window configuration given by `current-window-configuration'.")
-  (root-window-fn
-   #'frame-selected-window
-   :documentation "is the main dirvish window.")
-  (header-string-fn
-   (symbol-value 'dirvish-header-string-function)
-   :documentation "TODO.")
-  (find-file-window-fn
-   #'selected-window
-   :documentation "TODO.")
-  (quit-window-fn
-   #'ignore
-   :documentation "TODO.")
-  (root-window
-   nil
-   :documentation "is the main dirvish window.")
-  (root-dir-buf-alist
-   ()
-   :documentation "TODO.")
-  (parent-dir-buf-alist
-   ()
-   :documentation "TODO.")
-  (attributes
-   (purecopy dirvish-attributes)
-   :documentation "TODO.")
-  (attributes-alist
-   ()
-   :documentation "TODO.")
-  (path
-   nil
-   :documentation "TODO.")
-  (index-dir
-   ""
-   :documentation "is the `default-directory' in ROOT-WINDOW.")
-  (index-path
-   ""
-   :documentation "is the file path under cursor in ROOT-WINDOW.")
-  (preview-dispatchers
-   (purecopy dirvish-preview-dispatchers)
-   :documentation "TODO.")
-  (preview-dispatcher-fns
-   ()
-   :documentation "Preview dispatchers used for preview in this instance.")
-  (mode-line-format
-   dirvish--ml-fmt
-   :documentation "TODO.")
-  (ls-switches
-   dired-listing-switches
-   :documentation "is the list switches passed to `ls' command."))
+  (path nil :documentation "is the initial directory.")
+  (depth -1 :documentation "Actual `dirvish-depth'.")
+  (fullscreen-depth dirvish-depth :documentation "Actual fullscreen `dirvish-depth'.")
+  (no-parents nil :documentation "If t, do not display parents, has highest privilege.")
+  (transient nil :documentation "Whether overlapping sessions is allowed or not.")
+  (attributes (purecopy dirvish-attributes) :documentation "Actual `dirvish-attributes'.")
+  (attributes-alist () :documentation "Render functions expanded from ATTRIBUTES.")
+  (preview-dispatchers (purecopy dirvish-preview-dispatchers)
+                       :documentation "Preview dispatchers in this session.")
+  (preview-dispatcher-fns () :documentation "Preview functions expanded from PREVIEW-DISPATCHERS.")
+  (ls-switches dired-listing-switches
+               :documentation "is the listing switches passed to `dired-sort-other'.")
+  (mode-line-format dirvish--ml-fmt :documentation "Mode line format.")
+  (root-window-fn (lambda (_dv) (frame-selected-window))
+                  :documentation "is the function to create ROOT-WINDOW.")
+  (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
+  (header-string-fn (symbol-value 'dirvish-header-string-function)
+                    :documentation "is the function to spit out header string.")
+  (find-file-window-fn #'selected-window
+                       :documentation "determines the target window for `find-file'.")
+  (quit-window-fn #'ignore :documentation "a function being called on `quit-window'.")
+  (scopes () :documentation "Environments of this session.")
+  (dired-buffers () :documentation "holds all dired buffers in this instance.")
+  (preview-buffers () :documentation "holds all file preview buffers in this instance.")
+  (preview-window nil :documentation "is the window to display preview buffer.")
+  (name (cl-gensym) :documentation "is an unique symbol for every instance.")
+  (window-conf (current-window-configuration) :documentation "saved window configuration.")
+  (root-dir-buf-alist () :documentation "list of INDEX-DIR and its corresponding buffer.")
+  (parent-dir-buf-alist () :documentation "Similar to ROOT-DIR-BUF-ALIST, but for parent windows.")
+  (index-dir "" :documentation "is the `default-directory' in ROOT-WINDOW.")
+  (index-path "" :documentation "is the file path under cursor in ROOT-WINDOW."))
 
 (defmacro dirvish-new (kill-old &rest args)
   "Create a new dirvish struct and put it into `dirvish--hash'.
@@ -611,7 +543,7 @@ restore them after."
          (dirvish-kill old))
        (set-frame-parameter nil 'dirvish--curr new)
        (when-let ((path (dv-path new)))
-         (dirvish-find-file (expand-file-name path)))
+         (dirvish-find-file (expand-file-name (file-name-directory path))))
        (run-hooks 'dirvish-activation-hook)
        ,(when args `(save-excursion ,@args)) ; Body form given
        new)))
@@ -657,23 +589,25 @@ DV defaults to current dirvish instance if not given."
   (when dirvish-attributes (mapc #'require dirvish-extra-libs))
   (let* ((attr-names (append dirvish--builtin-attrs (dv-attributes dv)))
          (attrs-alist
-          (cl-loop for name in attr-names
-                   for attr = (cdr-safe (assoc name dirvish--available-attrs))
-                   collect (cl-destructuring-bind (&key overlay if fn left right &allow-other-keys)
-                               attr (list overlay if fn left right))))
+          (cl-loop
+           for name in attr-names
+           for attr = (cdr (assoc name dirvish--available-attrs)) collect
+           (cl-destructuring-bind
+               (&key overlay if fn left right &allow-other-keys)
+               attr (list overlay if fn left right))))
+         (dp-names
+          (append '(remote disable) (dv-preview-dispatchers dv) '(default)))
          (preview-dispatcher-fns
-          (cl-loop for dp-name in (append '(remote disable) (dv-preview-dispatchers dv) '(default))
-                   for dp-func-name = (intern (format "dirvish-%s-preview-dp" dp-name))
-                   collect dp-func-name))
-         (scopes (cl-loop with res-plist = `(:dv ,dv)
-                          for (key value) on dirvish-scopes by 'cddr
-                          do (setq res-plist (append res-plist (list key (funcall value))))
+          (cl-loop for dp-name in dp-names collect
+                   (intern (format "dirvish-%s-preview-dp" dp-name))))
+         (scopes (cl-loop
+                  with res-plist = `(:dv ,dv)
+                  for (key value) on dirvish-scopes by 'cddr do
+                  (setq res-plist (append res-plist (list key (funcall value))))
                           finally return res-plist)))
     (setf (dv-attributes-alist dv) attrs-alist)
     (setf (dv-preview-dispatcher-fns dv) preview-dispatcher-fns)
-    (setf (dv-scopes dv) scopes)
-    (unless (dirvish-dired-p dv) (setf (dv-depth dv) (dv-read-only-depth dv)))
-    (setf (dv-fullscreen-depth dv) (dv-read-only-depth dv))))
+    (setf (dv-scopes dv) scopes)))
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
@@ -688,7 +622,8 @@ DV defaults to current dirvish instance if not given."
                        for valid = (funcall pred dv)
                        when valid do (progn (setq left-w (+ left-w (or (eval left) 0)))
                                             (setq right-w (+ right-w (or (eval right) 0))))
-                       when valid collect (prog1 fn (setq-local dirvish--attrs-width (cons left-w right-w))))))
+                       when valid collect
+                       (prog1 fn (setq-local dirvish--attrs-width (cons left-w right-w))))))
     (save-excursion
       (forward-line (- 0 fr-h))
       (cl-dotimes (_ (* 2 fr-h))
@@ -706,7 +641,8 @@ DV defaults to current dirvish instance if not given."
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
             (when dirvish--dired-async-p
               (let (buffer-read-only) (dired-insert-set-properties l-beg l-end)))
-            (dolist (fn fns) (funcall fn f-name f-attrs f-type f-beg f-end l-beg l-end hl-face))))
+            (dolist (fn fns)
+              (funcall fn f-name f-attrs f-type f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
 
 (defun dirvish--apply-header-style ()
@@ -1117,7 +1053,8 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 ;; 1. Hide " -> " arrow of symlink files as well.
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
 (dirvish-define-attribute symlink-target
-  :if (and dired-hide-details-mode (default-value 'dired-hide-details-hide-symlink-targets))
+  :if (and dired-hide-details-mode
+           (default-value 'dired-hide-details-hide-symlink-targets))
   :form
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
@@ -1183,7 +1120,8 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
     (when-let ((filename (dired-get-filename nil t)))
       (setf (dv-index-path dv) filename)
       (dirvish-debounce layout
-        (with-current-buffer (dirvish--get-util-buffer dv 'header) (force-mode-line-update))
+        (with-current-buffer (dirvish--get-util-buffer dv 'header)
+          (force-mode-line-update))
         (dirvish-preview-update)))))
 
 (defun dirvish-quit-h ()
@@ -1215,7 +1153,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
   (setq-local cursor-type nil)
-  (or dirvish--attrs-hash (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
+  (or dirvish--attrs-hash
+      (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
   (set-window-fringes nil 1 1)
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (let* ((dv (dirvish-curr))
