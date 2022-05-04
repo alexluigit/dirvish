@@ -221,7 +221,7 @@ otherwise it defaults to `project-current'."
        (dirvish-new t
          :path (or (and path (file-name-directory path))
                    (dirvish--get-project-root)
-                   (dirvish--ensure-path))
+                   default-directory)
          :attributes dirvish-side-attributes
          :preview-dispatchers dirvish-side-preview-dispatchers
          :mode-line-format dirvish-side--ml-fmt

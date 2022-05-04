@@ -268,11 +268,6 @@ Multiple calls under the same LABEL are ignored."
     (ansi-color-apply-on-region
      pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
 
-(defun dirvish--ensure-path (&optional path)
-  "Return a valid file path based on PATH."
-  (let ((f (or path buffer-file-name)))
-    (expand-file-name (if f (file-name-directory f) default-directory))))
-
 (defmacro dirvish--hide-dired-header (&rest body)
   "Execute BODY then hide the Dired header."
   `(progn
@@ -615,7 +610,8 @@ restore them after."
            (user-error "Dirvish: using existed session"))
          (dirvish-kill old))
        (set-frame-parameter nil 'dirvish--curr new)
-       (when-let ((path (dv-path new))) (dirvish-find-file path))
+       (when-let ((path (dv-path new)))
+         (dirvish-find-file (expand-file-name path)))
        (run-hooks 'dirvish-activation-hook)
        ,(when args `(save-excursion ,@args)) ; Body form given
        new)))
@@ -753,8 +749,7 @@ DV defaults to the current dirvish instance if not provided."
   "Override `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (dirvish-new t
-    :path (dirvish--ensure-path dirname) :depth -1 :ls-switches switches))
+  (dirvish-new t :path dirname :depth -1 :ls-switches switches))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
@@ -763,16 +758,14 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when-let ((dv (dirvish-curr)))
     (unless (dirvish-dired-p dv) (dirvish-kill dv)))
   (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
-  (dirvish-new t
-    :path (dirvish--ensure-path dirname) :depth -1 :ls-switches switches))
+  (dirvish-new t :path dirname :depth -1 :ls-switches switches))
 
 (defun dirvish-dired-other-tab-ad (dirname &optional switches)
   "Override `dired-other-tab' command.
 DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (switch-to-buffer-other-tab (dirvish--ensure-temp-buffer))
-  (dirvish-new t
-    :path (dirvish--ensure-path dirname) :ls-switches switches))
+  (dirvish-new t :path dirname :ls-switches switches))
 
 (defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
@@ -780,8 +773,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
   (let (after-focus-change-function)
     (switch-to-buffer-other-frame (dirvish--ensure-temp-buffer))
-    (dirvish-new t
-      :path (dirvish--ensure-path dirname) :ls-switches switches :depth dirvish-depth)))
+    (dirvish-new t :path dirname :ls-switches switches :depth dirvish-depth)))
 
 (defun dirvish-dired-jump-ad (&optional other-window file-name)
   "Override `dired-jump' command.
@@ -1385,7 +1377,7 @@ directory in another window."
       (if other-window
           (progn
             (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
-            (dirvish-new nil :path (dirvish--ensure-path parent) :depth -1))
+            (dirvish-new nil :path parent :depth -1))
         (dirvish-find-file parent t)))))
 
 (defun dirvish-toggle-fullscreen ()
@@ -1459,7 +1451,7 @@ update `dirvish--history-ring'."
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-new t :path (dirvish--ensure-path path) :depth dirvish-depth))
+  (dirvish-new t :path (or path default-directory) :depth dirvish-depth))
 
 ;;;###autoload
 (defun dirvish-dired (&optional path other-window)
@@ -1469,7 +1461,7 @@ otherwise it defaults to variable `buffer-file-name'.  Execute it
 in other window when OTHER-WINDOW is non-nil."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish dired: ")) nil))
   (and other-window (switch-to-buffer-other-window (dirvish--ensure-temp-buffer)))
-  (dirvish-new t :path (dirvish--ensure-path path) :depth -1))
+  (dirvish-new t :path (or path default-directory) :depth -1))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
