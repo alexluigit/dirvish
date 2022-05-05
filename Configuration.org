@@ -320,7 +320,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
    ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)
    ([remap dired-do-redisplay] . dirvish-ls-switches-menu)
    ([remap dired-summary] . dirvish-dispatch)
-   ([remap dired-do-copy] . dirvish-yank)
+   ([remap dired-do-copy] . dirvish-yank-menu)
    ([remap mode-line-other-buffer] . dirvish-other-buffer)))
 #+end_src
 

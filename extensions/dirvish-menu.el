@@ -23,7 +23,7 @@
 (require 'transient)
 (require 'dirvish)
 (defvar dirvish-menu-available-prefixs
-  '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-goto-bookmark))
+  '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-yank-menu dirvish-goto-bookmark))
 
 (defclass dirvish-menu:toggle (transient-infix)
   ((variable  :initarg :variable)
@@ -375,6 +375,25 @@ invoke the sort function, SWITCHES is the the sort flags for
             (list key desc `(lambda ()
                               (interactive)
                               (dirvish-quicksort--do-sort ,switches))))]))))
+
+;;;###autoload (autoload 'dirvish-yank-menu "dirvish-menu" nil t)
+(defcustom dirvish-yank-keys
+  '(("y" "Yank (paste) here"           dirvish-yank)
+    ("m" "Move here"                   dirvish-move)
+    ("s" "Make symlinks here"          dirvish-symlink)
+    ("r" "Make relative symlinks here" dirvish-relative-symlink)
+    ("h" "Make hardlinks here"         dirvish-hardlink))
+  "YANK-KEYs for command `dirvish-yank-menu'.
+A YANK-KEY is a (KEY DOC CMD) alist where KEY is the key to
+invoke the CMD, DOC is the documentation string."
+  :group 'dirvish :type 'alist
+  :set
+  (lambda (k v)
+    (set k v)
+    (eval
+     `(transient-define-prefix dirvish-yank-menu ()
+        "Yank commands menu."
+        ["Select yank operation on marked files:" ,@v]))))
 
 ;;;###autoload (autoload 'dirvish-goto-bookmark "dirvish-menu" nil t)
 (defcustom dirvish-bookmarks-alist

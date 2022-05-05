@@ -349,6 +349,23 @@ ALIST is window arguments passed to `window--display-buffer'."
           entry
         (complete-with-action action completions string pred)))))
 
+(defun dirvish--marked-files (&optional range)
+  "Get all marked filenames in RANGE.
+RANGE can be `buffer', `session', `frame', `all'."
+  (cl-loop
+   with case-fold-search = nil
+   with regexp = (dired-marker-regexp)
+   with buffers = (pcase range
+                    ('buffer (list (current-buffer)))
+                    ('session (dv-dired-buffers (dirvish-curr)))
+                    ('frame (dirvish-get-all 'dired-buffers nil t))
+                    ('all (dirvish-get-all 'dired-buffers t t)))
+   for buffer in (or buffers (list (current-buffer))) append
+   (with-current-buffer buffer
+     (when (save-excursion (goto-char (point-min))
+                           (re-search-forward regexp nil t))
+       (dired-map-over-marks (dired-get-filename) nil)))))
+
 ;;;; Core
 
 (defun dirvish-curr (&optional frame)
