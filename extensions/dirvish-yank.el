@@ -1,4 +1,4 @@
-;;; dirvish-yank.el --- Async file copy/paste in Dirvish -*- lexical-binding: t -*-
+;;; dirvish-yank.el --- Multi-stage and async file operation in Dirvish -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
@@ -10,94 +10,92 @@
 
 ;;; Commentary:
 
-;;; This package is a Dirvish extension which provides command `dirvish-yank'
-;;; that enables async file copy/paste in dirvish.
+;; Multi-stage and asynchronous copy/paste/link facilities in Dirvish.
+
+;; With the multi-stage operations, you can gather files from multiple Dired
+;; buffers into a single "clipboard", then copy or move all of them to the
+;; target location.
+
+;; Here are the available commands:
+;; Note that they are asynchronous and work on both localhost and remote host.
+;; - `dirvish-yank'
+;; - `dirvish-move'
+;; - `dirvish-symlink'
+;; - `dirvish-relative-symlink'
+;; - `dirvish-hardlink'
 
 ;;; Code:
 
+(require 'tramp)
+(require 'dired-aux)
 (require 'dirvish)
 
+(defcustom dirvish-yank-sources 'all
+  "The way to collect source files.
+The value can be a symbol or a function that returns a fileset."
+  :group 'dirvish
+  :type '(choice (const :tag "Marked files in current buffer" buffer)
+                 (const :tag "Marked files in current session" session)
+                 (const :tag "Marked files in all session within selected frame" frame)
+                 (const :tag "Marked files in all sessions" all)
+                 (function :tag "Custom function")))
+
+(defcustom dirvish-yank-auto-unmark t
+  "Control if yank commands should unmark when complete."
+  :group 'dirvish :type 'boolean)
+
+(defcustom dirvish-yank-new-name-style 'append-to-ext
+  "Control the way to compose new filename."
+  :group 'dirvish
+  :type '(choice (const :tag "append INDEX~ to file extension" append-to-ext)
+                 (const :tag "append INDEX~ to file name" append-to-filename)
+                 (const :tag "prepend INDEX~ to file name" prepend-to-filename)))
+
+(defcustom dirvish-yank-methods
+  '((yank     . "cp -frv")
+    (move     . "mv -fv")
+    (symlink  . "ln -sf")
+    (relalink . "ln -srf")
+    (hardlink . "ln")
+    (rsync    . "rsync -avz"))
+  "Yank methods and their flags."
+  :group 'dirvish :type 'alist)
+
 (defvar dirvish-yank--progress (cons 0 0))
+(defvar dirvish-yank--buffer (dirvish--ensure-temp-buffer "yank"))
+(defvar dirvish-yank--link-methods '(symlink relalink hardlink))
 (defvar dirvish-yank--status-timer nil)
 
-(defun dirvish--yank (&optional mode)
-  "Paste marked files/directory to current directory according to MODE.
+(defun dirvish-yank--read-dest (method)
+  "Helper function to read dest dir for METHOD."
+  (when current-prefix-arg
+    (read-file-name (format "%s files to: " method)
+                    (dired-dwim-target-directory)
+                    nil nil nil 'file-directory-p)))
 
-MODE can be `'copy', `'move', `symlink', or `relalink'."
-  (interactive)
-  (let* ((regexp (dired-marker-regexp))
-         (yanked-files ())
-         (mode (or mode 'copy))
-         case-fold-search)
-    (cl-dolist (buf (seq-filter #'buffer-live-p (dirvish-get-all 'dired-buffers t t)))
-      (with-current-buffer buf
-        (when (save-excursion (goto-char (point-min))
-                              (re-search-forward regexp nil t))
-          (setq yanked-files
-                (append yanked-files (dired-map-over-marks (dired-get-filename) nil))))))
-    (unless yanked-files (user-error "No files marked for pasting"))
-    (dirvish--do-yank yanked-files mode)))
+(defun dirvish-yank--filename-for-rsync (file)
+  "Reformat a tramp FILE to one usable for rsync."
+  (if (tramp-tramp-file-p file)
+      (with-parsed-tramp-file-name file tfop
+        (format "%s%s:\"%s\"" (if tfop-user (format "%s@" tfop-user) "") tfop-host
+                (shell-quote-argument tfop-localname)))
+    (shell-quote-argument file)))
 
-(defun dirvish--do-yank (fileset mode)
-  "Run paste-mode MODE on FILESET.
-This function is a helper for `dirvish--yank'."
-  (let* ((target (dired-current-directory))
-         (process-connection-type nil)
-         (io-buffer (dirvish--ensure-temp-buffer "yank"))
-         (paste-func
-          (cl-case mode
-            ('copy (lambda (fr to) (start-process "" io-buffer "cp" "-f" "-r" "-v" fr to)))
-            ('move (lambda (fr to) (start-process "" io-buffer "mv" "-f" "-v" fr to)))
-            ('symlink (lambda (fr to) (make-symbolic-link fr to)))
-            ('relalink (lambda (fr to) (dired-make-relative-symlink fr to)))))
-         (new-fileset ())
-         overwrite abort)
-    (cl-dolist (file fileset)
-      (when (and (not abort) (file-exists-p file))
-        (let* ((base-name (file-name-nondirectory file))
-               (paste-name (concat target base-name))
-               (prompt (concat base-name " exists, overwrite?: (y)es (n)o (a)ll (q)uit"))
-               choice)
-          (if overwrite
-              (setq new-fileset (dirvish--yank-push-task file target paste-name new-fileset))
-            (if (file-exists-p paste-name)
-                (let ((name~ paste-name)
-                      (idx 1))
-                  (setq choice (read-char-choice prompt '(?y ?n ?a ?q)))
-                  (when (eq choice ?n)
-                    (while (file-exists-p name~)
-                      (setq name~ (concat paste-name (number-to-string idx) "~"))
-                      (setq idx (1+ idx))))
-                  (cl-case choice
-                    ((?y ?n) (setq new-fileset (dirvish--yank-push-task file target name~ new-fileset)))
-                    (?a (setq overwrite t)
-                        (setq new-fileset (dirvish--yank-push-task file target name~ new-fileset)))
-                    (?q (setq abort t) (setq new-fileset ()))))
-              (setq new-fileset (dirvish--yank-push-task file target paste-name new-fileset)))))))
-    (and abort (user-error "Dirvish: yank aborted"))
-    (setcdr dirvish-yank--progress (+ (cdr dirvish-yank--progress) (length new-fileset)))
-    (setq dirvish-yank--status-timer
-          (or dirvish-yank--status-timer
-              (run-with-timer 0 0.1 #'dirvish-yank--status-update)))
-    (cl-dolist (file new-fileset)
-      (funcall paste-func (car file) (cdr file)))
-    (cl-dolist (buf (dirvish-get-all 'dired-buffers t t))
-      (with-current-buffer buf (dired-unmark-all-marks)))
-    (message "Dirvish: task started.")))
-
-(defun dirvish--yank-push-task (file dir name place)
-  "Push (FILE . DIR or NAME) cons to PLACE.
-If FILE is a directory, push (FILE . DIR), otherwise push (FILE
-. NAME).  In either case, return PLACE."
-  (if (file-directory-p file)
-      (push (cons file dir) place)
-    (push (cons file name) place))
-  place)
+(defun dirvish-yank--extract-host (files)
+  "Get host of FILES."
+  (cl-loop
+   with hosts = ()
+   for f in files
+   for h = (or (file-remote-p f 'host) 'local)
+   do (cl-pushnew h hosts :test #'equal)
+   when (> (length hosts) 1)
+   do (user-error "Dirvish: SOURCEs need to be in the same host")
+   finally return (car hosts)))
 
 (defun dirvish-yank--status-update ()
   "Update current yank task progress."
-  (with-current-buffer (dirvish--ensure-temp-buffer "yank")
-    (let* ((proc-exit "Process \\(<[0-9]+>\\)? \\(exited\\|finished\\).*")
+  (with-current-buffer dirvish-yank--buffer
+    (let* ((proc-exit "Process \\(\.*\\)? \\(exited\\|finished\\).*")
            (progress (how-many proc-exit (point-min) (point-max))))
       (if (eq progress (cdr dirvish-yank--progress))
           (progn
@@ -110,20 +108,156 @@ If FILE is a directory, push (FILE . DIR), otherwise push (FILE
                 (revert-buffer))))
         (setcar dirvish-yank--progress progress)))))
 
+(defun dirvish-yank--execute (cmd)
+  "Run yank CMD in subprocesses."
+  (let ((process-connection-type nil))
+    (start-process-shell-command "*Dirvish-yank*" dirvish-yank--buffer cmd)
+    (when dirvish-yank-auto-unmark
+      (cl-dolist (buf (dirvish-get-all 'dired-buffers t t))
+        (with-current-buffer buf (dired-unmark-all-marks))))
+    (setcdr dirvish-yank--progress (1+ (cdr dirvish-yank--progress)))
+    (unless dirvish-yank--status-timer
+      (setq dirvish-yank--status-timer
+            (run-with-timer 0 0.1 #'dirvish-yank--status-update)))))
+
+(defun dirvish-yank--prepare-dest-names (srcs dest)
+  "Generate new unique file name pairs from SRCS and DEST."
+  (cl-loop
+   with overwrite = nil
+   with dest-local = (shell-quote-argument (file-local-name dest))
+   with dest-old-files = (directory-files dest nil nil t)
+   with prompt-str = "%s exists, overwrite?: (y)es (n)o (a)ll (q)uit"
+   for file in srcs
+   for base-name = (file-name-nondirectory file)
+   for paste-name = (concat dest-local base-name)
+   for prompt = (format prompt-str base-name) collect
+   (cond
+    (overwrite (cons file (if (file-directory-p file) dest-local paste-name)))
+    ((member base-name dest-old-files) ;; avoid using `file-exists-p' for performance
+     (cl-case (read-char-choice prompt '(?y ?n ?a ?q))
+       (?y (cons file (if (file-directory-p file) dest-local paste-name)))
+       (?n (let ((bname~ base-name) (idx 1))
+             (while (member bname~ dest-old-files)
+               (setq bname~
+                     (pcase dirvish-yank-new-name-style
+                       ('append-to-ext (format "%s%s~" base-name idx))
+                       ('append-to-filename
+                        (format "%s%s~.%s"
+                                (file-name-sans-extension base-name)
+                                idx (file-name-extension base-name)))
+                       ('prepend-to-filename (format "%s~%s" idx base-name))))
+               (setq idx (1+ idx)))
+             (cons file (concat dest-local bname~))))
+       (?a (setq overwrite t)
+           (cons file (if (file-directory-p file) dest-local paste-name)))
+       (?q (user-error "Dirvish: yank task aborted"))))
+    (t (cons file (if (file-directory-p file) dest-local paste-name))))))
+
+(defun dirvish-yank--l2l-handler (method srcs dest host)
+  "Execute a local yank command with type of METHOD.
+SRCS and DEST have to be in the same HOST (local or remote)."
+  (let* ((srcs (mapcar
+                (lambda (f) (shell-quote-argument (file-local-name f))) srcs))
+         (fmt (format "%s %%s %%s" (alist-get method dirvish-yank-methods)))
+         (newnames (dirvish-yank--prepare-dest-names srcs dest))
+         (localp (eq host 'local))
+         (cmd
+          (cl-loop
+           with pairs = ()
+           for (from . to) in newnames
+           do (setq pairs (append pairs (list (format fmt from to))))
+           finally return (format (if localp "%s%s" "%s\"%s\"")
+                                  (if localp "" (format "ssh %s " host))
+                                  (string-join pairs " & ")))))
+    (dirvish-yank--execute cmd)))
+
+(defun dirvish-yank--l2fr-handler (srcs dest)
+  "Execute a local to/from remote rsync command for SRCS and DEST."
+  (let* ((rsync-cmd (alist-get 'rsync dirvish-yank-methods))
+         (srcs (mapcar #'dirvish-yank--filename-for-rsync srcs))
+         (final-dest (dirvish-yank--filename-for-rsync dest))
+         (cmd (string-join
+               (flatten-tree (list rsync-cmd srcs final-dest)) " ")))
+    (dirvish-yank--execute cmd)))
+
+;; Thanks to `dired-rsync.el'
+;; also see: https://unix.stackexchange.com/questions/183504/how-to-rsync-files-between-two-remotes
+(defun dirvish-yank--r2r-handler (srcs dest shost dhost)
+  "Construct and trigger an rsync run for remote copy.
+This command sync SRCS on SHOST to DEST on DHOST."
+  (let* ((duser (with-parsed-tramp-file-name dest tfop
+                  (or tfop-user (getenv "USER"))))
+         (rsync-cmd
+          (format "\"%s -e \\\"%s\\\" %s %s@localhost:%s\""
+                  (alist-get 'rsync dirvish-yank-methods)
+                  (format dired-remote-portfwd 60000)
+                  (string-join srcs " ") duser dest))
+         (dest (shell-quote-argument (file-local-name dest)))
+         (bind-addr (format "localhost:%d:%s:22" 60000 dhost))
+         (cmd (string-join
+               (list "ssh" "-A" "-R" bind-addr shost rsync-cmd) " ")))
+    (dirvish-yank--execute cmd)))
+
+(defun dirvish-yank--apply (method dest)
+  "Apply yank METHOD to DEST."
+  (let* ((dest (or dest (dired-current-directory)))
+         (dhost (or (file-remote-p dest 'host) 'local))
+         (srcs (or (and (functionp dirvish-yank-sources)
+                        (funcall dirvish-yank-sources))
+                   (dirvish--marked-files dirvish-yank-sources)
+                   (user-error "Dirvish: no marked files")))
+         (shost (dirvish-yank--extract-host srcs)))
+    (cond
+     ((and (memq method dirvish-yank--link-methods)
+           (not (equal shost dhost)))
+      (user-error "Dirvish: can not make links between different hosts"))
+     ((equal shost dhost)
+      (dirvish-yank--l2l-handler method srcs dest shost))
+     ((not (or (eq shost 'local) (eq dhost 'local)))
+      (dirvish-yank--r2r-handler srcs dest shost dhost))
+     (t
+      (dirvish-yank--l2fr-handler srcs dest)))))
+
 ;;;###autoload (autoload 'dirvish-yank-ml "dirvish-yank" nil t)
-(dirvish-define-mode-line yank "Current move/paste task progress."
-  (cl-destructuring-bind (progress . total) dirvish-yank--progress
+(dirvish-define-mode-line yank
+  "Current move/paste task progress."
+  (pcase-let ((`(,progress . ,total) dirvish-yank--progress))
     (when (> total 0)
-      (format "%s%s " (propertize "Task progress: " 'face 'bold)
+      (format "%s%s " (propertize "Yanking: " 'face 'bold)
               (propertize (format "%s of %s" progress total)
                           'face 'font-lock-keyword-face)))))
 
 ;;;###autoload
-(defun dirvish-yank (&optional arg)
-  "Paste marked files/directory to current directory.
-With optional prefix ARG, delete source files/directories."
-  (interactive "P")
-  (if arg (dirvish--yank 'move) (dirvish--yank)))
+(defun dirvish-yank (&optional dest)
+  "Paste marked files to DEST (which defaults to `dired-current-directory').
+Prompt for DEST when prefixed with \\[universal-argument]."
+  (interactive (dirvish-yank--read-dest 'yank))
+  (dirvish-yank--apply 'yank dest))
+
+;;;###autoload
+(defun dirvish-move (&optional dest)
+  "Move marked files to DEST (which defaults to `dired-current-directory').
+Prompt for DEST when prefixed with \\[universal-argument]."
+  (interactive (dirvish-yank--read-dest 'move))
+  (dirvish-yank--apply 'move dest))
+
+(defun dirvish-symlink (&optional dest)
+  "Symlink marked files to DEST (which defaults to `dired-current-directory').
+Prompt for DEST when prefixed with \\[universal-argument]."
+  (interactive (dirvish-yank--read-dest 'symlink))
+  (dirvish-yank--apply 'symlink dest))
+
+(defun dirvish-relative-symlink (&optional dest)
+  "Similar to `dirvish-symlink', but link files relatively.
+Prompt for DEST when prefixed with \\[universal-argument]."
+  (interactive (dirvish-yank--read-dest 'relalink))
+  (dirvish-yank--apply 'relalink dest))
+
+(defun dirvish-hardlink (&optional dest)
+  "Hardlink marked files to DEST (which defaults to `dired-current-directory').
+Prompt for DEST when prefixed with \\[universal-argument]."
+  (interactive (dirvish-yank--read-dest 'hardlink))
+  (dirvish-yank--apply 'hardlink dest))
 
 (provide 'dirvish-yank)
 ;;; dirvish-yank.el ends here
