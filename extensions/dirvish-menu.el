@@ -23,7 +23,7 @@
 (require 'transient)
 (require 'dirvish)
 (defvar dirvish-menu-available-prefixs
-  '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-yank-menu dirvish-goto-bookmark))
+  '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-quicksort dirvish-yank-menu dirvish-goto-bookmark))
 
 (defclass dirvish-menu:toggle (transient-infix)
   ((variable  :initarg :variable)
