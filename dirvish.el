@@ -217,6 +217,7 @@ Dirvish session as its argument."
 (defconst dirvish--preview-img-threshold (* 1024 1024 0.4))
 (defconst dirvish--preview-img-scale 0.92)
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
+(defconst dirvish--saved-window-combination-resize window-combination-resize)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99 :box ())))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
@@ -410,11 +411,13 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (if dirvish--curr-name
         (let ((dv (gethash dirvish--curr-name dirvish--hash)))
           (setq tab-bar-new-tab-choice "*scratch*")
+          (setq window-combination-resize nil) ; avoid transient menu mess up the layout
           (unless (dirvish-dired-p dv)
             (setq other-window-scroll-buffer (window-buffer (dv-preview-window dv))))
           (dirvish--init-util-buffers dv)
           (dirvish--add-advices))
       (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+      (setq window-combination-resize dirvish--saved-window-combination-resize)
       (setq other-window-scroll-buffer nil)
       (dirvish--remove-advices
        (and dirvish-override-dired-mode '(dired find-dired fd-dired))))
