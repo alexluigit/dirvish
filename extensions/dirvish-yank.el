@@ -1,4 +1,4 @@
-;;; dirvish-yank.el --- Multi-stage and async file operation in Dirvish -*- lexical-binding: t -*-
+;;; dirvish-yank.el --- Multi-stage and async copy/paste/link utilities in Dirvish -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
@@ -10,7 +10,7 @@
 
 ;;; Commentary:
 
-;; Multi-stage and asynchronous copy/paste/link facilities in Dirvish.
+;; Multi-stage and asynchronous copy/paste/link utilities in Dirvish.
 
 ;; With the multi-stage operations, you can gather files from multiple Dired
 ;; buffers into a single "clipboard", then copy or move all of them to the
@@ -56,7 +56,7 @@ The value can be a symbol or a function that returns a fileset."
     (move     . "mv -fv")
     (symlink  . "ln -sf")
     (relalink . "ln -srf")
-    (hardlink . "ln")
+    (hardlink . "cp -al")
     (rsync    . "rsync -avz"))
   "Yank methods and their flags."
   :group 'dirvish :type 'alist)
@@ -95,7 +95,7 @@ The value can be a symbol or a function that returns a fileset."
 (defun dirvish-yank--status-update ()
   "Update current yank task progress."
   (with-current-buffer dirvish-yank--buffer
-    (let* ((proc-exit "Process \\(\.*\\)? \\(exited\\|finished\\).*")
+    (let* ((proc-exit "Process \\(.*\\) \\(exited\\|finished\\)")
            (progress (how-many proc-exit (point-min) (point-max))))
       (if (eq progress (cdr dirvish-yank--progress))
           (progn
@@ -125,7 +125,8 @@ The value can be a symbol or a function that returns a fileset."
   (cl-loop
    with overwrite = nil
    with dest-local = (shell-quote-argument (file-local-name dest))
-   with dest-old-files = (directory-files dest nil nil t)
+   with dest-old-files = (mapcar #'shell-quote-argument
+                                 (directory-files dest nil nil t))
    with prompt-str = "%s exists, overwrite?: (y)es (n)o (a)ll (q)uit"
    for file in srcs
    for base-name = (file-name-nondirectory file)
@@ -241,18 +242,21 @@ Prompt for DEST when prefixed with \\[universal-argument]."
   (interactive (dirvish-yank--read-dest 'move))
   (dirvish-yank--apply 'move dest))
 
+;;;###autoload
 (defun dirvish-symlink (&optional dest)
   "Symlink marked files to DEST (which defaults to `dired-current-directory').
 Prompt for DEST when prefixed with \\[universal-argument]."
   (interactive (dirvish-yank--read-dest 'symlink))
   (dirvish-yank--apply 'symlink dest))
 
+;;;###autoload
 (defun dirvish-relative-symlink (&optional dest)
   "Similar to `dirvish-symlink', but link files relatively.
 Prompt for DEST when prefixed with \\[universal-argument]."
   (interactive (dirvish-yank--read-dest 'relalink))
   (dirvish-yank--apply 'relalink dest))
 
+;;;###autoload
 (defun dirvish-hardlink (&optional dest)
   "Hardlink marked files to DEST (which defaults to `dired-current-directory').
 Prompt for DEST when prefixed with \\[universal-argument]."
