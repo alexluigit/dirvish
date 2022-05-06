@@ -132,7 +132,7 @@ STYLE should be one of these:
                                         ,(string-width str-right)))))
                  str-right))))))
 (defcustom dirvish-mode-line-format
-  '(:left (sort omit) :right (index))
+  '(:left (sort omit) :right (free-space index))
   "Mode line SEGMENTs aligned to left/right respectively.
 The SEGMENTs are defined by `dirvish-define-mode-line'.
 Set it to nil to use the default `mode-line-format'."
@@ -1122,6 +1122,13 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 
 (dirvish-define-mode-line omit "A `dired-omit-mode' indicator."
   (and dired-omit-mode (propertize "[Omit]" 'face 'bold)))
+
+(dirvish-define-mode-line free-space
+  "Amount of free space on `default-directory''s file system."
+  (format " %s %s "
+          (propertize (or (get-free-disk-space default-directory) "")
+                      'face 'font-lock-constant-face)
+          (propertize "free" 'face 'font-lock-doc-face)))
 
 (dirvish-define-mode-line index "Current file's index and total files count."
   (let ((cur-pos (- (line-number-at-pos (point)) 1))
