@@ -120,37 +120,49 @@ The value can be a symbol or a function that returns a fileset."
       (setq dirvish-yank--status-timer
             (run-with-timer 0 0.1 #'dirvish-yank--status-update)))))
 
+(defun dirvish-yank--ensure-newname (file base-name fileset dest)
+  "Ensure an unique filename for FILE at DEST with FILESET.
+BASE-NAME is the filename of file without directory."
+  (let ((bname~ base-name) (idx 1))
+    (while (member bname~ fileset)
+      (setq bname~
+            (shell-quote-argument
+             (pcase dirvish-yank-new-name-style
+               ('append-to-ext (format "%s%s~" base-name idx))
+               ('append-to-filename
+                (format "%s%s~.%s"
+                        (file-name-sans-extension base-name)
+                        idx (file-name-extension base-name)))
+               ('prepend-to-filename (format "%s~%s" idx base-name)))))
+      (setq idx (1+ idx)))
+    (cons file (concat dest bname~))))
+
 (defun dirvish-yank--prepare-dest-names (srcs dest)
   "Generate new unique file name pairs from SRCS and DEST."
   (cl-loop
-   with overwrite = nil
+   with overwrite-all = nil
+   with no-overwrite-all = nil
    with dest-local = (shell-quote-argument (file-local-name dest))
    with dest-old-files = (mapcar #'shell-quote-argument
                                  (directory-files dest nil nil t))
-   with prompt-str = "%s exists, overwrite?: (y)es (n)o (a)ll (q)uit"
+   with prompt-str = "%s exists, overwrite? (y)es (n)o (q)uit (Y)es-for-all (N)o-for-all"
    for file in srcs
    for base-name = (file-name-nondirectory file)
    for paste-name = (concat dest-local base-name)
+   for collision = (member base-name dest-old-files) ;; avoid using `file-exists-p' for performance
    for prompt = (format prompt-str base-name) collect
    (cond
-    (overwrite (cons file (if (file-directory-p file) dest-local paste-name)))
-    ((member base-name dest-old-files) ;; avoid using `file-exists-p' for performance
-     (cl-case (read-char-choice prompt '(?y ?n ?a ?q))
+    (overwrite-all (cons file (if (file-directory-p file) dest-local paste-name)))
+    ((and no-overwrite-all collision)
+     (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
+    (collision
+     (cl-case (read-char-choice prompt '(?y ?Y ?n ?N ?q))
        (?y (cons file (if (file-directory-p file) dest-local paste-name)))
-       (?n (let ((bname~ base-name) (idx 1))
-             (while (member bname~ dest-old-files)
-               (setq bname~
-                     (pcase dirvish-yank-new-name-style
-                       ('append-to-ext (format "%s%s~" base-name idx))
-                       ('append-to-filename
-                        (format "%s%s~.%s"
-                                (file-name-sans-extension base-name)
-                                idx (file-name-extension base-name)))
-                       ('prepend-to-filename (format "%s~%s" idx base-name))))
-               (setq idx (1+ idx)))
-             (cons file (concat dest-local bname~))))
-       (?a (setq overwrite t)
+       (?n (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
+       (?Y (setq overwrite-all t)
            (cons file (if (file-directory-p file) dest-local paste-name)))
+       (?N (setq no-overwrite-all t)
+           (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
        (?q (user-error "Dirvish: yank task aborted"))))
     (t (cons file (if (file-directory-p file) dest-local paste-name))))))
 
