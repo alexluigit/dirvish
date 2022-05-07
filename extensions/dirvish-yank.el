@@ -72,6 +72,19 @@ The value can be a symbol or a function that returns a fileset."
 (defvar dirvish-yank--buffer (dirvish--ensure-temp-buffer "yank"))
 (defvar dirvish-yank--link-methods '(symlink relalink hardlink))
 (defvar dirvish-yank--status-timer nil)
+;; copied from `dired-rsync'
+(defvar dirvish-yank--remote-portfwd
+  "ssh -p %d -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  "An explicit ssh command for rsync to use port forwarded proxy.
+The string is treated as a format string where %d is replaced with the
+results of `dirvish-yank--get-remote-port'.")
+
+(defun dirvish-yank--get-remote-port ()
+  "Return the remote port we shall use for the reverse port-forward."
+  (+ 50000 (length
+            (seq-filter
+             (lambda (p) (string-prefix-p "*Dirvish-yank" (process-name p)))
+             (process-list)))))
 
 (defun dirvish-yank--read-dest (method)
   "Helper function to read dest dir for METHOD."
@@ -108,7 +121,8 @@ The value can be a symbol or a function that returns a fileset."
           (progn
             (erase-buffer)
             (setq dirvish-yank--progress (cons 0 0))
-            (cancel-timer (symbol-value 'dirvish-yank--status-timer))
+            (when (timerp dirvish-yank--status-timer)
+              (cancel-timer dirvish-yank--status-timer))
             (setq dirvish-yank--status-timer nil)
             (when-let (dv (dirvish-curr))
               (with-current-buffer (window-buffer (dv-root-window dv))
@@ -207,13 +221,14 @@ SRCS and DEST have to be in the same HOST (local or remote)."
 This command sync SRCS on SHOST to DEST on DHOST."
   (let* ((duser (with-parsed-tramp-file-name dest tfop
                   (or tfop-user (getenv "USER"))))
+         (port (dirvish-yank--get-remote-port))
          (rsync-cmd
           (format "\"%s -e \\\"%s\\\" %s %s@localhost:%s\""
                   (alist-get 'rsync dirvish-yank-methods)
-                  (format dired-remote-portfwd 60000)
+                  (format dirvish-yank--remote-portfwd port)
                   (string-join srcs " ") duser dest))
          (dest (shell-quote-argument (file-local-name dest)))
-         (bind-addr (format "localhost:%d:%s:22" 60000 dhost))
+         (bind-addr (format "localhost:%d:%s:22" port dhost))
          (cmd (string-join
                (list "ssh" "-A" "-R" bind-addr shost rsync-cmd) " ")))
     (dirvish-yank--execute cmd)))
