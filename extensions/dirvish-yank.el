@@ -44,6 +44,13 @@ The value can be a symbol or a function that returns a fileset."
   "Control if yank commands should unmark when complete."
   :group 'dirvish :type 'boolean)
 
+(defcustom dirvish-yank-overwrite-existing-files 'ask
+  "Whether to overwrite existing files when calling yank commands."
+  :group 'dirvish
+  :type '(choice (const :tag "prompt for confirmation" ask)
+                 (const :tag "always overwrite" always)
+                 (const :tag "never overwrite, create new file instead" never)))
+
 (defcustom dirvish-yank-new-name-style 'append-to-ext
   "Control the way to compose new filename."
   :group 'dirvish
@@ -140,8 +147,8 @@ BASE-NAME is the filename of file without directory."
 (defun dirvish-yank--prepare-dest-names (srcs dest)
   "Generate new unique file name pairs from SRCS and DEST."
   (cl-loop
-   with overwrite-all = nil
-   with no-overwrite-all = nil
+   with always = (eq dirvish-yank-overwrite-existing-files 'always)
+   with never = (eq dirvish-yank-overwrite-existing-files 'never)
    with dest-local = (shell-quote-argument (file-local-name dest))
    with dest-old-files = (mapcar #'shell-quote-argument
                                  (directory-files dest nil nil t))
@@ -152,16 +159,16 @@ BASE-NAME is the filename of file without directory."
    for collision = (member base-name dest-old-files) ;; avoid using `file-exists-p' for performance
    for prompt = (format prompt-str base-name) collect
    (cond
-    (overwrite-all (cons file (if (file-directory-p file) dest-local paste-name)))
-    ((and no-overwrite-all collision)
+    (always (cons file (if (file-directory-p file) dest-local paste-name)))
+    ((and never collision)
      (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
     (collision
      (cl-case (read-char-choice prompt '(?y ?Y ?n ?N ?q))
        (?y (cons file (if (file-directory-p file) dest-local paste-name)))
        (?n (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
-       (?Y (setq overwrite-all t)
+       (?Y (setq always t)
            (cons file (if (file-directory-p file) dest-local paste-name)))
-       (?N (setq no-overwrite-all t)
+       (?N (setq never t)
            (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
        (?q (user-error "Dirvish: yank task aborted"))))
     (t (cons file (if (file-directory-p file) dest-local paste-name))))))
