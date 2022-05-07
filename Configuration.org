@@ -314,6 +314,8 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
    ("r"   . dirvish-roam)
    ("b"   . dirvish-goto-bookmark)
    ("f"   . dirvish-file-info-menu)
+   ("M-n" . dirvish-go-forward-history)
+   ("M-p" . dirvish-go-backward-history)
    ("M-a" . dirvish-mark-actions-menu)
    ("M-s" . dirvish-setup-menu)
    ("M-f" . dirvish-toggle-fullscreen)
