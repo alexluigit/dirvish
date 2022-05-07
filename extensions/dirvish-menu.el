@@ -18,7 +18,6 @@
 (unless (require 'transient nil t)
   (user-error "Dirvish: help menu requires `transient.el'"))
 
-(require 'seq)
 (require 'subr-x)
 (require 'transient)
 (require 'dirvish)

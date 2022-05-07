@@ -78,11 +78,11 @@ For example, if the value is 10000, then directories with over
   :group 'dirvish :type 'integer)
 
 (defvar dirvish--history-ring nil)
-(defcustom dirvish-history-length 30
+(defcustom dirvish-history-length 50
   "Length of directory visiting history Dirvish will track.
 Set it to nil disables the history tracking."
-  :group 'dirvish :type '(choice (integer nil))
-  :set (lambda (k v) (set k v) (setq dirvish--history-ring (and v (make-ring v)))))
+  :group 'dirvish :type 'integer
+  :set (lambda (k v) (set k v) (setq dirvish--history-ring (make-ring v))))
 
 (defcustom dirvish-depth 1
   "Level of directories to traverse up."
@@ -1271,6 +1271,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                  thereis (and (equal (dv-index-dir dv) dir) dv)))
          (dv (or reuse (dirvish-new nil :depth -1))))
     (setf (dv-index-dir dv) dir)
+    (ring-insert dirvish--history-ring dir)
     (with-current-buffer (dirvish--buffer-for-dir dv dir)
       (or reuse (dirvish-build dv))
       (current-buffer))))
@@ -1345,7 +1346,7 @@ directory in another window."
           (progn
             (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
             (dirvish-new nil :path parent :depth -1))
-        (dirvish-find-file parent t)))))
+        (dirvish-find-file parent)))))
 
 (defun dirvish-toggle-fullscreen ()
   "Toggle fullscreen of current Dirvish."
@@ -1371,33 +1372,29 @@ directory in another window."
           (dirvish-debounce layout (dirvish-preview-update))))
     (user-error "Dirvish: not in a dirvish buffer")))
 
-(defun dirvish-find-file (&optional file ignore-hist)
+(defun dirvish-find-file (&optional file)
   "Find file in dirvish buffer.
 FILE can be a file or a directory, if nil then infer entry from
 variable `buffer-file-name'.  If IGNORE-HIST is non-nil, do not
 update `dirvish--history-ring'."
   (interactive)
-  (let* ((entry (or file (dired-get-filename nil t)))
+  (let* ((entry (or file (dired-get-filename nil t)
+                    (user-error "Dirvish: invalid filename")))
          (dv (dirvish-curr))
          (dv-tran (dv-transient dv)))
-    (when entry
-      (if (file-directory-p entry)
-          (let* ((entry (file-name-as-directory (expand-file-name entry)))
-                 (hist (directory-file-name entry))
-                 (bname (buffer-file-name (current-buffer)))
-                 enable-dir-local-variables)
-            (when (and dirvish--history-ring (not ignore-hist))
-              (when (or (ring-empty-p dirvish--history-ring)
-                        (not (eq hist (ring-ref dirvish--history-ring 0))))
-                (ring-insert dirvish--history-ring hist)))
-            (setf (dv-index-dir dv) entry)
-            (dirvish-with-no-dedication
-             (switch-to-buffer (dirvish--buffer-for-dir dv entry))
-             (setq-local dirvish--child-entry (or bname entry))
-             (when (dirvish-p dv-tran)
-               (dirvish-new nil :depth (dv-depth dv) :transient (dv-name dv-tran)))
-             (dirvish-build dv)))
-        (find-file entry)))))
+    (if (file-directory-p entry)
+        (let ((entry (file-name-as-directory (expand-file-name entry)))
+              (bname (buffer-file-name (current-buffer)))
+              enable-dir-local-variables)
+          (ring-insert dirvish--history-ring entry)
+          (setf (dv-index-dir dv) entry)
+          (dirvish-with-no-dedication
+           (switch-to-buffer (dirvish--buffer-for-dir dv entry))
+           (setq-local dirvish--child-entry (or bname entry))
+           (when (dirvish-p dv-tran)
+             (dirvish-new nil :depth (dv-depth dv) :transient (dv-name dv-tran)))
+           (dirvish-build dv)))
+      (find-file entry))))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode

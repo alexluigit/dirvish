@@ -209,8 +209,9 @@ The value can be one of: `plus', `arrow', `chevron'."
 (defun dirvish-show-history ()
   "Open a target directory from `dirvish--history-ring'."
   (interactive)
-  (unless (ring-p dirvish--history-ring) (user-error "Dirvish: history tracking has been disabled"))
-  (let* ((history-w/metadata (dirvish--append-metadata 'file (ring-elements dirvish--history-ring)))
+  (let* ((history-w/metadata
+          (dirvish--append-metadata
+           'file (ring-elements dirvish--history-ring)))
          (result (completing-read "Recently visited: " history-w/metadata)))
       (when result (dirvish-find-file result))))
 
@@ -218,8 +219,34 @@ The value can be one of: `plus', `arrow', `chevron'."
 (defun dirvish-other-buffer ()
   "Switch to the most recently visited dirvish buffer."
   (interactive)
-  (unless (ring-p dirvish--history-ring) (user-error "Dirvish: history tracking has been disabled"))
   (dirvish-find-file (ring-ref dirvish--history-ring 1)))
+
+;;;###autoload
+(defun dirvish-go-forward-history (&optional arg)
+  "Navigate to next ARG directory in history.
+ARG defaults to 1."
+  (interactive "^p")
+  (or arg (setq arg 1))
+  (let* ((dirs (reverse
+                (mapcar #'car (dv-root-dir-buf-alist (dirvish-curr)))))
+         (len (length dirs))
+         (idx (cl-position (dired-current-directory)
+                           dirs :test #'equal))
+         (new-idx (+ idx arg)))
+    (cond ((>= new-idx len)
+           (dirvish-find-file (nth (- len 1) dirs))
+           (message "Dirvish: reached the end of history"))
+          ((< new-idx 0)
+           (dirvish-find-file (nth 0 dirs))
+           (message "Dirvish: reached the beginning of history"))
+          (t (dirvish-find-file (nth new-idx dirs))))))
+
+;;;###autoload
+(defun dirvish-go-backward-history (&optional arg)
+  "Navigate to last ARG directory in history.
+ARG defaults to -1."
+  (interactive "^p")
+  (dirvish-go-forward-history (- 0 (or arg 1))))
 
 ;;;###autoload
 (defun dirvish-find-file-true-path ()
