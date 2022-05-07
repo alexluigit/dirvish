@@ -115,11 +115,20 @@ results of `dirvish-yank--get-remote-port'.")
 (defun dirvish-yank--status-update ()
   "Update current yank task progress."
   (with-current-buffer dirvish-yank--buffer
-    (let* ((proc-exit "Process \\(.*\\) \\(exited\\|finished\\)")
+    (let* ((proc-exit "Process \\(.*\\) \\(exited\\|finished\\)\\(.*\\)")
            (progress (how-many proc-exit (point-min) (point-max))))
       (if (eq progress (cdr dirvish-yank--progress))
           (progn
-            (erase-buffer)
+            (beginning-of-buffer)
+            (save-excursion
+              (delete-region
+               (point)
+               (progn (end-of-buffer)
+                      (dotimes (n 20) (backward-paragraph))
+                      (point))))
+            (while (re-search-forward proc-exit nil t)
+              (replace-match
+               (format "Task \\2 @ %s \\3\n" (current-time-string))))
             (setq dirvish-yank--progress (cons 0 0))
             (when (timerp dirvish-yank--status-timer)
               (cancel-timer dirvish-yank--status-timer))
@@ -131,8 +140,9 @@ results of `dirvish-yank--get-remote-port'.")
 
 (defun dirvish-yank--execute (cmd)
   "Run yank CMD in subprocesses."
-  (let ((process-connection-type nil))
-    (start-process-shell-command "*Dirvish-yank*" dirvish-yank--buffer cmd)
+  (let ((process-connection-type nil)
+        (procname (format "*Dirvish-yank @ %s*" (current-time-string))))
+    (start-process-shell-command procname dirvish-yank--buffer cmd)
     (when dirvish-yank-auto-unmark
       (cl-dolist (buf (dirvish-get-all 'dired-buffers t t))
         (with-current-buffer buf (dired-unmark-all-marks))))
