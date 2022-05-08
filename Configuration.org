@@ -42,6 +42,7 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-mode-line-format~           | Mode line format in root window          |
 | ~dirvish-async-listing-threshold~    | List huge directories asynchronously     |
 | ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
+| ~dirvish-auto-cache-threshold~       | Generate cache images automatically      |
 | ~dirvish-enabled-features-on-remote~ | Enabled Dirvish features on remote hosts |
 | ~dirvish-preview-dispatchers~        | See [[#Preview-strategies][Preview strategies]]                   |
 | ~dirvish-attributes~                 | See [[#Extra-attributes][Extra attributes]]                     |
