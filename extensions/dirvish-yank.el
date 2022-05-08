@@ -119,12 +119,12 @@ results of `dirvish-yank--get-remote-port'.")
            (progress (how-many proc-exit (point-min) (point-max))))
       (if (eq progress (cdr dirvish-yank--progress))
           (progn
-            (beginning-of-buffer)
+            (goto-char (point-min))
             (save-excursion
               (delete-region
                (point)
-               (progn (end-of-buffer)
-                      (dotimes (n 20) (backward-paragraph))
+               (progn (goto-char (point-max))
+                      (dotimes (_n 20) (backward-paragraph))
                       (point))))
             (while (re-search-forward proc-exit nil t)
               (replace-match
@@ -232,12 +232,12 @@ This command sync SRCS on SHOST to DEST on DHOST."
   (let* ((duser (with-parsed-tramp-file-name dest tfop
                   (or tfop-user (getenv "USER"))))
          (port (dirvish-yank--get-remote-port))
+         (dest (shell-quote-argument (file-local-name dest)))
          (rsync-cmd
           (format "\"%s -e \\\"%s\\\" %s %s@localhost:%s\""
                   (alist-get 'rsync dirvish-yank-methods)
                   (format dirvish-yank--remote-portfwd port)
                   (string-join srcs " ") duser dest))
-         (dest (shell-quote-argument (file-local-name dest)))
          (bind-addr (format "localhost:%d:%s:22" port dhost))
          (cmd (string-join
                (list "ssh" "-A" "-R" bind-addr shost rsync-cmd) " ")))
