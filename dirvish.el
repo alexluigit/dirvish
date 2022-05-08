@@ -72,7 +72,7 @@ the fallback dispatcher named `default' is used.  For details see
 The value should be a cons cell (FILES . PROCS).  Directories
 that include number of files less than FILES are cached
 automatically, set it to 0 disables auto caching.  PROCS is the
-max number of cache process."
+max number of cache processes."
   :group 'dirvish
   :type '(cons (integer :tag "Max number of directory files")
                (integer :tag "Max number of cache process"))
@@ -157,27 +157,23 @@ Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k v) (setq dirvish--ml-fmt (dirvish--mode-line-fmt-setter v))))
 
+
 (defcustom dirvish-enabled-features-on-remote '()
-  "Enabled Dirvish features on remote hosts.
-The value is a list of features, each designated by a symbol.
-
+  "Enabled Dirvish FEATUREs on remote hosts.
+The value is a list of FEATUREs, each designated by a symbol.
 The default (a nil value or an empty list) denotes the most
-minimalistic UI, only line highlighting is applied.
-
-The `extras' feature allows the display of all attributes defined
-in `dirvish-extras' on remote hosts.
-
-The `vc' feature allows the display of all attributes defined in
-`dirvish-vc' on remote hosts.
-
-If you have slow ssh connection, do NOT mess up with this option."
+minimalistic UI, only line highlighting is applied.  If `extras'
+is present, all attributes defined in `dirvish-extras' library
+are displayed on remote hosts like in localhost.  The symbol `vc'
+do similar things, but for `dirvish-vc' library.  If you have
+slow ssh connection, you should leave this to nil."
   :group 'dirvish
   :type '(set :tag "Features"
               (choice (const :tag "Show attributes" extras)
                       (const :tag "VC attributes/preview-handlers" vc))))
 
 (defcustom dirvish-hide-details t
-  "Whether to enable `dired-hide-details-mode' in root window.
+  "Whether to hide detailed information on session startup.
 The value can be a boolean or a function that takes current
 Dirvish session as its argument."
   :group 'dirvish :type '(choice (const :tag "Always hide details" t)
@@ -349,8 +345,9 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--get-subtree-depth ()
   "Get subtree depth at point."
-  (apply #'max (append (cl-loop for ov in (overlays-at (point))
-                                collect (or (overlay-get ov 'dired-subtree-depth) 0)) '(0))))
+  (let ((dps (cl-loop for ov in (overlays-at (point)) collect
+                      (or (overlay-get ov 'dired-subtree-depth) 0))))
+    (or (and dps (apply #'max dps)) 0)))
 
 (defun dirvish--subtree-expanded-p ()
   "70x Faster version of `dired-subtree--is-expanded-p'."
@@ -488,7 +485,8 @@ When the attribute does not exist, set it with BODY."
   `(let* ((hash (gethash ,file dirvish--attrs-hash))
           (cached (plist-get hash ,attribute))
           (attr (or cached ,@body)))
-     (unless cached (puthash ,file (append hash (list ,attribute attr)) dirvish--attrs-hash))
+     (unless cached
+       (puthash ,file (append hash (list ,attribute attr)) dirvish--attrs-hash))
      attr))
 
 (cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
@@ -977,7 +975,8 @@ When PROC finishes, fill preview buffer with process result."
            (cache (dirvish-preview--cache-image-path file width ".jpg")))
       (if (file-exists-p cache)
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
-        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s" ,(number-to-string width)
+        `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s"
+                         ,(number-to-string width)
                          ,(if dirvish--cache-embedded-video-thumb "-m" "")))))))
 
 (dirvish-define-preview epub (file preview-window)
@@ -1208,16 +1207,16 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   (and (not dirvish--curr-name)
        (or dirvish--dir-local-p
            (memq 'vc dirvish-enabled-features-on-remote))
-       (setq dirvish--vc-backend (ignore-errors (vc-responsible-backend default-directory))))
+       (setq dirvish--vc-backend
+             (ignore-errors (vc-responsible-backend default-directory))))
   (setq-local face-font-rescale-alist nil)
-  (setq-local dired-hide-details-hide-symlink-targets nil) ;; See `symlink-target' attribute
+  (setq-local dired-hide-details-hide-symlink-targets nil)
   (setq-local cursor-type nil)
   (or dirvish--attrs-hash
       (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
   (set-window-fringes nil 1 1)
   (when dirvish--child-entry (dired-goto-file dirvish--child-entry))
   (let* ((dv (dirvish-curr))
-         (owp (dirvish-dired-p dv))
          (ml-fmt (dv-mode-line-format dv)))
     (cond ((functionp dirvish-hide-details)
            (funcall dirvish-hide-details dv))
@@ -1230,10 +1229,12 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (cond ((not (eq (selected-window) (dv-root-window dv)))
            (setq mode-line-format nil))
           (ml-fmt (setq mode-line-format ml-fmt)))
-    (setq header-line-format (and owp `((:eval (funcall #',(dv-header-string-fn dv)))))))
-  (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil :local)
-  (add-hook 'post-command-hook #'dirvish-update-body-h nil :local)
-  (add-hook 'quit-window-hook #'dirvish-quit-h nil :local)
+    (setq header-line-format
+          (and (dirvish-dired-p dv)
+               `((:eval (funcall #',(dv-header-string-fn dv)))))))
+  (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil t)
+  (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
+  (add-hook 'quit-window-hook #'dirvish-quit-h nil t)
   (run-hooks 'dirvish-mode-hook))
 
 (defun dirvish-build--parents (dv)
