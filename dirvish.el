@@ -1500,5 +1500,13 @@ in other window when OTHER-WINDOW is non-nil."
   (and other-window (switch-to-buffer-other-window (dirvish--ensure-temp-buffer)))
   (dirvish-new t :path (or path default-directory) :depth -1))
 
+;;;###autoload
+(defun dirvish-dwim (&optional path)
+  "Run command `dirvish' or `dirvish-dired' for PATH according to window layout.
+Enter fullscreen automatically when selected window is the only window."
+  (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
+  (dirvish-new t :path (or path default-directory)
+    :depth (if (one-window-p) dirvish-depth -1)))
+
 (provide 'dirvish)
 ;;; dirvish.el ends here
