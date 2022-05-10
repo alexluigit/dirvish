@@ -159,7 +159,7 @@ H-DIRVISH is 0, don't create the header window."
           str-right))))))
 
 (defcustom dirvish-mode-line-format
-  '(:left (sort omit) :right (free-space index))
+  '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
 The SEGMENTs are defined by `dirvish-define-mode-line'.
 Set it to nil to use the default `mode-line-format'."
@@ -167,7 +167,7 @@ Set it to nil to use the default `mode-line-format'."
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
 (defcustom dirvish-header-line-format
-  '(:left (path) :right ())
+  '(:left (path) :right (free-space))
   "Like `dirvish-mode-line-format', but for header line ."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
@@ -1086,7 +1086,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
 (dirvish-define-attribute symlink-target
   (:if (and dired-hide-details-mode
-           (default-value 'dired-hide-details-hide-symlink-targets)))
+            (default-value 'dired-hide-details-hide-symlink-targets)))
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
@@ -1137,7 +1137,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
             (propertize time 'face 'font-lock-doc-face))))
 
 (dirvish-define-mode-line omit "A `dired-omit-mode' indicator."
-  (and dired-omit-mode (propertize "[Omit]" 'face 'bold)))
+  (and dired-omit-mode (propertize "[Omit]" 'face 'font-lock-negation-char-face)))
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
@@ -1145,6 +1145,14 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
           (propertize (or (get-free-disk-space default-directory) "")
                       'face 'font-lock-constant-face)
           (propertize "free" 'face 'font-lock-doc-face)))
+
+(dirvish-define-mode-line symlink
+  "Show the truename of symlink file under the cursor."
+  (let ((file (dirvish-prop :child)))
+    (when (file-symlink-p file)
+      (format " %s %s "
+              (propertize "→" 'face 'font-lock-comment-delimiter-face)
+              (propertize (file-truename file) 'face 'dired-symlink)))))
 
 (dirvish-define-mode-line index "Current file's index and total files count."
   (let ((cur-pos (- (line-number-at-pos (point)) 1))
