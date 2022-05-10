@@ -462,12 +462,12 @@ If BODY is non-nil, create the buffer and execute BODY in it."
             (and dirvish-override-dired-mode '(dired find-dired fd-dired)))
            (set-frame-parameter nil 'dirvish--curr new-dv)))))
 
-(cl-defmacro dirvish-define-attribute (name &key if form left right doc)
+(cl-defmacro dirvish-define-attribute (name (&key if left right doc) &rest body)
   "Define a Dirvish attribute NAME.
 An attribute contains a pair of predicate/rendering functions
 that are being called on `post-command-hook'.  The predicate fn
-takes current session DV as argument and execute IF once.  When
-IF evaluates to t, the rendering fn runs FORM for every line with
+IF takes current DV as argument and executed once.  When it
+evaluates to t, the rendering fn runs BODY for every line with
 following arguments:
 
 - `f-name'  from `dired-get-filename'
@@ -478,7 +478,9 @@ following arguments:
 - `l-beg'   from `line-beginning-position'
 - `l-end'   from `line-end-position'
 - `hl-face' a face that is only passed in on current line
-Optional keywords LEFT, RIGHT and DOC are supported."
+
+DOC is the docstring.  LEFT and RIGHT are length of the
+attribute, align to left and right respectively."
   (declare (indent defun))
   (let* ((ov (intern (format "dirvish-%s-ov" name)))
          (pred (intern (format "dirvish-attribute-%s-pred" name)))
@@ -492,7 +494,7 @@ Optional keywords LEFT, RIGHT and DOC are supported."
        (defun ,pred (dv) (ignore dv) ,pred-body)
        (defun ,render ,args
          (ignore ,@args)
-         (let ((ov ,form)) (and ov (overlay-put ov ',ov t)))))))
+         (let ((ov ,@body)) (and ov (overlay-put ov ',ov t)))))))
 
 (defmacro dirvish-attribute-cache (file attribute &rest body)
   "Get FILE's ATTRIBUTE from `dirvish--attrs-hash'.
@@ -1075,8 +1077,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 
 ;;;; Builder
 
-(dirvish-define-attribute hl-line
-  :form
+(dirvish-define-attribute hl-line ()
   (when hl-face
     (let ((ov (make-overlay l-beg (1+ l-end)))) (overlay-put ov 'face hl-face) ov)))
 
@@ -1084,9 +1085,8 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 ;; 1. Hide " -> " arrow of symlink files as well.
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
 (dirvish-define-attribute symlink-target
-  :if (and dired-hide-details-mode
-           (default-value 'dired-hide-details-hide-symlink-targets))
-  :form
+  (:if (and dired-hide-details-mode
+           (default-value 'dired-hide-details-hide-symlink-targets)))
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
