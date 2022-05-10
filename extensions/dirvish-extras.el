@@ -109,7 +109,7 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (dirvish-define-attribute all-the-icons
   :left (+ (length dirvish-icon-delimiter) 2)
-  :if (or dirvish--dir-local-p
+  :if (or (not (dirvish-prop :remote))
           (memq 'extras dirvish-enabled-features-on-remote))
   :form
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
@@ -127,7 +127,7 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (dirvish-define-attribute vscode-icon
   :left (1+ (length dirvish-icon-delimiter))
-  :if (or dirvish--dir-local-p
+  :if (or (not (dirvish-prop :remote))
           (memq 'extras dirvish-enabled-features-on-remote))
   :form
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
@@ -157,7 +157,7 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string (propertize dirvish-icon-delimiter 'face hl-face)) ov))
 
 (dirvish-define-attribute file-size
-  :if (and (or dirvish--dir-local-p
+  :if (and (or (not (dirvish-prop :remote))
                (memq 'extras dirvish-enabled-features-on-remote))
            (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
   :right 6
@@ -190,7 +190,7 @@ The value can be one of: `plus', `arrow', `chevron'."
       (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
 
 (dirvish-define-attribute expanded-state
-  :if (and (or dirvish--dir-local-p
+  :if (and (or (not (dirvish-prop :remote))
                (memq 'extras dirvish-enabled-features-on-remote))
            (eq (dv-root-window dv) (selected-window)))
   :left 1
@@ -230,7 +230,7 @@ ARG defaults to 1."
   (let* ((dirs (reverse
                 (mapcar #'car (dv-root-dir-buf-alist (dirvish-curr)))))
          (len (length dirs))
-         (idx (cl-position (dired-current-directory)
+         (idx (cl-position (or (dirvish-prop :fd-dir) (dired-current-directory))
                            dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
