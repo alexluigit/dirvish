@@ -239,7 +239,7 @@ Dirvish session as its argument."
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
 (defvar dirvish-extra-libs '(dirvish-extras dirvish-vc))
-(defvar fd-dired-buffer-name-format)
+(defvar fd-dired-generate-random-buffer)
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--cache-img-threshold (* 1024 1024 0.4))
@@ -256,7 +256,6 @@ Dirvish session as its argument."
   (cl-loop for dp in '(image video epub)
            collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defvar dirvish--hash (make-hash-table))
-(defvar dirvish--transient-dvs '())
 (defvar dirvish--available-attrs '())
 (defvar dirvish--cache-pool '())
 (defvar-local dirvish--props (make-hash-table :size 10))
@@ -594,8 +593,7 @@ restore them after."
        (puthash (dv-name new) new dirvish--hash)
        (dirvish--refresh-slots new)
        (dirvish--create-root-window new)
-       (when (and old ,kill-old (not (dv-transient new))
-                  (eq (dv-root-window old) (dv-root-window new)))
+       (when (and old ,kill-old (eq (dv-root-window old) (dv-root-window new)))
          (unless (or (dirvish-dired-p old) (dirvish-dired-p new))
            (dirvish-kill new)
            (user-error "Dirvish: using existed session"))
@@ -614,7 +612,6 @@ DV defaults to current dirvish instance if not given."
       (let ((conf (dv-window-conf dv)))
         (when (and (not (dirvish-dired-p dv)) (window-configuration-p conf))
           (set-window-configuration conf))
-        (setq dirvish--transient-dvs (delete dv dirvish--transient-dvs))
         (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
           (mapc #'kill-when-live (dv-dired-buffers dv))
           (mapc #'kill-when-live (dv-preview-buffers dv))
@@ -625,17 +622,6 @@ DV defaults to current dirvish instance if not given."
     (dirvish-reclaim)
     (run-hooks 'dirvish-deactivation-hook)
     (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t)))))
-
-(defun dirvish--end-transient (tran)
-  "End transient of Dirvish instance or name TRAN."
-  (cl-loop
-   with tran-dv = (if (dirvish-p tran) tran (gethash tran dirvish--hash))
-   for dv-name in (mapcar #'dv-name (hash-table-values dirvish--hash))
-   for dv = (gethash dv-name dirvish--hash)
-   for dv-tran = (dv-transient dv) do
-   (when (or (eq dv-tran tran) (eq dv-tran tran-dv))
-     (dirvish-kill dv))
-   finally (dirvish-kill tran-dv)))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -767,38 +753,31 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
     (dirvish-dired (or file-name default-directory) other-window)))
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
-  "Advisor function for `find-dired-sentinel'."
-  (let ((dv (dirvish-curr))
-        (last-dv (with-current-buffer (other-buffer)
-                   (when (derived-mode-p 'dirvish-mode) (dirvish-curr))))
+  "Advice function for `find-dired-sentinel'."
+  (let ((dv (or (dirvish-curr) (dirvish-new nil)))
+        (dirname-str (format "DIRVISH-FD@%s" (dired-current-directory)))
         buffer-read-only)
-    (unless (and dv (eq (dv-header-string-fn dv) #'dirvish-find-dired-header-string))
-      (let ((last-depth
-             (with-current-buffer (other-buffer)
-               (and (derived-mode-p 'dirvish-mode) (dv-depth (dirvish-curr)))))
-            (new-dv (dirvish-new nil
-                      :header-string-fn #'dirvish-find-dired-header-string
-                      :no-parents t)))
-        (add-to-list 'dirvish--transient-dvs new-dv)
-        (setf (dv-transient new-dv) (or last-dv new-dv))
-        (setf (dv-depth new-dv) (or last-depth 0))
-        (setq-local dirvish--curr-name (dv-name new-dv))
-        (dirvish-reclaim)
-        (dirvish-build new-dv)))
+    (setq-local dirvish--props (make-hash-table :size 10))
+    (dirvish-prop :child (or (dired-get-filename nil t) "."))
+    (dirvish-prop :dv dv)
+    (dirvish-prop :fd-dir dirname-str)
+    (setf (dv-no-parents dv) t)
+    (setf (dv-header-line-format dv)
+          (dirvish--mode-line-fmt-setter '(:left (find-dired)) t))
     ;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-matching-lines "find finished at.*\\|^ +$")
     (dirvish--hide-dired-header)
-    (and (dirvish-curr) (dirvish-setup 'keep-dired))))
+    (dirvish--init-util-buffers dv)
+    (push (cons dirname-str (current-buffer))
+          (dv-root-dir-buf-alist dv))
+    (dirvish-build dv)))
 
 (defun dirvish-fd-dired-ad (fn &rest args)
-  "Advisor function for FN `fd-dired' with its ARGS."
-  (when-let ((dv (dirvish-curr)))
-    (when (eq (dv-header-string-fn dv) #'dirvish-find-dired-header-string)
-      (dirvish-kill dv)))
-  (and (window-dedicated-p) (other-window 1))
-  ;; HACK for *FD* window placement. `fd-dired-display-in-current-window' does not behave as described.
-  (let ((display-buffer-alist '(("^ ?\\*Fd.*$" (display-buffer-same-window))))
-        (fd-dired-buffer-name-format "*%s*"))
+  "Advice function for FN `fd-dired' with its ARGS."
+  ;; HACK: `fd-dired-display-in-current-window' does not behave as described.
+  (let ((display-buffer-alist
+         '(("^ ?\\*Fd.*$" (display-buffer-same-window))))
+        (fd-dired-generate-random-buffer t))
     (apply fn args)))
 
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
@@ -821,7 +800,6 @@ If ALL-FRAMES, search target directories in all frames."
            (switch-to-buffer "*scratch*")
            (dirvish-drop)
            (when (string= (car args) "") (setf (car args) (dv-index-dir dv))))
-          ((dv-transient dv) (dirvish--end-transient (dv-transient dv)))
           (t (select-window (funcall (dv-find-file-window-fn dv)))
              (when-let ((dv (dirvish-prop :dv))) (dirvish-kill dv)))))
   args)
@@ -1112,16 +1090,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
-
-(defun dirvish-find-dired-header-string ()
-  "Return a string showing current `find/fd' command args."
-  (with-current-buffer (window-buffer (dv-root-window (dirvish-curr)))
-    (when-let ((args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
-      (format " %s [%s] at %s"
-              (propertize "FD:" 'face 'bold)
-              (propertize args 'face 'font-lock-string-face)
-              (propertize default-directory 'face 'dired-header)))))
-;; ;; Thanks to `doom-modeline'.
+;; Thanks to `doom-modeline'.
 (dirvish-define-mode-line bar "Create the bar image."
   (when (and (display-graphic-p) (image-type-available-p 'pbm))
     (propertize
@@ -1181,6 +1150,16 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (let ((cur-pos (- (line-number-at-pos (point)) 1))
         (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
+
+(dirvish-define-mode-line find-dired
+  "Return a string showing current `find/fd' command args."
+  (if-let ((res-buf-p (dirvish-prop :fd-dir))
+           (args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
+      (format " %s [%s] at %s"
+              (propertize "FD:" 'face 'bold)
+              (propertize args 'face 'font-lock-string-face)
+              (propertize default-directory 'face 'dired-header))
+    (dirvish-path-ml dv)))
 
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
