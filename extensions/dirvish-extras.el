@@ -108,10 +108,9 @@ The value can be one of: `plus', `arrow', `chevron'."
   :group 'dirvish)
 
 (dirvish-define-attribute all-the-icons
-  :left (+ (length dirvish-icon-delimiter) 2)
-  :if (or (not (dirvish-prop :remote))
-          (memq 'extras dirvish-enabled-features-on-remote))
-  :form
+  (:left (+ (length dirvish-icon-delimiter) 2)
+         :if (or (not (dirvish-prop :remote))
+                 (memq 'extras dirvish-enabled-features-on-remote)))
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
          (height `(:height ,dirvish-all-the-icons-height))
          (face (cond (hl-face `(:face ,hl-face))
@@ -126,10 +125,9 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string icon-str) ov))
 
 (dirvish-define-attribute vscode-icon
-  :left (1+ (length dirvish-icon-delimiter))
-  :if (or (not (dirvish-prop :remote))
-          (memq 'extras dirvish-enabled-features-on-remote))
-  :form
+  (:left (1+ (length dirvish-icon-delimiter))
+         :if (or (not (dirvish-prop :remote))
+                 (memq 'extras dirvish-enabled-features-on-remote)))
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
          (icon-info
           (dirvish-attribute-cache f-name :vscode-icon
@@ -157,11 +155,10 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string (propertize dirvish-icon-delimiter 'face hl-face)) ov))
 
 (dirvish-define-attribute file-size
-  :if (and (or (not (dirvish-prop :remote))
+  (:if (and (or (not (dirvish-prop :remote))
                (memq 'extras dirvish-enabled-features-on-remote))
            (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
-  :right 6
-  :form
+       :right 6)
   (unless (eq f-type 'dir)
     (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
            (width (window-width))
@@ -190,11 +187,10 @@ The value can be one of: `plus', `arrow', `chevron'."
       (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
 
 (dirvish-define-attribute expanded-state
-  :if (and (or (not (dirvish-prop :remote))
-               (memq 'extras dirvish-enabled-features-on-remote))
-           (eq (dv-root-window dv) (selected-window)))
-  :left 1
-  :form
+  (:if (and (or (not (dirvish-prop :remote))
+                (memq 'extras dirvish-enabled-features-on-remote))
+            (eq (dv-root-window dv) (selected-window)))
+       :left 1)
   (let ((state-str (if (eq f-type 'dir)
                        (funcall dirvish--expanded-state-fn
                                 (dirvish--subtree-expanded-p)

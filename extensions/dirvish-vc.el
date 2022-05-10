@@ -44,9 +44,8 @@ This variable is consumed by `vc-state' attribute in Dirvish."
   :group 'dirvish)
 
 (dirvish-define-attribute vc-state
-  :if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend))
-  :left 1
-  :form
+  (:if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend))
+       :left 1)
   (let* ((state (dirvish-attribute-cache f-name :vc-state
                   (let ((f-name (or (file-remote-p f-name 'localname) f-name)))
                     (vc-state-refresh f-name (dirvish-prop :vc-backend)))))
@@ -58,8 +57,7 @@ This variable is consumed by `vc-state' attribute in Dirvish."
     (overlay-put ov 'before-string gutter-str) ov))
 
 (dirvish-define-attribute git-msg
-  :if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend))
-  :form
+  (:if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend)))
   (let* ((info (dirvish-attribute-cache f-name :git-msg
                  (let* ((f-name (or (file-remote-p f-name 'localname) f-name))
                         (msg (dirvish--shell-to-string "git" "log" "-1" "--pretty=%s" f-name)))
