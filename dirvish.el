@@ -25,7 +25,6 @@
 (require 'so-long)
 (require 'mailcap)
 (require 'image-mode)
-(require 'face-remap)
 (require 'ansi-color)
 (require 'project)
 (require 'ring)
@@ -118,45 +117,60 @@ Set it to nil disables the history tracking."
   "Function that returns content (a string) in Dirvish header."
   :group 'dirvish :type 'function)
 
-(define-obsolete-variable-alias 'dirvish-use-large-header 'dirvish-header-style "0.8")
-
-(defcustom dirvish-header-style 'large
-  "Display STYLE used for header in a full-frame dirvish instance.
-STYLE should be one of these:
-- nil, which means do not show the header.
-- `normal', header has the same fontsize as body.
-- `large', scale fontsize in header with 125%."
-  :group 'dirvish :type 'symbol
-  :options '(nil large normal))
-
 (defface dirvish-hl-line
   '((((class color) (background light)) :background "#8eecf4" :extend t)
     (((class color) (background dark)) :background "#004065" :extend t))
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
-(defvar dirvish--ml-fmt nil)
-(defun dirvish--mode-line-fmt-setter (fmt)
-  "Compose the `mode-line-format' for Dirvish from FMT."
+(defcustom dirvish-header-height '(1 . 1.15)
+  "Height of text in header string.
+The value should be a cons cell (H-DIRED . H-DIRVISH), where
+H-DIRED and H-DIRVISH represent the text height of header in
+single window session and fullscreen session respectively.  If
+H-DIRVISH is 0, don't create the header window."
+  :group 'dirvish
+  :type '(cons (float :tag "Header text height when `dirvish-dired-p'")
+               (float :tag "Header text height unless `dirvish-dired-p'")))
+
+(defun dirvish--mode-line-fmt-setter (fmt &optional header)
+  "Compose the `mode-line-format' or header-line (if HEADER) from FMT."
   (cl-labels ((expand (part)
                 (cl-loop for s in (plist-get fmt part) collect
-                         `(:eval (,(intern (format "dirvish-%s-ml" s)))))))
+                         `(:eval (,(intern (format "dirvish-%s-ml" s)) dv))))
+              (geth (&optional large)
+                (funcall (if large #'cdr #'car) dirvish-header-height)))
     `((:eval
-       (let ((str-right (format-mode-line ',(expand :right))))
-         (concat (format-mode-line ',(or (expand :left) mode-line-format))
-                 (propertize
-                  " " 'display
-                  `((space :align-to (- (+ right right-fringe right-margin)
-                                        ,(string-width str-right)))))
-                 str-right))))))
+       (let* ((dv (dirvish-curr))
+              (buf (window-buffer (dv-root-window dv)))
+              (height ,(if header `(if (dirvish-dired-p dv) ,(geth) ,(geth t)) (geth)))
+              (str-right
+               (propertize (format-mode-line ',(or (expand :right)) nil nil buf)
+                           'display `((height ,height)))))
+         (concat
+          ,(when header `(format-mode-line '(:eval (dirvish-bar-ml dv))))
+          (propertize (format-mode-line
+                       ',(or (expand :left) mode-line-format) nil nil buf)
+                      'display `((height ,height)))
+          (propertize
+           " " 'display
+           `((space :align-to (- (+ right right-fringe right-margin)
+                                 ,(ceiling (* height (string-width str-right)))))))
+          str-right))))))
+
 (defcustom dirvish-mode-line-format
   '(:left (sort omit) :right (free-space index))
   "Mode line SEGMENTs aligned to left/right respectively.
 The SEGMENTs are defined by `dirvish-define-mode-line'.
 Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist
-  :set (lambda (k v) (set k v) (setq dirvish--ml-fmt (dirvish--mode-line-fmt-setter v))))
+  :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
+(defcustom dirvish-header-line-format
+  '(:left (path) :right ())
+  "Like `dirvish-mode-line-format', but for header line ."
+  :group 'dirvish :type 'plist
+  :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
 
 (defcustom dirvish-enabled-features-on-remote '()
   "Enabled Dirvish FEATUREs on remote hosts.
@@ -233,7 +247,6 @@ Dirvish session as its argument."
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--saved-window-combination-resize window-combination-resize)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
-(defconst dirvish--header-remap-alist '((mode-line-inactive :inherit (mode-line) :height 1.99 :box ())))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--subtree-prefix-len
   (condition-case nil (length (or (bound-and-true-p dired-subtree-line-prefix) "  ")) (error 2)))
@@ -424,8 +437,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
-    (setq-local mode-line-format '((:eval (dirvish--apply-header-style))))
-    (setq-local face-remapping-alist dirvish--header-remap-alist)))
+    (setq-local mode-line-format (dv-header-line-format dv))))
 
 (defun dirvish-reclaim (&optional _window)
   "Reclaim current dirvish."
@@ -506,7 +518,7 @@ the docstring and body for this function."
   "Define a mode line segment NAME with BODY and DOCSTRING."
   (declare (indent defun) (doc-string 2))
   (let ((ml-name (intern (format "dirvish-%s-ml" name))))
-    `(defun ,ml-name () ,docstring ,@body)))
+    `(defun ,ml-name (dv) ,docstring (ignore dv) ,@body)))
 
 (defun dirvish-get-all (slot &optional all-frame flatten)
   "Gather slot value SLOT of all Dirvish in `dirvish--hash'.
@@ -537,12 +549,11 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-dispatcher-fns () :documentation "Preview functions expanded from PREVIEW-DISPATCHERS.")
   (ls-switches dired-listing-switches
                :documentation "is the listing switches passed to `dired-sort-other'.")
-  (mode-line-format dirvish--ml-fmt :documentation "Mode line format.")
+  (header-line-format dirvish-header-line-format :documentation "Header line format.")
+  (mode-line-format dirvish-mode-line-format :documentation "Mode line format.")
   (root-window-fn (lambda (_dv) (frame-selected-window))
                   :documentation "is the function to create ROOT-WINDOW.")
   (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
-  (header-string-fn (symbol-value 'dirvish-header-string-function)
-                    :documentation "is the function to spit out header string.")
   (find-file-window-fn #'selected-window
                        :documentation "determines the target window for `find-file'.")
   (quit-window-fn #'ignore :documentation "a function being called on `quit-window'.")
@@ -688,19 +699,6 @@ DV defaults to current dirvish instance if not given."
             (dolist (fn fns)
               (funcall fn f-name f-attrs f-type f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
-
-(defun dirvish--apply-header-style ()
-  "Format Dirvish header line."
-  (when-let ((dv (dirvish-curr)))
-    (let* ((h-fn (dv-header-string-fn dv))
-           (str (format-mode-line `((:eval (funcall #',h-fn)))))
-           (large-header-p (eq dirvish-header-style 'large))
-           (ht (if large-header-p 1.2 1))
-           (win-width (1- (* (frame-width) (- 1 dirvish-preview-width))))
-           (max-width (floor (/ win-width ht))))
-      (while (>= (dirvish--actual-string-length str) (1- max-width))
-        (setq str (substring str 0 -1)))
-      (propertize str 'display `((height ,ht) (raise ,(if large-header-p 0.25 0.35)))))))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
@@ -1111,19 +1109,6 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
-(defun dirvish-default-header-string ()
-  "Compose header string."
-  (when-let ((dv (dirvish-curr)))
-    (let* ((index (dv-index-path dv))
-           (file-path (or (file-name-directory index) ""))
-           (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
-           (path-regex (concat (getenv "HOME") "/\\|\\/$"))
-           (path-tail (replace-regexp-in-string path-regex "" file-path))
-           (file-name (file-name-nondirectory index)))
-      (format " %s %s %s"
-              (propertize (if path-prefix-home "~" ":"))
-              (propertize path-tail 'face 'dired-mark)
-              (propertize file-name 'face 'font-lock-constant-face)))))
 
 (defun dirvish-find-dired-header-string ()
   "Return a string showing current `find/fd' command args."
@@ -1133,6 +1118,31 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
               (propertize "FD:" 'face 'bold)
               (propertize args 'face 'font-lock-string-face)
               (propertize default-directory 'face 'dired-header)))))
+;; ;; Thanks to `doom-modeline'.
+(dirvish-define-mode-line bar "Create the bar image."
+  (when (and (display-graphic-p) (image-type-available-p 'pbm))
+    (propertize
+     " " 'display
+     (let ((color (or (face-background 'bold nil t) "None"))
+           (height (floor (* (if (dirvish-dired-p dv) 0.75 1.2)
+                             (default-line-height)))))
+       (ignore-errors
+         (create-image
+          (concat (format "P1\n%i %i\n" 2 height)
+                  (make-string (* 2 height) ?1) "\n")
+          'pbm t :foreground color :ascent 'center))))))
+
+(dirvish-define-mode-line path "Current index path."
+  (let* ((index (dv-index-path dv))
+         (file-path (or (file-name-directory index) ""))
+         (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
+         (path-regex (concat (getenv "HOME") "/\\|\\/$"))
+         (path-tail (replace-regexp-in-string path-regex "" file-path))
+         (file-name (file-name-nondirectory index)))
+    (format " %s %s %s"
+            (propertize (if path-prefix-home "~" ":"))
+            (propertize path-tail 'face 'dired-mark)
+            (propertize file-name 'face 'font-lock-constant-face))))
 
 (dirvish-define-mode-line sort "Current sort criteria."
   (let* ((switches (split-string dired-actual-switches))
@@ -1149,11 +1159,10 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
                      ((member "--time=birth" switches) "birth")
                      (t "mtime")))
          (rev (if (member "--reverse" switches) "↑" "↓")))
-    (format " %s %s|%s|%s "
-            (propertize "Sort:" 'face 'bold)
+    (format " %s|%s|%s "
+            (propertize rev 'face 'font-lock-doc-markup-face)
             (propertize crit 'face 'font-lock-type-face)
-            (propertize time 'face 'font-lock-doc-face)
-            (propertize rev 'face 'font-lock-doc-markup-face))))
+            (propertize time 'face 'font-lock-doc-face))))
 
 (dirvish-define-mode-line omit "A `dired-omit-mode' indicator."
   (and dired-omit-mode (propertize "[Omit]" 'face 'bold)))
@@ -1230,8 +1239,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
            (setq mode-line-format nil))
           (ml-fmt (setq mode-line-format ml-fmt)))
     (setq header-line-format
-          (and (dirvish-dired-p dv)
-               `((:eval (funcall #',(dv-header-string-fn dv)))))))
+          (and (dirvish-dired-p dv) (dv-header-line-format dv))))
   (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'quit-window-hook #'dirvish-quit-h nil t)
@@ -1285,7 +1293,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish-build--header (dv)
   "Create a window showing header for DV."
-  (when dirvish-header-style
+  (unless (eq (cdr dirvish-header-height) 0)
     (let* ((inhibit-modification-hooks t)
            (buf (dirvish--get-util-buffer dv 'header))
            (win-alist `((side . above)
@@ -1430,7 +1438,6 @@ directory in another window."
             (new-depth (if (eq old-depth -1) fs-depth -1))
             (buf (current-buffer)))
       (progn
-        (dirvish-drop)
         (if (dirvish-dired-p dv)
             (with-selected-window (dv-root-window dv)
               (let (quit-window-hook) (quit-window)))

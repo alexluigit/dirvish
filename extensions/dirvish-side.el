@@ -29,11 +29,17 @@
   "Same as `dirvish-preview-dispatchers', but for side sessions."
   :group 'dirvish :type 'list)
 
-(defvar dirvish-side--ml-fmt nil)
-(defcustom dirvish-side-mode-line-format dirvish-mode-line-format
+(defcustom dirvish-side-header-line-format
+  '(:left (project) :right ())
+  "Same as `dirvish-header-line-format', but for side sessions."
+  :group 'dirvish :type 'plist
+  :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
+
+(defcustom dirvish-side-mode-line-format
+  '(:left (sort omit) :right (index))
   "Same as `dirvish-mode-line-format', but for side sessions."
   :group 'dirvish :type 'plist
-  :set (lambda (k v) (set k v) (setq dirvish-side--ml-fmt (dirvish--mode-line-fmt-setter v))))
+  :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
 (defcustom dirvish-side-scope 'tab
   "SCOPE for Dirvish side window.
@@ -153,18 +159,6 @@ will visit the latest `project-root' after executing
       (set-window-dedicated-p win t)
       (select-window win))))
 
-(defun dirvish-side-header-string-fn ()
-  "Return a string showing current project."
-  (when-let ((dv (dirvish-curr)))
-    (with-current-buffer (window-buffer (dv-root-window dv))
-      (let ((project (dirvish--get-project-root)))
-        (if project
-            (setq project (file-name-base (directory-file-name project)))
-          (setq project "-"))
-        (format " %s [%s]"
-                (propertize "Project:" 'face 'bold)
-                (propertize project 'face 'font-lock-string-face))))))
-
 (defun dirvish-side-find-file (&optional filename)
   "Visit FILENAME in current visible `dirvish-side' session."
   (pcase-let ((`(,dv . ,state) (dirvish-side--get-state)))
@@ -180,6 +174,16 @@ will visit the latest `project-root' after executing
           (when (and filename (not (file-directory-p filename)))
             (setq-local dirvish--child-entry filename))
           (dirvish-build dv))))))
+
+(dirvish-define-mode-line project
+  "Return a string showing current project."
+  (let ((project (dirvish--get-project-root)))
+    (if project
+        (setq project (file-name-base (directory-file-name project)))
+      (setq project "-"))
+    (format " %s [%s]"
+            (propertize "Project:" 'face 'bold)
+            (propertize project 'face 'font-lock-string-face))))
 
 ;;;###autoload
 (defun dirvish-side (&optional path)
@@ -224,10 +228,10 @@ otherwise it defaults to `project-current'."
                    default-directory)
          :attributes dirvish-side-attributes
          :preview-dispatchers dirvish-side-preview-dispatchers
-         :mode-line-format dirvish-side--ml-fmt
+         :mode-line-format dirvish-side-mode-line-format
+         :header-line-format dirvish-side-header-line-format
          :depth -1
          :root-window-fn #'dirvish-side-root-window-fn
-         :header-string-fn #'dirvish-side-header-string-fn
          :find-file-window-fn #'dirvish-side-find-file-window-fn
          :quit-window-fn #'dirvish-side-quit-window-fn)
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
