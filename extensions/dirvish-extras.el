@@ -156,35 +156,38 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (dirvish-define-attribute file-size
   (:if (and (or (not (dirvish-prop :remote))
-               (memq 'extras dirvish-enabled-features-on-remote))
-           (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
+                (memq 'extras dirvish-enabled-features-on-remote))
+            (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
        :right 6)
-  (unless (eq f-type 'dir)
-    (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
-           (width (window-width))
-           (f-size-str
-            (concat (dirvish-attribute-cache f-name :file-size
-                      (let* ((info (file-size-human-readable
-                                    (if f-attrs (file-attribute-size f-attrs) 0)))
-                             (spc (concat info " "))
-                             (len (- 6 (length spc))))
-                        (if (> len 0) (concat (make-string len ?\ ) spc) spc)))))
-           (f-size-len (length f-size-str))
-           (f-base-str (buffer-substring f-beg f-end))
-           (f-base-len (dirvish--actual-string-length f-base-str))
-           (remained (- width f-size-len depth (car dirvish--attrs-width)))
-           (ov-pos (if (> remained f-base-len)
-                       f-end
-                     (let ((pos f-beg) (vis-str ""))
-                       (while (< (dirvish--actual-string-length vis-str) remained)
-                         (setq pos (1+ pos))
-                         (setq vis-str (buffer-substring f-beg pos)))
-                       pos)))
-           (face (or hl-face 'dirvish-file-size-face))
-           (spc (propertize " " 'display `(space :align-to (- right-fringe ,f-size-len)) 'face face))
-           (ov (make-overlay ov-pos ov-pos)))
-      (add-face-text-property 0 f-size-len face t f-size-str)
-      (overlay-put ov 'after-string (concat spc f-size-str)) ov)))
+  (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
+         (width (window-width))
+         (f-size-str
+          (concat (dirvish-attribute-cache f-name :file-size
+                    (let* ((info
+                            (if (eq f-type 'dir)
+                                (number-to-string
+                                 (- (length (directory-files f-name nil nil t)) 2)) ; "." and ".."
+                              (file-size-human-readable
+                               (if f-attrs (file-attribute-size f-attrs) 0))))
+                           (spc (concat info " "))
+                           (len (- 6 (length spc))))
+                      (if (> len 0) (concat (make-string len ?\ ) spc) spc)))))
+         (f-size-len (length f-size-str))
+         (f-base-str (buffer-substring f-beg f-end))
+         (f-base-len (dirvish--actual-string-length f-base-str))
+         (remained (- width f-size-len depth (car dirvish--attrs-width)))
+         (ov-pos (if (> remained f-base-len)
+                     l-end
+                   (let ((pos f-beg) (vis-str ""))
+                     (while (< (dirvish--actual-string-length vis-str) remained)
+                       (setq pos (1+ pos))
+                       (setq vis-str (buffer-substring f-beg pos)))
+                     pos)))
+         (face (or hl-face 'dirvish-file-size-face))
+         (spc (propertize " " 'display `(space :align-to (- right-fringe ,f-size-len)) 'face face))
+         (ov (make-overlay ov-pos ov-pos)))
+    (add-face-text-property 0 f-size-len face t f-size-str)
+    (overlay-put ov 'after-string (concat spc f-size-str)) ov))
 
 (dirvish-define-attribute expanded-state
   (:if (and (or (not (dirvish-prop :remote))
