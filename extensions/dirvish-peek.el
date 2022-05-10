@@ -66,6 +66,7 @@ one of categories in `dirvish-peek-categories'."
          new-dv)
     (when preview-category
       (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
+      (setq-local dirvish--props (make-hash-table :size 10))
       (unless (and old-dv (dv-preview-window old-dv))
         (setq new-dv (dirvish-new nil :depth -1))
         (setf (dv-preview-window new-dv)
@@ -94,7 +95,7 @@ one of categories in `dirvish-peek-categories'."
                                              (car (minibuffer-history-value))))))
       ('library
        (setq cand (file-truename (or (ignore-errors (find-library-name cand)) "")))))
-    (setf (dv-index-path (dirvish-curr)) cand)
+    (dirvish-prop :child cand)
     (dirvish-debounce layout (dirvish-preview-update))))
 
 (define-obsolete-function-alias 'dirvish-minibuf-preview-mode 'dirvish-peek-mode "0.9.9")
