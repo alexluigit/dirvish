@@ -164,11 +164,13 @@ The value can be one of: `plus', `arrow', `chevron'."
          (f-size-str
           (concat (dirvish-attribute-cache f-name :file-size
                     (let* ((info
-                            (if (eq f-type 'dir)
-                                (number-to-string
-                                 (- (length (directory-files f-name nil nil t)) 2)) ; "." and ".."
-                              (file-size-human-readable
-                               (if f-attrs (file-attribute-size f-attrs) 0))))
+                            (cond
+                             ((not (file-readable-p f-name)) "")
+                             ((eq f-type 'dir)
+                              (number-to-string
+                               (- (length (directory-files f-name nil nil t)) 2)))
+                             (t (file-size-human-readable
+                                 (if f-attrs (file-attribute-size f-attrs) 0)))))
                            (spc (concat info " "))
                            (len (- 6 (length spc))))
                       (if (> len 0) (concat (make-string len ?\ ) spc) spc)))))
