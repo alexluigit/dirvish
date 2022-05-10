@@ -62,6 +62,8 @@ Start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
 
 - ~dirvish-dired~ creates a session in current window (like ~dired~).
 - ~dirvish~ creates a session that makes use of the whole frame.
+- ~dirvish-dwim~ works the same way as ~dirvish-dired~ expect it enter fullscreen
+  automatically when current frame have only one window.
 
 ~dirvish-toggle-fullscreen~ allows you to toggle the fullscreen state of the
 current session.

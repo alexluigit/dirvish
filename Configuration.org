@@ -36,8 +36,8 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-depth~                      | Level of dirs to traverse up             |
 | ~dirvish-parent-max-width~           | Max width of parent windows              |
 | ~dirvish-preview-width~              | Width of preview window                  |
-| ~dirvish-header-style~               | Style for full-frame Dirvish header      |
-| ~dirvish-header-string-function~     | Default header string                    |
+| ~dirvish-header-height~              | Text height of header line               |
+| ~dirvish-header-line-format~         | Header line format in root window        |
 | ~dirvish-hide-details~               | Hide details as you see fit              |
 | ~dirvish-mode-line-format~           | Mode line format in root window          |
 | ~dirvish-async-listing-threshold~    | List huge directories asynchronously     |
@@ -293,6 +293,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
+  ;; (dirvish-header-line-format '(:left (path) :right (vc-info)))
   ;; (dirvish-mode-line-format '(:left (sort filter) :right (yank index)))
   ;; List directories that has over 10000 files asynchronously
   ;; This feature is disabled by default
@@ -306,10 +307,10 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
   ;; Define mode line segment for `dired-filter'
   ;; (dirvish-define-mode-line filter "Describe filters."
   ;;   (when (bound-and-true-p dired-filter-mode)
-  ;;     (format " %s %s " (propertize "Filters:" 'face 'bold)
-  ;;             (dired-filter--describe-filters))))
+  ;;     (format " %s " (propertize (dired-filter--describe-filters)
+  ;;                                'face 'dired-filter-group-header))))
   :bind
-  (nil ; Bind `dirvish', `dirvish-dired' and `dirvish-side' as you see fit
+  (nil ; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
    :map dired-mode-map
    ("SPC" . dirvish-show-history)
    ("r"   . dirvish-roam)
