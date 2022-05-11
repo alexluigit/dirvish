@@ -107,7 +107,7 @@ The value can be one of: `plus', `arrow', `chevron'."
   "Face for expanded state overlays."
   :group 'dirvish)
 
-(dirvish-define-attribute all-the-icons
+(dirvish-define-attribute all-the-icons "File icons provided by `all-the-icons.el'."
   (:left (+ (length dirvish-icon-delimiter) 2)
          :if (or (not (dirvish-prop :remote))
                  (memq 'extras dirvish-enabled-features-on-remote)))
@@ -124,7 +124,7 @@ The value can be one of: `plus', `arrow', `chevron'."
          (ov (make-overlay (1- f-beg) f-beg)))
     (overlay-put ov 'after-string icon-str) ov))
 
-(dirvish-define-attribute vscode-icon
+(dirvish-define-attribute vscode-icon "File icons provided by `vscode-icon.el'."
   (:left (1+ (length dirvish-icon-delimiter))
          :if (or (not (dirvish-prop :remote))
                  (memq 'extras dirvish-enabled-features-on-remote)))
@@ -155,6 +155,7 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string (propertize dirvish-icon-delimiter 'face hl-face)) ov))
 
 (dirvish-define-attribute file-size
+  "Show file size at right fringe."
   (:if (and (or (not (dirvish-prop :remote))
                 (memq 'extras dirvish-enabled-features-on-remote))
             (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
@@ -192,6 +193,8 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string (concat spc f-size-str)) ov))
 
 (dirvish-define-attribute expanded-state
+  "A indicator for directory expanding state.
+This attribute only support `dired-subtree' for now."
   (:if (and (or (not (dirvish-prop :remote))
                 (memq 'extras dirvish-enabled-features-on-remote))
             (eq (dv-root-window dv) (selected-window)))

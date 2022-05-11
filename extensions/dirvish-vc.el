@@ -43,7 +43,7 @@ This variable is consumed by `vc-state' attribute in Dirvish."
   "Face for commit message overlays."
   :group 'dirvish)
 
-(dirvish-define-attribute vc-state
+(dirvish-define-attribute vc-state "The version control state at left fringe."
   (:if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend))
        :left 1)
   (let* ((state (dirvish-attribute-cache f-name :vc-state
@@ -56,7 +56,7 @@ This variable is consumed by `vc-state' attribute in Dirvish."
     (add-face-text-property 0 (length gutter-str) face t gutter-str)
     (overlay-put ov 'before-string gutter-str) ov))
 
-(dirvish-define-attribute git-msg
+(dirvish-define-attribute git-msg "Append git commit message to filename."
   (:if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend)))
   (let* ((info (dirvish-attribute-cache f-name :git-msg
                  (let* ((f-name (or (file-remote-p f-name 'localname) f-name))
