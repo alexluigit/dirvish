@@ -1046,7 +1046,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
                               (window-width (dv-preview-window dv)))))
            (unless (get-process name)
              (setq dirvish--cache-pool
-                   (delq (assoc name dirvish--cache-pool) dirvish--cache-pool))
+                   (delete (assoc name dirvish--cache-pool) dirvish--cache-pool))
              (let ((proc (apply #'start-process name buf cmd args)))
                (process-put proc 'path path)
                (set-process-sentinel proc #'dirvish-preview--img-cache-sentinel))))
@@ -1060,10 +1060,10 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 (defun dirvish-preview-update (&optional dv)
   "Update preview content of DV."
   (when-let* ((dv (or dv (dirvish-curr)))
-              (window (dv-preview-window dv)))
+              (window (dv-preview-window dv))
+              (index (dirvish-prop :child)))
     (when (window-live-p window)
       (let* ((orig-buffer-list (buffer-list))
-             (index (dirvish-prop :child))
              (file (if (file-directory-p index) (file-name-as-directory index) index))
              (buffer (cl-loop for dp-fn in (dv-preview-dispatcher-fns dv)
                               for (type . payload) = (funcall dp-fn file window)
@@ -1362,9 +1362,10 @@ If the buffer is not available, create it with `dired-noselect'."
              (< (length (process-list))
                 (cdr dirvish-auto-cache-threshold)))
     (let (process-connection-type proc)
-      (pcase-let* ((`((,path . ,width) . (,cmd . ,args)) (pop dirvish--cache-pool)))
+      (pcase-let* ((`(,procname . (,path ,_width ,cmd ,args))
+                    (pop dirvish--cache-pool)))
         (when path
-          (setq proc (apply #'start-process (format "%s-%s-img-cache" path width)
+          (setq proc (apply #'start-process procname
                             (dirvish--ensure-temp-buffer "img-cache") cmd args))
           (process-put proc 'path path)
           (set-process-sentinel proc #'dirvish-preview--img-cache-sentinel))))))
@@ -1399,11 +1400,13 @@ in `dirvish-auto-cache-threshold'."
        with files = (seq-remove (lambda (s) (string-suffix-p ".gif" s t))
                                 (dirvish-prop :files))
        for file in files
-       for pl = (cl-loop for fn in dirvish--cache-img-fns
-                         for (type . payload) = (funcall fn file win)
-                         thereis (and (eq type 'image-cache) payload))
-       when pl do (push (cons (cons file width) pl)
-                        dirvish--cache-pool)))))
+       for (cmd . args) = (cl-loop
+                           for fn in dirvish--cache-img-fns
+                           for (type . payload) = (funcall fn file win)
+                           thereis (and (eq type 'image-cache) payload))
+       when cmd do (push (cons (format "%s-%s-img-cache" file width)
+                               (list file width cmd args))
+                         dirvish--cache-pool)))))
 
 (defun dirvish-up-directory (&optional other-window)
   "Run Dirvish on parent directory of current directory.
