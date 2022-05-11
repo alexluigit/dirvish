@@ -257,6 +257,7 @@ Dirvish session as its argument."
            collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defvar dirvish--hash (make-hash-table))
 (defvar dirvish--available-attrs '())
+(defvar dirvish--available-mode-line-segments '())
 (defvar dirvish--cache-pool '())
 (defvar-local dirvish--props (make-hash-table :size 10))
 (defvar-local dirvish--attrs-width `(,dirvish--prefix-spaces . 0))
@@ -462,7 +463,7 @@ If BODY is non-nil, create the buffer and execute BODY in it."
             (and dirvish-override-dired-mode '(dired find-dired fd-dired)))
            (set-frame-parameter nil 'dirvish--curr new-dv)))))
 
-(cl-defmacro dirvish-define-attribute (name (&key if left right doc) &rest body)
+(cl-defmacro dirvish-define-attribute (name docstring (&key if left right) &rest body)
   "Define a Dirvish attribute NAME.
 An attribute contains a pair of predicate/rendering functions
 that are being called on `post-command-hook'.  The predicate fn
@@ -479,9 +480,9 @@ following arguments:
 - `l-end'   from `line-end-position'
 - `hl-face' a face that is only passed in on current line
 
-DOC is the docstring.  LEFT and RIGHT are length of the
-attribute, align to left and right respectively."
-  (declare (indent defun))
+DOCSTRING is the docstring for the attribute.  LEFT and RIGHT are
+length of the attribute, align to left and right respectively."
+  (declare (indent defun) (doc-string 2))
   (let* ((ov (intern (format "dirvish-%s-ov" name)))
          (pred (intern (format "dirvish-attribute-%s-pred" name)))
          (render (intern (format "dirvish-attribute-%s-rd" name)))
@@ -490,7 +491,17 @@ attribute, align to left and right respectively."
     `(progn
        (add-to-list
         'dirvish--available-attrs
-        (cons ',name '(:doc ,doc :left ,left :right ,right :overlay ,ov :if ,pred :fn ,render)))
+        (cons ',name '(:doc ,docstring :left ,left :right ,right
+                            :overlay ,ov :if ,pred :fn ,render)))
+       (cl-loop
+        with doc-head = "All available `dirvish-attributes'.
+This is a internal variable and should *NOT* be set manually."
+        with attr-docs = ""
+        for (a-name . a-plist) in dirvish--available-attrs
+        do (setq attr-docs (format "%s\n\n`%s': %s" attr-docs a-name
+                                   (plist-get a-plist :doc)))
+        finally do (put 'dirvish--available-attrs 'variable-documentation
+                        (format "%s%s" doc-head attr-docs)))
        (defun ,pred (dv) (ignore dv) ,pred-body)
        (defun ,render ,args
          (ignore ,@args)
@@ -524,7 +535,18 @@ the docstring and body for this function."
   "Define a mode line segment NAME with BODY and DOCSTRING."
   (declare (indent defun) (doc-string 2))
   (let ((ml-name (intern (format "dirvish-%s-ml" name))))
-    `(defun ,ml-name (dv) ,docstring (ignore dv) ,@body)))
+    `(progn
+       (add-to-list
+        'dirvish--available-mode-line-segments (cons ',name ,docstring))
+       (cl-loop
+        with doc-head = "All available segments for `dirvish-mode/header-line-format'.
+This is a internal variable and should *NOT* be set manually."
+        with attr-docs = ""
+        for (seg-name . doc) in dirvish--available-mode-line-segments
+        do (setq attr-docs (format "%s\n\n`%s': %s" attr-docs seg-name doc))
+        finally do (put 'dirvish--available-mode-line-segments 'variable-documentation
+                        (format "%s%s" doc-head attr-docs)))
+       (defun ,ml-name (dv) ,docstring (ignore dv) ,@body))))
 
 (defun dirvish-get-all (slot &optional all-frame flatten)
   "Gather slot value SLOT of all Dirvish in `dirvish--hash'.
@@ -544,33 +566,32 @@ If FLATTEN is non-nil, collect them as a flattened list."
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
   (path nil :documentation "is the initial directory.")
-  (depth -1 :documentation "Actual `dirvish-depth'.")
-  (fullscreen-depth dirvish-depth :documentation "Actual fullscreen `dirvish-depth'.")
-  (no-parents nil :documentation "If t, do not display parents, has highest privilege.")
-  (transient nil :documentation "Whether overlapping sessions is allowed or not.")
-  (attributes (purecopy dirvish-attributes) :documentation "Actual `dirvish-attributes'.")
-  (attributes-alist () :documentation "Render functions expanded from ATTRIBUTES.")
+  (depth -1 :documentation "is the actual `dirvish-depth'.")
+  (fullscreen-depth dirvish-depth :documentation "is the actual fullscreen `dirvish-depth'.")
+  (no-parents nil :documentation "disables showing parent dirs, has the highest privilege.")
+  (attributes (purecopy dirvish-attributes) :documentation "is the actual `dirvish-attributes'.")
+  (attributes-alist () :documentation "are render functions expanded from ATTRIBUTES.")
   (preview-dispatchers (purecopy dirvish-preview-dispatchers)
-                       :documentation "Preview dispatchers in this session.")
-  (preview-dispatcher-fns () :documentation "Preview functions expanded from PREVIEW-DISPATCHERS.")
+                       :documentation "are actual `dirvish-preview-dispatchers'.")
+  (preview-dispatcher-fns () :documentation "are preview functions expanded from PREVIEW-DISPATCHERS.")
   (ls-switches dired-listing-switches
                :documentation "is the listing switches passed to `dired-sort-other'.")
-  (header-line-format dirvish-header-line-format :documentation "Header line format.")
-  (mode-line-format dirvish-mode-line-format :documentation "Mode line format.")
+  (header-line-format dirvish-header-line-format :documentation "is the actual header line format.")
+  (mode-line-format dirvish-mode-line-format :documentation "is the actual mode line format.")
   (root-window-fn (lambda (_dv) (frame-selected-window))
                   :documentation "is the function to create ROOT-WINDOW.")
   (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
   (find-file-window-fn #'selected-window
                        :documentation "determines the target window for `find-file'.")
-  (quit-window-fn #'ignore :documentation "a function being called on `quit-window'.")
-  (scopes () :documentation "Environments of this session.")
+  (quit-window-fn #'ignore :documentation "is the function being called on `quit-window'.")
+  (scopes () :documentation "are the \"environments\" such as init frame of this session.")
   (dired-buffers () :documentation "holds all dired buffers in this instance.")
-  (preview-buffers () :documentation "holds all file preview buffers in this instance.")
+  (preview-buffers () :documentation "holds all file preview buffers in this session.")
   (preview-window nil :documentation "is the window to display preview buffer.")
-  (name (cl-gensym) :documentation "is an unique symbol for every instance.")
-  (window-conf (current-window-configuration) :documentation "saved window configuration.")
-  (root-dir-buf-alist () :documentation "list of INDEX-DIR and its corresponding buffer.")
-  (parent-dir-buf-alist () :documentation "Similar to ROOT-DIR-BUF-ALIST, but for parent windows.")
+  (name (cl-gensym) :documentation "is an unique symbol for every session.")
+  (window-conf (current-window-configuration) :documentation "is the saved window configuration.")
+  (root-dir-buf-alist () :documentation "is a alist of (INDEX-DIR . CORRESPONDING-BUFFER).")
+  (parent-dir-buf-alist () :documentation "is like ROOT-DIR-BUF-ALIST, but for parent windows.")
   (index-dir "" :documentation "is the `default-directory' in ROOT-WINDOW."))
 
 (defmacro dirvish-new (kill-old &rest args)
@@ -1077,14 +1098,14 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
 
 ;;;; Builder
 
-(dirvish-define-attribute hl-line ()
+(dirvish-define-attribute hl-line "Highlight current line." ()
   (when hl-face
     (let ((ov (make-overlay l-beg (1+ l-end)))) (overlay-put ov 'face hl-face) ov)))
 
 ;; This hack solves 2 issues:
 ;; 1. Hide " -> " arrow of symlink files as well.
 ;; 2. A `dired-subtree' bug (https://github.com/Fuco1/dired-hacks/issues/125).
-(dirvish-define-attribute symlink-target
+(dirvish-define-attribute symlink-target "Hide symlink target."
   (:if (and dired-hide-details-mode
             (default-value 'dired-hide-details-hide-symlink-targets)))
   (when (< (+ f-end 4) l-end)
@@ -1131,7 +1152,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
                      ((member "--time=birth" switches) "birth")
                      (t "mtime")))
          (rev (if (member "--reverse" switches) "↑" "↓")))
-    (format " %s|%s|%s "
+    (format " %s %s|%s "
             (propertize rev 'face 'font-lock-doc-markup-face)
             (propertize crit 'face 'font-lock-type-face)
             (propertize time 'face 'font-lock-doc-face))))
