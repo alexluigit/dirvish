@@ -123,40 +123,60 @@ Set it to nil disables the history tracking."
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
-(defcustom dirvish-header-height '(1 . 1.15)
-  "Height of text in header string.
+(defcustom dirvish-mode-line-text-size 1.0
+  "Text height in Dirvish's mode line."
+  :group 'dirvish :type 'float)
+
+(defcustom dirvish-header-line-text-size '(1.0 . 1.15)
+  "Text height in Dirvish's header line.
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
-H-DIRED and H-DIRVISH represent the text height of header in
-single window session and fullscreen session respectively.  If
-H-DIRVISH is 0, don't create the header window."
+H-DIRED and H-DIRVISH represent the text height in single window
+session and fullscreen session respectively.  If H-DIRVISH is 0,
+don't create the header window.  To make this setting take effect
+immediately, you'll need to reevaluate your Dirvish mode-line
+segments after setting this value."
   :group 'dirvish
   :type '(cons (float :tag "Header text height when `dirvish-dired-p'")
                (float :tag "Header text height unless `dirvish-dired-p'")))
 
+(defconst dirvish--header-base-offset 0.25)
 (defun dirvish--mode-line-fmt-setter (fmt &optional header)
   "Compose the `mode-line-format' or header-line (if HEADER) from FMT."
   (cl-labels ((expand (part)
                 (cl-loop for s in (plist-get fmt part) collect
                          `(:eval (,(intern (format "dirvish-%s-ml" s)) dv))))
               (geth (&optional large)
-                (funcall (if large #'cdr #'car) dirvish-header-height)))
+                (funcall (if large #'cdr #'car) dirvish-header-line-text-size))
+              (getoffset (t-size)
+                (let* ((base (/ dirvish--header-base-offset 2))
+                       (offset (/ (- 1 t-size (if header base 0)) t-size)))
+                  (if (< t-size 1) offset 0))))
     `((:eval
        (let* ((dv (dirvish-curr))
               (buf (window-buffer (dv-root-window dv)))
-              (height ,(if header `(if (dirvish-dired-p dv) ,(geth) ,(geth t)) (geth)))
+              (height ,(if header
+                           `(if (dirvish-dired-p dv) ,(geth) ,(geth t))
+                         dirvish-mode-line-text-size))
+              (offset ,(if header
+                           `(if (dirvish-dired-p dv)
+                                ,(getoffset (geth))
+                              ,(/ dirvish--header-base-offset -2))
+                         (getoffset dirvish-mode-line-text-size)))
+              (str-left
+               (propertize (format-mode-line
+                            ',(or (expand :left) mode-line-format) nil nil buf)
+                           'display `((height ,height) (raise ,offset))))
               (str-right
                (propertize (format-mode-line ',(or (expand :right)) nil nil buf)
-                           'display `((height ,height)))))
+                           'display `((height ,height) (raise ,offset))))
+              (filling-spaces
+               (propertize
+                " " 'display
+                `((space :align-to (- (+ right right-fringe right-margin)
+                                      ,(ceiling (* height (string-width str-right)))))))))
          (concat
           ,(when header `(format-mode-line '(:eval (dirvish-bar-ml dv))))
-          (propertize (format-mode-line
-                       ',(or (expand :left) mode-line-format) nil nil buf)
-                      'display `((height ,height)))
-          (propertize
-           " " 'display
-           `((space :align-to (- (+ right right-fringe right-margin)
-                                 ,(ceiling (* height (string-width str-right)))))))
-          str-right))))))
+          str-left filling-spaces str-right))))))
 
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
@@ -1116,9 +1136,11 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (when (and (display-graphic-p) (image-type-available-p 'pbm))
     (propertize
      " " 'display
-     (let ((color (or (face-background 'bold nil t) "None"))
-           (height (floor (* (if (dirvish-dired-p dv) 0.75 1.2)
-                             (default-line-height)))))
+     (let* ((color (or (face-background 'bold nil t) "None"))
+            (offset (if (dirvish-dired-p dv)
+                        (- 1 dirvish--header-base-offset)
+                      (1+ dirvish--header-base-offset)))
+            (height (floor (* offset (default-line-height)))))
        (ignore-errors
          (create-image
           (concat (format "P1\n%i %i\n" 2 height)
@@ -1304,7 +1326,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 
 (defun dirvish-build--header (dv)
   "Create a window showing header for DV."
-  (unless (eq (cdr dirvish-header-height) 0)
+  (unless (eq (cdr dirvish-header-line-text-size) 0)
     (let* ((inhibit-modification-hooks t)
            (buf (dirvish--get-util-buffer dv 'header))
            (win-alist `((side . above)

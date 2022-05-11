@@ -36,7 +36,8 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-depth~                      | Level of dirs to traverse up             |
 | ~dirvish-parent-max-width~           | Max width of parent windows              |
 | ~dirvish-preview-width~              | Width of preview window                  |
-| ~dirvish-header-height~              | Text height of header line               |
+| ~dirvish-header-line-text-size~      | Text height in header line               |
+| ~dirvish-mode-line-text-size~        | Text height in mode line                 |
 | ~dirvish-header-line-format~         | Header line format in root window        |
 | ~dirvish-hide-details~               | Hide details as you see fit              |
 | ~dirvish-mode-line-format~           | Mode line format in root window          |
