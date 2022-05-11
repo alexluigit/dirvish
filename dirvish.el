@@ -1049,6 +1049,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   (let ((buf (dirvish--get-util-buffer dv 'preview))
         (cmd (car-safe payload))
         (args (cdr-safe payload))
+        (path (dirvish-prop :child))
         (process-connection-type nil))
     (when (and (memq preview-type '(shell image-cache))
                (not (executable-find cmd)))
@@ -1062,7 +1063,6 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
         ('image (dirvish-preview--insert-image payload dv))
         ('image-cache
          (let* ((buf (dirvish--ensure-temp-buffer "img-cache"))
-                (path (dirvish-prop :child))
                 (name (format "%s-%s-img-cache" path
                               (window-width (dv-preview-window dv)))))
            (unless (get-process name)
