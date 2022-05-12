@@ -157,6 +157,7 @@ segments after setting this value."
               (height ,(if header
                            `(if (dirvish-dired-p dv) ,(geth) ,(geth t))
                          dirvish-mode-line-text-size))
+              (win-width (floor (/ (window-width) height)))
               (offset ,(if header
                            `(if (dirvish-dired-p dv)
                                 ,(getoffset (geth))
@@ -169,6 +170,8 @@ segments after setting this value."
               (str-right
                (propertize (format-mode-line ',(or (expand :right)) nil nil buf)
                            'display `((height ,height) (raise ,offset))))
+              (str-right-length (length str-right))
+              (str-length (+ (length str-left) str-right-length))
               (filling-spaces
                (propertize
                 " " 'display
@@ -176,18 +179,27 @@ segments after setting this value."
                                       ,(ceiling (* height (string-width str-right)))))))))
          (concat
           ,(when header `(format-mode-line '(:eval (dirvish-bar-ml dv))))
-          str-left filling-spaces str-right))))))
+          ,(if (plist-get fmt :trim-left)
+               `(if (< str-length win-width)
+                    str-left
+                  (let ((trim (1- (- win-width str-right-length))))
+                    (if (>= trim 0) (substring str-left 0 trim) "")))
+             `str-left)
+          filling-spaces str-right))))))
 
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
-The SEGMENTs are defined by `dirvish-define-mode-line'.
-Set it to nil to use the default `mode-line-format'."
+The SEGMENTs are defined by `dirvish-define-mode-line'.  Set it
+to nil to use the default `mode-line-format'.  An optional prop
+`:trim-left' can be used to ensure the visibility of right
+SEGMENTs, meaning when there is no enough room to show the whole
+mode line, trims the left SEGMENTs instead of the right ones."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
 (defcustom dirvish-header-line-format
-  '(:left (path) :right (free-space))
+  '(:left (path) :right (free-space) :trim-left t)
   "Like `dirvish-mode-line-format', but for header line ."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
