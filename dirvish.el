@@ -102,7 +102,7 @@ Set it to nil disables the history tracking."
   :set (lambda (k v) (set k v) (setq dirvish--history-ring (make-ring v))))
 
 (defcustom dirvish-depth 1
-  "Level of directories to traverse up."
+  "Level of dirs to traverse up in fullscreen sessions."
   :group 'dirvish :type 'integer)
 
 (defcustom dirvish-parent-max-width 0.1
@@ -123,7 +123,7 @@ Set it to nil disables the history tracking."
   "Text height in Dirvish's mode line."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-header-line-text-size '(1.0 . 1.15)
+(defcustom dirvish-header-line-text-size '(1.0 . 1.1)
   "Text height in Dirvish's header line.
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
 H-DIRED and H-DIRVISH represent the text height in single window
@@ -187,11 +187,14 @@ segments after setting this value."
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
-The SEGMENTs are defined by `dirvish-define-mode-line'.  Set it
-to nil to use the default `mode-line-format'.  An optional prop
-`:trim-left' can be used to ensure the visibility of right
+Set it to nil to use the default `mode-line-format'.  An optional
+prop `:trim-left' can be used to ensure the visibility of right
 SEGMENTs, meaning when there is no enough room to show the whole
-mode line, trims the left SEGMENTs instead of the right ones."
+mode line, trims the left SEGMENTs instead of the right ones.
+You can get all available SEGMENTs by evaluating:
+
+\(prog1 (mapc #'require `dirvish-extra-libs')
+       (describe-variable 'dirvish--available-mode-line-segments))"
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
@@ -267,7 +270,7 @@ Dirvish session as its argument."
     (emacs delete-frame-functions            dirvish--deactivate-for-frame)))
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
-(defvar dirvish-extra-libs '(dirvish-extras dirvish-vc))
+(defvar dirvish-extra-libs '(dirvish-extras dirvish-vc dirvish-yank))
 (defvar fd-dired-generate-random-buffer)
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
@@ -545,10 +548,9 @@ When the attribute does not exist, set it with BODY."
 (cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
   "Define a Dirvish preview dispatcher NAME.
 A dirvish preview dispatcher is a function consumed by
-`dirvish-preview-dispatch' which optionally takes
-`file' (filename under the cursor) and `dv' (current Dirvish
-session) as argument specified in ARGLIST.  DOCSTRING and BODY is
-the docstring and body for this function."
+ `dirvish-preview-dispatch' which takes `file' (filename under
+ the cursor) and `preview-window' as ARGLIST.  DOCSTRING and BODY
+ is the docstring and body for this function."
   (declare (indent defun) (doc-string 3))
   (let* ((dp-name (intern (format "dirvish-%s-preview-dp" name)))
          (default-arglist '(file preview-window))
@@ -597,7 +599,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (attributes-alist () :documentation "are render functions expanded from ATTRIBUTES.")
   (preview-dispatchers (purecopy dirvish-preview-dispatchers)
                        :documentation "are actual `dirvish-preview-dispatchers'.")
-  (preview-dispatcher-fns () :documentation "are preview functions expanded from PREVIEW-DISPATCHERS.")
+  (preview-fns () :documentation "are preview functions expanded from PREVIEW-DISPATCHERS.")
   (ls-switches dired-listing-switches
                :documentation "is the listing switches passed to `dired-sort-other'.")
   (header-line-format dirvish-header-line-format :documentation "is the actual header line format.")
@@ -689,7 +691,7 @@ DV defaults to current dirvish instance if not given."
                attr (list overlay if fn left right))))
          (dp-names
           (append '(remote disable) (dv-preview-dispatchers dv) '(default)))
-         (preview-dispatcher-fns
+         (preview-fns
           (cl-loop for dp-name in dp-names collect
                    (intern (format "dirvish-%s-preview-dp" dp-name))))
          (scopes (cl-loop
@@ -698,7 +700,7 @@ DV defaults to current dirvish instance if not given."
                   (setq res-plist (append res-plist (list key (funcall value))))
                           finally return res-plist)))
     (setf (dv-attributes-alist dv) attrs-alist)
-    (setf (dv-preview-dispatcher-fns dv) preview-dispatcher-fns)
+    (setf (dv-preview-fns dv) preview-fns)
     (setf (dv-scopes dv) scopes)))
 
 (defun dirvish--render-attributes (dv)
@@ -1112,7 +1114,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
     (when (window-live-p window)
       (let* ((orig-buffer-list (buffer-list))
              (file (if (file-directory-p index) (file-name-as-directory index) index))
-             (buffer (cl-loop for dp-fn in (dv-preview-dispatcher-fns dv)
+             (buffer (cl-loop for dp-fn in (dv-preview-fns dv)
                               for (type . payload) = (funcall dp-fn file window)
                               thereis (and type (dirvish-preview-dispatch
                                                  type payload dv)))))
