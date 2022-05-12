@@ -22,6 +22,7 @@
 ;; - `dirvish-go-forward-history'
 ;; - `dirvish-go-backward-history'
 ;; - `dirvish-roam'
+;; - `dirvish-switch-layout'
 ;;
 ;; Attributes
 ;; - `file-size'
@@ -76,6 +77,19 @@ Values are interpreted as follows:
   "Icon (image pixel) size used for `vscode-icon' backend.
 The value should be a integer between 23 to 128."
   :group 'dirvish :type 'integer)
+
+(defcustom dirvish-layout-recipes
+  '((0 nil  0.4)  ;        | CURRENT | preview
+    (0 nil  0.8)  ;        | current | PREVIEW
+    (1 0.08 0.8)  ; parent | current | PREVIEW
+    (1 0.1  0.6)) ; parent | current | preview
+  "Layout RECIPEs for `dirvish-switch-layout' command.
+Each recipe is a list with the slot values of `depth',
+`parent-width' and `preview-width' being applied to the session."
+  :group 'dirvish
+  :type '(repeat (list (integer :tag "the actual `dirvish-depth'")
+                       (choice (nil float) :tag "the actual `dirvish-parent-max-width'")
+                       (float :tag "the actual `dirvish-preview-width'"))))
 
 (defvar dirvish--expanded-state-fn nil)
 (defcustom dirvish-expanded-state-style 'chevron
@@ -325,6 +339,37 @@ FILESET defaults to `dired-get-marked-files'."
          (files (dirvish--append-metadata 'file files-raw))
          (file (completing-read "Goto: " files)))
     (dired-jump nil file)))
+
+;;;###autoload
+(defun dirvish-switch-layout (&optional recipe)
+  "Switch Dirvish layout according to RECIPE.
+If RECIPE is not provided, switch to the recipe next to the
+current layout defined in `dirvish-layout-recipes'."
+  (interactive)
+  (cl-loop
+   with dv = (let ((dv (dirvish-curr)))
+               (unless dv (user-error "Not in a Dirvish session"))
+               (when (dirvish-dired-p dv)
+                 (dirvish-toggle-fullscreen)
+                 (user-error "Dirvish: entering fullscreen")) dv)
+   with recipes = (if recipe (list recipe) dirvish-layout-recipes)
+   with l-length = (length recipes)
+   with old-preview-width = (dv-preview-width dv)
+   with old-depth = (dv-depth dv)
+   for idx from 1
+   for (new-depth _ new-preview-width) in recipes
+   when (or (eq idx l-length)
+            (and (equal old-preview-width new-preview-width)
+                 (equal old-depth new-depth)))
+   return
+   (pcase-let* ((new-idx (if (> idx (1- l-length)) 0 idx))
+                (`(,depth ,parent-width ,preview-width)
+                 (nth new-idx recipes)))
+     (setf (dv-depth dv) depth)
+     (setf (dv-fullscreen-depth dv) depth)
+     (and parent-width (setf (dv-parent-width dv) parent-width))
+     (setf (dv-preview-width dv) preview-width)
+     (dirvish-build dv))))
 
 (provide 'dirvish-extras)
 ;;; dirvish-extras.el ends here
