@@ -113,10 +113,6 @@ Set it to nil disables the history tracking."
   "Fraction of frame width taken by preview window."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-header-string-function 'dirvish-default-header-string
-  "Function that returns content (a string) in Dirvish header."
-  :group 'dirvish :type 'function)
-
 (defface dirvish-hl-line
   '((((class color) (background light)) :background "#8eecf4" :extend t)
     (((class color) (background dark)) :background "#004065" :extend t))
@@ -153,7 +149,8 @@ segments after setting this value."
                   (if (< t-size 1) offset 0))))
     `((:eval
        (let* ((dv (dirvish-curr))
-              (buf (window-buffer (dv-root-window dv)))
+              (buf (alist-get (dv-index-dir dv)
+                              (dv-root-dir-buf-alist dv) nil nil #'equal))
               (height ,(if header
                            `(if (dirvish-dired-p dv) ,(geth) ,(geth t))
                          dirvish-mode-line-text-size))
@@ -438,11 +435,6 @@ RANGE can be `buffer', `session', `frame', `all'."
 (defun dirvish-curr (&optional frame)
   "Get current Dirvish session in FRAME (defaults to selected)."
   (or (dirvish-prop :dv) (frame-parameter frame 'dirvish--curr)))
-
-(defun dirvish-drop (&optional frame)
-  "Drop current dirvish instance in FRAME.
-FRAME defaults to current frame."
-  (set-frame-parameter frame 'dirvish--curr nil))
 
 (defmacro dirvish--get-util-buffer (dv type &rest body)
   "Return dirvish session DV's utility buffer with TYPE.
@@ -787,8 +779,9 @@ DIRNAME and SWITCHES are same with command `dired'."
   "Override `dired-other-tab' command.
 DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches ""))
-  (switch-to-buffer-other-tab (dirvish--ensure-temp-buffer))
-  (dirvish-new t :path dirname :ls-switches switches))
+  (switch-to-buffer-other-tab "*scratch*")
+  (with-current-buffer "*scratch*" ; why do we need this?
+    (dirvish-new t :path dirname :ls-switches switches :depth dirvish-depth)))
 
 (defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
@@ -853,7 +846,7 @@ If ALL-FRAMES, search target directories in all frames."
   (when-let ((dv (dirvish-curr)))
     (cond ((> (length (get-buffer-window-list nil nil t)) 1)
            (switch-to-buffer "*scratch*")
-           (dirvish-drop)
+           (set-frame-parameter nil 'dirvish--curr nil)
            (when (string= (car args) "") (setf (car args) (dv-index-dir dv))))
           (t (select-window (funcall (dv-find-file-window-fn dv)))
              (when-let ((dv (dirvish-prop :dv))) (dirvish-kill dv)))))
@@ -1144,7 +1137,8 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
 ;; Thanks to `doom-modeline'.
-(dirvish-define-mode-line bar "Create the bar image."
+(dirvish-define-mode-line bar
+  "Create a bar image to regulate the height of header line."
   (when (and (display-graphic-p) (image-type-available-p 'pbm))
     (propertize
      " " 'display
@@ -1214,8 +1208,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
         (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
 
-(dirvish-define-mode-line find-dired
-  "Return a string showing current `find/fd' command args."
+(dirvish-define-mode-line find-dired "Show current `find/fd' command args."
   (if-let ((res-buf-p (dirvish-prop :fd-dir))
            (args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
       (format " %s [%s] at %s"
@@ -1512,7 +1505,7 @@ update `dirvish--history-ring'."
     (cond ((string-prefix-p "DIRVISH-FD@" entry)
            (dirvish-with-no-dedication
             (switch-to-buffer (dirvish--buffer-for-dir dv entry))
-            (setf (dv-index-dir dv) default-directory)
+            (setf (dv-index-dir dv) entry)
             (dirvish-build dv)))
           ((file-directory-p entry)
            (let ((entry (file-name-as-directory (expand-file-name entry)))
