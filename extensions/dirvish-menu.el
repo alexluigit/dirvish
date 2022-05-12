@@ -65,13 +65,6 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
                'face '(:inherit dired-mark :underline t)
                'display `((raise (/ (- scale 1) 2)) (height ,scale)))))
 
-(defun dirvish--change-depth (level)
-  "Change parent depth of current Dirvish to LEVEL."
-  (let ((dv (dirvish-curr)))
-    (setf (dv-depth dv) level)
-    (setf (dv-fullscreen-depth dv) level)
-    (dirvish-build dv)))
-
 (defmacro dirvish-menu--transient-define-multi (spec)
   "Define transient command with core information from SPEC."
   `(prog1 'dirvish-menu
@@ -427,30 +420,30 @@ invoke the navigation, PATH is the the argument for command
                                       ((memq 'vscode-icon dirvish-attributes) 'vscode-icon)))
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-setup-menu-alist
-  `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attr "File icons"))
-    ("s" file-size      attr    "File size (right-aligned)")
-    ("g" vc-state       attr    "VC state (left-aligned)")
-    ("m" git-msg        attr    "Git commit messages")
-    ("e" expanded-state attr    "Node expanded state")
-    ("d" vc-diff        preview "VC diff")
-    ("0" 0              column  "main column only")
-    ("1" 1              column  "main + 1 parent (ranger like)")
-    ("2" 2              column  "main + 2 parent")
-    ("3" 3              column  "main + 3 parent")
-    ("4" 4              column  "main + 4 parent"))
-  "TOGGLEs for `dirvish-setup-menu'.
-A TOGGLE is a list consists of (KEY VAR SCOPE DESCRIPTION) where
-KEY is a string passed to `kbd', VAR is a valid attribute (as in
-`dirvish-attributes') or preview dispatcher (as in
-`dirvish-preview-dispatchers'), SCOPE is either 'attributes or
-'preview-dps, DESCRIPTION is a optional description for the VAR."
+  `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attr " File icons"))
+    ("s"  file-size      attr     "File size")
+    ("v"  vc-state       attr     "Version control state information")
+    ("m"  git-msg        attr     "Git commit messages")
+    ("e"  expanded-state attr     "Directory expanded state")
+    ("d"  vc-diff        preview  "Version control diff in preview window")
+    ("1" '(0 nil  0.4)   layout   "       | CURRENT | preview")
+    ("2" '(0 nil  0.8)   layout   "       | current | PREVIEW")
+    ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW")
+    ("4" '(1 0.1  0.6)   layout   "parent | current | preview"))
+  "ITEMs for `dirvish-setup-menu'.
+A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION) where
+KEY is the keybinding for the item, VAR can be valid
+attribute (as in `dirvish-attributes') or preview dispatcher (as
+in `dirvish-preview-dispatchers') or a layout recipe (see
+`dirvish-layout-recipes'), SCOPE can be `attr', `preview' or
+`layout'.  DESCRIPTION is the documentation for the VAR."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
     (set k (remove nil v))
     (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attr)) v))
           (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview)) v))
-          (column-alist (seq-filter (lambda (i) (eq (nth 2 i) 'column)) v)))
+          (layout-alist (seq-filter (lambda (i) (eq (nth 2 i) 'layout)) v)))
       (cl-labels ((new-infix (i)
                     (let* ((infix-var (nth 1 i))
                            (infix-name (intern (format "dirvish-%s-infix" (nth 1 i))))
@@ -465,8 +458,8 @@ KEY is a string passed to `kbd', VAR is a valid attribute (as in
                                :scope ',infix-scope
                                :description ,infix-desc))))
                   (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
-                  (column-option (i) (list (car i) (nth 3 i)
-                                           `(lambda () (interactive) (dirvish--change-depth ,(nth 1 i))))))
+                  (layout-option (i) (list (car i) (nth 3 i)
+                                           `(lambda () (interactive) (dirvish-switch-layout ,(nth 1 i))))))
         (mapc #'new-infix attr-alist)
         (mapc #'new-infix preview-alist)
         (eval
@@ -478,8 +471,14 @@ KEY is a string passed to `kbd', VAR is a valid attribute (as in
               ,@(mapcar #'expand-infix attr-alist)]]
             ["Preview:" :if-not dirvish-dired-p
              ,@(mapcar #'expand-infix preview-alist)]
-            ["Layout:" :if (lambda () (and (derived-mode-p 'dirvish-mode) (not (dirvish-dired-p))))
-             ,@(mapcar #'column-option column-alist)]
+            [:if (lambda () (and (derived-mode-p 'dirvish-mode) (not (dirvish-dired-p))))
+             :description
+             (lambda ()
+               (format "%s\n%s"
+                       (propertize "Layout:" 'face 'transient-heading)
+                       (propertize "pane with uppercased name has the biggest size in the layout"
+                                   'face 'font-lock-doc-face)))
+             ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
              ("RET" "Confirm and quit" (lambda () (interactive) (dirvish-build (dirvish-curr)) (revert-buffer)))]))))))
 

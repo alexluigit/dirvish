@@ -593,6 +593,9 @@ If FLATTEN is non-nil, collect them as a flattened list."
   "Define dirvish data type."
   (path nil :documentation "is the initial directory.")
   (depth -1 :documentation "is the actual `dirvish-depth'.")
+  (parent-width dirvish-parent-max-width
+                :documentation "is the actual `dirvish-parent-max-width'.")
+  (preview-width dirvish-preview-width :documentation "is the actual `dirvish-preview-width'.")
   (fullscreen-depth dirvish-depth :documentation "is the actual fullscreen `dirvish-depth'.")
   (no-parents nil :documentation "disables showing parent dirs, has the highest privilege.")
   (attributes (purecopy dirvish-attributes) :documentation "is the actual `dirvish-attributes'.")
@@ -1303,8 +1306,9 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
       (setq current (dirvish--get-parent current))
       (setq parent (dirvish--get-parent parent)))
     (when (> depth 0)
-      (let* ((remain (- 1 dirvish-preview-width dirvish-parent-max-width))
-             (width (min (/ remain depth) dirvish-parent-max-width))
+      (let* ((parent-width (dv-parent-width dv))
+             (remain (- 1 (dv-preview-width dv) parent-width))
+             (width (min (/ remain depth) parent-width))
              (dired-after-readin-hook nil))
         (cl-dolist (parent-dir parent-dirs)
           (let* ((current (car parent-dir))
@@ -1325,7 +1329,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
  "Create a window showing preview for DV."
   (let* ((inhibit-modification-hooks t)
          (buf (dirvish--get-util-buffer dv 'preview))
-         (win-alist `((side . right) (window-width . ,dirvish-preview-width)))
+         (win-alist `((side . right) (window-width . ,(dv-preview-width dv))))
          (fringe 30)
          (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
     (set-window-fringes new-window fringe fringe nil t)
