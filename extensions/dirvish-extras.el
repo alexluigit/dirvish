@@ -19,6 +19,8 @@
 ;; - `dirvish-copy-file-directory'
 ;; - `dirvish-total-file-size'
 ;; - `dirvish-rename-space-to-underscore'
+;; - `dirvish-go-forward-history'
+;; - `dirvish-go-backward-history'
 ;; - `dirvish-roam'
 ;;
 ;; Attributes
