@@ -806,6 +806,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (dirname-str (format "DIRVISH-FD@%s" (dired-current-directory)))
         buffer-read-only)
     (setq-local dirvish--props (make-hash-table :size 10))
+    (setf (dv-index-dir dv) dirname-str)
     (dirvish-prop :child (or (dired-get-filename nil t) "."))
     (dirvish-prop :dv dv)
     (dirvish-prop :fd-dir dirname-str)
