@@ -432,23 +432,20 @@ RANGE can be `buffer', `session', `frame', `all'."
   "Get current Dirvish session in FRAME (defaults to selected)."
   (or (dirvish-prop :dv) (frame-parameter frame 'dirvish--curr)))
 
-(defmacro dirvish--get-util-buffer (dv type &rest body)
-  "Return dirvish session DV's utility buffer with TYPE.
-If BODY is non-nil, create the buffer and execute BODY in it."
-  (declare (indent defun))
-  `(progn
-     (let* ((id (dv-name ,dv))
-            (h-name (format " *Dirvish-%s-%s*" ,type id))
-            (buf (get-buffer-create h-name)))
-       (with-current-buffer buf ,@body buf))))
+(defun dirvish--get-util-buffer (dv type &optional no-create)
+  "Return session DV's utility buffer of TYPE.
+If NO-CREATE is non-nil, do not create the buffer."
+  (let* ((id (dv-name dv))
+         (name (format " *Dirvish-%s-%s*" type id)))
+    (if no-create (get-buffer name) (get-buffer-create name))))
 
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
-  (dirvish--get-util-buffer dv 'preview
+  (with-current-buffer (dirvish--get-util-buffer dv 'preview)
     (setq-local cursor-type nil)
     (setq-local mode-line-format nil)
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
-  (dirvish--get-util-buffer dv 'header
+  (with-current-buffer (dirvish--get-util-buffer dv 'header)
     (setq-local cursor-type nil)
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
@@ -655,20 +652,19 @@ restore them after."
 (defun dirvish-kill (dv)
   "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 DV defaults to current dirvish instance if not given."
-  (unwind-protect
-      (let ((conf (dv-window-conf dv)))
-        (when (and (not (dirvish-dired-p dv)) (window-configuration-p conf))
-          (set-window-configuration conf))
-        (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
-          (mapc #'kill-when-live (dv-dired-buffers dv))
-          (mapc #'kill-when-live (dv-preview-buffers dv))
-          (dolist (type '(preview header))
-            (kill-when-live (dirvish--get-util-buffer dv type))))
-        (funcall (dv-quit-window-fn dv) dv))
-    (remhash (dv-name dv) dirvish--hash)
-    (dirvish-reclaim)
-    (run-hooks 'dirvish-deactivation-hook)
-    (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t)))))
+  (let ((conf (dv-window-conf dv)))
+    (when (and (not (dirvish-dired-p dv)) (window-configuration-p conf))
+      (set-window-configuration conf)))
+  (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
+    (mapc #'kill-when-live (dv-dired-buffers dv))
+    (mapc #'kill-when-live (dv-preview-buffers dv))
+    (dolist (type '(preview header))
+      (kill-when-live (dirvish--get-util-buffer dv type))))
+  (funcall (dv-quit-window-fn dv) dv)
+  (remhash (dv-name dv) dirvish--hash)
+  (dirvish-reclaim)
+  (run-hooks 'dirvish-deactivation-hook)
+  (and dirvish-debug-p (message "leftover: %s" (dirvish-get-all 'name t t))))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -1221,10 +1217,11 @@ The bar image has height of `default-line-height' times SCALE."
     (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
       (dirvish-prop :child filename)
-      (dirvish-debounce layout
-        (with-current-buffer (dirvish--get-util-buffer dv 'header)
-          (force-mode-line-update))
-        (dirvish-preview-update)))))
+      (let ((buf (dirvish--get-util-buffer dv 'header t)))
+        (when (buffer-live-p buf)
+          (dirvish-debounce layout
+            (with-current-buffer buf (force-mode-line-update))
+            (dirvish-preview-update)))))))
 
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
