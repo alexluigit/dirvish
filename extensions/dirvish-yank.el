@@ -6,7 +6,6 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (dirvish "1.2.0"))
 
 ;;; Commentary:
 
@@ -171,7 +170,7 @@ BASE-NAME is the filename of file without directory."
 (defun dirvish-yank--prepare-dest-names (srcs dest)
   "Generate new unique file name pairs from SRCS and DEST."
   (cl-loop
-   with always = (eq dirvish-yank-overwrite-existing-files 'always)
+   with overwrite = (eq dirvish-yank-overwrite-existing-files 'always)
    with never = (eq dirvish-yank-overwrite-existing-files 'never)
    with dest-local = (shell-quote-argument (file-local-name dest))
    with dest-old-files = (mapcar #'shell-quote-argument
@@ -183,14 +182,14 @@ BASE-NAME is the filename of file without directory."
    for collision = (member base-name dest-old-files) ;; avoid using `file-exists-p' for performance
    for prompt = (format prompt-str base-name) collect
    (cond
-    (always (cons file (if (file-directory-p file) dest-local paste-name)))
+    (overwrite (cons file (if (file-directory-p file) dest-local paste-name)))
     ((and never collision)
      (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
     (collision
      (cl-case (read-char-choice prompt '(?y ?Y ?n ?N ?q))
        (?y (cons file (if (file-directory-p file) dest-local paste-name)))
        (?n (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
-       (?Y (setq always t)
+       (?Y (setq overwrite t)
            (cons file (if (file-directory-p file) dest-local paste-name)))
        (?N (setq never t)
            (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
