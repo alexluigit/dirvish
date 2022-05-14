@@ -230,6 +230,7 @@ Dirvish session as its argument."
     (dired         dired-jump                      dirvish-dired-jump-ad          :override)
     (dired         dired-find-file                 dirvish-find-file              :override)
     (dired         dired-find-alternate-file       dirvish-find-file              :override)
+    (dired         dired-find-file-other-window    dirvish-find-file-other-win-ad :override)
     (dired         dired-other-window              dirvish-dired-other-window-ad  :override)
     (dired         dired-other-tab                 dirvish-dired-other-tab-ad     :override)
     (dired         dired-other-frame               dirvish-dired-other-frame-ad   :override)
@@ -795,6 +796,21 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
       (dirvish-find-file file-name)
     (dirvish-dired (or file-name default-directory) other-window)))
 
+(defun dirvish-find-file-other-win-ad (&rest _)
+  "Override `dired-find-file-other-window' command."
+  (interactive)
+  (let ((dv (dirvish-curr))
+        (file (dired-get-file-for-visit)))
+    (if (dirvish-dired-p dv)
+        (if (file-directory-p file)
+            (dired-other-window file)
+          (other-window 1)
+          (find-file file))
+      (if (file-directory-p file)
+          (dired-other-frame file)
+        (dirvish-kill (dirvish-prop :dv))
+        (switch-to-buffer-other-window (find-file file))))))
+
 (defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advice function for `find-dired-sentinel'."
   (let ((dv (or (dirvish-curr) (dirvish-new nil)))
@@ -1218,8 +1234,8 @@ The bar image has height of `default-line-height' times SCALE."
     (when-let ((filename (dired-get-filename nil t)))
       (dirvish-prop :child filename)
       (let ((buf (dirvish--get-util-buffer dv 'header t)))
-        (when (buffer-live-p buf)
-          (dirvish-debounce layout
+        (dirvish-debounce layout
+          (when (buffer-live-p buf)
             (with-current-buffer buf (force-mode-line-update))
             (dirvish-preview-update)))))))
 
