@@ -489,7 +489,9 @@ length of the attribute, align to left and right respectively."
         with doc-head = "All available `dirvish-attributes'.
 This is a internal variable and should *NOT* be set manually."
         with attr-docs = ""
-        for (a-name . a-plist) in dirvish--available-attrs
+        with attrs = (seq-remove (lambda (i) (memq (car i) dirvish--builtin-attrs))
+                                 dirvish--available-attrs)
+        for (a-name . a-plist) in attrs
         do (setq attr-docs (format "%s\n\n`%s': %s" attr-docs a-name
                                    (plist-get a-plist :doc)))
         finally do (put 'dirvish--available-attrs 'variable-documentation
