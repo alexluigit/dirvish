@@ -68,7 +68,7 @@ The value can be a symbol or a function that returns a fileset."
   :group 'dirvish :type 'alist)
 
 (defvar dirvish-yank--progress (cons 0 0))
-(defvar dirvish-yank--buffer (dirvish--ensure-temp-buffer "yank"))
+(defvar dirvish-yank--buffer (dirvish--util-buffer "yank"))
 (defvar dirvish-yank--link-methods '(symlink relalink hardlink))
 (defvar dirvish-yank--status-timer nil)
 ;; copied from `dired-rsync'

@@ -154,7 +154,7 @@ will visit the latest `project-root' after executing
   (if (>= (dv-depth dv) 0)
       (frame-selected-window)
     (let ((win (display-buffer-in-side-window
-                (dirvish--ensure-temp-buffer) dirvish-side-display-alist)))
+                (dirvish--util-buffer) dirvish-side-display-alist)))
       (cl-loop for (key . value) in dirvish-side-window-parameters
                do (set-window-parameter win key value))
       (set-window-dedicated-p win t)

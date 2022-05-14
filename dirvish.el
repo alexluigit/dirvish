@@ -358,10 +358,6 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--ensure-temp-buffer (&optional type)
-  "Return a temporary buffer with optional TYPE."
-  (get-buffer-create (format " *Dirvish-%s*" (or type "temp"))))
-
 (defun dirvish--get-project-root ()
   "Get root path of current project."
   (when-let ((pj (project-current)))
@@ -433,20 +429,20 @@ RANGE can be `buffer', `session', `frame', `all'."
   "Get current Dirvish session in FRAME (defaults to selected)."
   (or (dirvish-prop :dv) (frame-parameter frame 'dirvish--curr)))
 
-(defun dirvish--get-util-buffer (dv type &optional no-create)
-  "Return session DV's utility buffer of TYPE.
+(defun dirvish--util-buffer (&optional type dv no-create)
+  "Return session DV's utility buffer of TYPE (defaults to `temp').
 If NO-CREATE is non-nil, do not create the buffer."
-  (let* ((id (dv-name dv))
-         (name (format " *Dirvish-%s-%s*" type id)))
+  (let* ((id (if dv (format "-%s*" (dv-name dv)) "*"))
+         (name (format " *Dirvish-%s%s" (or type "temp") id)))
     (if no-create (get-buffer name) (get-buffer-create name))))
 
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
-  (with-current-buffer (dirvish--get-util-buffer dv 'preview)
+  (with-current-buffer (dirvish--util-buffer 'preview dv)
     (setq-local cursor-type nil)
     (setq-local mode-line-format nil)
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
-  (with-current-buffer (dirvish--get-util-buffer dv 'header)
+  (with-current-buffer (dirvish--util-buffer 'header dv)
     (setq-local cursor-type nil)
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
@@ -660,7 +656,7 @@ DV defaults to current dirvish instance if not given."
     (mapc #'kill-when-live (dv-dired-buffers dv))
     (mapc #'kill-when-live (dv-preview-buffers dv))
     (dolist (type '(preview header))
-      (kill-when-live (dirvish--get-util-buffer dv type))))
+      (kill-when-live (dirvish--util-buffer type dv))))
   (funcall (dv-quit-window-fn dv) dv)
   (remhash (dv-name dv) dirvish--hash)
   (dirvish-reclaim)
@@ -768,7 +764,7 @@ DIRNAME and SWITCHES are same with command `dired'."
   (interactive (dired-read-dir-and-switches ""))
   (when-let ((dv (dirvish-curr)))
     (unless (dirvish-dired-p dv) (dirvish-kill dv)))
-  (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
+  (switch-to-buffer-other-window (dirvish--util-buffer))
   (dirvish-new t :path dirname :depth -1 :ls-switches switches))
 
 (defun dirvish-dired-other-tab-ad (dirname &optional switches)
@@ -784,7 +780,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
 DIRNAME and SWITCHES are the same args in `dired'."
   (interactive (dired-read-dir-and-switches "in other frame "))
   (let (after-focus-change-function)
-    (switch-to-buffer-other-frame (dirvish--ensure-temp-buffer))
+    (switch-to-buffer-other-frame (dirvish--util-buffer))
     (dirvish-new t :path dirname :ls-switches switches :depth dirvish-depth)))
 
 (defun dirvish-dired-jump-ad (&optional other-window file-name)
@@ -939,7 +935,7 @@ cache image. A new directory is created unless NO-MKDIR."
   "A sentinel for dirvish preview process.
 When PROC finishes, fill preview buffer with process result."
   (when-let ((dv (dirvish-curr)))
-    (with-current-buffer (dirvish--get-util-buffer dv 'preview)
+    (with-current-buffer (dirvish--util-buffer 'preview dv)
       (erase-buffer) (remove-overlays)
       (let* ((proc-buf (process-buffer proc))
              (result-str (with-current-buffer proc-buf (buffer-string)))
@@ -1082,7 +1078,7 @@ According to the PAYLOAD, one of these action is applied:
 - A subprocess for IMAGE/TEXT-CMD is issued.  When the subprocess
 finishes, the content in preview buffer is filled with the result
 string of TEXT-CMD or the generated cache image of IMAGE-CMD."
-  (let ((buf (dirvish--get-util-buffer dv 'preview))
+  (let ((buf (dirvish--util-buffer 'preview dv))
         (cmd (car-safe payload))
         (args (cdr-safe payload))
         (path (dirvish-prop :child))
@@ -1098,7 +1094,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
         ('buffer (setq buf payload))
         ('image (dirvish-preview--insert-image payload dv))
         ('image-cache
-         (let* ((buf (dirvish--ensure-temp-buffer "img-cache"))
+         (let* ((buf (dirvish--util-buffer "img-cache"))
                 (name (format "%s-%s-img-cache" path
                               (window-width (dv-preview-window dv)))))
            (unless (get-process name)
@@ -1109,7 +1105,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
                (set-process-sentinel proc #'dirvish-preview--img-cache-sentinel))))
          (insert " [Dirvish] Generating image cache..."))
         ('shell
-         (let* ((res-buf (dirvish--ensure-temp-buffer "shell-output"))
+         (let* ((res-buf (dirvish--util-buffer "shell-output"))
                 (proc (apply #'start-process "dirvish-preview-process" res-buf cmd args)))
            (set-process-sentinel proc 'dirvish-preview--fill-string-sentinel))))
       buf)))
@@ -1233,7 +1229,7 @@ The bar image has height of `default-line-height' times SCALE."
     (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
       (dirvish-prop :child filename)
-      (let ((buf (dirvish--get-util-buffer dv 'header t)))
+      (let ((buf (dirvish--util-buffer 'header dv t)))
         (dirvish-debounce layout
           (when (buffer-live-p buf)
             (with-current-buffer buf (force-mode-line-update))
@@ -1242,7 +1238,7 @@ The bar image has height of `default-line-height' times SCALE."
 (defun dirvish-quit-h ()
   "Quit current Dirvish."
   (dirvish-kill (dirvish-prop :dv))
-  (switch-to-buffer (dirvish--ensure-temp-buffer)))
+  (switch-to-buffer (dirvish--util-buffer)))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
@@ -1330,7 +1326,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 (defun dirvish-build--preview (dv)
  "Create a window showing preview for DV."
   (let* ((inhibit-modification-hooks t)
-         (buf (dirvish--get-util-buffer dv 'preview))
+         (buf (dirvish--util-buffer 'preview dv))
          (win-alist `((side . right) (window-width . ,(dv-preview-width dv))))
          (fringe 30)
          (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
@@ -1342,7 +1338,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
   "Create a window showing header for DV."
   (unless (eq (cdr dirvish-header-line-text-size) 0)
     (let* ((inhibit-modification-hooks t)
-           (buf (dirvish--get-util-buffer dv 'header))
+           (buf (dirvish--util-buffer 'header dv))
            (win-alist `((side . above)
                         (window-height . -2)
                         (window-parameters . ((no-other-window . t)))))
@@ -1423,7 +1419,7 @@ If the buffer is not available, create it with `dired-noselect'."
                     (pop dirvish--cache-pool)))
         (when path
           (setq proc (apply #'start-process procname
-                            (dirvish--ensure-temp-buffer "img-cache") cmd args))
+                            (dirvish--util-buffer "img-cache") cmd args))
           (process-put proc 'path path)
           (set-process-sentinel proc #'dirvish-preview--img-cache-sentinel))))))
 
@@ -1477,7 +1473,7 @@ directory in another window."
         (user-error "Dirvish: you're in root directory")
       (if other-window
           (progn
-            (switch-to-buffer-other-window (dirvish--ensure-temp-buffer))
+            (switch-to-buffer-other-window (dirvish--util-buffer))
             (dirvish-new nil :path parent :depth -1))
         (dirvish-find-file parent)))))
 
@@ -1557,7 +1553,7 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'.  Execute it
 in other window when OTHER-WINDOW is non-nil."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish dired: ")) nil))
-  (and other-window (switch-to-buffer-other-window (dirvish--ensure-temp-buffer)))
+  (and other-window (switch-to-buffer-other-window (dirvish--util-buffer)))
   (dirvish-new t :path (or path default-directory) :depth -1))
 
 ;;;###autoload
