@@ -420,7 +420,7 @@ invoke the navigation, PATH is the the argument for command
                                       ((memq 'vscode-icon dirvish-attributes) 'vscode-icon)))
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-setup-menu-alist
-  `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attr " File icons"))
+  `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attr "File icons"))
     ("s"  file-size      attr     "File size")
     ("v"  vc-state       attr     "Version control state information")
     ("m"  git-msg        attr     "Git commit messages")

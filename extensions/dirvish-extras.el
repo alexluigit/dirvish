@@ -29,6 +29,16 @@
 ;; - `expanded-state'
 ;; - `vscode-icon'
 ;; - `all-the-icons'
+;;
+;; Mode-line segments
+;; - `file-link-number'
+;; - `file-user'
+;; - `file-group'
+;; - `file-time'
+;; - `file-size'
+;; - `file-modes'
+;; - `file-inode-number'
+;; - `file-device-number'
 
 ;;; Code:
 
@@ -91,6 +101,11 @@ Each recipe is a list with the slot values of `depth',
                        (choice (nil float) :tag "the actual `dirvish-parent-max-width'")
                        (float :tag "the actual `dirvish-preview-width'"))))
 
+(defcustom dirvish-time-format-string "%R-%x"
+  "FORMAT-STRING for `file-time' mode line segment.
+This value is passed to function `format-time-string'."
+  :group 'dirvish :type 'string)
+
 (defvar dirvish--expanded-state-fn nil)
 (defcustom dirvish-expanded-state-style 'chevron
   "Icon/string used for directory expanded state.
@@ -113,20 +128,77 @@ The value can be one of: `plus', `arrow', `chevron'."
                (lambda (s f) (propertize (if s "▾" "▸") 'face f))
                (user-error "Dirvish: chevron expanded state require package `all-the-icons'")))))))
 
-(defface dirvish-file-size-face
-  '((t (:inherit font-lock-doc-face)))
-  "Face for file size overlays."
+(defface dirvish-file-link-number
+  '((t (:inherit font-lock-constant-face)))
+  "Face used for file link number mode-line segment."
   :group 'dirvish)
 
-(defface dirvish-expanded-state-face
-  '((t (:inherit font-lock-doc-face)))
-  "Face for expanded state overlays."
+(defface dirvish-file-user-id
+  '((t (:inherit font-lock-preprocessor-face)))
+  "Face used for file size attributes / mode-line segment."
   :group 'dirvish)
+
+(defface dirvish-file-group-id
+  '((t (:inherit dirvish-file-user-id)))
+  "Face used for file group id mode-line segment."
+  :group 'dirvish)
+
+(defface dirvish-file-time
+  '((t (:inherit font-lock-string-face)))
+  "Face used for file access/modify/change time mode-line segment."
+  :group 'dirvish)
+
+(defface dirvish-file-size
+  '((t (:inherit completions-annotations)))
+  "Face used for display file size attributes / mode-line segment."
+  :group 'dirvish)
+
+(defface dirvish-file-modes
+  '((t (:inherit font-lock-builtin-face)))
+  "Face used for file mode (privilege) mode-line segment."
+  :group 'dirvish)
+
+(defface dirvish-file-inode-number
+  '((t (:inherit dirvish-file-link-number)))
+  "Face used for file inode number mode-line segment."
+  :group 'dirvish)
+
+(defface dirvish-file-device-number
+  '((t (:inherit dirvish-file-link-number)))
+  "Face used for filesystem device number mode-line segment."
+  :group 'dirvish)
+
+(defface dirvish-expanded-state
+  '((t (:inherit font-lock-doc-face)))
+  "Face used for expanded state overlays."
+  :group 'dirvish)
+
+(defun dirvish--get-file-size-or-count (name attrs)
+  "Get file size of file NAME from ATTRS."
+  (let ((type (file-attribute-type attrs)))
+    (cond ((stringp type)
+           (let ((truename (file-truename name)))
+             (condition-case nil
+                 (number-to-string (- (length (directory-files truename nil nil t)) 2))
+               (file-error (file-size-human-readable
+                            (file-attribute-size (file-attributes truename)))))))
+          (type (or (ignore-errors
+                      (number-to-string
+                       (- (length (directory-files name nil nil t)) 2))) "?"))
+          (t (file-size-human-readable (or (file-attribute-size attrs) 0))))))
+
+(defun dirvish--format-file-attr (attr-name)
+  "Return a string of cursor file's attribute ATTR-NAME."
+  (let* ((name (dirvish-prop :child))
+         (attrs (dirvish-attribute-cache name :builtin))
+         (attr-getter (intern (format "file-attribute-%s" attr-name)))
+         (attr-face (intern (format "dirvish-file-%s" attr-name)))
+         (attr-val (and attrs (funcall attr-getter attrs))))
+    (and attr-val (propertize (format "%s" attr-val) 'face attr-face))))
 
 (dirvish-define-attribute all-the-icons "File icons provided by `all-the-icons.el'."
   (:left (+ (length dirvish-icon-delimiter) 2)
-         :if (or (not (dirvish-prop :remote))
-                 (memq 'extras dirvish-enabled-features-on-remote)))
+         :if (dirvish--should-enable 'extras))
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
          (height `(:height ,dirvish-all-the-icons-height))
          (face (cond (hl-face `(:face ,hl-face))
@@ -142,8 +214,7 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (dirvish-define-attribute vscode-icon "File icons provided by `vscode-icon.el'."
   (:left (1+ (length dirvish-icon-delimiter))
-         :if (or (not (dirvish-prop :remote))
-                 (memq 'extras dirvish-enabled-features-on-remote)))
+         :if (dirvish--should-enable 'extras))
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
          (icon-info
           (dirvish-attribute-cache f-name :vscode-icon
@@ -171,26 +242,15 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string (propertize dirvish-icon-delimiter 'face hl-face)) ov))
 
 (dirvish-define-attribute file-size
-  "Show file size at right fringe."
-  (:if (and (or (not (dirvish-prop :remote))
-                (memq 'extras dirvish-enabled-features-on-remote))
+  "Show file size or directories file count at right fringe."
+  (:if (and (dirvish--should-enable 'extras)
             (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
        :right 6)
   (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
          (width (window-width))
-         (f-size-str
-          (concat (dirvish-attribute-cache f-name :file-size
-                    (let* ((info
-                            (cond
-                             ((not (file-readable-p f-name)) "")
-                             ((eq f-type 'dir)
-                              (number-to-string
-                               (- (length (directory-files f-name nil nil t)) 2)))
-                             (t (file-size-human-readable
-                                 (if f-attrs (file-attribute-size f-attrs) 0)))))
-                           (spc (concat info " "))
-                           (len (- 6 (length spc))))
-                      (if (> len 0) (concat (make-string len ?\ ) spc) spc)))))
+         (info (dirvish--get-file-size-or-count f-name f-attrs))
+         (f-size-str (let* ((spc (concat info " ")) (len (- 6 (length spc))))
+                       (if (> len 0) (concat (make-string len ?\ ) spc) spc)))
          (f-size-len (length f-size-str))
          (f-base-str (buffer-substring f-beg f-end))
          (f-base-len (dirvish--actual-string-length f-base-str))
@@ -202,7 +262,7 @@ The value can be one of: `plus', `arrow', `chevron'."
                        (setq pos (1+ pos))
                        (setq vis-str (buffer-substring f-beg pos)))
                      pos)))
-         (face (or hl-face 'dirvish-file-size-face))
+         (face (or hl-face 'dirvish-file-size))
          (spc (propertize " " 'display `(space :align-to (- right-fringe ,f-size-len)) 'face face))
          (ov (make-overlay ov-pos ov-pos)))
     (add-face-text-property 0 f-size-len face t f-size-str)
@@ -211,19 +271,68 @@ The value can be one of: `plus', `arrow', `chevron'."
 (dirvish-define-attribute expanded-state
   "A indicator for directory expanding state.
 This attribute only support `dired-subtree' for now."
-  (:if (and (or (not (dirvish-prop :remote))
-                (memq 'extras dirvish-enabled-features-on-remote))
+  (:if (and (dirvish--should-enable 'extras)
             (eq (dv-root-window dv) (selected-window)))
        :left 1)
   (let ((state-str (if (eq f-type 'dir)
                        (funcall dirvish--expanded-state-fn
                                 (dirvish--subtree-expanded-p)
-                                'dirvish-expanded-state-face)
+                                'dirvish-expanded-state)
                      (propertize " ")))
         (ov (make-overlay (1+ l-beg) (1+ l-beg))))
     (when hl-face
       (add-face-text-property 0 1 hl-face t state-str))
     (overlay-put ov 'after-string state-str) ov))
+
+(dirvish-define-mode-line file-link-number
+  "Number of links to file."
+  (dirvish--format-file-attr 'link-number))
+
+(dirvish-define-mode-line file-user
+  "User name of file."
+  (when-let* ((name (dirvish-prop :child))
+              (attrs (dirvish-attribute-cache name :builtin))
+              (uid (and attrs (file-attribute-user-id attrs))))
+    (propertize (user-login-name uid) 'face 'dirvish-file-user-id)))
+
+(dirvish-define-mode-line file-group
+  "Group name of file."
+  (when-let* ((name (dirvish-prop :child))
+              (attrs (dirvish-attribute-cache name :builtin))
+              (gid (and attrs (file-attribute-group-id attrs))))
+    (propertize (group-name gid) 'face 'dirvish-file-group-id)))
+
+(dirvish-define-mode-line file-time
+  "Last access/modification/status change time.
+The actual time displayed depends on `dired-actual-switches'."
+  (let* ((name (dirvish-prop :child))
+         (attrs (dirvish-attribute-cache name :builtin))
+         (switches (split-string dired-actual-switches))
+         (time (cond ((member "--time=use" switches) (nth 4 attrs))
+                     ((member "--time=ctime" switches) (nth 6 attrs))
+                     ((member "--time=birth" switches))
+                     (t (nth 5 attrs))))
+         (time-string (and time (format-time-string dirvish-time-format-string time))))
+    (and time-string (format "%s" (propertize time-string 'face 'dirvish-file-time)))))
+
+(dirvish-define-mode-line file-size
+  "File size of files or file count of directories."
+  (let* ((name (dirvish-prop :child))
+         (attrs (dirvish-attribute-cache name :builtin))
+         (size (and attrs (dirvish--get-file-size-or-count name attrs))))
+    (and size (format "%s" (propertize size 'face 'dirvish-file-size)))))
+
+(dirvish-define-mode-line file-modes
+  "File modes, as a string of ten letters or dashes as in ls -l."
+  (dirvish--format-file-attr 'modes))
+
+(dirvish-define-mode-line file-inode-number
+  "File's inode number, as a nonnegative integer."
+  (dirvish--format-file-attr 'inode-number))
+
+(dirvish-define-mode-line file-device-number
+  "Filesystem device number, as an integer."
+  (dirvish--format-file-attr 'device-number))
 
 ;;;###autoload
 (defun dirvish-show-history ()
