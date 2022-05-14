@@ -135,38 +135,30 @@ segments after setting this value."
   :type '(cons (float :tag "Header text height when `dirvish-dired-p'")
                (float :tag "Header text height unless `dirvish-dired-p'")))
 
-(defconst dirvish--header-base-offset 0.25)
+(defconst dirvish--hl-scale (cons 0.75 1.5))
 (defun dirvish--mode-line-fmt-setter (fmt &optional header)
   "Compose the `mode-line-format' or header-line (if HEADER) from FMT."
   (cl-labels ((expand (part)
                 (cl-loop for s in (plist-get fmt part) collect
-                         `(:eval (,(intern (format "dirvish-%s-ml" s)) dv))))
-              (geth (&optional large)
-                (funcall (if large #'cdr #'car) dirvish-header-line-text-size))
-              (getoffset (t-size)
-                (let* ((base (/ dirvish--header-base-offset 2))
-                       (offset (/ (- 1 t-size (if header base 0)) t-size)))
-                  (if (< t-size 1) offset 0))))
+                         (if (stringp s) s `(:eval (,(intern (format "dirvish-%s-ml" s)) dv)))))
+              (gets (&optional lg) (if lg (cdr dirvish--hl-scale) (car dirvish--hl-scale)))
+              (geth (&optional lg) (funcall (if lg #'cdr #'car) dirvish-header-line-text-size))
+              (getr (t-size) (if (< t-size 1) (/ (- 1 t-size) t-size) 0)))
     `((:eval
        (let* ((dv (dirvish-curr))
+              (dired-p (dirvish-dired-p dv))
               (buf (alist-get (dv-index-dir dv)
                               (dv-root-dir-buf-alist dv) nil nil #'equal))
-              (height ,(if header
-                           `(if (dirvish-dired-p dv) ,(geth) ,(geth t))
-                         dirvish-mode-line-text-size))
-              (win-width (floor (/ (window-width) height)))
-              (offset ,(if header
-                           `(if (dirvish-dired-p dv)
-                                ,(getoffset (geth))
-                              ,(/ dirvish--header-base-offset -2))
-                         (getoffset dirvish-mode-line-text-size)))
+              (height ,(if header `(if dired-p ,(geth) ,(geth t)) dirvish-mode-line-text-size))
+              (win-width (- (floor (/ (window-width) height)) 2))
+              (raise ,(if header `(if dired-p ,(getr (geth)) -0.3) (getr dirvish-mode-line-text-size)))
               (str-left
                (propertize (format-mode-line
                             ',(or (expand :left) mode-line-format) nil nil buf)
-                           'display `((height ,height) (raise ,offset))))
+                           'display `((height ,height) (raise ,raise))))
               (str-right
                (propertize (format-mode-line ',(or (expand :right)) nil nil buf)
-                           'display `((height ,height) (raise ,offset))))
+                           'display `((height ,height) (raise ,raise))))
               (str-right-length (length str-right))
               (str-length (+ (length str-left) str-right-length))
               (filling-spaces
@@ -175,23 +167,19 @@ segments after setting this value."
                 `((space :align-to (- (+ right right-fringe right-margin)
                                       ,(ceiling (* height (string-width str-right)))))))))
          (concat
-          ,(when header `(format-mode-line '(:eval (dirvish-bar-ml dv))))
-          ,(if (plist-get fmt :trim-left)
-               `(if (< str-length win-width)
-                    str-left
-                  (let ((trim (1- (- win-width str-right-length))))
-                    (if (>= trim 0) (substring str-left 0 trim) "")))
-             `str-left)
+          ,(when header `(format-mode-line
+                          '(:eval (dirvish--bar-image (if dired-p ,(gets) ,(gets t))))))
+          (if (< str-length win-width)
+              str-left
+            (let ((trim (1- (- win-width str-right-length))))
+              (if (>= trim 0) (substring str-left 0 trim) "")))
           filling-spaces str-right))))))
 
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
-Set it to nil to use the default `mode-line-format'.  An optional
-prop `:trim-left' can be used to ensure the visibility of right
-SEGMENTs, meaning when there is no enough room to show the whole
-mode line, trims the left SEGMENTs instead of the right ones.
-You can get all available SEGMENTs by evaluating:
+Set it to nil to use the default `mode-line-format'.  You can get
+all available SEGMENTs by evaluating:
 
 \(prog1 (mapc #'require `dirvish-extra-libs')
        (describe-variable 'dirvish--available-mode-line-segments))"
@@ -199,7 +187,7 @@ You can get all available SEGMENTs by evaluating:
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
 (defcustom dirvish-header-line-format
-  '(:left (path) :right (free-space) :trim-left t)
+  '(:left (path) :right (free-space))
   "Like `dirvish-mode-line-format', but for header line ."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
@@ -432,6 +420,11 @@ RANGE can be `buffer', `session', `frame', `all'."
      (when (save-excursion (goto-char (point-min))
                            (re-search-forward regexp nil t))
        (dired-map-over-marks (dired-get-filename) nil)))))
+
+(defun dirvish--should-enable (feature)
+  "Return t if FEATURE should be enabled."
+  (or (not (dirvish-prop :remote))
+      (memq feature dirvish-enabled-features-on-remote)))
 
 ;;;; Core
 
@@ -708,8 +701,7 @@ DV defaults to current dirvish instance if not given."
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (let* ((get-meta-p (or (not (dirvish-prop :remote))
-                         (memq 'extras dirvish-enabled-features-on-remote)))
+  (let* ((enable (dirvish--should-enable 'extras))
          (attrs (dv-attributes-alist dv))
          (curr-pos (point))
          (fr-h (frame-height))
@@ -729,10 +721,10 @@ DV defaults to current dirvish instance if not given."
                    (f-beg (and (not (invisible-p (point)))
                                (dired-move-to-filename nil)))
                    (f-end (dired-move-to-end-of-filename t)))
-          (let ((f-attrs (and get-meta-p (dirvish-attribute-cache f-name :builtin
-                                           (file-attributes f-name))))
-                (f-type (and get-meta-p (dirvish-attribute-cache f-name :dir-p
-                                          (if (file-directory-p f-name) 'dir 'file))))
+          (let ((f-attrs (and enable (dirvish-attribute-cache f-name :builtin
+                                       (file-attributes f-name))))
+                (f-type (and enable (dirvish-attribute-cache f-name :type
+                                      (if (file-directory-p f-name) 'dir 'file))))
                 (l-beg (line-beginning-position))
                 (l-end (line-end-position))
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
@@ -1143,21 +1135,18 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 
 ;; Thanks to `doom-modeline'.
-(dirvish-define-mode-line bar
-  "Create a bar image to regulate the height of header line."
+(defun dirvish--bar-image (scale)
+  "Create a bar image to avoid the mode-line wobbling.
+The bar image has height of `default-line-height' times SCALE."
   (when (and (display-graphic-p) (image-type-available-p 'pbm))
-    (propertize
-     " " 'display
-     (let* ((color (or (face-background 'bold nil t) "None"))
-            (offset (if (dirvish-dired-p dv)
-                        (- 1 dirvish--header-base-offset)
-                      (1+ dirvish--header-base-offset)))
-            (height (floor (* offset (default-line-height)))))
+    (let ((height (floor (* scale (default-line-height)))))
+      (propertize
+       " " 'display
        (ignore-errors
          (create-image
           (concat (format "P1\n%i %i\n" 2 height)
                   (make-string (* 2 height) ?1) "\n")
-          'pbm t :foreground color :ascent 'center))))))
+          'pbm t :foreground "None" :ascent 'center))))))
 
 (dirvish-define-mode-line path "Current index path."
   (let* ((index (dirvish-prop :child))
@@ -1257,8 +1246,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (setq-local revert-buffer-function #'dirvish-revert)
     (dirvish--hide-dired-header))
   (and (not keep-dired)
-       (or (not (dirvish-prop :remote))
-           (memq 'vc dirvish-enabled-features-on-remote))
+       (dirvish--should-enable 'vc)
        (dirvish-prop :vc-backend
          (ignore-errors (vc-responsible-backend default-directory))))
   (setq-local face-font-rescale-alist nil)

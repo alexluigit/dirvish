@@ -210,7 +210,7 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 
 *Figure 6*. Toggle =vc-state= (attribute), =git-msg= (attribute) and =vc-diff= (preview dispatcher).
 
-*** Extra commands, attributes, or preview dispatchers (dirvish-extras.el)
+*** Extra commands, attributes, mode-line segments (dirvish-extras.el)
 **** Commands
 
 |------------------------------------+------------------------------------------|
@@ -224,20 +224,37 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 | ~dirvish-copy-file-directory~        | Copy the parent file path                |
 | ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"      |
 | ~dirvish-roam~                       | Browse all directories using ~fd~ command  |
+| ~dirvish-switch-layout~              | Switch Dirvish layout                    |
 |------------------------------------+------------------------------------------|
 **** Attributes
 
-|----------------+------------------------------------------|
-| Attribute      | Description                              |
-|----------------+------------------------------------------|
-| ~all-the-icons~  | File icons provided by =all-the-icons=     |
-| ~vscode-icon~    | File icons provided by =vscode-icon=       |
-| ~file-size~      | Human readable file size at right fringe |
-| ~expanded-state~ | Directory expanded state indicator       |
-|----------------+------------------------------------------|
+|----------------+-------------------------------------------------|
+| Attribute      | Description                                     |
+|----------------+-------------------------------------------------|
+| ~all-the-icons~  | File icons provided by =all-the-icons=            |
+| ~vscode-icon~    | File icons provided by =vscode-icon=              |
+| ~file-size~      | File size of files or file count of directories |
+| ~expanded-state~ | Directory expanded state indicator              |
+|----------------+-------------------------------------------------|
+
 https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-84a8-d568517f0b50.mp4
 
 *Figure 7*. Toggle =expanded-state=, =all-the-icons=, =file-size= attributes
+
+**** Mode-line segments
+
+|--------------------+--------------------------------------------------------------|
+| Segment            | Description                                                  |
+|--------------------+--------------------------------------------------------------|
+| ~file-link-number~   | Number of links to file                                      |
+| ~file-user~          | User name of file                                            |
+| ~file-group~         | Group name of file                                           |
+| ~file-time~          | Last access/modification/status change time                  |
+| ~file-size~          | File size of files or file count of directories              |
+| ~file-modes~         | File modes, as a string of ten letters or dashes as in ls -l |
+| ~file-inode-number~  | File inode number                                            |
+| ~file-device-number~ | Filesystem device number                                     |
+|--------------------+--------------------------------------------------------------|
 
 **** Customization options
 
@@ -250,7 +267,10 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 | ~dirvish-all-the-icons-palette~ | Coloring style applied to =all-the-icons=    |
 | ~dirvish-vscode-icon-size~      | Pixelwise size applied to =vscode-icon=      |
 | ~dirvish-expanded-state-style~  | String/icon used for folder expanded state |
+| ~dirvish-layout-recipes~        | Layout recipes for ~dirvish-switch-layout~   |
+| ~dirvish-time-format-string~    | Format-string for ~file-time~ segment        |
 |-------------------------------+--------------------------------------------|
+
 *** Toggle Dirvish in side window (dirvish-side.el)
 **** Customization options
 
@@ -295,7 +315,11 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   ;; (dirvish-header-line-format '(:left (path) :right (vc-info)))
-  ;; (dirvish-mode-line-format '(:left (sort filter) :right (yank index)))
+  ;; (dirvish-mode-line-format
+  ;;  '(:left
+  ;;    (sort filter file-user ":" file-group " " symlink)
+  ;;    :right
+  ;;    (yank index)))
   ;; List directories that has over 10000 files asynchronously
   ;; This feature is disabled by default
   ;; (dirvish-async-listing-threshold 10000)
@@ -308,8 +332,8 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
   ;; Define mode line segment for `dired-filter'
   ;; (dirvish-define-mode-line filter "Describe filters."
   ;;   (when (bound-and-true-p dired-filter-mode)
-  ;;     (format " %s " (propertize (dired-filter--describe-filters)
-  ;;                                'face 'dired-filter-group-header))))
+  ;;     (propertize (format " %s " (dired-filter--describe-filters))
+  ;;                 'face 'dired-filter-group-header)))
   :bind
   (nil ; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
    :map dired-mode-map
