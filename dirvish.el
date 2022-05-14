@@ -45,7 +45,7 @@ get all available attributes by evaluating:
 
 \(prog1 (mapc #'require `dirvish-extra-libs')
        (describe-variable 'dirvish--available-attrs))"
-  :group 'dirvish :type '(repeat dirvish-attribute))
+  :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
 (defcustom dirvish-preview-dispatchers
   `(text gif image video audio epub archive ,(if (require 'pdf-tools nil t) 'pdf-tools 'pdf-preface))
@@ -63,7 +63,7 @@ the fallback dispatcher named `default' is used.  For details see
 (defcustom dirvish-preview-disabled-exts
   '("iso" "bin" "exe" "gpg" "elc" "eln")
   "Do not preview files end with these extensions."
-  :group 'dirvish :type 'list)
+  :group 'dirvish :type '(repeat (string :tag "File name extension")))
 
 (defvar dirvish--auto-cache-timer nil)
 (defcustom dirvish-auto-cache-threshold '(500 . 4)
@@ -455,34 +455,6 @@ If BODY is non-nil, create the buffer and execute BODY in it."
     (setq-local face-font-rescale-alist nil)
     (setq-local mode-line-format (dv-header-line-format dv))))
 
-(defun dirvish-reclaim (&optional _frame-or-window)
-  "Reclaim current dirvish."
-  (let ((old-dv (dirvish-curr))
-        (new-dv (and (dirvish-prop :dv))))
-    (cond ((or (active-minibuffer-window)
-               (and old-dv (eq (frame-selected-window)
-                               (dv-preview-window old-dv)))))
-          ((and old-dv (string-match " ?*F\\(in\\)?d.**" (buffer-name)))
-           (unless (dirvish-dired-p old-dv)
-             (setq other-window-scroll-buffer
-                   (window-buffer (dv-preview-window old-dv)))))
-          (new-dv
-           (setq tab-bar-new-tab-choice "*scratch*")
-           (setq window-combination-resize nil) ; avoid transient menu mess up the layout
-           (unless (dirvish-dired-p new-dv)
-             (setq other-window-scroll-buffer
-                   (window-buffer (dv-preview-window new-dv))))
-           (dirvish--init-util-buffers new-dv)
-           (dirvish--add-advices)
-           (set-frame-parameter nil 'dirvish--curr new-dv))
-          (t
-           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
-           (setq window-combination-resize dirvish--saved-window-combination-resize)
-           (setq other-window-scroll-buffer nil)
-           (dirvish--remove-advices
-            (and dirvish-override-dired-mode '(dired find-dired fd-dired)))
-           (set-frame-parameter nil 'dirvish--curr new-dv)))))
-
 (cl-defmacro dirvish-define-attribute (name docstring (&key if left right) &rest body)
   "Define a Dirvish attribute NAME.
 An attribute contains a pair of predicate/rendering functions
@@ -615,6 +587,34 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (root-dir-buf-alist () :documentation "is a alist of (INDEX-DIR . CORRESPONDING-BUFFER).")
   (parent-dir-buf-alist () :documentation "is like ROOT-DIR-BUF-ALIST, but for parent windows.")
   (index-dir "" :documentation "is the `default-directory' in ROOT-WINDOW."))
+
+(defun dirvish-reclaim (&optional frame-or-window)
+  "Reclaim current Dirvish in FRAME-OR-WINDOW."
+  (let ((old-dv (dirvish-curr))
+        (new-dv (and (dirvish-prop :dv))))
+    (cond ((or (active-minibuffer-window)
+               (and old-dv (eq (frame-selected-window)
+                               (dv-preview-window old-dv)))))
+          ((and old-dv (string-match " ?*F\\(in\\)?d.**" (buffer-name)))
+           (unless (dirvish-dired-p old-dv)
+             (setq other-window-scroll-buffer
+                   (window-buffer (dv-preview-window old-dv)))))
+          (new-dv
+           (setq tab-bar-new-tab-choice "*scratch*")
+           (setq window-combination-resize nil) ; avoid transient menu mess up the layout
+           (unless (dirvish-dired-p new-dv)
+             (setq other-window-scroll-buffer
+                   (window-buffer (dv-preview-window new-dv))))
+           (setf (dv-root-window new-dv) (frame-selected-window frame-or-window))
+           (dirvish--add-advices)
+           (set-frame-parameter nil 'dirvish--curr new-dv))
+          (t
+           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+           (setq window-combination-resize dirvish--saved-window-combination-resize)
+           (setq other-window-scroll-buffer nil)
+           (dirvish--remove-advices
+            (and dirvish-override-dired-mode '(dired find-dired fd-dired)))
+           (set-frame-parameter nil 'dirvish--curr new-dv)))))
 
 (defmacro dirvish-new (kill-old &rest args)
   "Create a new dirvish struct and put it into `dirvish--hash'.
@@ -813,7 +813,6 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
     ;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-matching-lines "find finished at.*\\|^ +$")
     (dirvish--hide-dired-header)
-    (dirvish--init-util-buffers dv)
     (push (cons dirname-str (current-buffer))
           (dv-root-dir-buf-alist dv))
     (dirvish-build dv)))
@@ -1415,6 +1414,7 @@ If the buffer is not available, create it with `dired-noselect'."
 
 (defun dirvish-build (dv)
   "Build layout for Dirvish session DV."
+  (dirvish--init-util-buffers dv)
   (unless (dirvish-dired-p dv)
     (let ((ignore-window-parameters t)) (delete-other-windows))
     (dirvish-build--preview dv)

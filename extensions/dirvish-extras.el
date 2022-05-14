@@ -170,7 +170,7 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (defface dirvish-expanded-state
   '((t (:inherit font-lock-doc-face)))
-  "Face used for expanded state overlays."
+  "Face used for `expanded-state' attribute."
   :group 'dirvish)
 
 (defun dirvish--get-file-size-or-count (name attrs)
