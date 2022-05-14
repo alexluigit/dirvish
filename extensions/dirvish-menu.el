@@ -6,7 +6,6 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (dirvish "1.2.0") (transient "3.6.7"))
 
 ;;; Commentary:
 
@@ -15,35 +14,32 @@
 
 ;;; Code:
 
-(unless (require 'transient nil t)
-  (user-error "Dirvish: help menu requires `transient.el'"))
-
 (require 'subr-x)
 (require 'transient)
 (require 'dirvish)
 (defvar dirvish-menu-available-prefixs
   '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-quicksort dirvish-yank-menu dirvish-goto-bookmark))
 
-(defclass dirvish-menu:toggle (transient-infix)
+(defclass dirvish-menu-toggles (transient-infix)
   ((variable  :initarg :variable)
    (scope     :initarg :scope nil))
   "[Experimental] Class for Dirvish toggles.")
 
-(cl-defmethod transient-format-description ((obj dirvish-menu:toggle))
+(cl-defmethod transient-format-description ((obj dirvish-menu-toggles))
   (or (oref obj description) (symbol-name (oref obj variable))))
 
-(cl-defmethod transient-format-value ((obj dirvish-menu:toggle))
+(cl-defmethod transient-format-value ((obj dirvish-menu-toggles))
   (let* ((val (prin1-to-string (oref obj value)))
          (face (if (equal val "On") 'transient-argument 'transient-inactive-value)))
     (propertize val 'face face)))
 
-(cl-defmethod transient-init-value ((obj dirvish-menu:toggle))
+(cl-defmethod transient-init-value ((obj dirvish-menu-toggles))
   (oset obj value (if (memq (oref obj variable) (funcall (oref obj scope) (dirvish-curr))) 'On 'Off)))
 
-(cl-defmethod transient-infix-read ((obj dirvish-menu:toggle))
+(cl-defmethod transient-infix-read ((obj dirvish-menu-toggles))
   (oset obj value (if (eq (oref obj value) 'On) 'Off 'On)))
 
-(cl-defmethod transient-infix-set ((obj dirvish-menu:toggle) value)
+(cl-defmethod transient-infix-set ((obj dirvish-menu-toggles) value)
   (let* ((dv (dirvish-curr))
          (item (oref obj variable))
          (slot-name (oref obj scope))
@@ -329,7 +325,6 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     (setq dired-actual-switches new-switches)
     (revert-buffer)))
 
-(define-obsolete-function-alias 'dirvish-sort-by-criteria 'dirvish-quicksort "1.2.0")
 ;;;###autoload (autoload 'dirvish-quicksort "dirvish-menu" nil t)
 (defcustom dirvish-quicksort-keys
   '(("n" ""                                   "name (a-z)")
@@ -415,7 +410,6 @@ invoke the navigation, PATH is the the argument for command
                             (propertize path 'face 'font-lock-comment-face))
                     `(lambda () (interactive) (dirvish-find-file ,path))))])))))
 
-(define-obsolete-function-alias 'dirvish-ui-config 'dirvish-setup-menu "1.0.0")
 (defconst dirvish--icon-backend (cond ((memq 'all-the-icons dirvish-attributes) 'all-the-icons)
                                       ((memq 'vscode-icon dirvish-attributes) 'vscode-icon)))
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
@@ -453,7 +447,7 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
                            (infix-scope (intern (format "dv-%s" slot-name)))
                            (infix-desc (nth 3 i)))
                       (eval `(transient-define-infix ,infix-name ()
-                               :class 'dirvish-menu:toggle
+                               :class 'dirvish-menu-toggles
                                :variable ',infix-var
                                :scope ',infix-scope
                                :description ,infix-desc))))

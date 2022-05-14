@@ -6,7 +6,6 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (dirvish "1.2.0"))
 
 ;;; Commentary:
 
@@ -116,9 +115,11 @@ will visit the latest `project-root' after executing
     (set key enabled)
     (if enabled
         (progn
-          (advice-add 'project-switch-project :after #'dirvish-side-find-file)
+          (and (fboundp 'project-switch-project)
+               (advice-add 'project-switch-project :after #'dirvish-side-find-file))
           (add-hook 'projectile-after-switch-project-hook #'dirvish-side-find-file))
-      (advice-remove 'project-switch-project #'dirvish-side-find-file)
+      (and (fboundp 'project-switch-project)
+           (advice-remove 'project-switch-project #'dirvish-side-find-file))
       (remove-hook 'projectile-after-switch-project-hook #'dirvish-side-find-file))))
 
 (defun dirvish-side--get-state ()
@@ -172,7 +173,7 @@ will visit the latest `project-root' after executing
           (dirvish-with-no-dedication
            (switch-to-buffer (dirvish--buffer-for-dir dv dirname)))
           (when (and filename (not (file-directory-p filename)))
-            (setq-local dirvish--child-entry filename))
+            (dirvish-prop :child filename))
           (dirvish-build dv))))))
 
 (dirvish-define-mode-line project

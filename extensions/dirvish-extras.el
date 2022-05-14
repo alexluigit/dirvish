@@ -6,7 +6,6 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1"))
 
 ;;; Commentary:
 
@@ -125,8 +124,7 @@ The value can be one of: `plus', `arrow', `chevron'."
                            :height (* (or dirvish-all-the-icons-height 1) 0.8)
                            :v-adjust 0.1 :face f))
                (set k 'arrow)
-               (lambda (s f) (propertize (if s "▾" "▸") 'face f))
-               (user-error "Dirvish: chevron expanded state require package `all-the-icons'")))))))
+               (lambda (s f) (propertize (if s "▾" "▸") 'face f))))))))
 
 (defface dirvish-file-link-number
   '((t (:inherit font-lock-constant-face)))
