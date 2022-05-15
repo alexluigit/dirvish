@@ -30,6 +30,7 @@
 ;; - `all-the-icons'
 ;;
 ;; Mode-line segments
+;; - `free-space'
 ;; - `file-link-number'
 ;; - `file-user'
 ;; - `file-group'
@@ -125,6 +126,11 @@ The value can be one of: `plus', `arrow', `chevron'."
                            :v-adjust 0.1 :face f))
                (set k 'arrow)
                (lambda (s f) (propertize (if s "▾" "▸") 'face f))))))))
+
+(defface dirvish-free-space
+  '((t (:inherit font-lock-constant-face)))
+  "Face used for `free-space' mode-line segment."
+  :group 'dirvish)
 
 (defface dirvish-file-link-number
   '((t (:inherit font-lock-constant-face)))
@@ -282,6 +288,13 @@ This attribute only support `dired-subtree' for now."
       (add-face-text-property 0 1 hl-face t state-str))
     (overlay-put ov 'after-string state-str) ov))
 
+(dirvish-define-mode-line free-space
+  "Amount of free space on `default-directory''s file system."
+  (format " %s %s "
+          (propertize (or (get-free-disk-space default-directory) "")
+                      'face 'dirvish-free-space)
+          (propertize "free" 'face 'font-lock-doc-face)))
+
 (dirvish-define-mode-line file-link-number
   "Number of links to file."
   (dirvish--format-file-attr 'link-number))
@@ -437,7 +450,9 @@ FILESET defaults to `dired-get-marked-files'."
 
 ;;;###autoload
 (defun dirvish-roam ()
-  "Browse all directories using `fd' command."
+  "Browse all directories using `fd' command.
+This command takes a while to index all the directories the first
+time you run it.  After the indexing, it fires up instantly."
   (interactive)
   (unless (executable-find "fd") (user-error "Dirvish: install `fd' to use this command"))
   (let* ((command "fd -H -td -0 . /")

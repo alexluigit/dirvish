@@ -37,7 +37,6 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-parent-max-width~           | Max width of parent windows              |
 | ~dirvish-preview-width~              | Width of preview window                  |
 | ~dirvish-header-line-text-size~      | Text height in header line               |
-| ~dirvish-mode-line-text-size~        | Text height in mode line                 |
 | ~dirvish-header-line-format~         | Header line format in root window        |
 | ~dirvish-hide-details~               | Hide details as you see fit              |
 | ~dirvish-mode-line-format~           | Mode line format in root window          |
@@ -246,6 +245,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 |--------------------+--------------------------------------------------------------|
 | Segment            | Description                                                  |
 |--------------------+--------------------------------------------------------------|
+| ~free-space~         | Disk free space                                              |
 | ~file-link-number~   | Number of links to file                                      |
 | ~file-user~          | User name of file                                            |
 | ~file-group~         | Group name of file                                           |
@@ -304,22 +304,26 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 
 (use-package dirvish
   :custom
-  ;; Feel free to replace `all-the-icons' with `vscode-icon'.
-  (dirvish-attributes '(expanded-state all-the-icons file-size))
-  ;; Maybe the icons are too big to your eyes
-  ;; (dirvish-all-the-icons-height 0.8)
   ;; Go back home? Just press `bh'
   (dirvish-bookmarks-alist
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
-  ;; (dirvish-header-line-format '(:left (path) :right (vc-info)))
-  ;; (dirvish-mode-line-format
-  ;;  '(:left
-  ;;    (sort filter file-user ":" file-group " " symlink)
-  ;;    :right
-  ;;    (yank index)))
+  ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
+  (dirvish-mode-line-format
+   '(:left
+     (sort file-time " " file-size symlink) ; it's ok to place string inside
+     :right
+     ;; For `dired-filter' users, replace `omit' with `filter' segment defined below
+     (omit yank index)))
+  (dirvish-attributes '(expanded-state
+                        ;; You can put `file-size' here instead
+                        ;; file-size
+                        ;; Feel free to replace `all-the-icons' with `vscode-icon'.
+                        all-the-icons))
+  ;; Maybe the icons are too big to your eyes
+  ;; (dirvish-all-the-icons-height 0.8)
   ;; List directories that has over 10000 files asynchronously
   ;; This feature is disabled by default
   ;; (dirvish-async-listing-threshold 10000)
