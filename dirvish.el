@@ -174,8 +174,9 @@ segments after setting this value."
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
-Set it to nil to use the default `mode-line-format'.  You can get
-all available SEGMENTs by evaluating:
+Set it to nil to use the default `mode-line-format'.  SEGMENT is
+a mode line segment defined by `dirvish-define-mode-line' or a
+string.  You can get all available SEGMENTs by evaluating:
 
 \(prog1 (mapc #'require `dirvish-extra-libs')
        (describe-variable 'dirvish--available-mode-line-segments))"
@@ -260,6 +261,7 @@ Dirvish session as its argument."
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--cache-img-threshold (* 1024 1024 0.4))
+(defconst dirvish--dir-tail-regex (concat (getenv "HOME") "/\\|\\/$\\|^\\/"))
 (defconst dirvish--preview-img-scale 0.92)
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--saved-window-combination-resize window-combination-resize)
@@ -1153,17 +1155,18 @@ The bar image has height of `default-line-height' times SCALE."
                   (make-string (* 2 height) ?1) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
-(dirvish-define-mode-line path "Current index path."
+(dirvish-define-mode-line path
+  "Path of file under the cursor."
   (let* ((index (dirvish-prop :child))
-         (file-path (or (file-name-directory index) ""))
-         (path-prefix-home (string-prefix-p (getenv "HOME") file-path))
-         (path-regex (concat (getenv "HOME") "/\\|\\/$"))
-         (path-tail (replace-regexp-in-string path-regex "" file-path))
-         (file-name (file-name-nondirectory index)))
-    (format " %s %s %s"
-            (propertize (if path-prefix-home "~" ":"))
-            (propertize path-tail 'face 'dired-mark)
-            (propertize file-name 'face 'font-lock-constant-face))))
+         (dirname (or (file-name-directory index) ""))
+         (from-home (string-prefix-p (getenv "HOME") dirname))
+         (dir-tail (replace-regexp-in-string dirvish--dir-tail-regex "" dirname))
+         (tail (if (equal dir-tail "") "" (concat dir-tail " ")))
+         (base (file-name-nondirectory index)))
+    (format " %s%s%s "
+            (propertize (if from-home "~ " ": ") 'face 'dired-header)
+            (propertize tail 'face 'dired-mark)
+            (propertize base 'face 'dired-header))))
 
 (dirvish-define-mode-line sort "Current sort criteria."
   (let* ((switches (split-string dired-actual-switches))
@@ -1205,7 +1208,7 @@ The bar image has height of `default-line-height' times SCALE."
   (if-let ((res-buf-p (dirvish-prop :fd-dir))
            (args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
       (format " %s [%s] at %s"
-              (propertize "FD:" 'face 'bold)
+              (propertize "FD:" 'face 'dired-header)
               (propertize args 'face 'font-lock-string-face)
               (propertize default-directory 'face 'dired-header))
     (dirvish-path-ml dv)))
