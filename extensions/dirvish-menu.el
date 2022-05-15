@@ -89,20 +89,20 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("o"   "Open file other window"              dired-find-file-other-window)
      ("w"   "Get file information"                dirvish-file-info-menu)
      ("s"   "Setup listing switches"              dirvish-ls-switches-menu)
-     ("v"   "View this file"                      dired-view-file)
+     ("(" "  Toggle details"                      dired-hide-details-mode)
      ("g"   "Refresh buffer"                      revert-buffer)]
     ["I/O commands"
      ("a"   "Add an empty file"                   dired-create-empty-file)
      ("C"   "Copy"                                dired-do-copy :if-mode dired-mode)
-     ("C"   "Paste marked files"                  dirvish-yank :if-derived dirvish-mode)
+     ("y"   "\"Yank\" marked files"               dirvish-yank-menu :if-derived dirvish-mode)
      ("@"   "Rename files"                        dirvish-renaming-menu)
      ("X"   "Delete files"                        dired-do-delete)
      ("f"   "Edit file's attributes"              dirvish-file-attributes-menu)
      ("+"   "Create a directory"                  dired-create-directory)]
     ["View | Layout"
-     ("(" "  Toggle details"                      dired-hide-details-mode)
+     ("v"   "View this file"                      dired-view-file)
      ("." "  Apply filters"                       dired-filter-mode :if (lambda () (featurep 'dired-filter)))
-     ("." "  Apply filters"                       dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
+     ("." "  Toggle file omitting"                dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
      ("=" "  Compare files"                       dired-diff)
      ("S" "  Manage subdirs"                      dirvish-subdir-menu)
      ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
