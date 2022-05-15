@@ -51,63 +51,62 @@
     (dirvish--refresh-slots dv)
     (revert-buffer)))
 
-(defun dirvish-menu--format-heading (string &optional center scale)
+(defun dirvish-menu--format-heading (string &optional scale)
   "Format STRING as a menu heading.
 When CENTER, align it at center.  SCALE defaults to 1.2."
   (setq scale (or scale 1.2))
-  (concat
-   (when center (propertize " " 'display `(space :align-to (- center ,(floor (/ (length string) scale))))))
-   (propertize (capitalize string)
-               'face '(:inherit dired-mark :underline t)
-               'display `((raise (/ (- scale 1) 2)) (height ,scale)))))
+  (propertize (capitalize string)
+              'face '(:inherit dired-mark :underline t)
+              'display `((raise (/ (- scale 1) 2)) (height ,scale))))
 
 (defmacro dirvish-menu--transient-define-multi (spec)
   "Define transient command with core information from SPEC."
   `(prog1 'dirvish-menu
      ,@(mapcar
         (lambda (elm)
-          (let* ((pkg  (pop elm))
-                 (prefix (intern (format "dirvish-%s-menu" pkg)))
+          (let* ((name  (pop elm))
+                 (suffix (if (eq name 'dispatch) "" "-menu"))
+                 (cmd (intern (format "dirvish-%s%s" name suffix)))
                  (args elm))
             `(progn
-               (add-to-list 'dirvish-menu-available-prefixs ',prefix)
-               (transient-define-prefix ,prefix ()
-                 ,(format "Dirvish commands menu for `%s'." pkg)
+               (add-to-list 'dirvish-menu-available-prefixs ',cmd)
+               (transient-define-prefix ,cmd ()
                  ,@args))))
         spec)))
 
+;;;###autoload (autoload 'dirvish-dispatch "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-ls-switches-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-mark-actions-menu "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
- ((top-level
+ ((dispatch
    [:description
-    (lambda () (dirvish-menu--format-heading (format "%s help menu" (if (derived-mode-p 'dirvish-mode) "Dirvish" "Dired")) t 1.3))
+    (lambda () (dirvish-menu--format-heading (format "%s help menu" (if (derived-mode-p 'dirvish-mode) "Dirvish" "Dired")) 1.3))
     :if-derived dired-mode
     ["Essential commands"
      ("e"   "Open file"                           dired-find-file)
      ("o"   "Open file other window"              dired-find-file-other-window)
      ("w"   "Get file information"                dirvish-file-info-menu)
      ("s"   "Setup listing switches"              dirvish-ls-switches-menu)
-     ("(" "  Toggle details"                      dired-hide-details-mode)
+     ("("   "Toggle details"                      dired-hide-details-mode)
      ("g"   "Refresh buffer"                      revert-buffer)]
     ["I/O commands"
      ("a"   "Add an empty file"                   dired-create-empty-file)
      ("C"   "Copy"                                dired-do-copy :if-mode dired-mode)
-     ("y"   "\"Yank\" marked files"               dirvish-yank-menu :if-derived dirvish-mode)
+     ("y"   "Yank marked files"                   dirvish-yank-menu :if-derived dirvish-mode)
      ("@"   "Rename files"                        dirvish-renaming-menu)
      ("X"   "Delete files"                        dired-do-delete)
-     ("f"   "Edit file's attributes"              dirvish-file-attributes-menu)
+     ("f"   "File attributes"                     dirvish-file-attributes-menu)
      ("+"   "Create a directory"                  dired-create-directory)]
     ["View | Layout"
-     ("v"   "View this file"                      dired-view-file)
+     ("v" "  View this file"                      dired-view-file)
      ("." "  Apply filters"                       dired-filter-mode :if (lambda () (featurep 'dired-filter)))
      ("." "  Toggle file omitting"                dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
      ("=" "  Compare files"                       dired-diff)
      ("S" "  Manage subdirs"                      dirvish-subdir-menu)
      ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
-     ("M-s" "Setup Dirvish"                       dirvish-setup-menu :if-derived dirvish-mode)]
-    ["Navigation"
+     ("M-s" "Setup Dirvish"                       dirvish-setup-menu :if-derived dirvish-mode)]]
+   [["Navigation"
      ("j" "  Jump to file line"                   dired-goto-file)
      ("b" "  Jump to bookmarks"                   dirvish-goto-bookmark)
      ("^" "  Go up directory"                     dired-up-directory)
@@ -233,19 +232,6 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("d"   "Decrypt"                              epa-dired-do-decrypt)
     ("v"   "Verify"                               epa-dired-do-verify)
     ("s"   "Sign"                                 epa-dired-do-sign)])))
-
-;;;###autoload
-(defun dirvish-dispatch ()
-  "Summon dirvish commands menu."
-  (interactive)
-  (let ((transient-display-buffer-action
-         '(display-buffer-in-side-window
-           (side . bottom)
-           (dedicated . t)
-           (inhibit-same-window . t)
-           (window-parameters (no-other-window . t))))
-        (transient-show-popup t))
-    (dirvish-top-level-menu)))
 
 (defun dirvish-menu--clear-switches-choices ()
   "Reload the listing switches setup UI."
