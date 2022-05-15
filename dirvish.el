@@ -119,10 +119,6 @@ Set it to nil disables the history tracking."
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
-(defcustom dirvish-mode-line-text-size 1.0
-  "Text height in Dirvish's mode line."
-  :group 'dirvish :type 'float)
-
 (defcustom dirvish-header-line-text-size '(1.0 . 1.1)
   "Text height in Dirvish's header line.
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
@@ -149,9 +145,9 @@ segments after setting this value."
               (dired-p (dirvish-dired-p dv))
               (buf (alist-get (dv-index-dir dv)
                               (dv-root-dir-buf-alist dv) nil nil #'equal))
-              (height ,(if header `(if dired-p ,(geth) ,(geth t)) dirvish-mode-line-text-size))
-              (win-width (- (floor (/ (window-width) height)) 2))
-              (raise ,(if header `(if dired-p ,(getr (geth)) -0.3) (getr dirvish-mode-line-text-size)))
+              (height ,(if header `(if dired-p ,(geth) ,(geth t)) 1))
+              (win-width (floor (/ (window-width) height)))
+              (raise ,(if header `(if dired-p ,(getr (geth)) -0.3) 0))
               (str-left
                (propertize (format-mode-line
                             ',(or (expand :left) mode-line-format) nil nil buf)
@@ -187,7 +183,7 @@ all available SEGMENTs by evaluating:
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
 (defcustom dirvish-header-line-format
-  '(:left (path) :right (free-space))
+  '(:left (path) :right ())
   "Like `dirvish-mode-line-format', but for header line ."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
@@ -1190,14 +1186,7 @@ The bar image has height of `default-line-height' times SCALE."
             (propertize time 'face 'font-lock-doc-face))))
 
 (dirvish-define-mode-line omit "A `dired-omit-mode' indicator."
-  (and dired-omit-mode (propertize "[Omit]" 'face 'font-lock-negation-char-face)))
-
-(dirvish-define-mode-line free-space
-  "Amount of free space on `default-directory''s file system."
-  (format " %s %s "
-          (propertize (or (get-free-disk-space default-directory) "")
-                      'face 'font-lock-constant-face)
-          (propertize "free" 'face 'font-lock-doc-face)))
+  (and dired-omit-mode (propertize "Omit" 'face 'font-lock-negation-char-face)))
 
 (dirvish-define-mode-line symlink
   "Show the truename of symlink file under the cursor."
