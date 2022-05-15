@@ -1,3 +1,61 @@
+* 1.3.20
+** Breaking changes
+
++ Add TRAMP support for ~dirvish-yank~ and friends
+
+** Changes since 1.2.0
+
++ =extras=: more mode-line segments ([[https://github.com/alexluigit/dirvish/issues/42][#42]])
++ =extras=: add ~dirvish-switch-layout~ command ([[https://github.com/alexluigit/dirvish/issues/33][#33]])
++ =core=: add ~:trim-left~ keyword in mode-line-format
++ =core=: add symlink mode line ([[https://github.com/alexluigit/dirvish/issues/41][#41]])
++ =extras=: make ~file-size~ files count in directories ([[https://github.com/alexluigit/dirvish/issues/40][#40]])
++ =core=: add ~dirvish-dwim' commmand
++ =core=: add auto cache facility ([[https://github.com/alexluigit/dirvish/issues/28][#28]])
++ =extras=: add ~dirvish-go-forward/backward-history~ cmds ([[https://github.com/alexluigit/dirvish/issues/32][#32]])
++ =yank=: add ~dirvish-yank-overwrite-existing-files~ option ([[https://github.com/alexluigit/dirvish/issues/38][#38]])
++ =core=: add ~free-space~ mode-line segment [[https://github.com/alexluigit/dirvish/issues/31][#31]])
++ =menu=: add ~dirvish-quicksort~ command ([[https://github.com/alexluigit/dirvish/issues/27][#27]])
++ =core=: add ~dirvish-hide-details~ user option
++ =menu=: add ~dirvish-ls-switches-menu~ prefix
++ =side=: add ~dirvish-side-follow-project-switch~ option ([[https://github.com/alexluigit/dirvish/issues/24][#24]])
++ =side=: make window of ~dirvish-side~ dedicated
++ =side=: add ~dirvish-side-follow-buffer-file~ option
++ =preview=: support remote files
++ =core=: add ~dirvish-enabled-features-on-remote~ option
++ =extras=: add ~dirvish-total-file-size~ command
++ =extras=: add ~dirvish-copy-file-true-path~ command
+
+** Fixes since 1.2.0
+
++ =core=: avoid util buffer get created after session kill
++ =core=: remove builtin attributes from dirvish--available-attrs
++ =core=: remove redundant session initialization
++ =core=: find-dired mode-line segment
++ =core=: retrive path for auto cache correctly
++ =extras=: file permission error
++ =yank=: remote-to-remote handler
++ =core=: preserve size of header window when showing transient
++ =yank=: ensure new names when not overwrite ([[https://github.com/alexluigit/dirvish/issues/38][#38]])
++ =yank=: ensure live source file buffers
++ =yank=: autoload, recursive hardlink, errors on name collision
++ =menu=: add dirvish-quicksort to available-prefixs
++ =vc=: vc-info modeline segment
++ =core=: get correct dwim target
++ =core=: set ~face-remapping-alist~ only when it's non-nil ([[https://github.com/alexluigit/dirvish/issues/36][#36]])
++ =core=: reuse old session when calling ~dirvish--noselect~ ([[https://github.com/alexluigit/dirvish/issues/35][#35]])
++ =core=: inhibit vc follow link prompt while previewing ([[https://github.com/alexluigit/dirvish/issues/25][#25]])
++ =core=: initialize ~dirvish~ from side window correctly
++ =side=: remember new project root
++ =core=: raise error for overlapping fullscreen session
++ =core=: goto correct child-entry
++ =side=: problematic ~delete-window~ call
++ =core=: get project root properly
++ =core=: ensure correct index path
++ =yank=: disable file size calculation upon task start ([[https://github.com/alexluigit/dirvish/issues/23][#23]])
++ =core=: slow navigation on TRAMP ([[https://github.com/alexluigit/dirvish/issues/21][#21]])
++ =peek=: invalid metadata in ivy-read ([[https://github.com/alexluigit/dirvish/issues/20][#20]])
+
 * 1.2.0
 ** Breaking changes
 
@@ -16,8 +74,8 @@
 
 ** Fixes since 1.0.0
 
-+ [[https://github.com/alexluigit/dirvish/issues/15][#15]]:  ensure correct cache image path on Windows
-+ [[https://github.com/alexluigit/dirvish/issues/19][#19]]:  video thumbnail generation
++ =core=: ensure correct cache image path on Windows ([[https://github.com/alexluigit/dirvish/issues/15][#15]])
++ =core=: video thumbnail generation ([[https://github.com/alexluigit/dirvish/issues/19][#19]])
 + =vc=:   adjust position of ~vc-state~ attribute
 + =side=: ensure preview update on fullscreen toggle
 + =side=: use fixed width for side window
