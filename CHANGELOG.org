@@ -7,10 +7,9 @@
 
 + =extras=: more mode-line segments ([[https://github.com/alexluigit/dirvish/issues/42][#42]])
 + =extras=: add ~dirvish-switch-layout~ command ([[https://github.com/alexluigit/dirvish/issues/33][#33]])
-+ =core=: add ~:trim-left~ keyword in mode-line-format
 + =core=: add symlink mode line ([[https://github.com/alexluigit/dirvish/issues/41][#41]])
 + =extras=: make ~file-size~ files count in directories ([[https://github.com/alexluigit/dirvish/issues/40][#40]])
-+ =core=: add ~dirvish-dwim' commmand
++ =core=: add ~dirvish-dwim~ commmand
 + =core=: add auto cache facility ([[https://github.com/alexluigit/dirvish/issues/28][#28]])
 + =extras=: add ~dirvish-go-forward/backward-history~ cmds ([[https://github.com/alexluigit/dirvish/issues/32][#32]])
 + =yank=: add ~dirvish-yank-overwrite-existing-files~ option ([[https://github.com/alexluigit/dirvish/issues/38][#38]])
