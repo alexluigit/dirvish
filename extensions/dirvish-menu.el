@@ -78,6 +78,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
 ;;;###autoload (autoload 'dirvish-ls-switches-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-mark-actions-menu "dirvish-menu" nil t)
+;;;###autoload (autoload 'dirvish-filter-menu "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
  ((dispatch
    [:description
@@ -100,7 +101,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("+"   "Create a directory"                  dired-create-directory)]
     ["View | Layout"
      ("v" "  View this file"                      dired-view-file)
-     ("." "  Apply filters"                       dired-filter-mode :if (lambda () (featurep 'dired-filter)))
+     ("." "  Filter by.."                         dirvish-filter-menu :if (lambda () (featurep 'dired-filter)))
      ("." "  Toggle file omitting"                dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
      ("=" "  Compare files"                       dired-diff)
      ("S" "  Manage subdirs"                      dirvish-subdir-menu)
@@ -226,6 +227,33 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("l"   "Lower-case file name"                 dired-downcase)
     ("_"   "Replace SPC with UNDERSCORE"          dirvish-rename-space-to-underscore)
     ("w"   "Enter wdired [writable dired]"        wdired-change-to-wdired-mode :if-not-derived wdired-mode)])
+  (filter
+   ["Filter by:"
+    ("n" "  Name"                                 dired-filter-by-name)
+    ("r" "  Regexp"                               dired-filter-by-regexp)
+    ("." "  Extension"                            dired-filter-by-extension)
+    ("h" "  Dotfiles"                             dired-filter-by-dot-files)
+    ("o" "  Omit"                                 dired-filter-by-omit)
+    ("g" "  Garbage"                              dired-filter-by-garbage)
+    ("e" "  Predicate"                            dired-filter-by-predicate)
+    ("f" "  File"                                 dired-filter-by-file)
+    ("d" "  Directory"                            dired-filter-by-directory)
+    ("m" "  Mode"                                 dired-filter-by-mode)
+    ("s" "  Symlink"                              dired-filter-by-symlink)
+    ("x" "  Executable"                           dired-filter-by-executable)
+    ("i" "  Git ignored"                          dired-filter-by-git-ignored)
+    ""
+    "Compose filters:"
+    ("|" "  Or"                                   dired-filter-or)
+    ("!" "  Negate"                               dired-filter-negate)
+    ("*" "  Decompose"                            dired-filter-decompose)
+    ("Tab" "Transpose"                            dired-filter-transpose)
+    ("p" "  Pop"                                  dired-filter-pop)
+    ("/" "  Pop all"                              dired-filter-pop-all)
+    ("S" "  Save"                                 dired-filter-save-filters)
+    ("D" "  Delete saved"                         dired-filter-delete-saved-filters)
+    ("A" "  Add saved"                            dired-filter-add-saved-filters)
+    ("L" "  Load saved"                           dired-filter-load-saved-filters)])
   (epa-dired
    ["GNUpg assistant"
     ("e"   "Encrypt"                              epa-dired-do-encrypt)
