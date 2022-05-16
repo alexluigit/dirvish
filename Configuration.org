@@ -39,6 +39,7 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-header-line-text-size~      | Text height in header line               |
 | ~dirvish-header-line-format~         | Header line format in root window        |
 | ~dirvish-hide-details~               | Hide details as you see fit              |
+| ~dirvish-mode-line-position~         | The way to place the mode line           |
 | ~dirvish-mode-line-format~           | Mode line format in root window          |
 | ~dirvish-async-listing-threshold~    | List huge directories asynchronously     |
 | ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
@@ -311,6 +312,8 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
+  ;; Make the mode line spans all directory panes
+  ;; (dirvish-mode-line-position 'parent-panes)
   (dirvish-mode-line-format
    '(:left
      (sort file-time " " file-size symlink) ; it's ok to place string inside

@@ -119,6 +119,16 @@ Set it to nil disables the history tracking."
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
+(defcustom dirvish-mode-line-position 'regular
+  "The position to place the mode line in Dirvish sessions.
+The valid values are:
+- `regular': place it in root window.
+- `parent-panes': span all directory panes.
+- `global': span all panes."
+  :group 'dirvish :type '(choice (const :tag "Like regular mode line" regular)
+                                 (const :tag "Span all directory panes" parent-panes)
+                                 (const :tag "Span all panes" global)))
+
 (defcustom dirvish-header-line-text-size '(1.0 . 1.1)
   "Text height in Dirvish's header line.
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
@@ -445,7 +455,16 @@ If NO-CREATE is non-nil, do not create the buffer."
     (setq-local header-line-format nil)
     (setq-local window-size-fixed 'height)
     (setq-local face-font-rescale-alist nil)
-    (setq-local mode-line-format (dv-header-line-format dv))))
+    (setq-local mode-line-format (dv-header-line-format dv)))
+  (unless (eq dirvish-mode-line-position 'regular)
+    (with-current-buffer (dirvish--util-buffer 'footer dv)
+      (setq-local cursor-type nil)
+      (setq-local header-line-format nil)
+      (setq-local mode-line-format nil)
+      (setq-local window-size-fixed 'height)
+      (setq-local face-font-rescale-alist nil)
+      (face-remap-add-relative
+       'default :background (face-attribute 'mode-line :background)))))
 
 (cl-defmacro dirvish-define-attribute (name docstring (&key if left right) &rest body)
   "Define a Dirvish attribute NAME.
@@ -653,7 +672,7 @@ DV defaults to current dirvish instance if not given."
   (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
     (mapc #'kill-when-live (dv-dired-buffers dv))
     (mapc #'kill-when-live (dv-preview-buffers dv))
-    (dolist (type '(preview header))
+    (dolist (type '(preview header footer))
       (kill-when-live (dirvish--util-buffer type dv))))
   (funcall (dv-quit-window-fn dv) dv)
   (remhash (dv-name dv) dirvish--hash)
@@ -1221,10 +1240,19 @@ The bar image has height of `default-line-height' times SCALE."
     (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
       (dirvish-prop :child filename)
-      (let ((buf (dirvish--util-buffer 'header dv t)))
+      (let ((h-buf (dirvish--util-buffer 'header dv t))
+            (f-buf (dirvish--util-buffer 'footer dv t)))
         (dirvish-debounce layout
-          (when (buffer-live-p buf)
-            (with-current-buffer buf (force-mode-line-update))
+          (unless (dirvish-dired-p dv)
+            (when (buffer-live-p h-buf)
+              (with-current-buffer h-buf (force-mode-line-update)))
+            (when (buffer-live-p f-buf)
+              (with-current-buffer f-buf
+                (let ((win (if (eq dirvish-mode-line-position 'global)
+                               (get-buffer-window f-buf)
+                             (get-buffer-window h-buf))))
+                  (erase-buffer)
+                  (insert (format-mode-line (dv-mode-line-format dv) nil win f-buf)))))
             (dirvish-preview-update)))))))
 
 (defun dirvish-quit-h ()
@@ -1268,9 +1296,11 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish--render-attributes dv)
     (push (current-buffer) (dv-dired-buffers dv))
     (dirvish-prop :dv dv)
-    (cond ((not (eq (selected-window) (dv-root-window dv)))
-           (setq mode-line-format nil))
-          (ml-fmt (setq mode-line-format ml-fmt)))
+    (cond ((or (dirvish-dired-p dv)
+               (and (eq (selected-window) (dv-root-window dv))
+                    (eq dirvish-mode-line-position 'regular)))
+           (setq mode-line-format ml-fmt))
+          (t (setq mode-line-format nil)))
     (setq header-line-format
           (and (dirvish-dired-p dv) (dv-header-line-format dv))))
   (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil t)
@@ -1336,6 +1366,16 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
                         (window-parameters . ((no-other-window . t)))))
            (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
       (set-window-buffer new-window buf))))
+
+(defun dirvish-build--footer (dv)
+  "Create a window showing footer for DV."
+  (let* ((inhibit-modification-hooks t)
+         (buf (dirvish--util-buffer 'footer dv))
+         (win-alist `((side . below)
+                      (window-height . -1)
+                      (window-parameters . ((no-other-window . t)))))
+         (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
+    (set-window-buffer new-window buf)))
 
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."
@@ -1420,8 +1460,10 @@ If the buffer is not available, create it with `dired-noselect'."
   (dirvish--init-util-buffers dv)
   (unless (dirvish-dired-p dv)
     (let ((ignore-window-parameters t)) (delete-other-windows))
+    (and (eq dirvish-mode-line-position 'global) (dirvish-build--footer dv))
     (dirvish-build--preview dv)
-    (dirvish-build--header dv))
+    (dirvish-build--header dv)
+    (and (eq dirvish-mode-line-position 'parent-panes) (dirvish-build--footer dv)))
   (dirvish-build--parents dv))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
