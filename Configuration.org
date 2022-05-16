@@ -306,7 +306,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 (use-package dirvish
   :custom
   ;; Go back home? Just press `bh'
-  (dirvish-bookmarks-alist
+  (dirvish-menu-bookmarks
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
