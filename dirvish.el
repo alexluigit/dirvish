@@ -149,6 +149,9 @@ segments after setting this value."
                          (if (stringp s) s `(:eval (,(intern (format "dirvish-%s-ml" s)) dv)))))
               (gets (&optional lg) (if lg (cdr dirvish--hl-scale) (car dirvish--hl-scale)))
               (geth (&optional lg) (funcall (if lg #'cdr #'car) dirvish-header-line-text-size))
+              (font-scale ()
+                (let ((scale (- (face-attribute 'default :height) 100)))
+                  (if (> scale 0) (* scale -0.0075) 0)))
               (getr (t-size) (if (< t-size 1) (/ (- 1 t-size) t-size) 0)))
     `((:eval
        (let* ((dv (dirvish-curr))
@@ -157,7 +160,7 @@ segments after setting this value."
                               (dv-root-dir-buf-alist dv) nil nil #'equal))
               (height ,(if header `(if dired-p ,(geth) ,(geth t)) 1))
               (win-width (floor (/ (window-width) height)))
-              (raise ,(if header `(if dired-p ,(getr (geth)) -0.3) 0))
+              (raise ,(if header `(if dired-p ,(getr (geth)) ,(font-scale)) 0))
               (str-left
                (propertize (format-mode-line
                             ',(or (expand :left) mode-line-format) nil nil buf)
