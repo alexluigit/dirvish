@@ -1,4 +1,4 @@
-;;; dirvish-menu.el --- Keybindings menu for Dirvish -*- lexical-binding: t -*-
+;;; dirvish-menu.el --- Transient-based help menu for Dired/Dirvish -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
@@ -6,6 +6,7 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
+;; Package-Requires: ((emacs "25.1") (transient "0.3.7"))
 
 ;;; Commentary:
 
@@ -14,9 +15,13 @@
 
 ;;; Code:
 
-(require 'subr-x)
+(declare-function dirvish-curr "dirvish")
+(declare-function dirvish--refresh-slots "dirvish")
+(declare-function dv-root-dir-buf-alist "dirvish")
 (require 'transient)
-(require 'dirvish)
+(require 'dired)
+(require 'dirvish nil t)
+
 (defvar dirvish-menu-available-prefixs
   '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-quicksort dirvish-yank-menu dirvish-goto-bookmark))
 
@@ -26,20 +31,25 @@
   "[Experimental] Class for Dirvish toggles.")
 
 (cl-defmethod transient-format-description ((obj dirvish-menu-toggles))
+  "Format description for DIRVISH-MENU-TOGGLES instance OBJ."
   (or (oref obj description) (symbol-name (oref obj variable))))
 
 (cl-defmethod transient-format-value ((obj dirvish-menu-toggles))
+  "Format value for DIRVISH-MENU-TOGGLES instance OBJ."
   (let* ((val (prin1-to-string (oref obj value)))
          (face (if (equal val "On") 'transient-argument 'transient-inactive-value)))
     (propertize val 'face face)))
 
 (cl-defmethod transient-init-value ((obj dirvish-menu-toggles))
+  "Initialize value for DIRVISH-MENU-TOGGLES instance OBJ."
   (oset obj value (if (memq (oref obj variable) (funcall (oref obj scope) (dirvish-curr))) 'On 'Off)))
 
 (cl-defmethod transient-infix-read ((obj dirvish-menu-toggles))
+  "Read value from DIRVISH-MENU-TOGGLES instance OBJ."
   (oset obj value (if (eq (oref obj value) 'On) 'Off 'On)))
 
 (cl-defmethod transient-infix-set ((obj dirvish-menu-toggles) value)
+  "Set relevant value in DIRVISH-MENU-TOGGLES instance OBJ to VALUE."
   (let* ((dv (dirvish-curr))
          (item (oref obj variable))
          (slot-name (oref obj scope))
@@ -81,24 +91,25 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
 ;;;###autoload (autoload 'dirvish-filter-menu "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
  ((dispatch
+   "Main help menu for Dired/Dirvish."
    [:description
     (lambda () (dirvish-menu--format-heading (format "%s help menu" (if (derived-mode-p 'dirvish-mode) "Dirvish" "Dired")) 1.3))
     :if-derived dired-mode
     ["Essential commands"
-     ("e"   "Open file"                           dired-find-file)
-     ("o"   "Open file other window"              dired-find-file-other-window)
-     ("w"   "Get file information"                dirvish-file-info-menu)
-     ("s"   "Setup listing switches"              dirvish-ls-switches-menu)
-     ("("   "Toggle details"                      dired-hide-details-mode)
-     ("g"   "Refresh buffer"                      revert-buffer)]
+     ("e" "  Open file"                           dired-find-file)
+     ("o" "  Open file other window"              dired-find-file-other-window)
+     ("w" "  Get file information"                dirvish-file-info-menu)
+     ("s" "  Setup listing switches"              dirvish-ls-switches-menu)
+     ("(" "  Toggle details"                      dired-hide-details-mode)
+     ("g" "  Refresh buffer"                      revert-buffer)]
     ["I/O commands"
-     ("a"   "Add an empty file"                   dired-create-empty-file)
-     ("C"   "Copy"                                dired-do-copy :if-mode dired-mode)
-     ("y"   "Yank marked files"                   dirvish-yank-menu :if-derived dirvish-mode)
-     ("@"   "Rename files"                        dirvish-renaming-menu)
-     ("X"   "Delete files"                        dired-do-delete)
-     ("f"   "File attributes"                     dirvish-file-attributes-menu)
-     ("+"   "Create a directory"                  dired-create-directory)]
+     ("a" "  Add an empty file"                   dired-create-empty-file)
+     ("C" "  Copy"                                dired-do-copy :if-mode dired-mode)
+     ("y" "  Yank marked files"                   dirvish-yank-menu :if-derived dirvish-mode)
+     ("@" "  Rename files"                        dirvish-renaming-menu)
+     ("X" "  Delete files"                        dired-do-delete)
+     ("f" "  File attributes"                     dirvish-file-attributes-menu)
+     ("+" "  Add a directory"                     dired-create-directory)]
     ["View | Layout"
      ("v" "  View this file"                      dired-view-file)
      ("." "  Filter by.."                         dirvish-filter-menu :if (lambda () (featurep 'dired-filter)))
@@ -108,25 +119,26 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
      ("M-s" "Setup Dirvish"                       dirvish-setup-menu :if-derived dirvish-mode)]]
    [["Navigation"
-     ("j" "  Jump to file line"                   dired-goto-file)
-     ("b" "  Jump to bookmarks"                   dirvish-goto-bookmark)
-     ("^" "  Go up directory"                     dired-up-directory)
-     ("r" "  Roam the file system"                dirvish-roam)
-     ("l" "  Goto the last place"                 dirvish-other-buffer)
-     ("SPC" "Recently visited"                    dirvish-show-history)]
+     ("j" "  Jump to line for file"               dired-goto-file)
+     ("b" "  Go to bookmarks"                     dirvish-goto-bookmark)
+     ("^" "  Go to parent directory"              dired-up-directory)
+     ("r" "  Roam the file system"                dirvish-roam :if (lambda () (featurep 'dirvish)))
+     ("l" "  Go to the last place"                dirvish-other-buffer :if (lambda () (featurep 'dirvish)))
+     ("SPC" "Recently visited"                    dirvish-show-history :if (lambda () (featurep 'dirvish)))]
     ["Marks"
      ("m" "  Mark this file"                      dired-mark)
      ("u" "  Unmark this file"                    dired-unmark)
      ("U" "  Unmark all"                          dired-unmark-all-marks)
      ("t" "  Toggle marks"                        dired-toggle-marks)
      ("*" "  Mark by.."                           dirvish-marking-menu)
-     ("M-a" "Actions on marks"                    dirvish-mark-actions-menu)]
+     ("M-a" "Actions on marked"                   dirvish-mark-actions-menu)]
     ["Extensions"
      (":" "  GnuPG helpers"                       dirvish-epa-dired-menu)
      ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (featurep 'dired-subtree)))
      ("M-c" "Collapse paths"                      dired-collapse-mode :if (lambda () (featurep 'dired-collapse)))
      ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))]])
   (ls-switches
+   "Setup Dired listing switches."
    :init-value
    (lambda (o) (oset o value (split-string (or dired-actual-switches ""))))
    [:description
@@ -159,18 +171,20 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("S" "show the allocated size" "--size")
      "Actions"
      ("RET" "  apply to this buffer" dirvish-menu--apply-switches-to-buffer)
-     ("M-RET" "apply to this session" dirvish-menu--apply-switches-to-session)
+     ("M-RET" "apply to this session" dirvish-menu--apply-switches-to-session :if-derived 'dirvish-mode)
      ("C-r" "  reset this buffer" dirvish-menu--reset-switches-for-buffer)
-     ("M-r" "  reset this session" dirvish-menu--reset-switches-for-session)
+     ("M-r" "  reset this session" dirvish-menu--reset-switches-for-session :if-derived 'dirvish-mode)
      ("C-l" "  clear choices" dirvish-menu--clear-switches-choices :transient t)]])
   (file-attributes
-   ["Change file attributes"
+   "Modify file attributes."
+   ["Modify file attributes"
     ("R"   "Name"                                 dired-do-rename)
     ("G"   "Group"                                dired-do-chgrp)
     ("M"   "Mode"                                 dired-do-chmod)
     ("O"   "Owner"                                dired-do-chown)
     ("T"   "Timestamp"                            dired-do-touch)])
   (subdir
+   "Help Menu for Dired subdir management."
    ["Manage subdirs"
     ("i" "  Insert subdir"                        dired-maybe-insert-subdir)
     ("k" "  Kill subdir"                          dired-kill-subdir)
@@ -180,19 +194,23 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("$" "  Hide subdir"                          dired-hide-subdir)
     ("M-$" "Hide all subdirs"                     dired-hide-all)])
   (marking
+   "Help Menu for `dired-mark-*' commands."
    ["Mark all ____ files:"
-    ("s"   "SUBDIR"                               dired-mark-subdir-files)
-    ("*"   "EXECUTABLE"                           dired-mark-executables)
-    ("/"   "DIRECTORIE"                           dired-mark-directories)
-    ("@"   "SYMLINK"                              dired-mark-symlinks)
-    ("e"   "EXTENSION"                            dired-mark-extension)
-    ("&"   "GARBAGE"                              dired-flag-garbage-files)
-    ("#"   "AUTO-SAVED"                           dired-flag-auto-save-files)
-    ("~"   "BACKUP"                               dired-flag-backup-files)
-    ("."   "NUMERICAL BACKUP"                     dired-clean-directory)
-    ("%"   "NAME     matched regexp"              dired-mark-files-regexp)
-    ("g"   "CONTENTS matched regexp"              dired-mark-files-containing-regexp)])
+    ("s"   "Subdir"                               dired-mark-subdir-files)
+    ("*"   "Executable"                           dired-mark-executables)
+    ("/"   "Directory"                            dired-mark-directories)
+    ("@"   "Symlink"                              dired-mark-symlinks)
+    ("&"   "Garbage"                              dired-flag-garbage-files)
+    ("#"   "Auto-saved"                           dired-flag-auto-save-files)
+    ("~"   "Backup"                               dired-flag-backup-files)
+    ("."   "Numerical backup"                     dired-clean-directory)
+    ""
+    "Mark files by:"
+    ("e"   "Extension"                            dired-mark-extension)
+    ("%"   "Regexp (file name)"                   dired-mark-files-regexp)
+    ("g"   "Regexp (file content)"                dired-mark-files-containing-regexp)])
   (mark-actions
+   "Help Menu for `dired-do-*' commands."
    ["Actions on marks"
     ("F"   "Open"                                 dired-do-find-marked-files)
     ("S"   "Symlink"                              dired-do-symlink)
@@ -213,21 +231,25 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("n"   "Move to next marked"                  dired-next-marked-file)
     ("p"   "Move to prev marked"                  dired-prev-marked-file)])
   (file-info
+   "Gather file information."
    ["Get file information"
-    ("n"   "copy file NAME"                       dirvish-copy-file-name)
-    ("p"   "copy file PATH"                       dirvish-copy-file-path)
-    ("d"   "copy file DIRECTORY"                  dirvish-copy-file-directory)
-    ("l"   "copy symlink's truename"              dirvish-copy-file-true-path)
-    ("L"   "goto symlink's truename"              dirvish-find-file-true-path)
-    ("s"   "file size of marked files"            dirvish-total-file-size)
+    ("n"   "Copy file NAME"                       dirvish-copy-file-name :if (lambda () (featurep 'dirvish)))
+    ("N"   "Copy NAMEs of marked files"           dired-copy-filename-as-kill)
+    ("p"   "Copy file PATH"                       dirvish-copy-file-path :if (lambda () (featurep 'dirvish)))
+    ("d"   "Copy file DIRECTORY"                  dirvish-copy-file-directory :if (lambda () (featurep 'dirvish)))
+    ("l"   "Copy symlink's truename"              dirvish-copy-file-true-path :if (lambda () (featurep 'dirvish)))
+    ("L"   "Go to symlink's truename"             dirvish-find-file-true-path :if (lambda () (featurep 'dirvish)))
+    ("s"   "Get total size of marked files"       dirvish-total-file-size :if (lambda () (featurep 'dirvish)))
     ("t"   "show file TYPE"                       dired-show-file-type)])
   (renaming
+   "Help Menu for file renaming in Dired."
    ["File renaming"
     ("u"   "Upper-case file name"                 dired-upcase)
     ("l"   "Lower-case file name"                 dired-downcase)
-    ("_"   "Replace SPC with UNDERSCORE"          dirvish-rename-space-to-underscore)
+    ("_"   "Replace SPC with UNDERSCORE"          dirvish-rename-space-to-underscore :if-derived 'dirvish-mode)
     ("w"   "Enter wdired [writable dired]"        wdired-change-to-wdired-mode :if-not-derived wdired-mode)])
   (filter
+   "Transient-based `dired-filter-map'."
    ["Filter by:"
     ("n" "  Name"                                 dired-filter-by-name)
     ("r" "  Regexp"                               dired-filter-by-regexp)
@@ -255,6 +277,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("A" "  Add saved"                            dired-filter-add-saved-filters)
     ("L" "  Load saved"                           dired-filter-load-saved-filters)])
   (epa-dired
+   "Help menu for `epa-dired-do-*' commands."
    ["GNUpg assistant"
     ("e"   "Encrypt"                              epa-dired-do-encrypt)
     ("d"   "Decrypt"                              epa-dired-do-decrypt)
@@ -331,7 +354,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   :argument-regexp "\\(--indicator-style=\\(slash\\|file-type\\|classify\\)\\)"
   :choices '("slash" "file-type" "classify"))
 
-(defun dirvish-quicksort--do-sort (switches)
+(defun dirvish-menu--quicksort-do-sort (switches)
   "Sort current buffer with dired sort SWITCHES."
   (let* ((regexp "\\(--time=\\w+\\|--sort=\\w+\\|--reverse\\)\\( \\)?")
          (others (replace-regexp-in-string regexp "" dired-actual-switches))
@@ -339,8 +362,9 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     (setq dired-actual-switches new-switches)
     (revert-buffer)))
 
+(define-obsolete-variable-alias 'dirvish-quicksort-keys 'dirvish-menu-quicksort-keys "1.3.21")
 ;;;###autoload (autoload 'dirvish-quicksort "dirvish-menu" nil t)
-(defcustom dirvish-quicksort-keys
+(defcustom dirvish-menu-quicksort-keys
   '(("n" ""                                   "name (a-z)")
     ("N" "--reverse"                          "name (z-a)")
     ("e" "--sort=extension"                   "extension (a-z)")
@@ -375,10 +399,11 @@ invoke the sort function, SWITCHES is the the sort flags for
             for (key switches desc) in v collect
             (list key desc `(lambda ()
                               (interactive)
-                              (dirvish-quicksort--do-sort ,switches))))]))))
+                              (dirvish-menu--quicksort-do-sort ,switches))))]))))
 
+(define-obsolete-variable-alias 'dirvish-yank-keys 'dirvish-menu-yank-keys "1.3.21")
 ;;;###autoload (autoload 'dirvish-yank-menu "dirvish-menu" nil t)
-(defcustom dirvish-yank-keys
+(defcustom dirvish-menu-yank-keys
   '(("y" "Yank (paste) here"           dirvish-yank)
     ("m" "Move here"                   dirvish-move)
     ("s" "Make symlinks here"          dirvish-symlink)
@@ -394,10 +419,16 @@ invoke the CMD, DOC is the documentation string."
     (eval
      `(transient-define-prefix dirvish-yank-menu ()
         "Yank commands menu."
-        ["Select yank operation on marked files:" ,@v]))))
+        [:if-derived 'dirvish-mode
+                     "Select yank operation on marked files:" ,@v]
+        (interactive)
+        (if (derived-mode-p 'dirvish-mode)
+            (transient-setup 'dirvish-yank-menu)
+          (user-error "Not in a Dirvish buffer"))))))
 
+(define-obsolete-variable-alias 'dirvish-bookmarks-alist 'dirvish-menu-bookmarks "1.3.21")
 ;;;###autoload (autoload 'dirvish-goto-bookmark "dirvish-menu" nil t)
-(defcustom dirvish-bookmarks-alist
+(defcustom dirvish-menu-bookmarks
   '(("h" "~/"                          "Home")
     ("d" "~/Downloads/"                "Downloads")
     ("m" "/mnt/"                       "Drives")
@@ -422,13 +453,13 @@ invoke the navigation, PATH is the the argument for command
                     (concat desc "  "
                             (make-string (- max-desc-len (length desc)) ?\ )
                             (propertize path 'face 'font-lock-comment-face))
-                    `(lambda () (interactive) (dirvish-find-file ,path))))])))))
+                    `(lambda ()
+                       (interactive)
+                       (dired-jump current-prefix-arg ,path))))])))))
 
-(defconst dirvish--icon-backend (cond ((memq 'all-the-icons dirvish-attributes) 'all-the-icons)
-                                      ((memq 'vscode-icon dirvish-attributes) 'vscode-icon)))
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
-(defcustom dirvish-setup-menu-alist
-  `(,(when dirvish--icon-backend `("i" ,dirvish--icon-backend attr "File icons"))
+(defcustom dirvish-menu-setup-items
+  '(("i"  all-the-icons  attr     "File icons")
     ("s"  file-size      attr     "File size")
     ("v"  vc-state       attr     "Version control state information")
     ("m"  git-msg        attr     "Git commit messages")
@@ -449,6 +480,7 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
   :set
   (lambda (k v)
     (set k (remove nil v))
+    (unless (require 'dirvish nil t) (setq v nil))
     (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attr)) v))
           (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview)) v))
           (layout-alist (seq-filter (lambda (i) (eq (nth 2 i) 'layout)) v)))
@@ -472,7 +504,7 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
         (mapc #'new-infix preview-alist)
         (eval
          `(transient-define-prefix dirvish-setup-menu ()
-            "Change config of current Dirvish session."
+            "Configure current Dirvish session."
             [:description
              (lambda () (dirvish-menu--format-heading "Setup Dirvish"))
              ["File attributes:"
@@ -488,7 +520,13 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
                                    'face 'font-lock-doc-face)))
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
-             ("RET" "Confirm and quit" (lambda () (interactive) (dirvish-build (dirvish-curr)) (revert-buffer)))]))))))
+             ("RET" "Confirm and quit"
+              (lambda () (interactive) (dirvish-build (dirvish-curr)) (revert-buffer)))]
+            (interactive)
+            (if (or (derived-mode-p 'dirvish-mode)
+                    (bound-and-true-p dirvish-override-dired-mode))
+                (transient-setup 'dirvish-setup-menu)
+              (user-error "`dirvish-setup-menu' is for Dirvish only"))))))))
 
 (provide 'dirvish-menu)
 ;;; dirvish-menu.el ends here
