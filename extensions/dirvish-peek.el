@@ -67,7 +67,7 @@ one of categories in `dirvish-peek-categories'."
       (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
       (setq-local dirvish--props (make-hash-table :size 10))
       (unless (and old-dv (dv-preview-window old-dv))
-        (setq new-dv (dirvish-new nil :depth -1))
+        (setq new-dv (dirvish-new nil))
         (setf (dv-preview-window new-dv)
               (display-buffer-in-side-window (dirvish--util-buffer) dirvish-peek-display-alist))
         (dirvish--add-advices)))

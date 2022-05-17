@@ -151,7 +151,7 @@ will visit the latest `project-root' after executing
 
 (defun dirvish-side-root-window-fn (dv)
   "Display DV's window according to `dirvish-side-display-alist'."
-  (if (>= (dv-depth dv) 0)
+  (if (dv-layout dv)
       (frame-selected-window)
     (let ((win (display-buffer-in-side-window
                 (dirvish--util-buffer) dirvish-side-display-alist)))
@@ -201,7 +201,7 @@ otherwise it defaults to `project-current'."
   (pcase-let ((`(,dv . ,state) (dirvish-side--get-state)))
     (cl-case state
       ('visible
-       (unless (dirvish-dired-p dv) (dirvish-toggle-fullscreen))
+       (when (dv-layout dv) (dirvish-toggle-fullscreen))
        (dirvish-side--set-state dv 'exists)
        (let ((win (dv-root-window dv)))
          (unless (window-live-p win)
@@ -231,7 +231,6 @@ otherwise it defaults to `project-current'."
          :preview-dispatchers dirvish-side-preview-dispatchers
          :mode-line-format dirvish-side-mode-line-format
          :header-line-format dirvish-side-header-line-format
-         :depth -1
          :root-window-fn #'dirvish-side-root-window-fn
          :find-file-window-fn #'dirvish-side-find-file-window-fn
          :quit-window-fn #'dirvish-side-quit-window-fn)

@@ -89,17 +89,16 @@ The value should be a integer between 23 to 128."
   :group 'dirvish :type 'integer)
 
 (defcustom dirvish-layout-recipes
-  '((0 nil  0.4)  ;        | CURRENT | preview
-    (0 nil  0.8)  ;        | current | PREVIEW
-    (1 0.08 0.8)  ; parent | current | PREVIEW
-    (1 0.1  0.6)) ; parent | current | preview
+  '((0 0    0.4)   ;        | CURRENT | preview
+    (0 0    0.8)   ;        | current | PREVIEW
+    (1 0.08 0.8)   ; parent | current | PREVIEW
+    (1 0.11 0.55)) ; parent | current | preview
   "Layout RECIPEs for `dirvish-switch-layout' command.
-Each recipe is a list with the slot values of `depth',
-`parent-width' and `preview-width' being applied to the session."
+RECIPE has the same form as `dirvish-default-layout'."
   :group 'dirvish
-  :type '(repeat (list (integer :tag "the actual `dirvish-depth'")
-                       (choice (nil float) :tag "the actual `dirvish-parent-max-width'")
-                       (float :tag "the actual `dirvish-preview-width'"))))
+  :type '(repeat (list (integer :tag "number of parent windows")
+                       (float :tag "max width of parent windows")
+                       (float :tag "width of preview windows"))))
 
 (defcustom dirvish-time-format-string "%R-%x"
   "FORMAT-STRING for `file-time' mode line segment.
@@ -471,26 +470,20 @@ current layout defined in `dirvish-layout-recipes'."
   (cl-loop
    with dv = (let ((dv (dirvish-curr)))
                (unless dv (user-error "Not in a Dirvish session"))
-               (when (dirvish-dired-p dv)
+               (unless (dv-layout dv)
                  (dirvish-toggle-fullscreen)
                  (user-error "Dirvish: entering fullscreen")) dv)
+   with old-recipe = (dv-layout dv)
    with recipes = (if recipe (list recipe) dirvish-layout-recipes)
    with l-length = (length recipes)
-   with old-preview-width = (dv-preview-width dv)
-   with old-depth = (dv-depth dv)
    for idx from 1
-   for (new-depth _ new-preview-width) in recipes
-   when (or (eq idx l-length)
-            (and (equal old-preview-width new-preview-width)
-                 (equal old-depth new-depth)))
+   for recipe in recipes
+   when (or (eq idx l-length) (equal old-recipe recipe))
    return
-   (pcase-let* ((new-idx (if (> idx (1- l-length)) 0 idx))
-                (`(,depth ,parent-width ,preview-width)
-                 (nth new-idx recipes)))
-     (setf (dv-depth dv) depth)
-     (setf (dv-fullscreen-depth dv) depth)
-     (and parent-width (setf (dv-parent-width dv) parent-width))
-     (setf (dv-preview-width dv) preview-width)
+   (let* ((new-idx (if (> idx (1- l-length)) 0 idx))
+          (new-recipe (nth new-idx recipes)))
+     (setf (dv-layout dv) new-recipe)
+     (setf (dv-last-fs-layout dv) new-recipe)
      (dirvish-build dv))))
 
 (provide 'dirvish-extras)

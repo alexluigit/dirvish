@@ -509,9 +509,9 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
              (lambda () (dirvish-menu--format-heading "Setup Dirvish"))
              ["File attributes:"
               ,@(mapcar #'expand-infix attr-alist)]]
-            ["Preview:" :if-not dirvish-dired-p
+            ["Preview:" :if (lambda () (dv-layout (dirvish-curr)))
              ,@(mapcar #'expand-infix preview-alist)]
-            [:if (lambda () (and (derived-mode-p 'dirvish-mode) (not (dirvish-dired-p))))
+            [:if (lambda () (and (derived-mode-p 'dirvish-mode) (dv-layout (dirvish-curr))))
              :description
              (lambda ()
                (format "%s\n%s"

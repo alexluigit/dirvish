@@ -33,9 +33,7 @@ otherwise the preview functionality may not work correctly.
 |------------------------------------+------------------------------------------|
 | ~dirvish-cache-dir~                  | Cache directory                          |
 | ~dirvish-history-length~             | Maximum number of items in history       |
-| ~dirvish-depth~                      | Level of dirs to traverse up             |
-| ~dirvish-parent-max-width~           | Max width of parent windows              |
-| ~dirvish-preview-width~              | Width of preview window                  |
+| ~dirvish-default-layout~             | Default layout for fullscreen sessions   |
 | ~dirvish-header-line-text-size~      | Text height in header line               |
 | ~dirvish-header-line-format~         | Header line format in root window        |
 | ~dirvish-hide-details~               | Hide details as you see fit              |
