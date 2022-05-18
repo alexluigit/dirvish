@@ -1170,14 +1170,14 @@ The bar image has height of `default-line-height' times SCALE."
 
 (dirvish-define-mode-line path
   "Path of file under the cursor."
-  (let* ((index (dirvish-prop :child))
-         (dirname (or (file-name-directory index) ""))
-         (from-home (string-prefix-p (getenv "HOME") dirname))
-         (dir-tail (replace-regexp-in-string dirvish--dir-tail-regex "" dirname))
-         (tail (if (equal dir-tail "") "" (concat dir-tail " ")))
-         (base (file-name-nondirectory index)))
+  (when-let* ((index (or (dirvish-prop :child) (dired-get-filename nil t)))
+              (dirname (file-name-directory index))
+              (dir-tail (replace-regexp-in-string dirvish--dir-tail-regex "" dirname))
+              (tail (if (equal dir-tail "") "" (concat dir-tail " ")))
+              (base (file-name-nondirectory index)))
     (format " %s%s%s "
-            (propertize (if from-home "~ " ": ") 'face 'dired-header)
+            (propertize (if (string-prefix-p (getenv "HOME") dirname) "~ " ": ")
+                        'face 'dired-header)
             (propertize tail 'face 'dired-mark)
             (propertize base 'face 'dired-header))))
 
@@ -1206,7 +1206,7 @@ The bar image has height of `default-line-height' times SCALE."
 
 (dirvish-define-mode-line symlink
   "Show the truename of symlink file under the cursor."
-  (let ((file (dirvish-prop :child)))
+  (when-let ((file (or (dirvish-prop :child) (dired-get-filename nil t))))
     (when (file-symlink-p file)
       (format " %s %s "
               (propertize "→" 'face 'font-lock-comment-delimiter-face)
