@@ -262,9 +262,11 @@ Dirvish session as its argument."
     (meow          meow--update-cursor             dirvish-ignore-ad)
     (flycheck      flycheck-buffer                 dirvish-ignore-ad)
     (lsp-mode      lsp-deferred                    dirvish-ignore-ad)))
-(defvar dirvish-scopes '(:tab tab-bar--current-tab-index :frame selected-frame))
+(defvar dirvish-scopes
+  '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window))
 (defvar dirvish-hook-alist
   '((emacs window-selection-change-functions dirvish-reclaim)
+    (emacs minibuffer-exit-hook              dirvish--deactivate-for-minibuffer)
     (emacs tab-bar-tab-pre-close-functions   dirvish--deactivate-for-tab)
     (emacs delete-frame-functions            dirvish--deactivate-for-frame)))
 (defvar dirvish-debug-p nil)
@@ -755,6 +757,12 @@ DV defaults to current dirvish instance if not given."
   "Deactivate all dvs in FRAME."
   (dolist (scope (dirvish-get-all 'scopes t))
     (when (eq (plist-get scope :frame) frame)
+      (dirvish-kill (plist-get scope :dv)))))
+
+(defun dirvish--deactivate-for-minibuffer ()
+  "Deactivate Dirvish session in minibuffer."
+  (dolist (scope (dirvish-get-all 'scopes t))
+    (when (eq (plist-get scope :mini) (active-minibuffer-window))
       (dirvish-kill (plist-get scope :dv)))))
 
 ;;;; Advices
@@ -1375,15 +1383,11 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."
   (let* ((dir (file-name-as-directory (expand-file-name dir)))
-         (reuse (cl-loop
-                 for name in (dirvish-get-all 'name nil t)
-                 for dv = (gethash name dirvish--hash)
-                 thereis (and (equal (dv-index-dir dv) dir) dv)))
-         (dv (or reuse (dirvish-new nil))))
+         (dv (dirvish-new nil)))
     (setf (dv-index-dir dv) dir)
     (ring-insert dirvish--history-ring dir)
     (with-current-buffer (dirvish--buffer-for-dir dv dir)
-      (or reuse (dirvish-build dv))
+      (dirvish-build dv)
       (current-buffer))))
 
 (defun dirvish--noselect-async-sentinel (proc _state)
