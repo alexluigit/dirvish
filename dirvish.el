@@ -878,7 +878,7 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish--add-advices (&optional packages)
   "Add all advices listed in `dirvish-advice-alist'.
 If PACKAGES, only add advices for these packages."
-  (when packages (dolist (package packages) (require package)))
+  (when packages (dolist (package packages) (require package nil t)))
   (pcase-dolist (`(,pkg ,sym ,fn ,place) dirvish-advice-alist)
     (when (or (and packages (memq pkg packages))
               (and (not packages) (require pkg nil t)))
@@ -1290,6 +1290,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (dirvish--render-attributes dv)
     (push (current-buffer) (dv-dired-buffers dv))
     (dirvish-prop :dv dv)
+    (dirvish--add-advices '(evil))
     (cond ((or (not (dv-layout dv))
                (and (eq (selected-window) (dv-root-window dv))
                     (eq dirvish-mode-line-position 'regular)))
