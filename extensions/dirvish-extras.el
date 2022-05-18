@@ -192,12 +192,12 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (defun dirvish--format-file-attr (attr-name)
   "Return a string of cursor file's attribute ATTR-NAME."
-  (let* ((name (dirvish-prop :child))
-         (attrs (dirvish-attribute-cache name :builtin))
-         (attr-getter (intern (format "file-attribute-%s" attr-name)))
-         (attr-face (intern (format "dirvish-file-%s" attr-name)))
-         (attr-val (and attrs (funcall attr-getter attrs))))
-    (and attr-val (propertize (format "%s" attr-val) 'face attr-face))))
+  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
+              (attrs (dirvish-attribute-cache name :builtin))
+              (attr-getter (intern (format "file-attribute-%s" attr-name)))
+              (attr-face (intern (format "dirvish-file-%s" attr-name)))
+              (attr-val (and attrs (funcall attr-getter attrs))))
+    (propertize (format "%s" attr-val) 'face attr-face)))
 
 (dirvish-define-attribute all-the-icons "File icons provided by `all-the-icons.el'."
   (:left (+ (length dirvish-icon-delimiter) 2)
@@ -300,14 +300,14 @@ This attribute only support `dired-subtree' for now."
 
 (dirvish-define-mode-line file-user
   "User name of file."
-  (when-let* ((name (dirvish-prop :child))
+  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
               (attrs (dirvish-attribute-cache name :builtin))
               (uid (and attrs (file-attribute-user-id attrs))))
     (propertize (user-login-name uid) 'face 'dirvish-file-user-id)))
 
 (dirvish-define-mode-line file-group
   "Group name of file."
-  (when-let* ((name (dirvish-prop :child))
+  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
               (attrs (dirvish-attribute-cache name :builtin))
               (gid (and attrs (file-attribute-group-id attrs))))
     (propertize (group-name gid) 'face 'dirvish-file-group-id)))
@@ -315,22 +315,22 @@ This attribute only support `dired-subtree' for now."
 (dirvish-define-mode-line file-time
   "Last access/modification/status change time.
 The actual time displayed depends on `dired-actual-switches'."
-  (let* ((name (dirvish-prop :child))
-         (attrs (dirvish-attribute-cache name :builtin))
-         (switches (split-string dired-actual-switches))
-         (time (cond ((member "--time=use" switches) (nth 4 attrs))
-                     ((member "--time=ctime" switches) (nth 6 attrs))
-                     ((member "--time=birth" switches))
-                     (t (nth 5 attrs))))
-         (time-string (and time (format-time-string dirvish-time-format-string time))))
-    (and time-string (format "%s" (propertize time-string 'face 'dirvish-file-time)))))
+  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
+              (attrs (dirvish-attribute-cache name :builtin))
+              (switches (split-string dired-actual-switches))
+              (time (cond ((member "--time=use" switches) (nth 4 attrs))
+                          ((member "--time=ctime" switches) (nth 6 attrs))
+                          ((member "--time=birth" switches))
+                          (t (nth 5 attrs))))
+              (time-string (format-time-string dirvish-time-format-string time)))
+    (format "%s" (propertize time-string 'face 'dirvish-file-time))))
 
 (dirvish-define-mode-line file-size
   "File size of files or file count of directories."
-  (let* ((name (dirvish-prop :child))
-         (attrs (dirvish-attribute-cache name :builtin))
-         (size (and attrs (dirvish--get-file-size-or-count name attrs))))
-    (and size (format "%s" (propertize size 'face 'dirvish-file-size)))))
+  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
+              (attrs (dirvish-attribute-cache name :builtin))
+              (size (and attrs (dirvish--get-file-size-or-count name attrs))))
+    (format "%s" (propertize size 'face 'dirvish-file-size))))
 
 (dirvish-define-mode-line file-modes
   "File modes, as a string of ten letters or dashes as in ls -l."
