@@ -76,9 +76,7 @@ one of categories in `dirvish-peek-categories'."
 (defun dirvish-peek--teardown ()
   "Teardown dirvish minibuffer preview window."
   (let* ((dv-mini (frame-parameter nil 'dirvish--peek))
-         (old-dv (plist-get dv-mini :old))
-         (new-dv (plist-get dv-mini :new)))
-    (when new-dv (dirvish-kill new-dv))
+         (old-dv (plist-get dv-mini :old)))
     (set-frame-parameter nil 'dirvish--curr old-dv)))
 
 (defun dirvish-peek-update-h ()
