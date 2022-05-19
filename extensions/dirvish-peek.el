@@ -24,7 +24,10 @@
 
 (defvar dirvish-peek--cand-fn nil)
 (defcustom dirvish-peek-backend
-  (or (require 'vertico nil t) (require 'selectrum nil t) (require 'ivy nil t) 'icomplete)
+  (or (require 'vertico nil t)
+      (require 'selectrum nil t)
+      (require 'ivy nil t)
+      'icomplete)
   "Completion framework for `dirvish-peek-mode'.
 These framework are supported: `vertico', `selectrum', `ivy', or
 the inbuilt `icomplete\[-vertical-mode\]'."
@@ -35,7 +38,10 @@ the inbuilt `icomplete\[-vertical-mode\]'."
     (setq dirvish-peek--cand-fn
           (pcase v
             ('vertico #'vertico--candidate)
-            ('selectrum (lambda () (selectrum--get-full (selectrum--get-candidate selectrum--current-candidate-index))))
+            ('selectrum (lambda ()
+                          (selectrum--get-full
+                           (selectrum--get-candidate
+                            selectrum--current-candidate-index))))
             ('ivy (lambda () (ivy-state-current ivy-last)))
             ('icomplete (lambda () (car completion-all-sorted-completions)))))))
 
@@ -69,9 +75,12 @@ one of categories in `dirvish-peek-categories'."
       (unless (and old-dv (dv-preview-window old-dv))
         (setq new-dv (dirvish-new nil))
         (setf (dv-preview-window new-dv)
-              (display-buffer-in-side-window (dirvish--util-buffer) dirvish-peek-display-alist))
+              (display-buffer-in-side-window
+               (dirvish--util-buffer)
+               dirvish-peek-display-alist))
         (dirvish--add-advices)))
-    (set-frame-parameter nil 'dirvish--peek `(:category ,preview-category :old ,old-dv :new ,new-dv))))
+    (set-frame-parameter nil 'dirvish--peek
+                         `(:category ,preview-category :old ,old-dv))))
 
 (defun dirvish-peek--teardown ()
   "Teardown dirvish minibuffer preview window."

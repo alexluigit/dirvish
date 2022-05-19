@@ -96,8 +96,7 @@ For example, if the value is 10000, then directories with over
 
 (defvar dirvish--history-ring nil)
 (defcustom dirvish-history-length 50
-  "Length of directory visiting history Dirvish will track.
-Set it to nil disables the history tracking."
+  "Length of directory visiting history Dirvish will track."
   :group 'dirvish :type 'integer
   :set (lambda (k v) (set k v) (setq dirvish--history-ring (make-ring v))))
 
