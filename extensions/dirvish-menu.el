@@ -516,7 +516,7 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
              (lambda ()
                (format "%s\n%s"
                        (propertize "Layout:" 'face 'transient-heading)
-                       (propertize "pane with uppercased name has the biggest size in the layout"
+                       (propertize "Uppercased pane has the biggest size"
                                    'face 'font-lock-doc-face)))
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"

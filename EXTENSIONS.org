@@ -1,0 +1,171 @@
+* Extensions
+
+Several small extension packages to Dirvish are maintained in the subdirectory
+extensions/. They are installed together with Dirvish if you pull the package
+from MELPA, Dirvish can work properly with or without them though. These
+extensions are inactive by default and can be enabled manually if desired.
+
+Currently the following extensions come with the package:
+
+- [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
+- [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
+- [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: Preview files when narrowing candidates using minibuffer.
+- [[file:extensions/dirvish-vc.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
+- [[file:extensions/dirvish-extras.el][dirvish-extras.el]]: Extra commands, UI elements, preview dispatchers for Dirvish.
+- [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
+
+With these extensions it is possible to adapt Dirvish such that it matches your
+preference or behaves similar to other familiar file explorers.
+
+** Transient based help menu (dirvish-menu.el)
+
+This extension provides help menu powered by =transient.el= for Dirvish.
+
+~dirvish-dispatch~ is the prefix to invoke the top-level help menu, just like
+~magit-dispatch~ as to =magit= (see Figure 1. in [[https://github.com/alexluigit/dirvish/#screenshots][README.org]]). The menu contains most
+of the built-in Dired commands and all of the Dirvish commands. Some sub-level
+prefix commands such as ~dirvish-marking-menu~ were created because it makes sense
+to group together the Dired/Dirvish commands that serve similar purposes.
+
+An interesting prefix worth mentioning is ~dirvish-setup-menu~, because it enables
+users to change the setup of a session on the fly (See *Figure 6* and *7* in this page).
+
+The variable ~dirvish-menu-available-prefixs~ holds all available prefixs, bind
+them in ~dirvish-mode-map~ if you like.
+
+** Multi-stage copy/pasting of files (dirvish-yank.el)
+
+Here is a quote from [[https://github.com/Fuco1/dired-hacks][dired-ranger]] that justified the ~dired-ranger-move/paste~ commands:
+
+#+begin_quote
+A feature present in most orthodox file managers is a "two-stage" copy/paste
+process. Roughly, the user first selects some files, "copies" them into a
+clipboard and then pastes them to the target location. This workflow is missing
+in dired.
+
+In dired, user first marks the files, then issues the dired-do-copy command
+which prompts for the destination. The files are then copied there. The
+dired-dwim-target option makes this a bit friendlier---if two dired windows are
+opened, the other one is automatically the default target.
+
+With the multi-stage operations, you can gather files from multiple dired
+buffers into a single "clipboard", then copy or move all of them to the target
+location.
+#+end_quote
+
+The ~dirvish-yank~ command can do similar things as ~dired-ranger-move/paste~,
+meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
+
+- It paste/move files using external processes, hence heavy I/O tasks won't
+  block the main process of Emacs.
+- It's much simpler than ~dired-ranger~ because you mark files using built-in
+  Dired commands such as ~dired-mark~, ~dired-mark-extension~.
+  
+** Minibuffer file preview (dirvish-peek.el)
+
+~dirvish-peek-mode~ gives you a preview window when narrowing file candidates
+using minibuffer. It displays file preview for all of the file name narrowing
+commands in the same way as =dirvish= command.
+
+https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-908e-f5d91ba316a6.mp4
+
+*Figure 1.* A demo of ~find-library~ and ~find-file~ commands after ~dirvish-peek-mode~ enabled.
+
+The ~dirvish-peek-display-alist~ option allows you to control the window placement
+of the peek window.
+
+~dirvish-peek-mode~ currently supports =vertico=, =selectrum=, =ivy= and =icomplete[-vertical]=.
+
+** Version-control (git) integration (dirvish-vc.el)
+
+|-----------+-------------------------------------------------|
+| Attribute | Description                                     |
+|-----------+-------------------------------------------------|
+| ~vc-state~  | A VC state indicator (such as "M" for modified) |
+| ~git-msg~   | Show git commit messages after the file name    |
+|-----------+-------------------------------------------------|
+This extension also provides the ~vc-diff~ preview dispatcher which shows changes
+between the working tree and the index of selected files at preview window.
+
+https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-ad5d-ae4a088a69b4.mp4
+
+*Figure 2*. Toggle =vc-state= (attribute), =git-msg= (attribute) and =vc-diff= (preview dispatcher).
+
+** Extra commands, attributes, mode-line segments (dirvish-extras.el)
+*** Commands
+
+|------------------------------------+------------------------------------------|
+| Command                            | Description                              |
+|------------------------------------+------------------------------------------|
+| ~dirvish-show-history~               | Navigate to recently visited directories |
+| ~dirvish-other-buffer~               | Switch to most recent Dirvish buffer     |
+| ~dirvish-find-file-true-path~        | Open the true name of symlinks           |
+| ~dirvish-copy-file-name~             | Copy the file name ("foo.el")            |
+| ~dirvish-copy-file-path~             | Copy the file path ("path/to/foo/bar")   |
+| ~dirvish-copy-file-directory~        | Copy the parent file path                |
+| ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"      |
+| ~dirvish-roam~                       | Browse all directories using ~fd~ command  |
+| ~dirvish-switch-layout~              | Switch Dirvish layout                    |
+|------------------------------------+------------------------------------------|
+*** Attributes
+
+|----------------+-------------------------------------------------|
+| Attribute      | Description                                     |
+|----------------+-------------------------------------------------|
+| ~all-the-icons~  | File icons provided by =all-the-icons=            |
+| ~vscode-icon~    | File icons provided by =vscode-icon=              |
+| ~file-size~      | File size of files or file count of directories |
+| ~expanded-state~ | Directory expanded state indicator              |
+|----------------+-------------------------------------------------|
+
+https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-84a8-d568517f0b50.mp4
+
+*Figure 3*. Toggle =expanded-state=, =all-the-icons=, =file-size= attributes
+
+*** Mode-line segments
+
+|--------------------+--------------------------------------------------------------|
+| Segment            | Description                                                  |
+|--------------------+--------------------------------------------------------------|
+| ~free-space~         | Disk free space                                              |
+| ~file-link-number~   | Number of links to file                                      |
+| ~file-user~          | User name of file                                            |
+| ~file-group~         | Group name of file                                           |
+| ~file-time~          | Last access/modification/status change time                  |
+| ~file-size~          | File size of files or file count of directories              |
+| ~file-modes~         | File modes, as a string of ten letters or dashes as in ls -l |
+| ~file-inode-number~  | File inode number                                            |
+| ~file-device-number~ | Filesystem device number                                     |
+|--------------------+--------------------------------------------------------------|
+
+*** Customizing options
+
+|-------------------------------+--------------------------------------------|
+| Option                        | Description                                |
+|-------------------------------+--------------------------------------------|
+| ~dirvish-icon-delimiter~        | The delimiter between icon and filename    |
+| ~dirvish-all-the-icons-height~  | Height applied to =all-the-icons=            |
+| ~dirvish-all-the-icons-offset~  | Vertical offset applied to =all-the-icons=   |
+| ~dirvish-all-the-icons-palette~ | Coloring style applied to =all-the-icons=    |
+| ~dirvish-vscode-icon-size~      | Pixelwise size applied to =vscode-icon=      |
+| ~dirvish-expanded-state-style~  | String/icon used for folder expanded state |
+| ~dirvish-layout-recipes~        | Layout recipes for ~dirvish-switch-layout~   |
+| ~dirvish-time-format-string~    | Format-string for ~file-time~ segment        |
+|-------------------------------+--------------------------------------------|
+
+** Toggle Dirvish in side window (dirvish-side.el)
+*** Customizing options
+
+|----------------------------------------+----------------------------------|
+| Option                                 | Description                      |
+|----------------------------------------+----------------------------------|
+| ~dirvish-side-attributes~                | See ~dirvish-attributes~           |
+| ~dirvish-side-preview-dispatchers~       | See ~dirvish-preview-dispatchers~  |
+| ~dirvish-side-mode-line-format~          | See ~dirvish-mode-line-format~     |
+| ~dirvish-side-display-alist~             | Size and position of side window |
+| ~dirvish-side-window-parameters~         | Window parameters of side window |
+| ~dirvish-side-open-file-window-function~ | Target window for ~find-file~      |
+| ~dirvish-side-follow-buffer-file~        | Follow current ~buffer-file-name~  |
+| ~dirvish-side-scope~                     | Scope for side sessions          |
+|----------------------------------------+----------------------------------|
+

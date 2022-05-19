@@ -1,0 +1,106 @@
+* FAQ
+** How is Dirvish related to Dired?
+
+A Dirvish session holds a set of buffers with ~dirvish-mode~ as its ~major-mode~. As
+discussed above, since ~dirvish-mode~ is a derived mode from ~dired-mode~, most of
+the Dired commands work exactly the same in a ~dirvish-mode~ buffer.
+
+Nonetheless, Dirvish and Dired handle these aspects differently:
+
++ Isolated sessions ::
+
+  Each Dirvish has its own window layout along with some other isolated niceties
+  such as header string. This makes it easy for Dirvish to adapt itself towards
+  different file management tasks.
+
++ Buffer management ::
+
+  =dired= command and friends create new Dired buffers, hence navigating through
+  the file system always end up with a lot of Dired buffers. To avoid this, one
+  can either replace ~dired-find-file~ with ~dired-find-alternate-file~ or enable
+  ~dired-kill-when-opening-new-dired-buffer~, but they introduce two new issues:
+
+  - The Dired buffers in other windows/tabs/frames might be killed unexpectedly
+  - The Dired buffers are no longer reusable
+
+  As a comparison, the directory/preview buffers are reused during a Dirvish
+  session and get killed when user explicitly exit the session.
+
++ Mode line ::
+
+  Dirvish has its own mode-line that can be customized with
+  ~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option doesn't
+  work in Dirvish.
+
+** Why do I have duplicate icon columns?
+
+See [[#all-the-icons-dired.el][all-the-icons-dired]] and [[#treemacs-icons-dired.el][treemacs-icons-dired]].
+
+* Related projects
+
+Generally speaking, Dirvish should be able to handle most of the file
+exploring/managing tasks, after all it is backed by the superb Dired.  Besides,
+choose Dirvish over packages listed below gives you:
+1. An unified user interface in all your file managing scenarios.
+2. File preview at your disposal.
+3. Less package configs to maintain or worry about.
+
+** neotree
+
+=neotree= works pretty well as a simple project explorer. But sadly, compare to
+=dirvish[-side]=, this package is not built on top of Dired, which means you have
+to learn or configure a different set of commands, meanwhile, it is way less
+powerful as Dired/Dirvish in terms of file managing.
+
+** treemacs
+
+Same as =neotree=, but =treemacs= is a much more mature yet complex package. It can
+even be used as a general rendering backend of any tree-like structures, you may
+find this package useful when you have related needs. It might be an overkill
+for simple project exploring tasks due to its complexity and huge codebase.
+
+** dired-sidebar
+
+=dired-sidebar=, which is also a file explorer at side window that leveraging the
+power of Dired, is a promising alternative to =dirvish-side=.  The problem with
+=dired-sidebar= is that all the niceities this package provided are only applied
+to the side Dired instance, one needs to do some extra works to make the regular
+Dired and =dired-sidebar= look consistent.
+
+** ranger.el
+
+See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]].
+
+* Additional notes on other packages
+** all-the-icons-dired.el
+
+This package ([[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]]) is *NOT* required at all unless you want to use
+Dirvish with ~dirvish-override-dired-mode~ *disabled*.
+
+In fact, I'd advise *against* using this package along with Dirvish. The reason is
+that it trys to retrive icons for all the files in a directory /eagerly/, which
+hangs up Emacs on large directories. Dirvish, on the contrary, renders UI
+elements (including icons of course) *lazily* whenever applicable.
+
+Besides, Dirvish handles line highlighting by its own rather than using the
+inbuilt ~hl-line-mode~. Because of this, Dirvish's icon solution integrates
+flawlessly with line highlighting along with other attributes.
+
+[[icon-comparison][https://user-images.githubusercontent.com/16313743/159666549-02209e1b-80f9-491d-b7f4-8db1358511e1.png]]
+
+You'll end up with two icon columns if you insist on using this package. Here's a
+workaround (you'll still get stuck at large directories though):
+
+#+begin_src emacs-lisp
+(defun turn-off-all-the-icons-dired ()
+  (all-the-icons-dired-mode -1)
+  (setq-local tab-width 2))
+
+(add-hook 'dirvish-mode-hook #'turn-off-all-the-icons-dired)
+#+end_src
+
+** treemacs-icons-dired.el
+
+Apart from similar concerns mentioned in the above =all-the-icons-dired.el=
+section, this package ([[https://melpa.org/#/treemacs-icons-dired][treemacs-icons-dired]]) also introduces duplicate icon
+columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.com/alexluigit/dirvish/issues/16][here]].
