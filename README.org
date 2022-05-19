@@ -12,8 +12,9 @@ This package gives Dired the following features:
 + Multiple window layouts
 + Always available file preview
 + Isolated sessions
-+ Asynchronous directory listing
 + A modern and composable user interface
+
+... to name a few.
 
 #+begin_quote
 The experience of dirvish is surreal and even bizarre after all these years of
@@ -22,174 +23,54 @@ does something similar with how it builds on dired. Dirvish is paradoxical in
 that it provides a completely different experience while still fundamentally
 being dired at its core.
 
-[[https://github.com/alexluigit/dirvish/issues/34][-- @noctuid]]
+-- @noctuid ([[https://github.com/alexluigit/dirvish/issues/34][source]])
 #+end_quote
 
-* Screenshots
+[[https://user-images.githubusercontent.com/16313743/169456875-ed5af1e7-57cd-4203-96e9-9038119721b9.png][https://user-images.githubusercontent.com/16313743/169456875-ed5af1e7-57cd-4203-96e9-9038119721b9.png]]
 
-[[https://user-images.githubusercontent.com/16313743/159170480-1901925c-e4dc-4c43-a280-348890bdfcf4.png][https://user-images.githubusercontent.com/16313743/159170480-1901925c-e4dc-4c43-a280-348890bdfcf4.png]]
-*Figure 1*. ~dirvish~: A file browser/manager with live preview
-
-https://user-images.githubusercontent.com/16313743/156968548-cb091eb5-179d-48bd-aa3d-04add862440a.mp4
-
-*Figure 2*. ~dirvish-dired~: A brand new Dired.
-
-https://user-images.githubusercontent.com/16313743/156969621-c07c3e12-4762-4850-b27d-43c6f4008826.mp4
-
-*Figure 3*. ~dirvish-side~: A "neotree" leveraging Dired.
-
-https://user-images.githubusercontent.com/16313743/158773638-e6252372-8eff-4035-a4b7-8bd456185cda.mp4
-
-*Figure 4*. Huge directories no longer hung up Emacs
-
-* Installation
+* Quickstart
+** Installation
 
 Dirvish is available on [[https://melpa.org][Melpa]], you can install it directly via ~package-install~
 if you have melpa in your ~package-archives~.
 
-** For =straight.el= users
-
 #+begin_src emacs-lisp
+;;; For straight.el user
 (straight-use-package 'dirvish)
-#+end_src
 
-** Manual install
-
-To install it manually, first clone this repository, then add =path/to/dirvish= to your ~load-path~.
-
-#+begin_src emacs-lisp
+;;; Manual install
 (add-to-list 'load-path "/path/to/dirvish")
 ;; If you want the extensions as well
 (add-to-list 'load-path "/path/to/dirvish/extensions")
 (require 'dirvish)
 #+end_src
 
-* Quickstart
+** Basic usage
 
 Start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
 
 - ~dirvish-dired~ creates a session in current window (like ~dired~).
 - ~dirvish~ creates a session that makes use of the whole frame.
-- ~dirvish-dwim~ works the same way as ~dirvish-dired~ expect it enter fullscreen
-  automatically when current frame have only one window.
 
 ~dirvish-toggle-fullscreen~ allows you to toggle the fullscreen state of the
 current session.
-
-Dirvish doesn't change any of your Dired config nor rebind any keys in
-~dired-mode-map~. As a result, a Dired user already knew how to use Dirvish. (see
-also: [[#FAQ][How is Dirvish related to Dired?]])
 
 It is also recommended to enable ~dirvish-override-dired-mode~, which makes all
 your Dired entry commands including ~dired[-other-window/tab/frame]~ initialize or
 reuse a Dirvish session automatically.
 
-* Extensions
+That's it, you're all set. Use Dirvish in the same as you use Dired.
 
-Several small extension packages to Dirvish are maintained in the subdirectory
-extensions/. They are installed together with Dirvish if you pull the package
-from MELPA, Dirvish can work properly with or without them though. These
-extensions are inactive by default and can be enabled manually if desired.
+* Resources
 
-Currently the following extensions come with the package:
-
-- [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
-- [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
-- [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
-- [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: Preview files when narrowing candidates using minibuffer.
-- [[file:extensions/dirvish-vc.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
-- [[file:extensions/dirvish-extras.el][dirvish-extras.el]]: Extra commands, UI elements, preview dispatchers for Dirvish.
-
-With these extensions it is possible to adapt Dirvish such that it matches your
-preference or behaves similar to other familiar file explorers.
-
-* Customization
-
-See [[file:Configuration.org][Configuration.org]] (included docs for extensions).
-
-* Related projects
-
-Generally speaking, Dirvish should be able to handle most of the file
-exploring/managing tasks, after all it is backed by the superb Dired.  Besides,
-choose Dirvish over packages listed below gives you:
-1. An unified user interface in all your file managing scenarios.
-2. File preview at your disposal.
-3. Less package configs to maintain or worry about.
-
-** neotree
-
-=neotree= works pretty well as a simple project explorer. But sadly, compare to
-=dirvish[-side]=, this package is not built on top of Dired, which means you have
-to learn or configure a different set of commands, meanwhile, it is way less
-powerful as Dired/Dirvish in terms of file managing.
-
-** treemacs
-
-Same as =neotree=, but =treemacs= is a much more mature yet complex package. It can
-even be used as a general rendering backend of any tree-like structures, you may
-find this package useful when you have related needs. It might be an overkill
-for simple project exploring tasks due to its complexity and huge codebase.
-
-** dired-sidebar
-
-=dired-sidebar=, which is also a file explorer at side window that leveraging the
-power of Dired, is a promising alternative to =dirvish-side=.  The problem with
-=dired-sidebar= is that all the niceities this package provided are only applied
-to the side Dired instance, one needs to do some extra works to make the regular
-Dired and =dired-sidebar= look consistent.
-
-** ranger.el
-
-See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]].
-
-* Issues
-
-- There maybe incompatibilities with other third-party Dired packages.
-
-Please feel free to report any issues.
-
-* FAQ
-** How is Dirvish related to Dired?
-
-A Dirvish session holds a set of buffers with ~dirvish-mode~ as its ~major-mode~. As
-discussed above, since ~dirvish-mode~ is a derived mode from ~dired-mode~, most of
-the Dired commands work exactly the same in a ~dirvish-mode~ buffer.
-
-Nonetheless, Dirvish and Dired handle these aspects differently:
-
-+ Isolated sessions ::
-
-  Each Dirvish has its own window layout along with some other isolated niceties
-  such as header string. This makes it easy for Dirvish to adapt itself towards
-  different file management tasks (See [[#Screenshots][screenshots]]).
-
-+ Buffer management ::
-
-  =dired= command and friends create new Dired buffers, hence navigating through
-  the file system always end up with a lot of Dired buffers. To avoid this, one
-  can either replace ~dired-find-file~ with ~dired-find-alternate-file~ or enable
-  ~dired-kill-when-opening-new-dired-buffer~, but they introduce two new issues:
-
-  - The Dired buffers in other windows/tabs/frames might be killed unexpectedly
-  - The Dired buffers are no longer reusable
-
-  As a comparison, the directory/preview buffers are reused during a Dirvish
-  session and get killed when user explicitly exit the session.
-
-+ Mode line ::
-
-  Dirvish has its own mode-line that can be customized with
-  ~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option doesn't
-  work in Dirvish.
-
-** How do I customize the preview content?
-
-See [[https://github.com/alexluigit/dirvish/blob/main/Configuration.org#preview-strategies][Preview strategies]].
-
++ [[file:CUSTOMIZING.org][Customizing Dirvish]]
++ [[file:EXTENSIONS.org][Useful extensions]]
++ [[file:FAQ.org][FAQ | Related projects]]
++ [[file:CHANGELOG.org][Changelog]]
+  
 * Acknowledgements
 
-This package is inspired a lot by [[https://github.com/ralesi/ranger.el][ranger.el]], thanks @ralesi for creating and
-maintaining it.
+Thanks Fox Kiester (@noctuid) for the awesome [[https://github.com/alexluigit/dirvish/issues/34][summary]] of Dirvish.
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 -----

@@ -1,0 +1,270 @@
+#+AUTHOR: Alex Lu
+#+EMAIL: alexluigit@gmail.com
+#+startup: content
+
+*TL;DR*: Grab the config from [[#Example-config][Example config]]. Read following docs in-depth if you
+want further customizations.
+
+-----
+
+* Prerequisites
+
+|-------------------+----------------------------+----------|
+| Package           | Description                | Required |
+|-------------------+----------------------------+----------|
+| =Emacs 27.1=        | Support Emacs 27.1 onward  | Required |
+| =all-the-icons.el=  | Icon support               | Optional |
+| =vscode-icon.el=    | Icon support               | Optional |
+| =pdftoppm=          | Generate pdf preface image | Optional |
+| =imagemagick=       | Generate image cache       | Optional |
+| =ffmpegthumbnailer= | Generate video thumbnailer | Optional |
+| =epub-thumbnailer=  | Generate epub thumbnailer  | Optional |
+| =zipinfo=           | Preview zip files          | Optional |
+| =mediainfo=         | Display media metadata     | Optional |
+|-------------------+----------------------------+----------|
+
+It is recommended to use the latest version of these packages/applications,
+otherwise the preview functionality may not work correctly.
+
+* Customizing options
+
+|------------------------------------+------------------------------------------|
+| Option                             | Description                              |
+|------------------------------------+------------------------------------------|
+| ~dirvish-cache-dir~                  | Cache directory                          |
+| ~dirvish-auto-cache-threshold~       | Generate cache images automatically      |
+| ~dirvish-history-length~             | Maximum number of items in history       |
+| ~dirvish-default-layout~             | Default layout for fullscreen sessions   |
+| ~dirvish-hide-details~               | Hide details as you see fit              |
+| ~dirvish-header-line-text-size~      | Text height in header line               |
+| ~dirvish-header-line-format~         | Header line format in root window        |
+| ~dirvish-mode-line-position~         | The way to place the mode line           |
+| ~dirvish-mode-line-format~           | Mode line format in root window          |
+| ~dirvish-async-listing-threshold~    | List huge directories asynchronously     |
+| ~dirvish-enabled-features-on-remote~ | Enabled Dirvish features on remote hosts |
+| ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
+| ~dirvish-preview-dispatchers~        | See [[#Preview-strategies][Preview strategies]]                   |
+| ~dirvish-attributes~                 | See [[#Extra-attributes][Extra attributes]]                     |
+|------------------------------------+------------------------------------------|
+Consult the docstring of the options for details.
+
+* Extra attributes
+
+A list of file attributes such as ~file-size~ showing in file lines are stored in
+the variable ~dirvish-attributes~. Evaluate this to get all available attributes:
+
+#+begin_src emacs-lisp
+(prog1 (mapc #'require dirvish-extra-libs) (describe-variable 'dirvish--available-attrs))
+#+end_src
+
+To change the attributes session locally, see [[file:EXTENSIONS.org][dirvish-menu]].
+
+* Preview strategies
+
+A preview dispatcher represents a strategy for file preview on certain
+conditions. The variable ~dirvish-preview-dispatchers~, which holds all the active
+dispatchers, has the default value looks like:
+
+#+begin_src emacs-lisp
+(text gif image video audio epub archive pdf-tools)
+#+end_src
+
+Each dispatcher in this list handles the validation and preview content
+generation for the corresponding filetype. Consult ~dirvish-define-preview~ and
+~dirvish-preview-dispatch~ for details.
+
+Here are two customization examples.
+
+** Example 1: directory preview using ~exa~ command
+
+Let's assume you don't like the default directory preview results provided by
+Dired, you can create a directory previewer that utilizes the ~exa~ command:
+
+#+begin_src emacs-lisp
+(dirvish-define-preview exa (file)
+  "Use `exa' to generate directory preview."
+  (when (file-directory-p file) ; we only interest in directories here
+    `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the output of `exa' command as preview
+
+(add-to-list 'dirvish-preview-dispatchers 'exa)
+#+end_src
+
+This makes Dirvish use the output from ~exa~ shell command as your preview content
+for a directory entry. The other benefit of doing so is that Dirvish execute
+shell commands asynchronously, therefore preview a huge directory won't block
+the main process of Emacs.
+
+On a side note, you can customize the corresponding =ansi-color= faces to change
+the coloring in the preview window.
+
+#+begin_src emacs-lisp
+(set-face-attribute 'ansi-color-blue nil :foreground "#FFFFFF")
+#+end_src
+
+[[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
+[screenshot from the ~doom-one~ theme]
+
+** Example 2: preview =README.md= in a project when it exists
+
+Here we create a dispatcher to preview the =README.md= file in a directory:
+
+#+begin_src emacs-lisp
+(dirvish-define-preview readme (file)
+  "Preview README.md file in a directory when it exists."
+  (when (file-directory-p file)
+    (let ((readme-file (expand-file-name "README.md" file)))
+      (when (file-exists-p readme-file) ; when the README.md exists
+        `(buffer . ,(find-file-noselect readme-file t nil)))))) ; use the file buffer as preview
+
+(add-to-list 'dirvish-preview-dispatchers 'readme)
+#+end_src
+
+If you find it useful, you can extend this dispatcher to support "README.org" or
+make it case insensitive etc.
+
+* Hooks
+
+|----------------------------+-----------------------------------------|
+| Hook                       | Description                             |
+|----------------------------+-----------------------------------------|
+| ~dirvish-activation-hook~    | Hook for dirvish session activation.    |
+| ~dirvish-deactivation-hook~  | Hook for dirvish session deactivation.  |
+| ~dirvish-mode-hook~          | Hook for parent buffer initialization.  |
+| ~dirvish-preview-setup-hook~ | Hook for preview buffer initialization. |
+|----------------------------+-----------------------------------------|
+
+* Example config
+** Dired | Dirvish
+
+#+begin_src emacs-lisp
+(use-package dired
+  :config
+  (setq dired-recursive-deletes 'always)
+  (setq delete-by-moving-to-trash t)
+  (setq dired-dwim-target t)
+  ;; Make sure to use the long name of flags when exists
+  ;; eg. use "--almost-all" instead of "-A"
+  ;; Otherwise some commands won't work properly
+  (setq dired-listing-switches
+        "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group"))
+
+(use-package dirvish
+  :custom
+  ;; Go back home? Just press `bh'
+  (dirvish-menu-bookmarks
+   '(("h" "~/"                          "Home")
+     ("d" "~/Downloads/"                "Downloads")
+     ("m" "/mnt/"                       "Drives")
+     ("t" "~/.local/share/Trash/files/" "TrashCan")))
+  ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
+  ;; Make the mode line spans all directory panes
+  ;; (dirvish-mode-line-position 'parent-panes)
+  (dirvish-mode-line-format
+   '(:left
+     (sort file-time " " file-size symlink) ; it's ok to place string inside
+     :right
+     ;; For `dired-filter' users, replace `omit' with `filter' segment defined below
+     (omit yank index)))
+  (dirvish-attributes '(expanded-state
+                        ;; You can put `file-size' here instead
+                        ;; file-size
+                        ;; Feel free to replace `all-the-icons' with `vscode-icon'.
+                        all-the-icons))
+  ;; Maybe the icons are too big to your eyes
+  ;; (dirvish-all-the-icons-height 0.8)
+  ;; List directories that has over 10000 files asynchronously
+  ;; This feature is disabled by default
+  ;; (dirvish-async-listing-threshold 10000)
+  ;; In case you want the details at startup like `dired'
+  ;; (dirvish-hide-details nil)
+  :config
+  ;; Place this line under :init to ensure the overriding at startup, see #22
+  (dirvish-override-dired-mode)
+  (dirvish-peek-mode)
+  ;; Define mode line segment for `dired-filter'
+  ;; (dirvish-define-mode-line filter "Describe filters."
+  ;;   (when (bound-and-true-p dired-filter-mode)
+  ;;     (propertize (format " %s " (dired-filter--describe-filters))
+  ;;                 'face 'dired-filter-group-header)))
+  :bind
+  (nil ; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
+   :map dired-mode-map
+   ("SPC" . dirvish-show-history)
+   ("r"   . dirvish-roam)
+   ("b"   . dirvish-goto-bookmark)
+   ("f"   . dirvish-file-info-menu)
+   ("M-n" . dirvish-go-forward-history)
+   ("M-p" . dirvish-go-backward-history)
+   ("M-a" . dirvish-mark-actions-menu)
+   ("M-s" . dirvish-setup-menu)
+   ("M-f" . dirvish-toggle-fullscreen)
+   ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)
+   ([remap dired-do-redisplay] . dirvish-ls-switches-menu)
+   ([remap dired-summary] . dirvish-dispatch)
+   ([remap dired-do-copy] . dirvish-yank-menu)
+   ([remap mode-line-other-buffer] . dirvish-other-buffer)))
+#+end_src
+
+* Complementary packages
+
+These packages are only listed here for discoverability.
+
+#+begin_src emacs-lisp
+(use-package dired-x
+  ;; Enable dired-omit-mode by default
+  ;; :hook
+  ;; (dired-mode . dired-omit-mode)
+  :config
+  ;; Make dired-omit-mode hide all "dotfiles"
+  (setq dired-omit-files
+        (concat dired-omit-files "\\|^\\..*$")))
+
+;; Addtional syntax highlighting for dired
+(use-package diredfl
+  :hook
+  (dired-mode . diredfl-mode))
+
+;; Use `all-the-icons' as Dirvish's icon backend
+(use-package all-the-icons)
+
+;; Or, use `vscode-icon' instead
+;; (use-package vscode-icon
+;;   :config
+;;   (push '("jpg" . "image") vscode-icon-file-alist))
+
+;; Turn Dired into a tree browser
+(use-package dired-subtree
+  :config
+  (setq dired-subtree-use-backgrounds nil)
+  :bind
+  (:map dired-mode-map
+        ("TAB" . dired-subtree-toggle)))
+
+;; Narrow a dired buffer to the files matching a string.
+(use-package dired-narrow
+  :bind
+  (:map dired-mode-map
+        ("N" . dired-narrow)))
+
+;; `ibuffer' like file filtering system
+(use-package dired-filter
+  :after dirvish
+  :config
+  :custom
+  ;; Do not touch the header line
+  (dired-filter-show-filters nil)
+  (dired-filter-revert 'always)
+  :bind
+  (:map dired-mode-map
+        ([remap dired-omit-mode] . dired-filter-mode)))
+
+(use-package dired-collapse
+  :bind
+  (:map dired-mode-map
+        ("M-c" . dired-collapse-mode)))
+
+;; Drop-in replacement for find-dired
+(use-package fd-dired
+  :bind
+  ("C-c F" . fd-dired))
+#+end_src
