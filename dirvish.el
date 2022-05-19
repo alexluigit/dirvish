@@ -656,6 +656,12 @@ restore them after."
            (dirvish-kill new)
            (user-error "Dirvish: using existed session"))
          (dirvish-kill old))
+       (setf (dv-scopes new)
+             (cl-loop
+              with res-plist = `(:dv ,new :point ,(point))
+              for (key value) on dirvish-scopes by 'cddr do
+              (setq res-plist (append res-plist (list key (funcall value))))
+              finally return res-plist))
        (set-frame-parameter nil 'dirvish--curr new)
        (when-let ((path (dv-path new)))
          (dirvish-find-file (expand-file-name (file-name-directory path))))
@@ -668,7 +674,8 @@ restore them after."
 DV defaults to current dirvish instance if not given."
   (let ((conf (dv-window-conf dv)))
     (when (and (dv-layout dv) (window-configuration-p conf))
-      (set-window-configuration conf)))
+      (set-window-configuration conf)
+      (goto-char (plist-get (dv-scopes dv) :point)))) ; same buffer in different window
   (cl-labels ((kill-when-live (b) (and (buffer-live-p b) (kill-buffer b))))
     (mapc #'kill-when-live (dv-dired-buffers dv))
     (mapc #'kill-when-live (dv-preview-buffers dv))
@@ -701,15 +708,9 @@ DV defaults to current dirvish instance if not given."
           (append '(remote disable) (dv-preview-dispatchers dv) '(default)))
          (preview-fns
           (cl-loop for dp-name in dp-names collect
-                   (intern (format "dirvish-%s-preview-dp" dp-name))))
-         (scopes (cl-loop
-                  with res-plist = `(:dv ,dv)
-                  for (key value) on dirvish-scopes by 'cddr do
-                  (setq res-plist (append res-plist (list key (funcall value))))
-                          finally return res-plist)))
+                   (intern (format "dirvish-%s-preview-dp" dp-name)))))
     (setf (dv-attribute-fns dv) attrs-alist)
-    (setf (dv-preview-fns dv) preview-fns)
-    (setf (dv-scopes dv) scopes)))
+    (setf (dv-preview-fns dv) preview-fns)))
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
