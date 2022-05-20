@@ -101,7 +101,8 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("w" "  Get file information"                dirvish-file-info-menu)
      ("s" "  Setup listing switches"              dirvish-ls-switches-menu)
      ("(" "  Toggle details"                      dired-hide-details-mode)
-     ("g" "  Refresh buffer"                      revert-buffer)]
+     ("TAB" "Toggle subtree"                      dirvish-toggle-subtree :if-not (lambda () (featurep 'dired-subtree)))
+     ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (featurep 'dired-subtree)))]
     ["I/O commands"
      ("a" "  Add an empty file"                   dired-create-empty-file)
      ("C" "  Copy"                                dired-do-copy :if-mode dired-mode)
@@ -132,9 +133,9 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("t" "  Toggle marks"                        dired-toggle-marks)
      ("*" "  Mark by.."                           dirvish-marking-menu)
      ("M-a" "Actions on marked"                   dirvish-mark-actions-menu)]
-    ["Extensions"
+    ["Others"
+     ("g" "  Refresh buffer"                      revert-buffer)
      (":" "  GnuPG helpers"                       dirvish-epa-dired-menu)
-     ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (featurep 'dired-subtree)))
      ("M-c" "Collapse paths"                      dired-collapse-mode :if (lambda () (featurep 'dired-collapse)))
      ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))]])
   (ls-switches
