@@ -198,7 +198,8 @@ The value can be one of: `plus', `arrow', `chevron'."
               (attr-val (and attrs (funcall attr-getter attrs))))
     (propertize (format "%s" attr-val) 'face attr-face)))
 
-(dirvish-define-attribute all-the-icons "File icons provided by `all-the-icons.el'."
+(dirvish-define-attribute all-the-icons
+  "File icons provided by `all-the-icons.el'."
   (:left (+ (length dirvish-icon-delimiter) 2)
          :if (dirvish--should-enable 'extras))
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
@@ -214,7 +215,8 @@ The value can be one of: `plus', `arrow', `chevron'."
          (ov (make-overlay (1- f-beg) f-beg)))
     (overlay-put ov 'after-string icon-str) ov))
 
-(dirvish-define-attribute vscode-icon "File icons provided by `vscode-icon.el'."
+(dirvish-define-attribute vscode-icon
+  "File icons provided by `vscode-icon.el'."
   (:left (1+ (length dirvish-icon-delimiter))
          :if (dirvish--should-enable 'extras))
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
@@ -223,16 +225,24 @@ The value can be one of: `plus', `arrow', `chevron'."
             (let ((default-directory dirvish--vscode-icon-directory))
               (if (eq f-type 'dir)
                   (let* ((base-name (file-name-base f-name))
-                         (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist)) base-name))
+                         (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist))
+                                        base-name))
                          (icon-path (vscode-icon-dir-exists-p icon-base))
                          closed-icon opened-icon)
                     (if icon-path
                         (progn
-                          (setq closed-icon (vscode-icon-create-image icon-path))
-                          (setq opened-icon (vscode-icon-create-image
-                                             (expand-file-name (format "folder_type_%s_opened.png" icon-base)))))
-                      (setq closed-icon (vscode-icon-create-image (expand-file-name "default_folder.png")))
-                      (setq opened-icon (vscode-icon-create-image (expand-file-name "default_folder_opened.png"))))
+                          (setq closed-icon
+                                (vscode-icon-create-image icon-path))
+                          (setq opened-icon
+                                (vscode-icon-create-image
+                                 (expand-file-name
+                                  (format "folder_type_%s_opened.png" icon-base)))))
+                      (setq closed-icon
+                            (vscode-icon-create-image
+                             (expand-file-name "default_folder.png")))
+                      (setq opened-icon
+                            (vscode-icon-create-image
+                             (expand-file-name "default_folder_opened.png"))))
                     (cons closed-icon opened-icon))
                 (vscode-icon-file f-name)))))
          (icon (cond ((not (file-directory-p f-name)) icon-info)
@@ -241,12 +251,14 @@ The value can be one of: `plus', `arrow', `chevron'."
          (ov (make-overlay (1- f-beg) f-beg)))
     (overlay-put ov 'display icon)
     (overlay-put ov 'before-string (propertize " " 'face hl-face))
-    (overlay-put ov 'after-string (propertize dirvish-icon-delimiter 'face hl-face)) ov))
+    (overlay-put ov 'after-string
+                 (propertize dirvish-icon-delimiter 'face hl-face)) ov))
 
 (dirvish-define-attribute file-size
   "Show file size or directories file count at right fringe."
   (:if (and (dirvish--should-enable 'extras)
-            (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
+            (eq (dv-root-window dv) (selected-window))
+            dired-hide-details-mode)
        :right 6)
   (let* ((depth (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))
          (width (window-width))
@@ -265,7 +277,8 @@ The value can be one of: `plus', `arrow', `chevron'."
                        (setq vis-str (buffer-substring f-beg pos)))
                      pos)))
          (face (or hl-face 'dirvish-file-size))
-         (spc (propertize " " 'display `(space :align-to (- right-fringe ,f-size-len)) 'face face))
+         (spc (propertize " " 'display
+                          `(space :align-to (- right-fringe ,f-size-len)) 'face face))
          (ov (make-overlay ov-pos ov-pos)))
     (add-face-text-property 0 f-size-len face t f-size-str)
     (overlay-put ov 'after-string (concat spc f-size-str)) ov))
@@ -367,8 +380,9 @@ ARG defaults to 1."
   (let* ((dirs (reverse
                 (mapcar #'car (dv-root-dir-buf-alist (dirvish-curr)))))
          (len (length dirs))
-         (idx (cl-position (or (dirvish-prop :fd-dir) (dired-current-directory))
-                           dirs :test #'equal))
+         (idx (cl-position
+               (or (dirvish-prop :fd-dir) (dired-current-directory))
+               dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
            (dirvish-find-file (nth (- len 1) dirs))
@@ -394,13 +408,16 @@ ARG defaults to -1."
 (defun dirvish--kill-and-echo (string)
   "Echo last killed STRING."
   (kill-new string)
-  (message "%s" (format "%s%s" (propertize "Copied: " 'face 'font-lock-builtin-face) string)))
+  (let ((hint (propertize
+               "Copied: " 'face 'font-lock-builtin-face)))
+    (message "%s" (format "%s%s" hint string))))
 
 ;;;###autoload
 (defun dirvish-copy-file-true-path ()
   "Copy truename of (maybe) symlink file under the cursor."
   (interactive)
-  (dirvish--kill-and-echo (file-truename (dired-get-filename nil t))))
+  (dirvish--kill-and-echo
+   (file-truename (dired-get-filename nil t))))
 
 ;;;###autoload
 (defun dirvish-copy-file-name ()
@@ -416,9 +433,10 @@ ARG defaults to -1."
 
 ;;;###autoload
 (defun dirvish-copy-file-directory ()
-  "Copy the current directory's (`default-directory''s) absolute path."
+  "Copy directory name of file under the cursor."
   (interactive)
-  (dirvish--kill-and-echo (expand-file-name default-directory)))
+  (dirvish--kill-and-echo
+   (expand-file-name default-directory)))
 
 ;;;###autoload
 (defun dirvish-total-file-size (&optional fileset)
@@ -451,7 +469,8 @@ FILESET defaults to `dired-get-marked-files'."
 This command takes a while to index all the directories the first
 time you run it.  After the indexing, it fires up instantly."
   (interactive)
-  (unless (executable-find "fd") (user-error "Dirvish: install `fd' to use this command"))
+  (unless (executable-find "fd")
+    (user-error "Dirvish: install `fd' to use this command"))
   (let* ((command "fd -H -td -0 . /")
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))

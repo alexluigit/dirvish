@@ -310,7 +310,6 @@ The prefix is repeated \"depth\" times."
 (defvar-local dirvish--subtree-overlays nil "Subtree overlays in this buffer.")
 (put 'dired-subdir-alist 'permanent-local t)
 
-
 ;;;; Helpers
 
 (defmacro dirvish-prop (prop &rest body)
@@ -463,7 +462,7 @@ ALIST is window arguments passed to `window--display-buffer'."
              (parent (dirvish--subtree-parent (1- beg)))
              (depth (or (and parent (1+ (overlay-get parent 'dired-subtree-depth))) 1)))
         (overlay-put ov 'line-prefix
-                     (apply 'concat (make-list depth dirvish-subtree-line-prefix)))
+                     (apply #'concat (make-list depth dirvish-subtree-line-prefix)))
         (overlay-put ov 'dired-subtree-name dirname)
         (overlay-put ov 'dired-subtree-depth depth)
         (overlay-put ov 'evaporate t)
@@ -938,14 +937,15 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
           (find-file file)))))
 
 (defun dirvish-curr-dir-ad (fn &optional localp)
-  "Doc."
+  "Advice for FN `dired-current-directory'.
+LOCALP is the arg for `dired-current-directory', which see."
   (if-let ((parent (dirvish--subtree-parent))
            (dir (concat (overlay-get parent 'dired-subtree-name) "/")))
       (if localp (dired-make-relative dir default-directory) dir)
     (funcall fn localp)))
 
 (defun dirvish-get-subdir-ad (&rest fn-args)
-  "Doc."
+  "Advice for FN-ARGS `dired-get-subdir'."
   (unless (dirvish--subtree-parent) (apply fn-args)))
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
