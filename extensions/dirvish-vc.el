@@ -65,7 +65,7 @@ This variable is consumed by `vc-state' attribute in Dirvish."
          (width (window-width))
          (depth (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))
          (f-base-str (buffer-substring f-beg f-end))
-         (f-base-len (dirvish--actual-string-length f-base-str))
+         (f-base-len (string-width f-base-str))
          (remained (- width f-base-len depth (car dirvish--attrs-width) (cdr dirvish--attrs-width)))
          (msg-str (truncate-string-to-width (concat "\t" info) remained))
          (ov (make-overlay (1- f-end) f-end)))
