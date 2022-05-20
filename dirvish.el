@@ -167,8 +167,8 @@ segments after setting this value."
               (str-right
                (propertize (format-mode-line ',(or (expand :right)) nil nil buf)
                            'display `((height ,height) (raise ,raise))))
-              (str-right-length (length str-right))
-              (str-length (+ (length str-left) str-right-length))
+              (str-right-length (string-width str-right))
+              (str-length (+ (string-width str-left) str-right-length))
               (filling-spaces
                (propertize
                 " " 'display
@@ -402,10 +402,6 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--get-parent (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
-
-(defun dirvish--actual-string-length (string)
-  "Get STRING's actual display length."
-  (/ (+ (length string) (string-bytes string)) 2))
 
 (defun dirvish--subtree-depth ()
   "Get subtree depth at point."
