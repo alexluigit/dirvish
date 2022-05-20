@@ -249,7 +249,7 @@ The value can be one of: `plus', `arrow', `chevron'."
   (:if (and (dirvish--should-enable 'extras)
             (eq (dv-root-window dv) (selected-window)) dired-hide-details-mode)
        :right 6)
-  (let* ((depth (* dirvish--subtree-prefix-len (dirvish--get-subtree-depth)))
+  (let* ((depth (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))
          (width (window-width))
          (info (dirvish--get-file-size-or-count f-name f-attrs))
          (f-size-str (let* ((spc (concat info " ")) (len (- 6 (length spc))))
@@ -272,8 +272,7 @@ The value can be one of: `plus', `arrow', `chevron'."
     (overlay-put ov 'after-string (concat spc f-size-str)) ov))
 
 (dirvish-define-attribute expanded-state
-  "A indicator for directory expanding state.
-This attribute only support `dired-subtree' for now."
+  "A indicator for directory expanding state."
   (:if (and (dirvish--should-enable 'extras)
             (eq (dv-root-window dv) (selected-window)))
        :left 1)
