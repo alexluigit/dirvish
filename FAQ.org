@@ -104,3 +104,12 @@ workaround (you'll still get stuck at large directories though):
 Apart from similar concerns mentioned in the above =all-the-icons-dired.el=
 section, this package ([[https://melpa.org/#/treemacs-icons-dired][treemacs-icons-dired]]) also introduces duplicate icon
 columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.com/alexluigit/dirvish/issues/16][here]].
+
+** dired-subtree.el
+
+Dirvish has the ability to toggle a directory as subtree
+(~dirvish-toggle-subtree~), which can be seen as a stripped-down version of
+=dired-subtree=. If what you need is no more than that, you don't need to use
+the ~dired-subtree~ package. However, if you want additional features such as
+~dired-subtree-up~ and friends, or you are using ~dired-filter~ at the same time,
+you may want to use =dired-subtree= along with Dirvish.

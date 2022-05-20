@@ -223,6 +223,18 @@ Dirvish session as its argument."
                                  (const :tag "Never hide details" nil)
                                  (function :tag "Custom function")))
 
+(defvar dirvish--subtree-prefix-len 2)
+(defcustom dirvish-subtree-line-prefix "  "
+  "A string put into each nested subtree.
+The prefix is repeated \"depth\" times."
+  :type 'string :group 'dirvish
+  :set (lambda (k v)
+         (set k v)
+         (setq dirvish--subtree-prefix-len
+               (cond ((bound-and-true-p dired-subtree-line-prefix)
+                      (or (ignore-errors (length (bound-and-true-p dired-subtree-line-prefix))) 2))
+                     (t (length v))))))
+
 (defvar dirvish-preview-setup-hook nil
   "Hook functions for preview buffer initialization.")
 
@@ -245,6 +257,8 @@ Dirvish session as its argument."
     (dired         dired-other-frame               dirvish-dired-other-frame-ad   :override)
     (dired         dired-up-directory              dirvish-up-directory           :override)
     (dired         +dired/quit-all                 quit-window                    :override)
+    (dired         dired-current-directory         dirvish-curr-dir-ad            :around)
+    (dired         dired-get-subdir                dirvish-get-subdir-ad          :around)
     (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
     (wdired        wdired-change-to-wdired-mode    dirvish-wdired-mode-ad         :after)
     (wdired        wdired-exit                     dirvish-setup                  :after)
@@ -281,8 +295,6 @@ Dirvish session as its argument."
 (defconst dirvish--saved-window-combination-resize window-combination-resize)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
-(defconst dirvish--subtree-prefix-len
-  (condition-case nil (length (or (bound-and-true-p dired-subtree-line-prefix) "  ")) (error 2)))
 (defconst dirvish--cache-embedded-video-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defconst dirvish--cache-img-fns
@@ -295,7 +307,9 @@ Dirvish session as its argument."
 (defvar-local dirvish--props (make-hash-table :size 10))
 (defvar-local dirvish--attrs-width `(,dirvish--prefix-spaces . 0))
 (defvar-local dirvish--attrs-hash nil)
+(defvar-local dirvish--subtree-overlays nil "Subtree overlays in this buffer.")
 (put 'dired-subdir-alist 'permanent-local t)
+
 
 ;;;; Helpers
 
@@ -370,6 +384,17 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
+(defun dirvish--goto-file (filename)
+  "Go to line describing FILENAME."
+  (goto-char (point-min))
+  (let (stop)
+    (while (and (not stop)
+                (= (forward-line) 0))
+      (when (equal filename (dired-get-filename nil t))
+        (setq stop t)
+        (dired-move-to-filename)))
+    stop))
+
 (defun dirvish--get-project-root ()
   "Get root path of current project."
   (when-let ((pj (project-current)))
@@ -383,7 +408,7 @@ ALIST is window arguments passed to `window--display-buffer'."
   "Get STRING's actual display length."
   (/ (+ (length string) (string-bytes string)) 2))
 
-(defun dirvish--get-subtree-depth ()
+(defun dirvish--subtree-depth ()
   "Get subtree depth at point."
   (let ((dps (cl-loop for ov in (overlays-at (point)) collect
                       (or (overlay-get ov 'dired-subtree-depth) 0))))
@@ -391,8 +416,94 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--subtree-expanded-p ()
   "70x Faster version of `dired-subtree--is-expanded-p'."
-  (save-excursion (< (dirvish--get-subtree-depth)
-                     (progn (forward-line 1) (dirvish--get-subtree-depth)))))
+  (save-excursion (< (dirvish--subtree-depth)
+                     (progn (forward-line 1) (dirvish--subtree-depth)))))
+
+(defun dirvish--subtree-parent (&optional p)
+  "Get the parent subtree overlay at point P."
+  (setq p (or p (point)))
+  (cl-loop
+   with (pov . max) = (cons nil 0)
+   for ov in (overlays-at p)
+   for depth = (or (overlay-get ov 'dired-subtree-depth) 0) do
+   (when (> depth max) (setq pov ov) (setq max depth))
+   finally return pov))
+
+(defun dirvish--subtree-readin (dirname)
+  "Read in the directory DIRNAME for `dirvish--subtree-insert'."
+  (let ((switches (or dired-actual-switches dired-listing-switches)))
+    (with-temp-buffer
+      (insert-directory dirname switches nil t)
+      (delete-char -1)
+      (goto-char (point-min))
+      (delete-region (point) (progn (forward-line 1) (point)))
+      (save-match-data
+        (while (re-search-forward "^ *d.* \\.\\.?/?\n" nil t)
+          (delete-region (match-beginning 0) (match-end 0))))
+      (goto-char (point-min))
+      (unless (looking-at-p "  ")
+        (let ((indent-tabs-mode nil))
+          (indent-rigidly (point-min) (point-max) 2)))
+      (buffer-string))))
+
+(defun dirvish--subtree-insert ()
+  "Insert subtree under this directory."
+  (when (and (save-excursion (beginning-of-line) (looking-at "..[dl]"))
+             (not (dirvish--subtree-expanded-p)))
+    (let* ((dirname (dired-get-filename nil))
+           (listing (dirvish--subtree-readin (file-name-as-directory dirname)))
+           (inhibit-read-only t)
+           beg end)
+      (move-end-of-line 1)
+      (save-excursion (insert listing) (setq end (+ (point) 2)))
+      (newline)
+      (setq beg (point))
+      (remove-text-properties (1- beg) beg '(dired-filename))
+      (let* ((ov (make-overlay beg end))
+             (parent (dirvish--subtree-parent (1- beg)))
+             (depth (or (and parent (1+ (overlay-get parent 'dired-subtree-depth))) 1)))
+        (overlay-put ov 'line-prefix
+                     (apply 'concat (make-list depth dirvish-subtree-line-prefix)))
+        (overlay-put ov 'dired-subtree-name dirname)
+        (overlay-put ov 'dired-subtree-depth depth)
+        (overlay-put ov 'evaporate t)
+        (push ov dirvish--subtree-overlays))
+      (goto-char beg)
+      (dired-move-to-filename)
+      (let ((ov (dirvish--subtree-parent)))
+        (dired-insert-set-properties (overlay-start ov) (overlay-end ov))))))
+
+(defun dirvish--subtree-remove ()
+  "Remove subtree at point."
+  (when-let* ((ov (dirvish--subtree-parent))
+              (beg (overlay-start ov))
+              (end (overlay-end ov)))
+    (let ((inhibit-read-only t))
+      (goto-char beg)
+      (dired-previous-line 1)
+      (delete-region (overlay-start ov) (overlay-end ov))
+      (cl-loop for o in (overlays-in (point-min) (point-max))
+               when (and (overlay-get o 'dired-subtree-depth)
+                         (>= (overlay-start o) beg)
+                         (<= (overlay-end o) end))
+               do (progn (setq dirvish--subtree-overlays
+                               (delq o dirvish--subtree-overlays))
+                         (delete-overlay o))))))
+
+(defun dirvish--subtree-revert ()
+  "Put the `dired-subtree-overlays' again after buffer reverting."
+  (cl-loop
+   with st-alist = ()
+   for ov in dirvish--subtree-overlays
+   for depth = (overlay-get ov 'dired-subtree-depth)
+   for name = (overlay-get ov 'dired-subtree-name) do
+   (push (cons depth name) st-alist)
+   finally do
+   (let ((sorted (sort st-alist (lambda (a b) (< (car a) (car b))))))
+     (cl-loop for (_depth . name) in sorted do
+              (when (dirvish--goto-file name)
+                (dirvish--subtree-insert))))
+   (dirvish--goto-file (dirvish-prop :child))))
 
 (defun dirvish--get-filesize (fileset)
   "Return file size of FILESET in bytes."
@@ -825,6 +936,17 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
             (dired-other-window file)
           (other-window 1)
           (find-file file)))))
+
+(defun dirvish-curr-dir-ad (fn &optional localp)
+  "Doc."
+  (if-let ((parent (dirvish--subtree-parent))
+           (dir (concat (overlay-get parent 'dired-subtree-name) "/")))
+      (if localp (dired-make-relative dir default-directory) dir)
+    (funcall fn localp)))
+
+(defun dirvish-get-subdir-ad (&rest fn-args)
+  "Doc."
+  (unless (dirvish--subtree-parent) (apply fn-args)))
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advice function for `find-dired-sentinel'."
@@ -1266,6 +1388,7 @@ The bar image has height of `default-line-height' times SCALE."
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
+  (dirvish--subtree-revert)
   (unless (file-remote-p default-directory)
     (dirvish-preview--clean-cache-images (dired-get-marked-files)))
   (dirvish--hide-dired-header)
@@ -1470,6 +1593,13 @@ If the buffer is not available, create it with `dired-noselect'."
   :group 'dirvish :interactive nil)
 
 ;;;; Commands
+
+(defun dirvish-toggle-subtree ()
+  "Insert subtree at point or remove it if it was not present."
+  (interactive)
+  (if (dirvish--subtree-expanded-p)
+      (progn (dired-next-line 1) (dirvish--subtree-remove))
+    (save-excursion (dirvish--subtree-insert))))
 
 (defun dirvish-cache-images (&optional dv)
   "Cache image/video-thumbnail for index directory in DV.

@@ -43,6 +43,7 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-async-listing-threshold~    | List huge directories asynchronously     |
 | ~dirvish-enabled-features-on-remote~ | Enabled Dirvish features on remote hosts |
 | ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
+| ~dirvish-subtree-line-prefix~      | A string put into each nested subtree       |
 | ~dirvish-preview-dispatchers~        | See [[#Preview-strategies][Preview strategies]]                   |
 | ~dirvish-attributes~                 | See [[#Extra-attributes][Extra attributes]]                     |
 |------------------------------------+------------------------------------------|
@@ -189,6 +190,7 @@ make it case insensitive etc.
   :bind
   (nil ; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
    :map dired-mode-map
+   ("TAB" . dirvish-toggle-subtree)
    ("SPC" . dirvish-show-history)
    ("r"   . dirvish-roam)
    ("b"   . dirvish-goto-bookmark)
@@ -232,13 +234,10 @@ These packages are only listed here for discoverability.
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 
-;; Turn Dired into a tree browser
-(use-package dired-subtree
-  :config
-  (setq dired-subtree-use-backgrounds nil)
+;; Drop-in replacement for find-dired
+(use-package fd-dired
   :bind
-  (:map dired-mode-map
-        ("TAB" . dired-subtree-toggle)))
+  ("C-c F" . fd-dired))
 
 ;; Narrow a dired buffer to the files matching a string.
 (use-package dired-narrow
@@ -263,8 +262,13 @@ These packages are only listed here for discoverability.
   (:map dired-mode-map
         ("M-c" . dired-collapse-mode)))
 
-;; Drop-in replacement for find-dired
-(use-package fd-dired
-  :bind
-  ("C-c F" . fd-dired))
+;; We already have `dirvish-toggle-subtree'
+;; But you can still use this package if you want to
+;; see [[file:FAQ.org][FAQ]]
+;; (use-package dired-subtree
+;;   :config
+;;   (setq dired-subtree-use-backgrounds nil)
+;;   :bind
+;;   (:map dired-mode-map
+;;         ("TAB" . dired-subtree-toggle)))
 #+end_src
