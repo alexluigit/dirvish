@@ -180,13 +180,24 @@ The value can be one of: `plus', `arrow', `chevron'."
   "Get file size of file NAME from ATTRS."
   (let ((type (file-attribute-type attrs)))
     (cond ((stringp type)
-           (condition-case nil
-               (number-to-string (- (length (directory-files name nil nil t)) 2))
-             (file-error (file-size-human-readable
-                          (file-attribute-size (file-attributes name))))))
-          (type (or (ignore-errors
-                      (number-to-string
-                       (- (length (directory-files name nil nil t)) 2))) "?"))
+           (let ((count
+                  (dirvish-attribute-cache name :f-count
+                    (condition-case nil
+                        (number-to-string
+                         (- (length (directory-files name nil nil t)) 2))
+                      (file-error 'file)))))
+             (if (eq count 'file)
+                 (file-size-human-readable
+                  (file-attribute-size (file-attributes name)))
+               count)))
+          (type
+           (let ((count
+                  (dirvish-attribute-cache name :f-count
+                    (condition-case nil
+                        (number-to-string
+                         (- (length (directory-files name nil nil t)) 2))
+                      (file-error 'no-permission)))))
+             (if (eq count 'no-permission) "?" count)))
           (t (file-size-human-readable (or (file-attribute-size attrs) 0))))))
 
 (defun dirvish--format-file-attr (attr-name)
