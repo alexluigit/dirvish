@@ -36,13 +36,15 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-history-length~             | Maximum number of items in history       |
 | ~dirvish-default-layout~             | Default layout for fullscreen sessions   |
 | ~dirvish-hide-details~               | Hide details as you see fit              |
-| ~dirvish-header-line-text-size~      | Text height in header line               |
-| ~dirvish-header-line-format~         | Header line format in root window        |
-| ~dirvish-mode-line-position~         | The way to place the mode line           |
+| ~dirvish-mode-line-position~         | The place to put the mode line           |
+| ~dirvish-mode-line-height~           | The height of mode line                  |
 | ~dirvish-mode-line-format~           | Mode line format in root window          |
+| ~dirvish-header-line-position~       | The place to put the header line         |
+| ~dirvish-header-line-height~         | The height of header line                |
+| ~dirvish-header-line-format~         | Header line format in root window        |
 | ~dirvish-enabled-features-on-remote~ | Enabled Dirvish features on remote hosts |
 | ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
-| ~dirvish-subtree-line-prefix~      | A string put into each nested subtree       |
+| ~dirvish-subtree-line-prefix~        | A string put into each nested subtree    |
 | ~dirvish-preview-dispatchers~        | See [[#Preview-strategies][Preview strategies]]                   |
 | ~dirvish-attributes~                 | See [[#Extra-attributes][Extra attributes]]                     |
 |------------------------------------+------------------------------------------|
@@ -157,8 +159,6 @@ make it case insensitive etc.
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
-  ;; Make the mode line spans all directory panes
-  ;; (dirvish-mode-line-position 'parent-panes)
   (dirvish-mode-line-format
    '(:left
      (sort file-time " " file-size symlink) ; it's ok to place string inside
@@ -194,7 +194,6 @@ make it case insensitive etc.
    ("f"   . dirvish-file-info-menu)
    ("M-n" . dirvish-go-forward-history)
    ("M-p" . dirvish-go-backward-history)
-   ("M-a" . dirvish-mark-actions-menu)
    ("M-s" . dirvish-setup-menu)
    ("M-f" . dirvish-toggle-fullscreen)
    ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)

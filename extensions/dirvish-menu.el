@@ -84,7 +84,6 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
                  ,@args))))
         spec)))
 
-(define-obsolete-function-alias 'dirvish-mark-actions-menu 'dirvish-mark-menu "1.3.20")
 ;;;###autoload (autoload 'dirvish-dispatch "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-ls-switches-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
