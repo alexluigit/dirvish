@@ -88,12 +88,6 @@ max number of cache processes."
   "Preview / thumbnail cache directory for dirvish."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-async-listing-threshold most-positive-fixnum
-  "Threshold to invoke async directory listing.
-For example, if the value is 10000, then directories with over
-10000 files will be opened asynchronously."
-  :group 'dirvish :type 'integer)
-
 (defvar dirvish--history-ring nil)
 (defcustom dirvish-history-length 50
   "Length of directory visiting history Dirvish will track."
@@ -462,11 +456,7 @@ ALIST is window arguments passed to `window--display-buffer'."
         (overlay-put ov 'dired-subtree-name dirname)
         (overlay-put ov 'dired-subtree-depth depth)
         (overlay-put ov 'evaporate t)
-        (push ov dirvish--subtree-overlays))
-      (goto-char beg)
-      (dired-move-to-filename)
-      (let ((ov (dirvish--subtree-parent)))
-        (dired-insert-set-properties (overlay-start ov) (overlay-end ov))))))
+        (push ov dirvish--subtree-overlays)))))
 
 (defun dirvish--subtree-remove ()
   "Remove subtree at point."
@@ -847,8 +837,9 @@ DV defaults to current dirvish instance if not given."
                 (l-beg (line-beginning-position))
                 (l-end (line-end-position))
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
-            (when (dirvish-prop :async-p)
-              (let (buffer-read-only) (dired-insert-set-properties l-beg l-end)))
+            (let (buffer-read-only)
+              (unless (get-text-property f-beg 'mouse-face)
+                (dired-insert-set-properties l-beg l-end)))
             (dolist (fn fns)
               (funcall fn f-name f-attrs f-type f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
@@ -1509,34 +1500,6 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
       (dirvish-build dv)
       (current-buffer))))
 
-(defun dirvish--noselect-async-sentinel (proc _state)
-  "Sentinel for `dirvish--noselect-async''s Dired PROC."
-  (with-current-buffer (process-buffer proc)
-    (let (buffer-read-only)
-      (delete-region (point-min) (+ (point-min) (process-get proc 'len)))
-      (delete-region (progn (goto-char (point-max)) (forward-line -1) (point)) (point-max)))
-    (dirvish--hide-dired-header)
-    (dirvish-debounce layout (dirvish-update-body-h))))
-
-(defun dirvish--noselect-async (entry dired-switches)
-  "Open ENTRY with DIRED-SWITCHES asynchronously."
-  (with-current-buffer (generate-new-buffer "Dirvish-cache")
-    (let* ((info "[DIRVISH] caching directory...\n")
-           (buf (prog1 (current-buffer) (insert info)))
-           (async-cmd `(with-current-buffer (dired-noselect ,entry ,dired-switches)
-                         (buffer-substring-no-properties (point-min) (point-max))))
-           (proc (start-process (buffer-name buf) buf "emacs" "-q" "-batch" "--eval"
-                                (format "(message \"%%s\" %S)" async-cmd))))
-      (setq default-directory entry)
-      (setq dired-subdir-alist (list (cons entry (point-min-marker))))
-      (dirvish-mode)
-      (dirvish-setup t)
-      (set-process-sentinel proc #'dirvish--noselect-async-sentinel)
-      (process-put proc 'len (length info))
-      (setq revert-buffer-function #'ignore) ; TODO
-      (dirvish-prop :async-p t)
-      buf)))
-
 (defun dirvish--buffer-for-dir (dv entry &optional parent)
   "Return the root or PARENT buffer in DV for ENTRY.
 If the buffer is not available, create it with `dired-noselect'."
@@ -1547,8 +1510,7 @@ If the buffer is not available, create it with `dired-noselect'."
       (let* ((remotep (file-remote-p entry))
              (dir-files (unless (or parent remotep)
                           (directory-files entry t nil t))))
-        (if (> (length dir-files) dirvish-async-listing-threshold)
-            (setq buffer (dirvish--noselect-async entry switches))
+        (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
           (setq buffer (dired-noselect entry switches)))
         (with-current-buffer buffer
           (dirvish-mode)
