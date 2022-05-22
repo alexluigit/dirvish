@@ -23,7 +23,7 @@
 (require 'dirvish nil t)
 
 (defvar dirvish-menu-available-prefixs
-  '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-quicksort dirvish-yank-menu dirvish-goto-bookmark))
+  '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-quicksort dirvish-yank-menu dirvish-goto-bookmark dirvish-mark-menu))
 
 (defclass dirvish-menu-toggles (transient-infix)
   ((variable  :initarg :variable)
@@ -84,10 +84,11 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
                  ,@args))))
         spec)))
 
+(define-obsolete-function-alias 'dirvish-mark-actions-menu 'dirvish-mark-menu "1.3.20")
 ;;;###autoload (autoload 'dirvish-dispatch "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-ls-switches-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
-;;;###autoload (autoload 'dirvish-mark-actions-menu "dirvish-menu" nil t)
+;;;###autoload (autoload 'dirvish-mark-menu "dirvish-menu" nil t)
 ;;;###autoload (autoload 'dirvish-filter-menu "dirvish-menu" nil t)
 (dirvish-menu--transient-define-multi
  ((dispatch
@@ -99,42 +100,37 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("e" "  Open file"                           dired-find-file)
      ("o" "  Open file other window"              dired-find-file-other-window)
      ("w" "  Get file information"                dirvish-file-info-menu)
-     ("s" "  Setup listing switches"              dirvish-ls-switches-menu)
-     ("(" "  Toggle details"                      dired-hide-details-mode)
+     ("l" "  Setup listing switches"              dirvish-ls-switches-menu)
+     ("s" "  Sort current buffer"                 dirvish-quicksort)
      ("TAB" "Toggle subtree"                      dirvish-toggle-subtree :if-not (lambda () (featurep 'dired-subtree)))
-     ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (featurep 'dired-subtree)))]
-    ["I/O commands"
+     ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (featurep 'dired-subtree)))
+     ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
+     ("M-s" "Setup Dirvish"                       dirvish-setup-menu :if-derived dirvish-mode)]
+    ["File operations"
      ("a" "  Add an empty file"                   dired-create-empty-file)
-     ("C" "  Copy"                                dired-do-copy :if-mode dired-mode)
-     ("y" "  Yank marked files"                   dirvish-yank-menu :if-derived dirvish-mode)
+     ("+" "  Add a directory"                     dired-create-directory)
      ("@" "  Rename files"                        dirvish-renaming-menu)
      ("X" "  Delete files"                        dired-do-delete)
-     ("f" "  File attributes"                     dirvish-file-attributes-menu)
-     ("+" "  Add a directory"                     dired-create-directory)]
-    ["View | Layout"
      ("v" "  View this file"                      dired-view-file)
+     ("C" "  Copy"                                dired-do-copy :if-mode dired-mode)
+     ("y" "  Yank marked files"                   dirvish-yank-menu :if-derived dirvish-mode)
      ("." "  Filter by.."                         dirvish-filter-menu :if (lambda () (featurep 'dired-filter)))
      ("." "  Toggle file omitting"                dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
-     ("=" "  Compare files"                       dired-diff)
-     ("S" "  Manage subdirs"                      dirvish-subdir-menu)
-     ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
-     ("M-s" "Setup Dirvish"                       dirvish-setup-menu :if-derived dirvish-mode)]]
+     ("*" "  Actions on marked"                   dirvish-mark-menu)]]
    [["Navigation"
      ("j" "  Jump to line for file"               dired-goto-file)
      ("b" "  Go to bookmarks"                     dirvish-goto-bookmark)
      ("^" "  Go to parent directory"              dired-up-directory)
      ("r" "  Roam the file system"                dirvish-roam :if (lambda () (featurep 'dirvish)))
-     ("l" "  Go to the last place"                dirvish-other-buffer :if (lambda () (featurep 'dirvish)))
+     ("m" "  Go to the MRU buffer"                dirvish-other-buffer :if (lambda () (featurep 'dirvish)))
+     ("n" "  Forward history"                     dirvish-go-forward-history :transient t)
+     ("p" "  Backward history"                    dirvish-go-backward-history :transient t)
      ("SPC" "Recently visited"                    dirvish-show-history :if (lambda () (featurep 'dirvish)))]
-    ["Marks"
-     ("m" "  Mark this file"                      dired-mark)
-     ("u" "  Unmark this file"                    dired-unmark)
-     ("U" "  Unmark all"                          dired-unmark-all-marks)
-     ("t" "  Toggle marks"                        dired-toggle-marks)
-     ("*" "  Mark by.."                           dirvish-marking-menu)
-     ("M-a" "Actions on marked"                   dirvish-mark-actions-menu)]
     ["Others"
      ("g" "  Refresh buffer"                      revert-buffer)
+     ("S" "  Manage subdirs"                      dirvish-subdir-menu)
+     ("(" "  Toggle details"                      dired-hide-details-mode)
+     ("=" "  Compare files"                       dired-diff)
      (":" "  GnuPG helpers"                       dirvish-epa-dired-menu)
      ("M-c" "Collapse paths"                      dired-collapse-mode :if (lambda () (featurep 'dired-collapse)))
      ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))]])
@@ -176,61 +172,60 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("C-r" "  reset this buffer" dirvish-menu--reset-switches-for-buffer)
      ("M-r" "  reset this session" dirvish-menu--reset-switches-for-session :if-derived 'dirvish-mode)
      ("C-l" "  clear choices" dirvish-menu--clear-switches-choices :transient t)]])
-  (file-attributes
-   "Modify file attributes."
-   ["Modify file attributes"
-    ("R"   "Name"                                 dired-do-rename)
-    ("G"   "Group"                                dired-do-chgrp)
-    ("M"   "Mode"                                 dired-do-chmod)
-    ("O"   "Owner"                                dired-do-chown)
-    ("T"   "Timestamp"                            dired-do-touch)])
   (subdir
    "Help Menu for Dired subdir management."
    ["Manage subdirs"
-    ("i" "  Insert subdir"                        dired-maybe-insert-subdir)
-    ("k" "  Kill subdir"                          dired-kill-subdir)
-    ("n" "  Next subdir"                          dired-next-subdir)
-    ("p" "  Prev subdir"                          dired-prev-subdir)
+    ("i" "  Insert subdir"                        dired-maybe-insert-subdir :transient t)
+    ("k" "  Kill subdir"                          dired-kill-subdir :transient t)
+    ("n" "  Next subdir"                          dired-next-subdir :transient t)
+    ("p" "  Prev subdir"                          dired-prev-subdir :transient t)
     ("j" "  Jump to subdir"                       dired-goto-subdir)
-    ("$" "  Hide subdir"                          dired-hide-subdir)
+    ("$" "  Hide subdir"                          dired-hide-subdir :transient t)
     ("M-$" "Hide all subdirs"                     dired-hide-all)])
-  (marking
+  (mark
    "Help Menu for `dired-mark-*' commands."
-   ["Mark all ____ files:"
-    ("s"   "Subdir"                               dired-mark-subdir-files)
-    ("*"   "Executable"                           dired-mark-executables)
-    ("/"   "Directory"                            dired-mark-directories)
-    ("@"   "Symlink"                              dired-mark-symlinks)
-    ("&"   "Garbage"                              dired-flag-garbage-files)
-    ("#"   "Auto-saved"                           dired-flag-auto-save-files)
-    ("~"   "Backup"                               dired-flag-backup-files)
-    ("."   "Numerical backup"                     dired-clean-directory)
-    ""
-    "Mark files by:"
-    ("e"   "Extension"                            dired-mark-extension)
-    ("%"   "Regexp (file name)"                   dired-mark-files-regexp)
-    ("g"   "Regexp (file content)"                dired-mark-files-containing-regexp)])
-  (mark-actions
-   "Help Menu for `dired-do-*' commands."
-   ["Actions on marks"
-    ("F"   "Open"                                 dired-do-find-marked-files)
-    ("S"   "Symlink"                              dired-do-symlink)
-    ("H"   "Hardlink"                             dired-do-hardlink)
-    ("P"   "Print"                                dired-do-print)
-    ("X"   "Delete flagged"                       dired-do-flagged-delete)
-    ("A"   "Search file contents"                 dired-do-find-regexp)
-    ("R"   "Replace file contents"                dired-do-find-regexp-and-replace)
-    ("B"   "Byte compile elisp"                   dired-do-byte-compile)
-    ("L"   "Load elisp"                           dired-do-load)
-    ("z"   "Compress to"                          dired-do-compress-to)
-    ("Z"   "Compress"                             dired-do-compress)
-    ("!"   "Shell command"                        dired-do-shell-command)
-    ("&"   "Async shell command"                  dired-do-async-shell-command)
-    ("N"   "Echo number of marked files"          dired-number-of-marked-files)
-    ("c"   "Change mark type"                     dired-change-marks)
-    ("k"   "Kill lines"                           dired-do-kill-lines)
-    ("n"   "Move to next marked"                  dired-next-marked-file)
-    ("p"   "Move to prev marked"                  dired-prev-marked-file)])
+   [["Mark or unmark files:"
+     ("e"   "by Extension"                        dired-mark-extension :transient t)
+     ("%"   "by Regexp (file name)"               dired-mark-files-regexp :transient t)
+     ("g"   "by Regexp (file content)"            dired-mark-files-containing-regexp :transient t)
+     ("s"   "by Subdir"                           dired-mark-subdir-files :transient t)
+     ("*"   "by Executable"                       dired-mark-executables :transient t)
+     ("/"   "by Directory"                        dired-mark-directories :transient t)
+     ("@"   "by Symlink"                          dired-mark-symlinks :transient t)
+     ("&"   "by Garbage"                          dired-flag-garbage-files :transient t)
+     ("#"   "by Auto-saved"                       dired-flag-auto-save-files :transient t)
+     ("~"   "by Backup"                           dired-flag-backup-files :transient t)
+     ("."   "by Numerical backup"                 dired-clean-directory :transient t)
+     ("u" "  Unmark this file"                    dired-unmark :transient t)
+     ("DEL" "Unmark and move up line"             dired-unmark-backward :transient t)
+     ("U" "  Unmark all files"                    dired-unmark-all-files :transient t)
+     ("t" "  Toggle marks"                        dired-toggle-marks :transient t)
+     ("C-n" "Move to next marked file"            dired-next-marked-file :transient t)
+     ("C-p" "Move to prev marked file"            dired-prev-marked-file :transient t)]
+    ["Actions on marked files:"
+     ("F"   "Open"                                dired-do-find-marked-files)
+     ("S"   "Symlink"                             dired-do-symlink)
+     ("H"   "Hardlink"                            dired-do-hardlink)
+     ("P"   "Print"                               dired-do-print)
+     ("X"   "Delete flagged"                      dired-do-flagged-delete)
+     ("r"   "Search file contents"                dired-do-find-regexp)
+     ("R"   "Replace file contents"               dired-do-find-regexp-and-replace)
+     ("B"   "Byte compile elisp"                  dired-do-byte-compile)
+     ("L"   "Load elisp"                          dired-do-load)
+     ("z"   "Compress to"                         dired-do-compress-to)
+     ("Z"   "Compress"                            dired-do-compress)
+     ("!"   "Shell command"                       dired-do-shell-command)
+     ("&"   "Async shell command"                 dired-do-async-shell-command)
+     ("N"   "Echo number of marked files"         dired-number-of-marked-files)
+     ("l"   "Redisplay all marked files"          dired-do-redisplay)
+     ("c"   "Change mark type"                    dired-change-marks)
+     ("k"   "Kill lines"                          dired-do-kill-lines)]]
+    ["Change file attributes:"
+     ("R"   "Change file's NAME"                  dired-do-rename)
+     ("G"   "Change file's GROUP"                 dired-do-chgrp)
+     ("M"   "Change file's MODE"                  dired-do-chmod)
+     ("O"   "Change file's OWNER"                 dired-do-chown)
+     ("T"   "Change file's TIMESTAMP"             dired-do-touch)])
   (file-info
    "Gather file information."
    ["Get file information"

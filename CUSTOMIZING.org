@@ -188,6 +188,7 @@ make it case insensitive etc.
    :map dired-mode-map
    ("TAB" . dirvish-toggle-subtree)
    ("SPC" . dirvish-show-history)
+   ("*"   . dirvish-mark-menu)
    ("r"   . dirvish-roam)
    ("b"   . dirvish-goto-bookmark)
    ("f"   . dirvish-file-info-menu)
