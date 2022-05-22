@@ -29,6 +29,7 @@
 (require 'project)
 (require 'ring)
 (require 'dired-x)
+(require 'recentf)
 (eval-when-compile
   (require 'subr-x)
   (require 'find-dired))
@@ -229,6 +230,22 @@ The prefix is repeated \"depth\" times."
                       (or (ignore-errors (length (bound-and-true-p dired-subtree-line-prefix))) 2))
                      (t (length v))))))
 
+(defcustom dirvish-open-with-programs
+  '(("video/"      . ("mpv" "%f"))
+    ("audio/"      . ("mpv" "%f"))
+    (("rm" "rmvb") . ("mpv" "%f")))
+  "Association list of mimetype and external program for `find-file'.
+Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
+ string that stands for a mimetype or a list of file name
+ extensions.  Once the TYPE is matched with FILENAME in
+ `find-file', a subprocess according to CMD and its ARGS is
+ issued to open the file outside of Emacs.  The special
+ placeholder \"%f\" in the ARGS is replaced by the FILENAME at
+ runtime.  Set it to nil disables this feature."
+  :group 'dirvish
+  :type '(alist :key-type ((choice string (repeat string)) :tag "File mimetype or extensions")
+                :value-type ((repeat string) :tag "External command and args")))
+
 (defvar dirvish-preview-setup-hook nil
   "Hook functions for preview buffer initialization.")
 
@@ -259,7 +276,7 @@ The prefix is repeated \"depth\" times."
     (wdired        wdired-finish-edit              dirvish-setup                  :after)
     (wdired        wdired-abort-changes            dirvish-setup                  :after)
     (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
-    (files         find-file                       dirvish-find-file-ad           :filter-args)
+    (files         find-file                       dirvish-find-file-ad           :around)
     (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
     (fd-dired      fd-dired                        dirvish-fd-dired-ad)
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
@@ -976,16 +993,32 @@ If ALL-FRAMES, search target directories in all frames."
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
 
-(defun dirvish-find-file-ad (args)
-  "Advice for `find-file' with its ARGS."
-  (when-let ((dv (dirvish-curr)))
-    (cond ((> (length (get-buffer-window-list nil nil t)) 1)
-           (switch-to-buffer "*scratch*")
-           (set-frame-parameter nil 'dirvish--curr nil)
-           (when (string= (car args) "") (setf (car args) (dv-index-dir dv))))
-          (t (select-window (funcall (dv-find-file-window-fn dv)))
-             (when-let ((dv (dirvish-prop :dv))) (dirvish-kill dv)))))
-  args)
+(defun dirvish-find-file-ad (fn filename &optional wildcard)
+  "Advice for FN `find-file' and `find-file-other-window'.
+FILENAME and WILDCARD are their args."
+  (let* ((dv (dirvish-curr))
+         (mime (or (mailcap-file-name-to-mime-type filename) ""))
+         (ext (file-name-extension filename))
+         (file (expand-file-name filename))
+         (process-connection-type nil)
+         (ex-cmd
+          (and (not (file-remote-p file))
+               (cl-loop
+                for (type . (cmd . args)) in dirvish-open-with-programs
+                thereis (and (executable-find cmd)
+                             (or (and (listp type) (member ext type))
+                                 (and (stringp type) (string-match type mime)))
+                             (append (list cmd) args))))))
+    (cond (ex-cmd
+           (let ((default-directory dirvish-cache-dir))
+             (and recentf-mode (add-to-list 'recentf-list file))
+             (apply #'start-process "" nil "nohup"
+                    (cl-substitute file "%f" ex-cmd :test 'string=))))
+          (dv
+           (select-window (funcall (dv-find-file-window-fn dv)))
+           (when-let ((dv (dirvish-prop :dv))) (dirvish-kill dv))
+           (apply fn filename wildcard))
+          (t (apply fn filename wildcard)))))
 
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
