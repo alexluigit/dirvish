@@ -995,8 +995,8 @@ FILENAME and WILDCARD are their args."
           (dv
            (select-window (funcall (dv-find-file-window-fn dv)))
            (when-let ((dv (dirvish-prop :dv))) (dirvish-kill dv))
-           (apply fn filename wildcard))
-          (t (apply fn filename wildcard)))))
+           (funcall fn filename wildcard))
+          (t (funcall fn filename wildcard)))))
 
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
