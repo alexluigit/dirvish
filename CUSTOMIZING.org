@@ -149,7 +149,7 @@ make it case insensitive etc.
   ;;  ("k" . dired-previous-line)
   ;;  ("l" . dired-find-file)
   ;;  ("i" . wdired-change-to-wdired-mode)
-  ;;  ("^" . mode-line-other-buffer))
+  ;;  ("." . dired-omit-mode))
   :config
   (setq dired-recursive-deletes 'always)
   (setq delete-by-moving-to-trash t)
@@ -240,12 +240,6 @@ These packages are only listed here for discoverability.
 ;; (use-package vscode-icon
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
-
-;; Narrow a dired buffer to the files matching a string.
-(use-package dired-narrow
-  :bind
-  (:map dired-mode-map
-        ("N" . dired-narrow)))
 
 ;; `ibuffer' like file filtering system
 (use-package dired-filter
