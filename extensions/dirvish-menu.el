@@ -115,7 +115,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("y" "  Yank marked files"                   dirvish-yank-menu :if-derived dirvish-mode)
      ("." "  Filter by.."                         dirvish-filter-menu :if (lambda () (featurep 'dired-filter)))
      ("." "  Toggle file omitting"                dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
-     ("*" "  Actions on marked"                   dirvish-mark-menu)]]
+     ("*" "  Manage marks"                        dirvish-mark-menu)]]
    [["Navigation"
      ("j" "  Jump to line for file"               dired-goto-file)
      ("b" "  Go to bookmarks"                     dirvish-goto-bookmark)
@@ -132,7 +132,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("=" "  Compare files"                       dired-diff)
      (":" "  GnuPG helpers"                       dirvish-epa-dired-menu)
      ("M-c" "Collapse paths"                      dired-collapse-mode :if (lambda () (featurep 'dired-collapse)))
-     ("N" "  Live narrowing"                      dired-narrow :if (lambda () (featurep 'dired-narrow)))]])
+     ("N" "  Live narrowing"                      consult-focus-lines :if (lambda () (featurep 'consult)))]])
   (ls-switches
    "Setup Dired listing switches."
    :init-value
