@@ -268,17 +268,16 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
     (dired         dired-other-frame               dirvish-dired-other-frame-ad   :override)
     (dired         dired-up-directory              dirvish-up-directory           :override)
     (dired         +dired/quit-all                 quit-window                    :override)
-    (dired         dired-current-directory         dirvish-curr-dir-ad            :around)
-    (dired         dired-get-subdir                dirvish-get-subdir-ad          :around)
-    (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
+    (dired         dired-current-directory         dirvish-curr-dir-ad)
+    (dired         dired-get-subdir                dirvish-get-subdir-ad)
     (wdired        wdired-change-to-wdired-mode    dirvish-wdired-mode-ad         :after)
     (wdired        wdired-exit                     dirvish-setup                  :after)
     (wdired        wdired-finish-edit              dirvish-setup                  :after)
     (wdired        wdired-abort-changes            dirvish-setup                  :after)
     (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
-    (files         find-file                       dirvish-find-file-ad           :around)
+    (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
+    (files         find-file                       dirvish-find-file-ad)
     (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
-    (fd-dired      fd-dired                        dirvish-fd-dired-ad)
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
     (recentf       recentf-track-closed-file       dirvish-ignore-ad)
     (winner        winner-save-old-configurations  dirvish-ignore-ad)
@@ -296,7 +295,6 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
 (defvar dirvish-extra-libs '(dirvish-extras dirvish-vc dirvish-yank))
-(defvar fd-dired-generate-random-buffer)
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--cache-img-threshold (* 1024 1024 0.4))
@@ -699,7 +697,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
     (cond ((or (active-minibuffer-window)
                (and old-dv (eq (frame-selected-window)
                                (dv-preview-window old-dv)))))
-          ((and old-dv (string-match " ?*F\\(in\\)?d.**" (buffer-name)))
+          ((and old-dv (string-match "\\(^*Find*\\)\\|\\(^*Dirvish-FD\\)" (buffer-name)))
            (when (dv-layout old-dv)
              (setq other-window-scroll-buffer
                    (window-buffer (dv-preview-window old-dv)))))
@@ -717,7 +715,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
            (setq window-combination-resize dirvish--saved-window-combination-resize)
            (setq other-window-scroll-buffer nil)
            (dirvish--remove-advices
-            (and dirvish-override-dired-mode '(dired find-dired fd-dired)))
+            (and dirvish-override-dired-mode '(dired find-dired)))
            (set-frame-parameter nil 'dirvish--curr new-dv)))))
 
 (defmacro dirvish-new (kill-old &rest args)
@@ -910,9 +908,9 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (file (dired-get-file-for-visit)))
     (if (dv-layout dv)
         (if (file-directory-p file)
-          (dired-other-frame file)
-        (dirvish-kill (dirvish-prop :dv))
-        (switch-to-buffer-other-window (find-file file)))
+            (dired-other-frame file)
+          (dirvish-kill (dirvish-prop :dv))
+          (switch-to-buffer-other-window (find-file file)))
       (if (file-directory-p file)
             (dired-other-window file)
           (other-window 1)
@@ -937,7 +935,7 @@ LOCALP is the arg for `dired-current-directory', which see."
         buffer-read-only)
     (setq-local dirvish--props (make-hash-table :size 10))
     (setf (dv-index-dir dv) dirname-str)
-    (dirvish-prop :child (or (dired-get-filename nil t) "."))
+    (dirvish-prop :child (dired-get-filename nil t))
     (dirvish-prop :dv dv)
     (dirvish-prop :fd-dir dirname-str)
     (setf (dv-no-parents dv) t)
@@ -946,17 +944,10 @@ LOCALP is the arg for `dired-current-directory', which see."
     ;; BUG?: `dired-move-to-filename' failed to parse filename when there is only 1 file in buffer
     (delete-matching-lines "find finished at.*\\|^ +$")
     (dirvish--hide-dired-header)
+    (dirvish--add-advices '(evil meow))
     (push (cons dirname-str (current-buffer))
           (dv-root-dir-buf-alist dv))
     (dirvish-build dv)))
-
-(defun dirvish-fd-dired-ad (fn &rest args)
-  "Advice function for FN `fd-dired' with its ARGS."
-  ;; HACK: `fd-dired-display-in-current-window' does not behave as described.
-  (let ((display-buffer-alist
-         '(("^ ?\\*Fd.*$" (display-buffer-same-window))))
-        (fd-dired-generate-random-buffer t))
-    (apply fn args)))
 
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
   "Replacement for `dired-dwim-target-next'.
@@ -1338,14 +1329,16 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
               (propertize "→" 'face 'font-lock-comment-delimiter-face)
               (propertize (file-truename file) 'face 'dired-symlink)))))
 
-(dirvish-define-mode-line index "Current file's index and total files count."
+(dirvish-define-mode-line index
+  "Current file's index and total files count."
   (let ((cur-pos (- (line-number-at-pos (point)) 1))
         (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
       (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
 
-(dirvish-define-mode-line find-dired "Show current `find/fd' command args."
+(dirvish-define-mode-line find-dired
+  "Show current `find/fd' command args."
   (if-let ((res-buf-p (dirvish-prop :fd-dir))
-           (args (or (bound-and-true-p fd-dired-input-fd-args) find-args)))
+           (args (or (bound-and-true-p dirvish-fd-last-input) find-args)))
       (format " %s [%s] at %s"
               (propertize "FD:" 'face 'dired-header)
               (propertize args 'face 'font-lock-string-face)

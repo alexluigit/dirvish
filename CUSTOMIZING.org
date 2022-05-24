@@ -140,6 +140,16 @@ make it case insensitive etc.
 
 #+begin_src emacs-lisp
 (use-package dired
+  ;; Dirvish respects all the keybindings in `dired-mode-map'
+  ;; :bind
+  ;; (nil
+  ;;  :map dired-mode-map
+  ;;  ("h" . dired-up-directory)
+  ;;  ("j" . dired-next-line)
+  ;;  ("k" . dired-previous-line)
+  ;;  ("l" . dired-find-file)
+  ;;  ("i" . wdired-change-to-wdired-mode)
+  ;;  ("^" . mode-line-other-buffer))
   :config
   (setq dired-recursive-deletes 'always)
   (setq delete-by-moving-to-trash t)
@@ -149,6 +159,15 @@ make it case insensitive etc.
   ;; Otherwise some commands won't work properly
   (setq dired-listing-switches
         "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group"))
+
+(use-package dired-x
+  ;; Enable dired-omit-mode by default
+  ;; :hook
+  ;; (dired-mode . dired-omit-mode)
+  :config
+  ;; Make dired-omit-mode hide all "dotfiles"
+  (setq dired-omit-files
+        (concat dired-omit-files "\\|^\\..*$")))
 
 (use-package dirvish
   :custom
@@ -184,7 +203,8 @@ make it case insensitive etc.
   ;;     (propertize (format " %s " (dired-filter--describe-filters))
   ;;                 'face 'dired-filter-group-header)))
   :bind
-  (nil ; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
+  ;; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
+  (("C-c f" . dirvish-fd)
    :map dired-mode-map
    ("TAB" . dirvish-toggle-subtree)
    ("SPC" . dirvish-show-history)
@@ -208,15 +228,6 @@ make it case insensitive etc.
 These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
-(use-package dired-x
-  ;; Enable dired-omit-mode by default
-  ;; :hook
-  ;; (dired-mode . dired-omit-mode)
-  :config
-  ;; Make dired-omit-mode hide all "dotfiles"
-  (setq dired-omit-files
-        (concat dired-omit-files "\\|^\\..*$")))
-
 ;; Addtional syntax highlighting for dired
 (use-package diredfl
   :hook
@@ -229,11 +240,6 @@ These packages are only listed here for discoverability.
 ;; (use-package vscode-icon
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
-
-;; Drop-in replacement for find-dired
-(use-package fd-dired
-  :bind
-  ("C-c F" . fd-dired))
 
 ;; Narrow a dired buffer to the files matching a string.
 (use-package dired-narrow
@@ -259,8 +265,7 @@ These packages are only listed here for discoverability.
         ("M-c" . dired-collapse-mode)))
 
 ;; We already have `dirvish-toggle-subtree'
-;; But you can still use this package if you want to
-;; see [[file:FAQ.org][FAQ]]
+;; But you can still use this package if you want those fancy features
 ;; (use-package dired-subtree
 ;;   :config
 ;;   (setq dired-subtree-use-backgrounds nil)

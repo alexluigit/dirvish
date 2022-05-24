@@ -350,7 +350,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   :choices '("slash" "file-type" "classify"))
 
 (defun dirvish-menu--quicksort-do-sort (switches)
-  "Sort current buffer with dired sort SWITCHES."
+  "Sort current buffer with Dired sort SWITCHES."
   (let* ((regexp "\\(--time=\\w+\\|--sort=\\w+\\|--reverse\\)\\( \\)?")
          (others (replace-regexp-in-string regexp "" dired-actual-switches))
          (new-switches (concat others " " switches)))
