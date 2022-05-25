@@ -817,11 +817,12 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (if (file-directory-p file)
             (dired-other-frame file)
           (dirvish-kill (dirvish-prop :dv))
-          (switch-to-buffer-other-window (find-file file)))
+          (switch-to-buffer-other-window (current-buffer))
+          (find-file file))
       (if (file-directory-p file)
-            (dired-other-window file)
-          (other-window 1)
-          (find-file file)))))
+          (dired-other-window file)
+        (other-window 1)
+        (find-file file)))))
 
 (defun dirvish-find-dired-sentinel-ad (&rest _)
   "Advice function for `find-dired-sentinel'."
@@ -1228,7 +1229,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
   "Current file's index and total files count."
   (let ((cur-pos (- (line-number-at-pos (point)) 1))
         (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
-      (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
+    (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
 
 (dirvish-define-mode-line find-dired
   "Show current `find/fd' command args."
