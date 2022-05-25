@@ -14,6 +14,7 @@ Currently the following extensions come with the package:
 - [[file:extensions/dirvish-extras.el][dirvish-extras.el]]: Extra commands, UI elements, preview dispatchers for Dirvish.
 - [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
 - [[file:extensions/dirvish-fd.el][dirvish-fd.el]]: =fd= command interface in Dirvish.
+- [[file:extensions/dirvish-subtree.el][dirvish-subtree.el]]: Like =dired-subtree.el=, but simpler and faster.
 
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
@@ -85,6 +86,7 @@ of the peek window.
 | ~vc-state~  | A VC state indicator (such as "M" for modified) |
 | ~git-msg~   | Show git commit messages after the file name    |
 |-----------+-------------------------------------------------|
+
 This extension also provides the ~vc-diff~ preview dispatcher which shows changes
 between the working tree and the index of selected files at preview window.
 
@@ -99,15 +101,19 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 | Command                            | Description                              |
 |------------------------------------+------------------------------------------|
 | ~dirvish-show-history~               | Navigate to recently visited directories |
+| ~dirvish-go-forward-history~         | Go forward history (session locally)     |
+| ~dirvish-go-backward-history~        | Go backward history (session locally)    |
 | ~dirvish-other-buffer~               | Switch to most recent Dirvish buffer     |
-| ~dirvish-find-file-true-path~        | Open the true name of symlinks           |
 | ~dirvish-copy-file-name~             | Copy the file name ("foo.el")            |
 | ~dirvish-copy-file-path~             | Copy the file path ("path/to/foo/bar")   |
 | ~dirvish-copy-file-directory~        | Copy the parent file path                |
+| ~dirvish-find-file-true-path~        | Open the true name of symlinks           |
+| ~dirvish-total-file-size~            | Echo total file size of marked files     |
 | ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"      |
 | ~dirvish-roam~                       | Browse all directories using ~fd~ command  |
 | ~dirvish-switch-layout~              | Switch Dirvish layout                    |
 |------------------------------------+------------------------------------------|
+
 *** Attributes
 
 |----------------+-------------------------------------------------|
@@ -116,7 +122,6 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 | ~all-the-icons~  | File icons provided by =all-the-icons=            |
 | ~vscode-icon~    | File icons provided by =vscode-icon=              |
 | ~file-size~      | File size of files or file count of directories |
-| ~expanded-state~ | Directory expanded state indicator              |
 |----------------+-------------------------------------------------|
 
 https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-84a8-d568517f0b50.mp4
@@ -139,34 +144,26 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 | ~file-device-number~ | Filesystem device number                                     |
 |--------------------+--------------------------------------------------------------|
 
-*** Customizing options
-
-|-------------------------------+--------------------------------------------|
-| Option                        | Description                                |
-|-------------------------------+--------------------------------------------|
-| ~dirvish-icon-delimiter~        | The delimiter between icon and filename    |
-| ~dirvish-all-the-icons-height~  | Height applied to =all-the-icons=            |
-| ~dirvish-all-the-icons-offset~  | Vertical offset applied to =all-the-icons=   |
-| ~dirvish-all-the-icons-palette~ | Coloring style applied to =all-the-icons=    |
-| ~dirvish-vscode-icon-size~      | Pixelwise size applied to =vscode-icon=      |
-| ~dirvish-expanded-state-style~  | String/icon used for folder expanded state |
-| ~dirvish-layout-recipes~        | Layout recipes for ~dirvish-switch-layout~   |
-| ~dirvish-time-format-string~    | Format-string for ~file-time~ segment        |
-|-------------------------------+--------------------------------------------|
-
 ** Toggle Dirvish in side window (dirvish-side.el)
-*** Customizing options
 
-|----------------------------------------+----------------------------------|
-| Option                                 | Description                      |
-|----------------------------------------+----------------------------------|
-| ~dirvish-side-attributes~                | See ~dirvish-attributes~           |
-| ~dirvish-side-preview-dispatchers~       | See ~dirvish-preview-dispatchers~  |
-| ~dirvish-side-mode-line-format~          | See ~dirvish-mode-line-format~     |
-| ~dirvish-side-display-alist~             | Size and position of side window |
-| ~dirvish-side-window-parameters~         | Window parameters of side window |
-| ~dirvish-side-open-file-window-function~ | Target window for ~find-file~      |
-| ~dirvish-side-follow-buffer-file~        | Follow current ~buffer-file-name~  |
-| ~dirvish-side-scope~                     | Scope for side sessions          |
-|----------------------------------------+----------------------------------|
+TODO
+
+** 'fd' interface in Dirvish (dirvish-fd.el)
+
+TODO
+
+** Turn Dirvish into a tree browser (dirvish-subtree.el)
+
+This extension gives Dirvish the ability to toggle a directory as subtree
+(~dirvish-toggle-subtree~), which can be seen as a stripped-down version of
+=dired-subtree=. Unless you need ~dired-subtree-up~ and friends, you don't have to
+install the =dired-subtree= package.
+
+*** Attributes
+
+|---------------+------------------------------------|
+| Attribute     | Description                        |
+|---------------+------------------------------------|
+| ~subtree-state~ | Directory expanded state indicator |
+|---------------+------------------------------------|
 

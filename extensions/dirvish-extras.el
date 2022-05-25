@@ -18,6 +18,8 @@
 ;; - `dirvish-copy-file-directory'
 ;; - `dirvish-total-file-size'
 ;; - `dirvish-rename-space-to-underscore'
+;; - `dirvish-other-buffer'
+;; - `dirvish-show-history'
 ;; - `dirvish-go-forward-history'
 ;; - `dirvish-go-backward-history'
 ;; - `dirvish-roam'
@@ -25,7 +27,6 @@
 ;;
 ;; Attributes
 ;; - `file-size'
-;; - `expanded-state'
 ;; - `vscode-icon'
 ;; - `all-the-icons'
 ;;
@@ -44,7 +45,6 @@
 
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
-(declare-function all-the-icons-octicon "all-the-icons")
 (declare-function vscode-icon-can-scale-image-p "vscode-icon")
 (declare-function vscode-icon-file "vscode-icon")
 (declare-function vscode-icon-dir-exists-p "vscode-icon")
@@ -105,27 +105,6 @@ RECIPE has the same form as `dirvish-default-layout'."
 This value is passed to function `format-time-string'."
   :group 'dirvish :type 'string)
 
-(defvar dirvish--expanded-state-fn nil)
-(defcustom dirvish-expanded-state-style 'chevron
-  "Icon/string used for directory expanded state.
-The value can be one of: `plus', `arrow', `chevron'."
-  :group 'dirvish :type 'symbol
-  :set
-  (lambda (k v)
-    (set k v)
-    (setq dirvish--expanded-state-fn
-          (pcase v
-            ('plus (lambda (s f) (propertize (if s "-" "+") 'face f)))
-            ('arrow (lambda (s f) (propertize (if s "▾" "▸") 'face f)))
-            ('chevron
-             (if (require 'all-the-icons nil t)
-                 (lambda (s f) (all-the-icons-octicon
-                           (format "chevron-%s" (if s "down" "right"))
-                           :height (* (or dirvish-all-the-icons-height 1) 0.8)
-                           :v-adjust 0.1 :face f))
-               (set k 'arrow)
-               (lambda (s f) (propertize (if s "▾" "▸") 'face f))))))))
-
 (defface dirvish-free-space
   '((t (:inherit font-lock-constant-face)))
   "Face used for `free-space' mode-line segment."
@@ -169,11 +148,6 @@ The value can be one of: `plus', `arrow', `chevron'."
 (defface dirvish-file-device-number
   '((t (:inherit dirvish-file-link-number)))
   "Face used for filesystem device number mode-line segment."
-  :group 'dirvish)
-
-(defface dirvish-expanded-state
-  '((t (:inherit font-lock-doc-face)))
-  "Face used for `expanded-state' attribute."
   :group 'dirvish)
 
 (defun dirvish--get-file-size-or-count (name attrs)
@@ -293,21 +267,6 @@ The value can be one of: `plus', `arrow', `chevron'."
          (ov (make-overlay ov-pos ov-pos)))
     (add-face-text-property 0 f-size-len face t f-size-str)
     (overlay-put ov 'after-string (concat spc f-size-str)) ov))
-
-(dirvish-define-attribute expanded-state
-  "A indicator for directory expanding state."
-  (:if (and (dirvish--should-enable 'extras)
-            (eq (dv-root-window dv) (selected-window)))
-       :left 1)
-  (let ((state-str (if (eq f-type 'dir)
-                       (funcall dirvish--expanded-state-fn
-                                (dirvish--subtree-expanded-p)
-                                'dirvish-expanded-state)
-                     (propertize " ")))
-        (ov (make-overlay (1+ l-beg) (1+ l-beg))))
-    (when hl-face
-      (add-face-text-property 0 1 hl-face t state-str))
-    (overlay-put ov 'after-string state-str) ov))
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
