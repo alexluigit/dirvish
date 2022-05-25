@@ -458,7 +458,6 @@ invoke the navigation, PATH is the the argument for command
     ("s"  file-size      attr     "File size")
     ("v"  vc-state       attr     "Version control state information")
     ("m"  git-msg        attr     "Git commit messages")
-    ("e"  expanded-state attr     "Directory expanded state")
     ("d"  vc-diff        preview  "Version control diff in preview window")
     ("1" '(0 nil  0.4)   layout   "       | CURRENT | preview")
     ("2" '(0 nil  0.8)   layout   "       | current | PREVIEW")

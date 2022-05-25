@@ -44,7 +44,6 @@ otherwise the preview functionality may not work correctly.
 | ~dirvish-header-line-format~         | Header line format in root window        |
 | ~dirvish-enabled-features-on-remote~ | Enabled Dirvish features on remote hosts |
 | ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
-| ~dirvish-subtree-line-prefix~        | A string put into each nested subtree    |
 | ~dirvish-preview-dispatchers~        | See [[#Preview-strategies][Preview strategies]]                   |
 | ~dirvish-attributes~                 | See [[#Extra-attributes][Extra attributes]]                     |
 |------------------------------------+------------------------------------------|
@@ -184,8 +183,7 @@ make it case insensitive etc.
      :right
      ;; For `dired-filter' users, replace `omit' with `filter' segment defined below
      (omit yank index)))
-  (dirvish-attributes '(expanded-state
-                        ;; You can put `file-size' here instead
+  (dirvish-attributes '(subtree-state
                         ;; file-size
                         ;; Feel free to replace `all-the-icons' with `vscode-icon'.
                         all-the-icons))

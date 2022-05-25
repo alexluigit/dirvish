@@ -106,12 +106,7 @@ columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.co
 
 ** dired-subtree.el
 
-Dirvish has the ability to toggle a directory as subtree
-(~dirvish-toggle-subtree~), which can be seen as a stripped-down version of
-=dired-subtree=. If what you need is no more than that, you don't need to use the
-~dired-subtree~ package. However, if you want additional features such as
-~dired-subtree-up~ and friends, or you are using ~dired-filter~ at the same time,
-you may want to use =dired-subtree= along with Dirvish.
+See [[file:EXTENSIONS.org][dirvish-subtree]].
 
 ** find-dired.el | fd-dired.el
 
