@@ -277,14 +277,21 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
 (transient-define-prefix dirvish-file-info-menu ()
   "Gather file information."
-  ["Get file information"
-   ("n"   "Copy file NAME"                       dirvish-copy-file-name :if (lambda () (featurep 'dirvish)))
-   ("N"   "Copy NAMEs of marked files"           dired-copy-filename-as-kill)
-   ("p"   "Copy file PATH"                       dirvish-copy-file-path :if (lambda () (featurep 'dirvish)))
-   ("d"   "Copy file DIRECTORY"                  dirvish-copy-file-directory :if (lambda () (featurep 'dirvish)))
-   ("l"   "Copy symlink's truename"              dirvish-copy-file-true-path :if (lambda () (featurep 'dirvish)))
-   ("L"   "Go to symlink's truename"             dirvish-find-file-true-path :if (lambda () (featurep 'dirvish)))
-   ("s"   "Get total size of marked files"       dirvish-total-file-size :if (lambda () (featurep 'dirvish)))
+  [:description
+   (lambda ()
+     (let ((title "get file information")
+           (notes "C-u n: separate NAMEs into different lines
+C-u p: separate PATHs into different lines "))
+       (format "%s\n%s" (dirvish-menu--format-heading title)
+               (propertize notes 'face 'font-lock-doc-face))))
+   ("n"   "Copy file NAMEs"                      dirvish-copy-file-name)
+   ("p"   "Copy file PATHs"                      dirvish-copy-file-path)
+   ("d"   "Copy file DIRECTORY"                  dirvish-copy-file-directory)
+   ("l"   "Copy symlink's truename"              dirvish-copy-file-true-path
+    :if (lambda () (file-symlink-p (dired-get-filename nil t))))
+   ("L"   "Go to symlink's truename"             dirvish-find-file-true-path
+    :if (lambda () (file-symlink-p (dired-get-filename nil t))))
+   ("s"   "Get total size of marked files"       dirvish-total-file-size)
    ("t"   "show file TYPE"                       dired-show-file-type)])
 
 (transient-define-prefix dirvish-renaming-menu ()
