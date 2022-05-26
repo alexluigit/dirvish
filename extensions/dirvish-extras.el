@@ -98,7 +98,7 @@ RECIPE has the same form as `dirvish-default-layout'."
   :group 'dirvish
   :type '(repeat (list (integer :tag "number of parent windows")
                        (float :tag "max width of parent windows")
-                       (float :tag "width of preview windows"))))
+                       (float :tag "width of preview window"))))
 
 (defcustom dirvish-time-format-string "%R-%x"
   "FORMAT-STRING for `file-time' mode line segment.
@@ -390,16 +390,22 @@ ARG defaults to -1."
    (file-truename (dired-get-filename nil t))))
 
 ;;;###autoload
-(defun dirvish-copy-file-name ()
-  "Copy filename under the cursor."
-  (interactive)
-  (dirvish--kill-and-echo (dired-get-filename t t)))
+(defun dirvish-copy-file-name (&optional multi-line)
+  "Copy filename of marked files.
+If MULTI-LINE, make every name occupy a separate line."
+  (interactive "P")
+  (let* ((files (dired-get-marked-files t))
+         (names (mapconcat #'concat files (if multi-line "\n" " "))))
+    (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
 
 ;;;###autoload
-(defun dirvish-copy-file-path ()
-  "Copy filename under the cursor."
-  (interactive)
-  (dirvish--kill-and-echo (dired-get-filename nil t)))
+(defun dirvish-copy-file-path (&optional multi-line)
+  "Copy filepath of marked files.
+If MULTI-LINE, make every path occupy a separate line."
+  (interactive "P")
+  (let* ((files (dired-get-marked-files))
+         (names (mapconcat #'concat files (if multi-line "\n" " "))))
+    (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
 
 ;;;###autoload
 (defun dirvish-copy-file-directory ()
