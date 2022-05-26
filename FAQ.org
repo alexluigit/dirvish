@@ -115,8 +115,8 @@ so I dropped the support for it and made =dirvish-fd=, which has better
 integration with the facilities of Dirvish:
 
 1. File preview works for ~dirvish-fd~ as well.
-2. ~dirvish-fd-menu~ (from =dirvish-menu.el=) allows us to change the =fd= switches
-   interactively (WIP).
+2. ~dirvish-fd-switches-menu~ (from =dirvish-menu.el=) allows us to change the =fd=
+   flags interactively.
 3. ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works in the result
    buffer of ~dirvish-fd~.
 4. The result buffer of ~dirvish-fd~ is added to Dirvish's local history, which
