@@ -25,6 +25,10 @@
 (defvar dirvish-menu-available-prefixs
   '(dirvish-setup-menu dirvish-ls-switches-menu dirvish-quicksort dirvish-yank-menu dirvish-goto-bookmark dirvish-mark-menu))
 
+(defvar dirvish-fd-actual-switches)
+(defvar dirvish-fd-last-input)
+(defvar dirvish-fd-args-history)
+
 (defclass dirvish-menu-toggles (transient-infix)
   ((variable  :initarg :variable)
    (scope     :initarg :scope nil))
@@ -104,7 +108,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("TAB" "Toggle subtree"                      dirvish-toggle-subtree :if-not (lambda () (featurep 'dired-subtree)))
      ("TAB" "Toggle subtree"                      dired-subtree-toggle :if (lambda () (featurep 'dired-subtree)))
      ("M-f" "Toggle fullscreen"                   dirvish-toggle-fullscreen :if-derived dirvish-mode)
-     ("M-s" "Setup Dirvish"                       dirvish-setup-menu :if-derived dirvish-mode)]
+     ("M-s" "Setup Dirvish"                       dirvish-setup-menu)]
     ["File operations"
      ("a" "  Add an empty file"                   dired-create-empty-file)
      ("+" "  Add a directory"                     dired-create-directory)
@@ -126,6 +130,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("p" "  Backward history"                    dirvish-go-backward-history :transient t)
      ("SPC" "Recently visited"                    dirvish-show-history :if (lambda () (featurep 'dirvish)))]
     ["Others"
+     ("f" "  Setup fd switches"                   dirvish-fd-switches-menu :if (lambda () dirvish-fd-actual-switches))
      ("g" "  Refresh buffer"                      revert-buffer)
      ("S" "  Manage subdirs"                      dirvish-subdir-menu)
      ("(" "  Toggle details"                      dired-hide-details-mode)
@@ -150,27 +155,86 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
      ("i" dirvish-menu--ls-indicator-style)
      ("t" dirvish-menu--ls-time)
      ("T" dirvish-menu--ls-time-style)
-     ("B" "scale sizes when printing, eg. 10K" "--block-size=")
+     ("B" "Scale sizes when printing, eg. 10K" "--block-size=")
      "toggles"
-     ("r" "reverse order while sorting" "--reverse")
-     ("d" "list directories ontop" "--group-directories-first")
-     ("~" "hide backups files (eg. foo~)" "--ignore-backups")
-     ("A" "show the author" "--author")
-     ("C" "show security context" "--context")
-     ("H" "human readable file size" "--human-readable")
-     ("G" "hide group names" "--no-group")
-     ("O" "hide owner names" "-g")
-     ("L" "info for link references or link itself" "--dereference")
-     ("N" "numeric user and group IDs" "--numeric-uid-gid")
-     ("P" "powers of 1000 for file size rather than 1024" "--si")
-     ("I" "show index number" "--inode")
-     ("S" "show the allocated size" "--size")
+     ("r" "Reverse order while sorting" "--reverse")
+     ("d" "List directories ontop" "--group-directories-first")
+     ("~" "Hide backups files (eg. foo~)" "--ignore-backups")
+     ("A" "Show the author" "--author")
+     ("C" "Show security context" "--context")
+     ("H" "Human readable file size" "--human-readable")
+     ("G" "Hide group names" "--no-group")
+     ("O" "Hide owner names" "-g")
+     ("L" "Info for link references or link itself" "--dereference")
+     ("N" "Numeric user and group IDs" "--numeric-uid-gid")
+     ("P" "Powers of 1000 for file size rather than 1024" "--si")
+     ("I" "Show index number" "--inode")
+     ("S" "Show the allocated size" "--size")
      "Actions"
-     ("RET" "  apply to this buffer" dirvish-menu--apply-switches-to-buffer)
-     ("M-RET" "apply to this session" dirvish-menu--apply-switches-to-session :if-derived 'dirvish-mode)
-     ("C-r" "  reset this buffer" dirvish-menu--reset-switches-for-buffer)
-     ("M-r" "  reset this session" dirvish-menu--reset-switches-for-session :if-derived 'dirvish-mode)
-     ("C-l" "  clear choices" dirvish-menu--clear-switches-choices :transient t)]])
+     ("RET" "  Apply to this buffer" dirvish-menu--apply-ls-switches-to-buffer)
+     ("M-RET" "Apply to this session" dirvish-menu--apply-switches-to-session :if-derived 'dirvish-mode)
+     ("C-r" "  Reset this buffer" dirvish-menu--reset-switches-for-buffer)
+     ("M-r" "  Reset this session" dirvish-menu--reset-switches-for-session :if-derived 'dirvish-mode)
+     ("C-l" "  Clear choices" dirvish-menu--clear-switches-choices :transient t)]])
+  (fd-switches
+   "Setup fd switches."
+   :init-value
+   (lambda (o) (oset o value (split-string (or dirvish-fd-actual-switches ""))))
+   [:description
+    (lambda ()
+      (let ((title "setup fd switches")
+            (notes "Ignore Range (by default ignore ALL)
+  VCS: .gitignore + .git/info/exclude + $HOME/.config/git/ignore
+  ALL: VCS + .ignore + .fdignore + $HOME/.config/fd/ignore"))
+        (format "%s\n%s" (dirvish-menu--format-heading title)
+                (propertize notes 'face 'font-lock-doc-face))))
+    ["File types (multiple types is allowed)"
+     (3 "f" " Search for regular files" "--type=file")
+     (3 "d" " Search for directories" "--type=directory")
+     (3 "l" " Search for symbolic links" "--type=symlink")
+     (3 "s" " Search for sockets" "--type=socket")
+     (3 "p" " Search for named pipes" "--type=pipe")
+     (3 "x" " Search for executable" "--type=executable")
+     (3 "e" " Search for empty files or directories" "--type=empty")
+     ""
+     "Toggles"
+     (3 "-H" "Include hidden files|dirs in the results" "--hidden")
+     (3 "-I" "Show results from ALL" "--no-ignore")
+     (4 "iv" "Show results from VCS" "--no-ignore-vcs")
+     (5 "ip" "Show results from .gitignore in parent dirs" "--no-ignore-parent")
+     (3 "-s" "Perform a case-sensitive search" "--case-sensitive")
+     (4 "-g" "Perform a glob-based (rather than regex-based) search" "--glob")
+     (4 "-F" "Treat the pattern as a literal string" "--fixed-strings")
+     (4 "-L" "Traverse symbolic links" "--follow")
+     (4 "-p" "Let the pattern match against the full path" "--full-path")
+     (5 "mr" "Maximum number of search results" "--max-results")
+     (5 "mt" "Do not descend into a different file systems" "--mount")
+     (5 "P" " Do not traverse into matching directories" "--prune")
+     ""
+     "Options"
+     (4 "-e" dirvish-menu--fd-extensions)
+     (4 "-E" dirvish-menu--fd-exclude)
+     (4 "-D" "Traverse directory by at most DEPTH levels" "--max-depth=")
+     (5 "-d" "Only show results starting at the DEPTH" "--mix-depth=")
+     (5 "gd" "Only show results starting at the exact given DEPTH" "--exact-depth=")
+     (5 "if" "Add a custom ignore-file in '.gitignore' format" "--ignore-file="
+        :reader (lambda (_prompt _init _hist) (read-file-name "Choose ignore file: ")))
+     (5 "-S" "Limit results based on the size of files" "--size="
+        :reader (lambda (_prompt _init _hist)
+                  (read-string "Input file size using the format <+-><NUM><UNIT> (eg. +100m): ")))
+     (5 "cn" "Filter results based on the file mtime newer than" "--changed-within="
+        :reader (lambda (_prompt _init _hist)
+                  (read-string "Input a duration (10h, 1d, 35min) or a time point (2018-10-27 10:00:00): ")))
+     (5 "co" "Filter results based on the file mtime older than" "--changed-before="
+        :reader (lambda (_prompt _init _hist)
+                  (read-string "Input a duration (10h, 1d, 35min) or a time point (2018-10-27 10:00:00): ")))
+     (6 "-o" "Filter files by their user and/or group" "--owner="
+        :reader (lambda (_prompt _init _hist)
+                  (read-string "user|uid:group|gid - eg. john, :students, !john:students ('!' means to exclude files instead): ")))
+     ""
+     "Actions"
+     ("r" dirvish-menu--fd-search-pattern)
+     ("RET" "Apply switches" dirvish-menu--apply-fd-switches)]])
   (subdir
    "Help Menu for Dired subdir management."
    ["Manage subdirs"
@@ -284,7 +348,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   (interactive)
   (transient-setup 'dirvish-ls-switches-menu))
 
-(defun dirvish-menu--apply-switches-to-buffer (&optional switches)
+(defun dirvish-menu--apply-ls-switches-to-buffer (&optional switches)
   "Apply listing SWITCHES to current buffer."
   (interactive)
   (let* ((args (transient-args transient-current-command))
@@ -307,12 +371,20 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
 (defun dirvish-menu--reset-switches-for-buffer ()
   "Reset listing switches for current buffer."
   (interactive)
-  (dirvish-menu--apply-switches-to-buffer dired-listing-switches))
+  (dirvish-menu--apply-ls-switches-to-buffer dired-listing-switches))
 
 (defun dirvish-menu--reset-switches-for-session ()
   "Reset listing switches for current buffer."
   (interactive)
   (dirvish-menu--apply-switches-to-session dired-listing-switches))
+
+(defun dirvish-menu--apply-fd-switches ()
+  "Apply fd SWITCHES to current buffer."
+  (interactive)
+  (let* ((args (transient-args transient-current-command))
+         (switches (string-join args " ")))
+    (setq dirvish-fd-actual-switches switches)
+    (revert-buffer)))
 
 (transient-define-infix dirvish-menu--ls-filter ()
   :description "show all files"
@@ -357,7 +429,37 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     (setq dired-actual-switches new-switches)
     (revert-buffer)))
 
-(define-obsolete-variable-alias 'dirvish-quicksort-keys 'dirvish-menu-quicksort-keys "1.3.21")
+(transient-define-infix dirvish-menu--fd-extensions ()
+  :description "Filter results by file extensions."
+  :class 'transient-option
+  :argument "--extension="
+  :multi-value 'repeat
+  :prompt
+  (lambda (o)
+    (let* ((val (oref o value))
+           (str (if val (format "(current: %s) " (mapconcat #'concat val ",")) "")))
+      (format "%sFile exts separated with comma: " str))))
+
+(transient-define-infix dirvish-menu--fd-exclude ()
+  :description "Exclude files/dirs that match the glob pattern."
+  :class 'transient-option
+  :argument "--exclude="
+  :multi-value 'repeat
+  :prompt
+  (lambda (o)
+    (let* ((val (oref o value))
+           (str (if val (format "(current: %s) " (mapconcat #'concat val ",")) "")))
+      (format "%sGlob patterns (such as *.pyc) separated with comma: " str))))
+
+(transient-define-infix dirvish-menu--fd-search-pattern ()
+  "Change search pattern."
+  :description "Change search pattern"
+  :class 'transient-lisp-variable
+  :variable 'dirvish-fd-last-input
+  :reader (lambda (_prompt _init _hist)
+            (completing-read "Input search pattern: "
+                             dirvish-fd-args-history nil nil dirvish-fd-last-input)))
+
 ;;;###autoload (autoload 'dirvish-quicksort "dirvish-menu" nil t)
 (defcustom dirvish-menu-quicksort-keys
   '(("n" ""                                   "name (a-z)")
@@ -396,7 +498,6 @@ invoke the sort function, SWITCHES is the the sort flags for
                               (interactive)
                               (dirvish-menu--quicksort-do-sort ,switches))))]))))
 
-(define-obsolete-variable-alias 'dirvish-yank-keys 'dirvish-menu-yank-keys "1.3.21")
 ;;;###autoload (autoload 'dirvish-yank-menu "dirvish-menu" nil t)
 (defcustom dirvish-menu-yank-keys
   '(("y" "Yank (paste) here"           dirvish-yank)

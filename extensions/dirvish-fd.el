@@ -28,12 +28,11 @@
          (and (eq system-type 'darwin) (not (executable-find "gls"))
               (warn "Please install `ls' from coreutils with 'brew install coreutils'"))))
 
+(defconst dirvish-fd--bufname "*Dirvish-FD@@%s@@%s@@%s*")
 (defvar dirvish-fd-program "fd" "The default fd program.")
 (defvar dirvish-fd-args-history nil "History list of fd arguments entered in the minibuffer.")
-(defvar dirvish-fd--buf-name-fmt "*Dirvish-FD@@%s@@%s@@%s*")
 (defvar dirvish-fd-last-input "" "Last used fd arguments.")
-(defvar-local dirvish-fd-actual-switches nil)
-(put 'dirvish-fd-actual-switches 'permanent-local t)
+(defvar dirvish-fd-actual-switches nil)
 
 (defun dirvish-fd-proc-filter (proc string)
   "Filter for `dirvish-fd' processes PROC and output STRING."
@@ -63,18 +62,19 @@ The command run is essentially:
 
   fd --color=never -0 `dirvish-fd-switches' PATTERN
      --exec-batch `dirvish-fd-ls-program' `dired-listing-switches' --directory."
-  ;; In case users issue a new `dirvish-fd' when already in a result buffer
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Fd target directory: " nil "" t))
                      (read-string "Fd search pattern: " dirvish-fd-last-input
                                   '(dirvish-fd-args-history . 1))))
+  ;; In case users issue a new `dirvish-fd' when already in a result buffer
   (when (and (or (not dir) current-prefix-arg)
              dirvish-fd-actual-switches)
     (setq dirvish-fd-actual-switches nil))
   (setq dir (file-name-as-directory (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir) (user-error "'fd' command requires a directory: %s" dir))
-  (let* ((reuse (when (dirvish-prop :fd-dir) (current-buffer)))
-         (buf-name (format dirvish-fd--buf-name-fmt dir pattern (make-temp-name "")))
+  (let* ((dired-buffers dired-buffers) ; make Dired aware of this buffer?
+         (reuse (when (dirvish-prop :fd-dir) (current-buffer)))
+         (buf-name (format dirvish-fd--bufname dir pattern (make-temp-name "")))
          (buffer (or reuse (get-buffer-create buf-name))))
     (pop-to-buffer-same-window buffer)
     (with-current-buffer buffer
@@ -82,14 +82,13 @@ The command run is essentially:
       (let ((ls-switches (or dired-actual-switches
                              (and reuse (dv-ls-switches (dirvish-curr)))
                              dired-listing-switches))
-            (fmt "%s -0 --color=never %s --exec-batch %s %s --quoting-style=literal --directory &")
+            (fmt "%s -0 --color=never %s %s --exec-batch %s %s --quoting-style=literal --directory &")
             buffer-read-only)
         (erase-buffer)
         (setq default-directory dir)
         (setq dirvish-fd-last-input pattern) ; save for next interactive call
-        (setq dirvish-fd-actual-switches
-              (or dirvish-fd-actual-switches (format "%s %s" dirvish-fd-switches pattern)))
-        (shell-command (format fmt dirvish-fd-program dirvish-fd-actual-switches
+        (setq dirvish-fd-actual-switches (or dirvish-fd-actual-switches dirvish-fd-switches))
+        (shell-command (format fmt dirvish-fd-program dirvish-fd-actual-switches pattern
                                dirvish-fd-ls-program ls-switches)
                        buffer)
         (dired-mode dir ls-switches)
@@ -103,6 +102,37 @@ The command run is essentially:
         (set-process-sentinel proc #'dirvish-find-dired-sentinel-ad)
         ;; Initialize the process marker; it is used by the filter.
         (move-marker (process-mark proc) (point) buffer)))))
+
+(cl-defmethod dirvish-search-switches (&context (dirvish-fd-actual-switches string))
+  "Return a string showing the DIRVISH-FD-ACTUAL-SWITCHES."
+  (unless (dirvish-prop :fd-heading)
+    (dirvish-prop :fd-heading
+      (let* ((args (split-string dirvish-fd-actual-switches))
+             (globp (member "--glob" args))
+             (casep (member "--case-sensitive" args))
+             (ign-range (cond ((member "--no-ignore" args) "no")
+                              ((member "--no-ignore-vcs" args) "no_vcs")
+                              (t "all")))
+             (tf (and (member "--type=file" args) "file"))
+             (td (and (member "--type=directory" args) "dir"))
+             (ts (and (member "--type=symlink" args) "symlink"))
+             (tS (and (member "--type=socket" args) "socket"))
+             (tp (and (member "--type=pipe" args) "pipe"))
+             (te (and (member "--type=executable" args) "exe"))
+             (tE (and (member "--type=empty" args) "empty"))
+             (type (mapconcat #'concat (remove nil (list tf td ts tS tp te tE)) ",")))
+        (format " %s | %s %s | %s %s | %s %s | %s %s | %s "
+                (propertize "FD" 'face 'dired-header)
+                (propertize (if globp "glob:" "regex:") 'face 'font-lock-doc-face)
+                (propertize dirvish-fd-last-input 'face 'font-lock-regexp-grouping-construct)
+                (propertize "type:" 'face 'font-lock-doc-face)
+                (propertize (if (equal type "") "all" type) 'face 'font-lock-variable-name-face)
+                (propertize "case:" 'face 'font-lock-doc-face)
+                (propertize (if casep "sensitive" "smart") 'face 'font-lock-type-face)
+                (propertize "ignore:" 'face 'font-lock-doc-face)
+                (propertize ign-range 'face 'font-lock-comment-face)
+                (propertize (abbreviate-file-name default-directory) 'face 'dired-directory)))))
+  (dirvish-prop :fd-heading))
 
 (provide 'dirvish-fd)
 ;;; dirvish-fd.el ends here
