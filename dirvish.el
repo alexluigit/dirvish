@@ -873,7 +873,7 @@ FILENAME and WILDCARD are their args."
            (let ((default-directory dirvish-cache-dir))
              (and recentf-mode (add-to-list 'recentf-list file))
              (apply #'start-process "" nil "nohup"
-                    (cl-substitute file "%f" ex-cmd :test 'string=))))
+                    (cl-substitute (shell-quote-argument file) "%f" ex-cmd :test 'string=))))
           (dv
            (select-window (funcall (dv-find-file-window-fn dv)))
            (when-let ((dv (dirvish-prop :dv))) (dirvish-kill dv))
