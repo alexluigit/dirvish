@@ -299,6 +299,7 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
            collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defconst dirvish--search-switches
   '((:eval (dirvish--bar-image (dv-layout (dirvish-curr)) t)) (:eval (dirvish-search-switches))))
+(defconst dirvish--img-always-cache-exts '("heic"))
 (defvar dirvish--hash (make-hash-table))
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-mode-line-segments '())
@@ -977,7 +978,7 @@ When PROC finishes, fill preview buffer with process result."
   "Preview files with `ls' or `cat' for remote files."
   (when-let ((local (file-remote-p file 'localname)))
     `(shell . ("ssh" ,(file-remote-p file 'host) "test" "-d" ,local
-               "&&" "ls" "-Alh" "--group-directories-first" "" ,local
+               "&&" "ls" "-Alh" "--group-directories-first" ,local
                "||" "cat" ,local))))
 
 (dirvish-define-preview disable (file)
@@ -1016,11 +1017,11 @@ When PROC finishes, fill preview buffer with process result."
            (cache (dirvish--preview-cache-image-path file width ".jpg")))
       (cond ((file-exists-p cache)
              `(image . ,(create-image cache nil nil :max-width width :max-height height)))
-            ((or (< (nth 7 (file-attributes file)) dirvish--cache-img-threshold)
-                 (string-prefix-p (concat (expand-file-name dirvish-cache-dir) "images/") file))
-             `(image . ,(create-image file nil nil :max-width width :max-height height)))
-            (t `(image-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
-                                ,(number-to-string width) ,cache)))))))
+            ((or (> (nth 7 (file-attributes file)) dirvish--cache-img-threshold)
+                 (member (file-name-extension file) dirvish--img-always-cache-exts))
+             `(image-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
+                              ,(number-to-string width) ,cache)))
+            (t `(image . ,(create-image file nil nil :max-width width :max-height height)))))))
 
 (dirvish-define-preview video (file preview-window)
   "Display a video thumbnail for FILE in PREVIEW-WINDOW."
