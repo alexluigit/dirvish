@@ -383,6 +383,13 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
+(defun dirvish--normalize-util-windows (windows)
+  "Normalize the size of utility WINDOWS, like header line window."
+  (dolist (win windows)
+    (let ((window-safe-min-height 0)
+          (window-resize-pixelwise t))
+      (fit-window-to-buffer win 2 1))))
+
 (defun dirvish--goto-file (filename)
   "Go to line describing FILENAME."
   (goto-char (point-min))
@@ -1453,10 +1460,7 @@ If the buffer is not available, create it with `dired-noselect'."
                    (dv-header-line-format dv))))
       (with-current-buffer (dirvish--util-buffer 'header dv)
         (setq header-line-format h-fmt)))
-    (dolist (win maybe-abnormal)
-      (let ((window-safe-min-height 0)
-            (window-resize-pixelwise t))
-        (fit-window-to-buffer win 2 1)))
+    (dirvish--normalize-util-windows maybe-abnormal)
     (when layout (dirvish-cache-images dv))))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
