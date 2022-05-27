@@ -985,7 +985,7 @@ When PROC finishes, fill preview buffer with process result."
   "Disable preview in some cases."
   (when (or (not (file-exists-p file))
             (not (file-readable-p file))
-            (member (file-name-extension file) dirvish-preview-disabled-exts))
+            (member (downcase (or (file-name-extension file) "")) dirvish-preview-disabled-exts))
     `(info . ,(format "Preview for %s has been disabled" file))))
 
 (dirvish-define-preview text (file)
@@ -1018,7 +1018,7 @@ When PROC finishes, fill preview buffer with process result."
       (cond ((file-exists-p cache)
              `(image . ,(create-image cache nil nil :max-width width :max-height height)))
             ((or (> (nth 7 (file-attributes file)) dirvish--cache-img-threshold)
-                 (member (file-name-extension file) dirvish--img-always-cache-exts))
+                 (member (downcase (file-name-extension file)) dirvish--img-always-cache-exts))
              `(image-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
                               ,(number-to-string width) ,cache)))
             (t `(image . ,(create-image file nil nil :max-width width :max-height height)))))))
