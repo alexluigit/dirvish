@@ -150,7 +150,24 @@ TODO
 
 ** 'fd' interface in Dirvish (dirvish-fd.el)
 
-TODO
+This is the BEST =fd= frontend, period.
+
+Here is a quick demo.
+
+https://user-images.githubusercontent.com/16313743/170814774-98cc598d-6bc5-4fc3-9eea-21c98d6d4772.mp4
+
+Too fast? Let's break it down:
+
+1. M-x ~dirvish-fd~, input /test/ as the search pattern and confirm
+2. Oh, too many results. How about some additional filtering?
+3. M-x ~dirvish-fd-switches-menu~
+4. Press =f= (show file only，no directories)
+5. Press =-e=, input "/py,yaml/", meaning search for these 2 extensions only
+6. Press =-E=, input "/Emacs/", exclude the glob in the results
+7. Press =RET=, refresh the results
+
+Wait, there's more: ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works
+for this buffer.
 
 ** Turn Dirvish into a tree browser (dirvish-subtree.el)
 

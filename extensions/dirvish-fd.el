@@ -43,8 +43,7 @@
 	        (save-excursion
 	          (save-restriction
 	            (widen)
-	            (let ((buffer-read-only nil)
-		                (beg (point-max)))
+	            (let ((beg (point-max)))
 		            (goto-char beg)
 		            (insert string)
 		            (goto-char beg)
