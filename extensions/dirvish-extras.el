@@ -78,7 +78,7 @@ Set it to nil to use the default height from `all-the-icons'."
 (defcustom dirvish-all-the-icons-palette 'all-the-icons
   "Coloring style used for file `all-the-icons' backend.
 Values are interpreted as follows:
-- 'all-the-icons, meaning let `all-the-icons.el' to do the coloring.
+- all-the-icons, meaning let `all-the-icons.el' to do the coloring.
 - A face that is used for all the icons.
 - nil, inherit face at point."
   :group 'dirvish :type '(choice face symbol nil))

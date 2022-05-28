@@ -41,11 +41,8 @@
 
 (defcustom dirvish-attributes '()
   "File attributes such as `file-size' showing in Dirvish file lines.
-The attributes are defined by `dirvish-define-attribute', you can
-get all available attributes by evaluating:
-
-\(prog1 (mapc #'require `dirvish-extra-libs')
-       (describe-variable 'dirvish--available-attrs))"
+You can get all available attributes in `dirvish--available-attrs'.
+See `dirvish-define-attribute'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
 (defcustom dirvish-preview-dispatchers
@@ -156,37 +153,32 @@ session and fullscreen session respectively.  See
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-curr))
-              (buf (alist-get (dv-index-dir dv)
-                              (dv-root-dir-buf-alist dv) nil nil #'equal))
+              (buf (alist-get (dv-index-dir dv) (dv-root-dir-buf-alist dv) nil nil #'equal))
               (scale ,(get-font-scale))
               (win-width (floor (/ (window-width) scale)))
-              (str-l (format-mode-line ',(or (expand :left) mode-line-format) nil nil buf))
-              (str-r (format-mode-line ',(expand :right) nil nil buf))
-              (len-l (1- (length str-l)))
-              (len-r (string-width str-r))
-              (str-width (+ (string-width str-l) len-r))
-              (filling-spaces
-               (propertize
-                " " 'display
-                `((space :align-to (- (+ right right-fringe right-margin)
-                                      ,(ceiling (* scale (string-width str-r)))))))))
+              (str-l "") (str-r "") (len-r 0))
+         (when (buffer-live-p buf)
+           (setq str-l (format-mode-line ',(or (expand :left) mode-line-format) nil nil buf))
+           (setq str-r (format-mode-line ',(or (expand :right) mode-line-format) nil nil buf))
+           (setq len-r (string-width str-r)))
          (concat
           (dirvish--bar-image (dv-layout dv) ,header)
-          (if (< str-width win-width)
+          (if (< (+ (string-width str-l) len-r) win-width)
               str-l
             (let ((trim (1- (- win-width len-r))))
-              (if (>= trim 0) (substring str-l 0 (min trim len-l)) "")))
-          filling-spaces str-r))))))
+              (if (>= trim 0) (substring str-l 0 (min trim (1- (length str-l)))) "")))
+          (propertize
+           " " 'display
+           `((space :align-to (- (+ right right-fringe right-margin)
+                                 ,(ceiling (* scale (string-width str-r)))))))
+          str-r))))))
 
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
 Set it to nil to use the default `mode-line-format'.  SEGMENT is
 a mode line segment defined by `dirvish-define-mode-line' or a
-string.  You can get all available SEGMENTs by evaluating:
-
-\(prog1 (mapc #'require `dirvish-extra-libs')
-       (describe-variable 'dirvish--available-mode-line-segments))"
+string.  See `dirvish--available-mode-line-segments'."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
 
@@ -462,6 +454,14 @@ RANGE can be `buffer', `session', `frame', `all'."
   (or (not (dirvish-prop :remote))
       (memq feature dirvish-enabled-features-on-remote)))
 
+(defun dirvish--kill-buffer-redirect ()
+  "Inhibit `kill-buffer' and friends in Dirvish."
+  (interactive)
+  (message "Use %s (%s) to quit Dirvish sessions"
+           (propertize "quit-window" 'face 'font-lock-constant-face)
+           (propertize (or (key-description (car (where-is-internal 'quit-window))) "")
+                       'face 'help-key-binding)))
+
 ;;;; Core
 
 (defun dirvish-curr (&optional frame)
@@ -485,7 +485,7 @@ following arguments:
 
 - `f-name'  from `dired-get-filename'
 - `f-attrs' from `file-attributes'
-- `f-type'  from `file-directory-p' ('dir or 'file)
+- `f-type'  from `file-directory-p' (dir or file)
 - `f-beg'   from `dired-move-to-filename'
 - `f-end'   from `dired-move-to-end-of-filename'
 - `l-beg'   from `line-beginning-position'
@@ -1289,6 +1289,8 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
        (dirvish--should-enable 'vc)
        (dirvish-prop :vc-backend
          (ignore-errors (vc-responsible-backend default-directory))))
+  (local-set-key [remap kill-buffer] 'dirvish--kill-buffer-redirect)
+  (local-set-key [remap kill-this-buffer] 'dirvish--kill-buffer-redirect)
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil)
   (setq-local cursor-type nil)
@@ -1456,7 +1458,8 @@ If the buffer is not available, create it with `dired-noselect'."
       (dirvish--create-parent-windows dv))
     (let ((h-fmt (if (dirvish-prop :fd-dir)
                      `(:eval (format-mode-line
-                              dirvish--search-switches nil nil ,(current-buffer)))
+                              dirvish--search-switches nil nil
+                              (and (buffer-live-p ,(current-buffer)) ,(current-buffer))))
                    (dv-header-line-format dv))))
       (with-current-buffer (dirvish--util-buffer 'header dv)
         (setq header-line-format h-fmt)))
