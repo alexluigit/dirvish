@@ -71,11 +71,10 @@ The command run is essentially:
     (setq dirvish-fd-actual-switches nil))
   (setq dir (file-name-as-directory (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir) (user-error "'fd' command requires a directory: %s" dir))
-  (let* ((dired-buffers dired-buffers) ; make Dired aware of this buffer?
-         (reuse (when (dirvish-prop :fd-dir) (current-buffer)))
+  (let* ((reuse (when (dirvish-prop :fd-dir) (current-buffer)))
          (buf-name (format dirvish-fd--bufname dir pattern (make-temp-name "")))
          (buffer (or reuse (get-buffer-create buf-name))))
-    (pop-to-buffer-same-window buffer)
+    (dirvish-with-no-dedication (pop-to-buffer-same-window buffer))
     (with-current-buffer buffer
       (widen)
       (let ((ls-switches (or dired-actual-switches
