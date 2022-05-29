@@ -1289,8 +1289,11 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
        (dirvish--should-enable 'vc)
        (dirvish-prop :vc-backend
          (ignore-errors (vc-responsible-backend default-directory))))
-  (local-set-key [remap kill-buffer] 'dirvish--kill-buffer-redirect)
-  (local-set-key [remap kill-this-buffer] 'dirvish--kill-buffer-redirect)
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map (current-local-map))
+    (define-key map [remap kill-buffer] 'dirvish--kill-buffer-redirect)
+    (define-key map [remap kill-this-buffer] 'dirvish--kill-buffer-redirect)
+    (use-local-map map))
   (setq-local face-font-rescale-alist nil)
   (setq-local dired-hide-details-hide-symlink-targets nil)
   (setq-local cursor-type nil)
