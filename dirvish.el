@@ -159,7 +159,7 @@ session and fullscreen session respectively.  See
               (str-l "") (str-r "") (len-r 0))
          (when (buffer-live-p buf)
            (setq str-l (format-mode-line ',(or (expand :left) mode-line-format) nil nil buf))
-           (setq str-r (format-mode-line ',(or (expand :right) mode-line-format) nil nil buf))
+           (setq str-r (format-mode-line ',(expand :right) nil nil buf))
            (setq len-r (string-width str-r)))
          (concat
           (dirvish--bar-image (dv-layout dv) ,header)
