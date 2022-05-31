@@ -25,7 +25,6 @@
 
 ;;; Code:
 
-(require 'tramp)
 (require 'dired-aux)
 (require 'dirvish)
 
@@ -106,7 +105,7 @@ results of `dirvish-yank--get-remote-port'.")
    for h = (or (file-remote-p f 'host) 'local)
    do (cl-pushnew h hosts :test #'equal)
    when (> (length hosts) 1)
-   do (user-error "Dirvish: SOURCEs need to be in the same host")
+   do (user-error "Dirvish[error]: SOURCEs need to be in the same host")
    finally return (car hosts)))
 
 (defun dirvish-yank--sentinel (process _exit)
@@ -194,7 +193,7 @@ BASE-NAME is the filename of file without directory."
            (cons file (if (file-directory-p file) dest-local paste-name)))
        (?N (setq never t)
            (dirvish-yank--ensure-newname file base-name old-files dest-local))
-       (?q (user-error "Dirvish: yank task aborted"))))
+       (?q (user-error "Dirvish[info]: yank task aborted"))))
     (t (cons file (if (file-directory-p file) dest-local paste-name))))))
 
 (defun dirvish-yank--l2l-handler (method srcs dest host)
@@ -246,14 +245,16 @@ This command sync SRCS on SHOST to DEST on DHOST."
          (srcs (or (and (functionp dirvish-yank-sources)
                         (funcall dirvish-yank-sources))
                    (dirvish--marked-files dirvish-yank-sources)
-                   (user-error "Dirvish: no marked files")))
+                   (user-error "Dirvish[error]: no marked files")))
          (shost (dirvish-yank--extract-host srcs)))
     (cond
      ((and (memq method dirvish-yank--link-methods)
            (not (equal shost dhost)))
-      (user-error "Dirvish: can not make links between different hosts"))
+      (user-error "Dirvish[error]: can not make links between different hosts"))
      ((equal shost dhost)
-      (dirvish-yank--l2l-handler method srcs dest shost))
+      (if (or (eq dhost 'local) (dirvish--tramp-async-p))
+          (dirvish-yank--l2l-handler method srcs dest shost)
+        (user-error "Dirvish[error]: async process is disabled in current TRAMP connection")))
      ((not (or (eq shost 'local) (eq dhost 'local)))
       (dirvish-yank--r2r-handler srcs dest shost dhost))
      (t
