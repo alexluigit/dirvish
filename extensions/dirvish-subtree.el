@@ -171,14 +171,13 @@ LOCALP is the arg for `dired-current-directory', which see."
 
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
-  (:if (and (dirvish--should-enable 'extras)
-            (eq (dv-root-window dv) (selected-window))
+  (:if (and (eq (dv-root-window dv) (selected-window))
             (or dirvish-subtree-always-show-state
                 dirvish-subtree--overlays
                 (bound-and-true-p dired-subtree-overlays)))
        :left 1)
   (let ((state-str
-         (propertize (if (eq f-type 'dir)
+         (propertize (if (eq (car f-type) 'dir)
                          (if (dirvish--subtree-expanded-p)
                              (car dirvish-subtree--state-icons)
                            (cdr dirvish-subtree--state-icons))

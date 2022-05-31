@@ -28,25 +28,25 @@ otherwise the preview functionality may not work correctly.
 
 * Customizing options
 
-|------------------------------------+------------------------------------------|
-| Option                             | Description                              |
-|------------------------------------+------------------------------------------|
-| ~dirvish-cache-dir~                  | Cache directory                          |
-| ~dirvish-auto-cache-threshold~       | Generate cache images automatically      |
-| ~dirvish-history-length~             | Maximum number of items in history       |
-| ~dirvish-default-layout~             | Default layout for fullscreen sessions   |
-| ~dirvish-hide-details~               | Hide details as you see fit              |
-| ~dirvish-mode-line-position~         | The place to put the mode line           |
-| ~dirvish-mode-line-height~           | The height of mode line                  |
-| ~dirvish-mode-line-format~           | Mode line format in root window          |
-| ~dirvish-header-line-position~       | The place to put the header line         |
-| ~dirvish-header-line-height~         | The height of header line                |
-| ~dirvish-header-line-format~         | Header line format in root window        |
-| ~dirvish-enabled-features-on-remote~ | Enabled Dirvish features on remote hosts |
-| ~dirvish-preview-disabled-exts~      | Disable preview for some filetypes       |
-| ~dirvish-preview-dispatchers~        | See [[#Preview-strategies][Preview strategies]]                   |
-| ~dirvish-attributes~                 | See [[#Extra-attributes][Extra attributes]]                     |
-|------------------------------------+------------------------------------------|
+|-------------------------------+----------------------------------------|
+| Option                        | Description                            |
+|-------------------------------+----------------------------------------|
+| ~dirvish-cache-dir~             | Cache directory                        |
+| ~dirvish-auto-cache-threshold~  | Generate cache images automatically    |
+| ~dirvish-history-length~        | Maximum number of items in history     |
+| ~dirvish-default-layout~        | Default layout for fullscreen sessions |
+| ~dirvish-hide-details~          | Hide details as you see fit            |
+| ~dirvish-mode-line-position~    | The place to put the mode line         |
+| ~dirvish-mode-line-height~      | The height of mode line                |
+| ~dirvish-mode-line-format~      | Mode line format in root window        |
+| ~dirvish-header-line-position~  | The place to put the header line       |
+| ~dirvish-header-line-height~    | The height of header line              |
+| ~dirvish-header-line-format~    | Header line format in root window      |
+| ~dirvish-preview-disabled-exts~ | Disable preview for some filetypes     |
+| ~dirvish-open-with-programs~    | Open certain files with external apps  |
+| ~dirvish-preview-dispatchers~   | See [[#Preview-strategies][Preview strategies]]                 |
+| ~dirvish-attributes~            | See [[#Extra-attributes][Extra attributes]]                   |
+|-------------------------------+----------------------------------------|
 Consult the docstring of the options for details.
 
 * Extra attributes

@@ -153,7 +153,8 @@ This value is passed to function `format-time-string'."
 (defun dirvish--get-file-size-or-count (name attrs)
   "Get file size of file NAME from ATTRS."
   (let ((type (file-attribute-type attrs)))
-    (cond ((stringp type)
+    (cond ((dirvish-prop :remote) (or (file-attribute-size attrs) "?"))
+          ((stringp type)
            (let ((count
                   (dirvish-attribute-cache name :f-count
                     (condition-case nil
@@ -177,7 +178,8 @@ This value is passed to function `format-time-string'."
 (defun dirvish--format-file-attr (attr-name)
   "Return a string of cursor file's attribute ATTR-NAME."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (attrs (dirvish-attribute-cache name :builtin))
+              (f-name (file-local-name name))
+              (attrs (dirvish-attribute-cache f-name :builtin))
               (attr-getter (intern (format "file-attribute-%s" attr-name)))
               (attr-face (intern (format "dirvish-file-%s" attr-name)))
               (attr-val (and attrs (funcall attr-getter attrs))))
@@ -185,15 +187,14 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-attribute all-the-icons
   "File icons provided by `all-the-icons.el'."
-  (:left (+ (length dirvish-icon-delimiter) 2)
-         :if (dirvish--should-enable 'extras))
+  (:left (+ (length dirvish-icon-delimiter) 2))
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
          (height `(:height ,dirvish-all-the-icons-height))
          (face (cond (hl-face `(:face ,hl-face))
                      ((eq dirvish-all-the-icons-palette 'all-the-icons) nil)
                      (t `(:face ,dirvish-all-the-icons-palette))))
          (icon-attrs (append face offset height))
-         (icon (if (eq f-type 'dir)
+         (icon (if (eq (car f-type) 'dir)
                    (apply #'all-the-icons-icon-for-dir f-name icon-attrs)
                  (apply #'all-the-icons-icon-for-file f-name icon-attrs)))
          (icon-str (concat icon (propertize dirvish-icon-delimiter 'face hl-face)))
@@ -202,13 +203,12 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-attribute vscode-icon
   "File icons provided by `vscode-icon.el'."
-  (:left (1+ (length dirvish-icon-delimiter))
-         :if (dirvish--should-enable 'extras))
+  (:left (1+ (length dirvish-icon-delimiter)))
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
          (icon-info
           (dirvish-attribute-cache f-name :vscode-icon
             (let ((default-directory dirvish--vscode-icon-directory))
-              (if (eq f-type 'dir)
+              (if (eq (car f-type) 'dir)
                   (let* ((base-name (file-name-base f-name))
                          (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist))
                                         base-name))
@@ -230,7 +230,7 @@ This value is passed to function `format-time-string'."
                              (expand-file-name "default_folder_opened.png"))))
                     (cons closed-icon opened-icon))
                 (vscode-icon-file f-name)))))
-         (icon (cond ((not (file-directory-p f-name)) icon-info)
+         (icon (cond ((eq (car f-type) 'file) icon-info)
                      ((dirvish--subtree-expanded-p) (cdr icon-info))
                      (t (car icon-info))))
          (ov (make-overlay (1- f-beg) f-beg)))
@@ -241,9 +241,8 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-attribute file-size
   "Show file size or directories file count at right fringe."
-  (:if (and (dirvish--should-enable 'extras)
-            (eq (dv-root-window dv) (selected-window))
-            dired-hide-details-mode)
+  (:if (and (eq (dv-root-window dv) (selected-window))
+        dired-hide-details-mode)
        :right 6)
   (let* ((depth (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))
          (width (window-width))
@@ -270,10 +269,11 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
-  (format " %s %s "
-          (propertize (or (get-free-disk-space default-directory) "")
-                      'face 'dirvish-free-space)
-          (propertize "free" 'face 'font-lock-doc-face)))
+  (let ((free-space (or (dirvish-prop :free-space)
+                        (get-free-disk-space default-directory) "")))
+    (dirvish-prop :free-space free-space)
+    (format " %s %s " (propertize free-space 'face 'dirvish-free-space)
+            (propertize "free" 'face 'font-lock-doc-face))))
 
 (dirvish-define-mode-line file-link-number
   "Number of links to file."
@@ -282,35 +282,38 @@ This value is passed to function `format-time-string'."
 (dirvish-define-mode-line file-user
   "User name of file."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (uid (and attrs (file-attribute-user-id attrs))))
-    (propertize (user-login-name uid) 'face 'dirvish-file-user-id)))
+              (f-name (file-local-name name))
+              (attrs (dirvish-attribute-cache f-name :builtin))
+              (uid (and attrs (file-attribute-user-id attrs)))
+              (uname (if (dirvish-prop :remote) uid (user-login-name uid))))
+    (propertize uname 'face 'dirvish-file-user-id)))
 
 (dirvish-define-mode-line file-group
   "Group name of file."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (gid (and attrs (file-attribute-group-id attrs))))
-    (propertize (group-name gid) 'face 'dirvish-file-group-id)))
+              (f-name (file-local-name name))
+              (attrs (dirvish-attribute-cache f-name :builtin))
+              (gid (and attrs (file-attribute-group-id attrs)))
+              (gname (if (dirvish-prop :remote) gid (group-name gid))))
+    (propertize gname 'face 'dirvish-file-group-id)))
 
 (dirvish-define-mode-line file-time
-  "Last access/modification/status change time.
-The actual time displayed depends on `dired-actual-switches'."
+  "Last modification time of file."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (switches (split-string dired-actual-switches))
-              (time (cond ((member "--time=use" switches) (nth 4 attrs))
-                          ((member "--time=ctime" switches) (nth 6 attrs))
-                          ((member "--time=birth" switches))
-                          (t (nth 5 attrs))))
-              (time-string (format-time-string dirvish-time-format-string time)))
+              (f-name (file-local-name name))
+              (attrs (dirvish-attribute-cache f-name :builtin))
+              (f-mtime (file-attribute-modification-time attrs))
+              (time-string
+               (if (dirvish-prop :remote) f-mtime
+                 (format-time-string dirvish-time-format-string f-mtime))))
     (format "%s" (propertize time-string 'face 'dirvish-file-time))))
 
 (dirvish-define-mode-line file-size
   "File size of files or file count of directories."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (size (and attrs (dirvish--get-file-size-or-count name attrs))))
+              (f-name (file-local-name name))
+              (attrs (dirvish-attribute-cache f-name :builtin))
+              (size (and attrs (dirvish--get-file-size-or-count f-name attrs))))
     (format "%s" (propertize size 'face 'dirvish-file-size))))
 
 (dirvish-define-mode-line file-modes

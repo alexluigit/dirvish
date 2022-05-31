@@ -42,12 +42,13 @@ This variable is consumed by `vc-state' attribute in Dirvish."
   "Face for commit message overlays."
   :group 'dirvish)
 
-(dirvish-define-attribute vc-state "The version control state at left fringe."
-  (:if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend))
+(dirvish-define-attribute vc-state
+  "The version control state at left fringe."
+  (:if (and (eq (dv-root-window dv) (selected-window))
+            (dirvish-prop :vc-backend))
        :left 1)
   (let* ((state (dirvish-attribute-cache f-name :vc-state
-                  (let ((f-name (or (file-remote-p f-name 'localname) f-name)))
-                    (vc-state-refresh f-name (dirvish-prop :vc-backend)))))
+                  (vc-state-refresh f-name (dirvish-prop :vc-backend))))
          (state-cons (alist-get state dirvish-vc-state-char-alist))
          (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
          (face (or hl-face (cdr state-cons)))
@@ -55,24 +56,27 @@ This variable is consumed by `vc-state' attribute in Dirvish."
     (add-face-text-property 0 (length gutter-str) face t gutter-str)
     (overlay-put ov 'before-string gutter-str) ov))
 
-(dirvish-define-attribute git-msg "Append git commit message to filename."
-  (:if (and (eq (dv-root-window dv) (selected-window)) (dirvish-prop :vc-backend)))
+(dirvish-define-attribute git-msg
+  "Append git commit message to filename."
+  (:if (and (eq (dv-root-window dv) (selected-window))
+            (not (dirvish-prop :remote))))
   (let* ((info (dirvish-attribute-cache f-name :git-msg
-                 (let* ((f-name (or (file-remote-p f-name 'localname) f-name))
-                        (msg (dirvish--shell-to-string "git" "log" "-1" "--pretty=%s" f-name)))
+                 (let ((msg (dirvish--shell-to-string
+                             "git" "log" "-1" "--pretty=%s" f-name)))
                    (if (and msg (not (string= "" msg))) (substring msg 0 -1) ""))))
          (face (or hl-face 'dirvish-git-commit-message-face))
          (width (window-width))
          (depth (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))
          (f-base-str (buffer-substring f-beg f-end))
          (f-base-len (string-width f-base-str))
-         (remained (- width f-base-len depth (car dirvish--attrs-width) (cdr dirvish--attrs-width)))
+         (remained (- width f-base-len depth
+                      (car dirvish--attrs-width)
+                      (cdr dirvish--attrs-width)))
          (msg-str (truncate-string-to-width (concat "\t" info) remained))
          (ov (make-overlay (1- f-end) f-end)))
     (add-face-text-property 0 (length msg-str) face t msg-str)
     (overlay-put ov 'after-string msg-str) ov))
 
-;;;###autoload (autoload 'dirvish-vc-diff-preview-dp "dirvish-vc")
 (dirvish-define-preview vc-diff ()
   "Show output of `vc-diff' as preview."
   (when (and (dirvish-prop :vc-backend)
@@ -81,7 +85,6 @@ This variable is consumed by `vc-state' attribute in Dirvish."
                (vc-diff)))
     '(buffer . "*vc-diff*")))
 
-;;;###autoload (autoload 'dirvish-vc-info-ml "dirvish-vc")
 (dirvish-define-mode-line vc-info
   "Version control info such as git branch."
   (when-let* ((bk (dirvish-prop :vc-backend))
@@ -94,7 +97,8 @@ This variable is consumed by `vc-state' attribute in Dirvish."
 
 (defun dirvish--magit-on-files (fn &optional fileset)
   "Execute magit function FN to FILESET."
-  (unless (featurep 'magit) (user-error "Dirvish: install magit.el to use this command"))
+  (unless (featurep 'magit)
+    (user-error "Dirvish: install magit.el to use this command"))
   (setq fileset (or fileset (dired-get-marked-files)))
   (cl-dolist (file fileset) (funcall fn file))
   (dired-unmark-all-marks)
