@@ -555,20 +555,26 @@ invoke the navigation, PATH is the the argument for command
 (defcustom dirvish-menu-setup-items
   '(("i"  all-the-icons  attr     "File icons")
     ("s"  file-size      attr     "File size")
-    ("v"  vc-state       attr     "Version control state information")
-    ("m"  git-msg        attr     "Git commit messages")
+    ("v"  vc-state       attr     "Version control state information"
+     (dirvish-prop :vc-backend))
+    ("m"  git-msg        attr     "Git commit messages"
+     (and (dirvish-prop :vc-backend) (not (dirvish-prop :remote))))
     ("d"  vc-diff        preview  "Version control diff in preview window")
     ("1" '(0 nil  0.4)   layout   "       | CURRENT | preview")
     ("2" '(0 nil  0.8)   layout   "       | current | PREVIEW")
-    ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW")
-    ("4" '(1 0.1  0.6)   layout   "parent | current | preview"))
+    ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW"
+     (not (dv-no-parents (dirvish-curr))))
+    ("4" '(1 0.1  0.6)   layout   "parent | current | preview"
+     (not (dv-no-parents (dirvish-curr)))))
   "ITEMs for `dirvish-setup-menu'.
-A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION) where
-KEY is the keybinding for the item, VAR can be valid
+A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
+where KEY is the keybinding for the item, VAR can be valid
 attribute (as in `dirvish-attributes') or preview dispatcher (as
 in `dirvish-preview-dispatchers') or a layout recipe (see
 `dirvish-layout-recipes'), SCOPE can be `attr', `preview' or
-`layout'.  DESCRIPTION is the documentation for the VAR."
+`layout'.  DESCRIPTION is the documentation for the VAR.  PRED,
+when present, is wrapped with a lambda and being put into the
+`:if' keyword in that prefix or infix."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
@@ -584,15 +590,17 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
                                         ('attr "attributes")
                                         ('preview "preview-dispatchers")))
                            (infix-scope (intern (format "dv-%s" slot-name)))
-                           (infix-desc (nth 3 i)))
+                           (infix-pred (nth 4 i)))
                       (eval `(transient-define-infix ,infix-name ()
                                :class 'dirvish-menu-toggles
                                :variable ',infix-var
                                :scope ',infix-scope
-                               :description ,infix-desc))))
+                               :description ,(nth 3 i)
+                               :if (lambda () ,(if infix-pred `,@infix-pred t))))))
                   (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
                   (layout-option (i) (list (car i) (nth 3 i)
-                                           `(lambda () (interactive) (dirvish-switch-layout ,(nth 1 i))))))
+                                           `(lambda () (interactive) (dirvish-switch-layout ,(nth 1 i)))
+                                           :if `(lambda () ,(if (nth 4 i) `,@(nth 4 i) t)))))
         (mapc #'new-infix attr-alist)
         (mapc #'new-infix preview-alist)
         (eval
@@ -602,15 +610,16 @@ in `dirvish-preview-dispatchers') or a layout recipe (see
              (lambda () (dirvish-menu--format-heading "Setup Dirvish"))
              ["File attributes:"
               ,@(mapcar #'expand-infix attr-alist)]]
-            ["Preview:" :if (lambda () (dv-layout (dirvish-curr)))
+            ["Preview:"
+             :if (lambda () (and (not (dirvish-prop :remote)) (dv-layout (dirvish-curr))))
              ,@(mapcar #'expand-infix preview-alist)]
-            [:if (lambda () (and (derived-mode-p 'dirvish-mode) (dv-layout (dirvish-curr))))
-             :description
+            [:description
              (lambda ()
                (format "%s\n%s"
                        (propertize "Layout:" 'face 'transient-heading)
                        (propertize "Uppercased pane has the biggest size"
                                    'face 'font-lock-doc-face)))
+             :if (lambda () (dv-layout (dirvish-curr)))
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
              ("RET" "Confirm and quit"

@@ -22,6 +22,7 @@
 
 ;;; Code:
 
+(autoload 'tramp-handle-shell-command "tramp")
 (require 'so-long)
 (require 'mailcap)
 (require 'image-mode)
@@ -187,20 +188,6 @@ string.  See `dirvish--available-mode-line-segments'."
   "Like `dirvish-mode-line-format', but for header line ."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
-
-(defcustom dirvish-enabled-features-on-remote '()
-  "Enabled Dirvish FEATUREs on remote hosts.
-The value is a list of FEATUREs, each designated by a symbol.
-The default (a nil value or an empty list) denotes the most
-minimalistic UI, only line highlighting is applied.  If `extras'
-is present, all attributes defined in `dirvish-extras' library
-are displayed on remote hosts like in localhost.  The symbol `vc'
-do similar things, but for `dirvish-vc' library.  If you have
-slow ssh connection, you should leave this to nil."
-  :group 'dirvish
-  :type '(set :tag "Features"
-              (choice (const :tag "Show attributes" extras)
-                      (const :tag "VC attributes/preview-handlers" vc))))
 
 (defcustom dirvish-hide-details t
   "Whether to hide detailed information on session startup.
@@ -449,11 +436,6 @@ RANGE can be `buffer', `session', `frame', `all'."
                            (re-search-forward regexp nil t))
        (dired-map-over-marks (dired-get-filename) nil)))))
 
-(defun dirvish--should-enable (feature)
-  "Return t if FEATURE should be enabled."
-  (or (not (dirvish-prop :remote))
-      (memq feature dirvish-enabled-features-on-remote)))
-
 (defun dirvish--kill-buffer-redirect ()
   "Inhibit `kill-buffer' and friends in Dirvish."
   (interactive)
@@ -485,7 +467,7 @@ following arguments:
 
 - `f-name'  from `dired-get-filename'
 - `f-attrs' from `file-attributes'
-- `f-type'  from `file-directory-p' (dir or file)
+- `f-type'  from `file-directory-p' along with `file-symlink-p'
 - `f-beg'   from `dired-move-to-filename'
 - `f-end'   from `dired-move-to-end-of-filename'
 - `l-beg'   from `line-beginning-position'
@@ -532,7 +514,7 @@ When the attribute does not exist, set it with BODY."
        (puthash ,file (append hash (list ,attribute attr)) dirvish--attrs-hash))
      attr))
 
-(cl-defmacro dirvish-define-preview (name arglist &optional docstring &rest body)
+(cl-defmacro dirvish-define-preview (name &optional arglist docstring &rest body)
   "Define a Dirvish preview dispatcher NAME.
 A dirvish preview dispatcher is a function consumed by
  `dirvish-preview-dispatch' which takes `file' (filename under
@@ -540,7 +522,7 @@ A dirvish preview dispatcher is a function consumed by
  is the docstring and body for this function."
   (declare (indent defun) (doc-string 3))
   (let* ((dp-name (intern (format "dirvish-%s-preview-dp" name)))
-         (default-arglist '(file preview-window))
+         (default-arglist '(file preview-window dv))
          (ignore-list (cl-set-difference default-arglist arglist)))
     `(progn (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
 
@@ -717,18 +699,18 @@ DV defaults to current dirvish instance if not given."
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (let* ((enable (dirvish--should-enable 'extras))
-         (attrs (dv-attribute-fns dv))
-         (curr-pos (point))
-         (fr-h (frame-height))
-         (fns (cl-loop with (left-w . right-w) = (cons dirvish--prefix-spaces 0)
-                       for (ov pred fn left right) in attrs
-                       do (remove-overlays (point-min) (point-max) ov t)
-                       for valid = (funcall pred dv)
-                       when valid do (progn (setq left-w (+ left-w (or (eval left) 0)))
-                                            (setq right-w (+ right-w (or (eval right) 0))))
-                       when valid collect
-                       (prog1 fn (setq-local dirvish--attrs-width (cons left-w right-w))))))
+  (let ((remotep (dirvish-prop :remote))
+        (curr-pos (point))
+        (fr-h (frame-height))
+        (fns (cl-loop with (wl . wr) = (cons dirvish--prefix-spaces 0)
+                      for (ov pred fn left right) in (dv-attribute-fns dv)
+                      do (remove-overlays (point-min) (point-max) ov t)
+                      for valid = (funcall pred dv)
+                      when valid do (progn (setq wl (+ wl (or (eval left) 0)))
+                                           (setq wr (+ wr (or (eval right) 0))))
+                      when valid collect
+                      (prog1 fn (setq-local dirvish--attrs-width (cons wl wr)))))
+        buffer-read-only)
     (save-excursion
       (forward-line (- 0 fr-h))
       (cl-dotimes (_ (* 2 fr-h))
@@ -736,17 +718,26 @@ DV defaults to current dirvish instance if not given."
         (when-let ((f-name (dired-get-filename nil t))
                    (f-beg (and (not (invisible-p (point)))
                                (dired-move-to-filename nil)))
-                   (f-end (dired-move-to-end-of-filename t)))
-          (let ((f-attrs (and enable (dirvish-attribute-cache f-name :builtin
-                                       (file-attributes f-name))))
-                (f-type (and enable (dirvish-attribute-cache f-name :type
-                                      (if (file-directory-p f-name) 'dir 'file))))
-                (l-beg (line-beginning-position))
-                (l-end (line-end-position))
+                   (f-end (dired-move-to-end-of-filename t))
+                   (l-beg (line-beginning-position))
+                   (l-end (line-end-position)))
+          (setq f-name (file-local-name f-name))
+          (let ((f-attrs (dirvish-attribute-cache f-name :builtin
+                           (unless remotep (file-attributes f-name))))
+                (f-type (dirvish-attribute-cache f-name :type
+                          (if remotep
+                              (let ((type-char (save-excursion
+                                                 (back-to-indentation)
+                                                 (char-after))))
+                                `(,(if (eq type-char 100) 'dir 'file) . nil))
+                            (cond ((not (file-symlink-p f-name))
+                                   `(,(if (file-directory-p f-name) 'dir 'file) . nil))
+                                  ((file-directory-p f-name)
+                                   `(dir . ,(file-truename f-name)))
+                                  (t `(file . ,(file-truename f-name)))))))
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
-            (let (buffer-read-only)
-              (unless (get-text-property f-beg 'mouse-face)
-                (dired-insert-set-properties l-beg l-end)))
+            (unless (get-text-property f-beg 'mouse-face)
+              (dired-insert-set-properties l-beg l-end))
             (dolist (fn fns)
               (funcall fn f-name f-attrs f-type f-beg f-end l-beg l-end hl-face))))
         (forward-line 1)))))
@@ -981,12 +972,25 @@ When PROC finishes, fill preview buffer with process result."
     (and (equal path (process-get proc 'path))
          (dirvish-debounce layout (dirvish-preview-update dv)))))
 
-(dirvish-define-preview remote (file)
+(dirvish-define-preview remote (file _ dv)
   "Preview files with `ls' or `cat' for remote files."
-  (when-let ((local (file-remote-p file 'localname)))
-    `(shell . ("ssh" ,(file-remote-p file 'host) "test" "-d" ,local
-               "&&" "ls" "-Alh" "--group-directories-first" ,local
-               "||" "cat" ,local))))
+  (when-let ((remotep (dirvish-prop :remote))
+             (localname (file-remote-p file 'localname))
+             (buf (dirvish--util-buffer 'preview dv)))
+    (let ((process-connection-type nil)
+          (proc (get-buffer-process buf)))
+      (and proc (delete-process proc))
+      (tramp-handle-shell-command
+       (format "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &"
+               localname localname) buf)
+      (setq proc (get-buffer-process buf))
+      (set-process-sentinel
+       proc (lambda (proc _sig)
+              (when (memq (process-status proc) '(exit signal))
+                (shell-command-set-point-after-cmd (process-buffer proc)))))
+      (set-process-filter
+       proc (lambda (proc str) (with-current-buffer (process-buffer proc) (insert str))))
+      `(buffer . ,buf))))
 
 (dirvish-define-preview disable (file)
   "Disable preview in some cases."
@@ -1146,9 +1150,8 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
               (index (dirvish-prop :child)))
     (when (window-live-p window)
       (let* ((orig-buffer-list (buffer-list))
-             (file (if (file-directory-p index) (file-name-as-directory index) index))
              (buffer (cl-loop for dp-fn in (dv-preview-fns dv)
-                              for (type . payload) = (funcall dp-fn file window)
+                              for (type . payload) = (funcall dp-fn index window dv)
                               thereis (and type (dirvish-preview-dispatch
                                                  type payload dv)))))
         (setq other-window-scroll-buffer buffer)
@@ -1234,11 +1237,12 @@ default implementation is `find-args' with simple formatting."
 
 (dirvish-define-mode-line symlink
   "Show the truename of symlink file under the cursor."
-  (when-let ((file (or (dirvish-prop :child) (dired-get-filename nil t))))
-    (when (file-symlink-p file)
-      (format " %s %s "
-              (propertize "→" 'face 'font-lock-comment-delimiter-face)
-              (propertize (file-truename file) 'face 'dired-symlink)))))
+  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
+              (f-name (file-local-name name))
+              (truename (cdr (dirvish-attribute-cache f-name :type))))
+    (format " %s %s "
+            (propertize "→" 'face 'font-lock-comment-delimiter-face)
+            (propertize truename 'face 'dired-symlink))))
 
 (dirvish-define-mode-line index
   "Current file's index and total files count."
@@ -1273,9 +1277,12 @@ default implementation is `find-args' with simple formatting."
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
-  (unless (file-remote-p default-directory)
-    (dirvish--preview-clean-cache-images (dired-get-marked-files)))
   (dirvish--hide-dired-header)
+  (if (dirvish-prop :remote)
+      (dirvish--remote-ls-issuer (current-buffer) default-directory)
+    (dirvish--preview-clean-cache-images (dired-get-marked-files))
+    (setq-local dirvish--attrs-hash
+                (make-hash-table :test #'equal :size 200)))
   (run-hooks 'dirvish-after-revert-hook)
   (dirvish-update-body-h))
 
@@ -1286,7 +1293,7 @@ If KEEP-DIRED is specified, reuse the old Dired buffer."
     (setq-local revert-buffer-function #'dirvish-revert)
     (dirvish--hide-dired-header))
   (and (not keep-dired)
-       (dirvish--should-enable 'vc)
+       (not (dirvish-prop :remote))
        (dirvish-prop :vc-backend
          (ignore-errors (vc-responsible-backend default-directory))))
   (let ((map (make-sparse-keymap)))
@@ -1422,6 +1429,49 @@ If the buffer is not available, create it with `dired-noselect'."
     (setq header-line-format nil)
     (setq mode-line-format (dv-mode-line-format dv))))
 
+(defun dirvish--remote-ls-parser (proc str)
+  "Parse the directory metadata from PROC's output STR."
+  (let ((buf (process-get proc 'dv-buf))
+        (lines (split-string str "\n")))
+    (when (buffer-live-p buf)
+      (with-current-buffer buf
+        (setq-local dirvish--attrs-hash (make-hash-table :test #'equal))
+        (dolist (file (and (> (length lines) 2) (cl-subseq lines 2 -1)))
+          (cl-destructuring-bind
+              (inode priv lnum user group size date time &rest path)
+              (split-string file)
+            (let* ((symlinkp (cl-position "->" path :test #'equal))
+                   (f-name (string-join (cl-subseq path 0 symlinkp) " "))
+                   (f-base (file-name-base f-name))
+                   (f-mtime (concat date " " time))
+                   (f-truename (and symlinkp (string-join (cl-subseq path (1+ symlinkp)) " ")))
+                   (f-dirp (string-prefix-p "d" priv))
+                   (f-attr-type (or f-truename f-dirp)))
+              (when (equal f-base ".git") (dirvish-prop :vc-backend 'Git)) ; TODO: other backends
+              (dirvish-attribute-cache f-name :builtin
+                (list f-attr-type lnum user group nil f-mtime nil size priv nil inode))
+              (dirvish-attribute-cache f-name :type
+                (cons (if f-dirp 'dir 'file) f-truename)))))
+        (dirvish-prop :remote-cache t)
+        (dirvish-update-body-h))))
+  (delete-process proc))
+
+(defun dirvish--remote-ls-issuer (buffer entry)
+  "Fetch metadata for files in ENTRY.
+This function issues a `ls' command on a remote host, the result
+is parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
+  (let* ((process-connection-type nil)
+         (outbuf (dirvish--util-buffer 'remote-ls))
+         (fmt "ls -1lad --human-readable --time-style=long-iso --inode %s{.*,*} &")
+         (async-shell-command-buffer nil) ; it's a hack for buffer reuse
+         (display-buffer-alist
+          '(("\\*Dirvish-remote-ls.*\\*" (display-buffer-no-window))))
+         (proc (tramp-handle-shell-command
+                (format fmt (file-remote-p entry 'localname)) outbuf)))
+    (process-put proc 'dv-buf buffer)
+    (set-process-sentinel proc #'ignore)
+    (set-process-filter proc #'dirvish--remote-ls-parser)))
+
 (defun dirvish-build (dv)
   "Build layout for Dirvish session DV."
   (let* ((layout (dv-layout dv))
@@ -1453,7 +1503,8 @@ If the buffer is not available, create it with `dired-noselect'."
         (let* ((inhibit-modification-hooks t)
                (buf (dirvish--util-buffer pane dv))
                (win-alist (alist-get pane w-actions))
-               (new-window (display-buffer buf `(dirvish--display-buffer . ,win-alist))))
+               (new-window (display-buffer
+                            buf `(dirvish--display-buffer . ,win-alist))))
           (cond ((eq pane 'preview) (setf (dv-preview-window dv) new-window))
                 (t (set-window-dedicated-p new-window t)
                    (push new-window maybe-abnormal)))
@@ -1462,12 +1513,17 @@ If the buffer is not available, create it with `dired-noselect'."
     (let ((h-fmt (if (dirvish-prop :fd-dir)
                      `(:eval (format-mode-line
                               dirvish--search-switches nil nil
-                              (and (buffer-live-p ,(current-buffer)) ,(current-buffer))))
+                              (and (buffer-live-p ,(current-buffer))
+                                   ,(current-buffer))))
                    (dv-header-line-format dv))))
       (with-current-buffer (dirvish--util-buffer 'header dv)
         (setq header-line-format h-fmt)))
     (dirvish--normalize-util-windows maybe-abnormal)
-    (when layout (dirvish-cache-images dv))))
+    (when (and layout (not (dirvish-prop :remote)))
+      (dirvish-cache-images dv))
+    (when (and (dirvish-prop :remote) (not (dirvish-prop :remote-cache)))
+      (run-with-timer 0.1 nil #'dirvish--remote-ls-issuer
+                      (current-buffer) default-directory))))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
@@ -1493,7 +1549,7 @@ in `dirvish-auto-cache-threshold'."
        for file in files
        for (cmd . args) = (cl-loop
                            for fn in dirvish--cache-img-fns
-                           for (type . payload) = (funcall fn file win)
+                           for (type . payload) = (funcall fn file win dv)
                            thereis (and (eq type 'image-cache) payload))
        when cmd do (push (cons (format "%s-%s-img-cache" file width)
                                (list file width cmd args))
