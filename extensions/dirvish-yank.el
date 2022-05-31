@@ -67,10 +67,8 @@ The value can be a symbol or a function that returns a fileset."
   "Yank methods and their flags."
   :group 'dirvish :type 'alist)
 
-(defvar dirvish-yank--progress (cons 0 0))
-(defvar dirvish-yank--buffer (dirvish--util-buffer "yank"))
+(defvar dirvish-yank-task-counter 0)
 (defvar dirvish-yank--link-methods '(symlink relalink hardlink))
-(defvar dirvish-yank--status-timer nil)
 ;; copied from `dired-rsync'
 (defvar dirvish-yank--remote-portfwd
   "ssh -p %d -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
@@ -96,7 +94,7 @@ results of `dirvish-yank--get-remote-port'.")
   "Reformat a tramp FILE to one usable for rsync."
   (if (tramp-tramp-file-p file)
       (with-parsed-tramp-file-name file tfop
-        (format "%s%s:\"%s\"" (if tfop-user (format "%s@" tfop-user) "") tfop-host
+        (format "%s%s:%s" (if tfop-user (format "%s@" tfop-user) "") tfop-host
                 (shell-quote-argument tfop-localname)))
     (shell-quote-argument file)))
 
@@ -111,44 +109,47 @@ results of `dirvish-yank--get-remote-port'.")
    do (user-error "Dirvish: SOURCEs need to be in the same host")
    finally return (car hosts)))
 
-(defun dirvish-yank--status-update ()
-  "Update current yank task progress."
-  (with-current-buffer dirvish-yank--buffer
-    (let* ((proc-exit "Process \\(.*\\) \\(exited\\|finished\\)\\(.*\\)")
-           (progress (how-many proc-exit (point-min) (point-max))))
-      (if (eq progress (cdr dirvish-yank--progress))
-          (progn
-            (goto-char (point-min))
-            (save-excursion
-              (delete-region
-               (point)
-               (progn (goto-char (point-max))
-                      (dotimes (_n 20) (backward-paragraph))
-                      (point))))
-            (while (re-search-forward proc-exit nil t)
-              (replace-match
-               (format "Task \\2 @ %s \\3\n" (current-time-string))))
-            (setq dirvish-yank--progress (cons 0 0))
-            (when (timerp dirvish-yank--status-timer)
-              (cancel-timer dirvish-yank--status-timer))
-            (setq dirvish-yank--status-timer nil)
-            (when-let (dv (dirvish-curr))
-              (with-current-buffer (window-buffer (dv-root-window dv))
-                (revert-buffer))))
-        (setcar dirvish-yank--progress progress)))))
+(defun dirvish-yank--sentinel (process _exit)
+  "Sentinel for yank task PROCESS."
+  (when (memq (process-status process) '(exit signal))
+    (shell-command-set-point-after-cmd (process-buffer process)))
+  (setq dirvish-yank-task-counter (1- dirvish-yank-task-counter))
+  (with-current-buffer (dirvish--util-buffer "yank-log")
+    (save-excursion
+      (delete-region
+       (point-min)
+       (let ((max (point-max)))
+         (if (< max 20000)
+             (point-min)
+           (goto-char max)
+           (dotimes (_n 40) (backward-paragraph))
+           (point))))))
+  (when-let* ((dv (process-get process 'dv))
+              (dv-buf (window-buffer (dv-root-window dv))))
+    (when (and (buffer-live-p dv-buf)
+               (or (eq dv-buf (current-buffer))
+                   (not (with-current-buffer dv-buf
+                          (dirvish-prop :remote)))))
+      (with-current-buffer dv-buf (revert-buffer)))))
 
-(defun dirvish-yank--execute (cmd)
-  "Run yank CMD in subprocesses."
-  (let ((process-connection-type nil)
-        (procname (format "*Dirvish-yank @ %s*" (current-time-string))))
-    (start-process-shell-command procname dirvish-yank--buffer cmd)
+(defun dirvish-yank--execute (cmd &optional remotep)
+  "Run yank CMD in the same host.
+If REMOTEP, the CMD is passed to `tramp-handle-shell-command',
+otherwise it is passed to `start-process-shell-command'."
+  (let* ((process-connection-type nil)
+         (buffer (dirvish--util-buffer "yank-log"))
+         (display-buffer-alist
+          '(("\\*Dirvish-yank-log\\*" (display-buffer-no-window))))
+         (async-shell-command-buffer nil) ; it's a hack for buffer reuse
+         (proc (if remotep
+                   (tramp-handle-shell-command cmd buffer)
+                 (start-process-shell-command "Dirvish-yank" buffer cmd))))
+    (process-put proc 'dv (dirvish-curr))
+    (set-process-sentinel proc #'dirvish-yank--sentinel)
     (when dirvish-yank-auto-unmark
       (cl-dolist (buf (dirvish-get-all 'dired-buffers t t))
         (with-current-buffer buf (dired-unmark-all-marks))))
-    (setcdr dirvish-yank--progress (1+ (cdr dirvish-yank--progress)))
-    (unless dirvish-yank--status-timer
-      (setq dirvish-yank--status-timer
-            (run-with-timer 0 0.1 #'dirvish-yank--status-update)))))
+    (setq dirvish-yank-task-counter (1+ dirvish-yank-task-counter))))
 
 (defun dirvish-yank--ensure-newname (file base-name fileset dest)
   "Ensure an unique filename for FILE at DEST with FILESET.
@@ -173,26 +174,26 @@ BASE-NAME is the filename of file without directory."
    with overwrite = (eq dirvish-yank-overwrite-existing-files 'always)
    with never = (eq dirvish-yank-overwrite-existing-files 'never)
    with dest-local = (shell-quote-argument (file-local-name dest))
-   with dest-old-files = (mapcar #'shell-quote-argument
-                                 (directory-files dest nil nil t))
+   with old-files = (mapcar #'shell-quote-argument
+                            (directory-files dest nil nil t))
    with prompt-str = "%s exists, overwrite? (y)es (n)o (q)uit (Y)es-for-all (N)o-for-all"
    for file in srcs
    for base-name = (file-name-nondirectory file)
    for paste-name = (concat dest-local base-name)
-   for collision = (member base-name dest-old-files) ;; avoid using `file-exists-p' for performance
+   for collision = (member base-name old-files)
    for prompt = (format prompt-str base-name) collect
    (cond
     (overwrite (cons file (if (file-directory-p file) dest-local paste-name)))
     ((and never collision)
-     (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
+     (dirvish-yank--ensure-newname file base-name old-files dest-local))
     (collision
      (cl-case (read-char-choice prompt '(?y ?Y ?n ?N ?q))
        (?y (cons file (if (file-directory-p file) dest-local paste-name)))
-       (?n (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
+       (?n (dirvish-yank--ensure-newname file base-name old-files dest-local))
        (?Y (setq overwrite t)
            (cons file (if (file-directory-p file) dest-local paste-name)))
        (?N (setq never t)
-           (dirvish-yank--ensure-newname file base-name dest-old-files dest-local))
+           (dirvish-yank--ensure-newname file base-name old-files dest-local))
        (?q (user-error "Dirvish: yank task aborted"))))
     (t (cons file (if (file-directory-p file) dest-local paste-name))))))
 
@@ -203,16 +204,12 @@ SRCS and DEST have to be in the same HOST (local or remote)."
                 (lambda (f) (shell-quote-argument (file-local-name f))) srcs))
          (fmt (format "%s %%s %%s" (alist-get method dirvish-yank-methods)))
          (newnames (dirvish-yank--prepare-dest-names srcs dest))
-         (localp (eq host 'local))
-         (cmd
-          (cl-loop
-           with pairs = ()
-           for (from . to) in newnames
-           do (setq pairs (append pairs (list (format fmt from to))))
-           finally return (format (if localp "%s%s" "%s\"%s\"")
-                                  (if localp "" (format "ssh %s " host))
-                                  (string-join pairs " & ")))))
-    (dirvish-yank--execute cmd)))
+         (cmd (cl-loop
+               with pairs = ()
+               for (from . to) in newnames
+               do (setq pairs (append pairs (list (format fmt from to))))
+               finally return (format "%s &" (string-join pairs " & ")))))
+    (dirvish-yank--execute cmd (not (eq host 'local)))))
 
 (defun dirvish-yank--l2fr-handler (srcs dest)
   "Execute a local to/from remote rsync command for SRCS and DEST."
@@ -262,47 +259,63 @@ This command sync SRCS on SHOST to DEST on DHOST."
      (t
       (dirvish-yank--l2fr-handler srcs dest)))))
 
-;;;###autoload (autoload 'dirvish-yank-ml "dirvish-yank" nil t)
 (dirvish-define-mode-line yank
-  "Current move/paste task progress."
-  (pcase-let ((`(,progress . ,total) dirvish-yank--progress))
-    (when (> total 0)
-      (format "%s%s " (propertize "Yanking: " 'face 'bold)
-              (propertize (format "%s of %s" progress total)
-                          'face 'font-lock-keyword-face)))))
+  "Number of running yank tasks."
+  (when (> dirvish-yank-task-counter 0)
+    (format " %s %s%s "
+            (propertize (number-to-string dirvish-yank-task-counter)
+                        'face 'font-lock-keyword-face)
+            (propertize "running yank task" 'face 'font-lock-doc-face)
+            (propertize (if (> dirvish-yank-task-counter 1) "s" "")
+                        'face 'font-lock-doc-face))))
 
 ;;;###autoload
 (defun dirvish-yank (&optional dest)
   "Paste marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument]."
+Prompt for DEST when prefixed with \\[universal-argument].
+
+If you want to use this command and friends (such as
+`dirvish-move') for file transfer between different host, you'll
+need to have a proper ssh config, because the `rsync' shell
+command is always run locally as it requires working SSH
+authentication which bypasses the password entering to work.  A
+typical way to bypass the ssh authentication would be using
+ssh-agent, which see.
+
+To make TRAMP more responsive, follow the instructions in Info
+node `(tramp)Frequently Asked Questions' to speed it up."
   (interactive (dirvish-yank--read-dest 'yank))
   (dirvish-yank--apply 'yank dest))
 
 ;;;###autoload
 (defun dirvish-move (&optional dest)
   "Move marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument]."
+Prompt for DEST when prefixed with \\[universal-argument].  Also
+see `dirvish-yank' for additional information."
   (interactive (dirvish-yank--read-dest 'move))
   (dirvish-yank--apply 'move dest))
 
 ;;;###autoload
 (defun dirvish-symlink (&optional dest)
   "Symlink marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument]."
+Prompt for DEST when prefixed with \\[universal-argument].  Also
+see `dirvish-yank' for additional information."
   (interactive (dirvish-yank--read-dest 'symlink))
   (dirvish-yank--apply 'symlink dest))
 
 ;;;###autoload
 (defun dirvish-relative-symlink (&optional dest)
   "Similar to `dirvish-symlink', but link files relatively.
-Prompt for DEST when prefixed with \\[universal-argument]."
+Prompt for DEST when prefixed with \\[universal-argument].  Also
+see `dirvish-yank' for additional information."
   (interactive (dirvish-yank--read-dest 'relalink))
   (dirvish-yank--apply 'relalink dest))
 
 ;;;###autoload
 (defun dirvish-hardlink (&optional dest)
   "Hardlink marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument]."
+Prompt for DEST when prefixed with \\[universal-argument].  Also
+see `dirvish-yank' for additional information."
   (interactive (dirvish-yank--read-dest 'hardlink))
   (dirvish-yank--apply 'hardlink dest))
 
