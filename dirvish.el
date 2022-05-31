@@ -22,7 +22,6 @@
 
 ;;; Code:
 
-(autoload 'tramp-handle-shell-command "tramp")
 (require 'so-long)
 (require 'mailcap)
 (require 'image-mode)
@@ -30,6 +29,7 @@
 (require 'project)
 (require 'ring)
 (require 'dired-x)
+(require 'tramp)
 (require 'recentf)
 (eval-when-compile
   (require 'subr-x)
@@ -443,6 +443,16 @@ RANGE can be `buffer', `session', `frame', `all'."
            (propertize "quit-window" 'face 'font-lock-constant-face)
            (propertize (or (key-description (car (where-is-internal 'quit-window))) "")
                        'face 'help-key-binding)))
+
+(defun dirvish--tramp-async-p (&optional dirname)
+  "Define `tramp-direct-async-process-p' for Emacs version< 28.
+DIRNAME defaults to `default-directory'."
+  (if (fboundp 'tramp-direct-async-process-p)
+      (funcall #'tramp-direct-async-process-p)
+    (let ((v (tramp-dissect-file-name (or dirname default-directory))))
+      (and (tramp-get-method-parameter v 'tramp-direct-async)
+           (tramp-get-connection-property v "direct-async-process" nil)
+           (not (when-let ((tfn (nth 7 v))) (string-suffix-p "|" tfn)))))))
 
 ;;;; Core
 
@@ -974,23 +984,24 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-preview remote (file _ dv)
   "Preview files with `ls' or `cat' for remote files."
-  (when-let ((remotep (dirvish-prop :remote))
-             (localname (file-remote-p file 'localname))
-             (buf (dirvish--util-buffer 'preview dv)))
-    (let ((process-connection-type nil)
-          (proc (get-buffer-process buf)))
-      (and proc (delete-process proc))
-      (tramp-handle-shell-command
-       (format "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &"
-               localname localname) buf)
-      (setq proc (get-buffer-process buf))
-      (set-process-sentinel
-       proc (lambda (proc _sig)
-              (when (memq (process-status proc) '(exit signal))
-                (shell-command-set-point-after-cmd (process-buffer proc)))))
-      (set-process-filter
-       proc (lambda (proc str) (with-current-buffer (process-buffer proc) (insert str))))
-      `(buffer . ,buf))))
+  (when-let ((remotep (dirvish-prop :remote)))
+    (if (dirvish--tramp-async-p)
+        (let ((process-connection-type nil)
+              (localname (file-remote-p file 'localname))
+              (buf (dirvish--util-buffer 'preview dv)) proc)
+          (when-let ((proc (get-buffer-process buf))) (delete-process proc))
+          (tramp-handle-shell-command
+           (format "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &"
+                   localname localname) buf)
+          (setq proc (get-buffer-process buf))
+          (set-process-sentinel
+           proc (lambda (proc _sig)
+                  (when (memq (process-status proc) '(exit signal))
+                    (shell-command-set-point-after-cmd (process-buffer proc)))))
+          (set-process-filter
+           proc (lambda (proc str) (with-current-buffer (process-buffer proc) (insert str))))
+          `(buffer . ,buf))
+      '(info . "File preview is not supported in current TRAMP connection"))))
 
 (dirvish-define-preview disable (file)
   "Disable preview in some cases."
@@ -1469,10 +1480,12 @@ If the buffer is not available, create it with `dired-noselect'."
         (dirvish-update-body-h))))
   (delete-process proc))
 
-(defun dirvish--remote-ls-issuer (buffer entry)
+(cl-defun dirvish--remote-ls-issuer (buffer entry)
   "Fetch metadata for files in ENTRY.
 This function issues a `ls' command on a remote host, the result
 is parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
+  (unless (dirvish--tramp-async-p)
+    (cl-return-from dirvish--remote-ls-issuer))
   (let* ((process-connection-type nil)
          (outbuf (dirvish--util-buffer 'remote-ls))
          (fmt "ls -1lad --human-readable --time-style=long-iso --inode %s{.*,*} &")
