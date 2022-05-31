@@ -1201,16 +1201,29 @@ default implementation is `find-args' with simple formatting."
 
 (dirvish-define-mode-line path
   "Path of file under the cursor."
-  (when-let* ((index (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (dirname (file-name-directory index))
-              (dir-tail (replace-regexp-in-string dirvish--dir-tail-regex "" dirname))
-              (tail (if (equal dir-tail "") "" (concat dir-tail " ")))
-              (base (file-name-nondirectory index)))
-    (format " %s%s%s "
-            (propertize (if (string-prefix-p (getenv "HOME") dirname) "~ " ": ")
-                        'face 'dired-header)
-            (propertize tail 'face 'dired-mark)
-            (propertize base 'face 'dired-header))))
+  (when-let ((index (or (dirvish-prop :child) (dired-get-filename nil t))))
+    (let* ((localname (file-local-name index))
+           (host (file-remote-p index 'host))
+           (user (file-remote-p index 'user))
+           (dirname (file-name-directory localname))
+           (base (file-name-nondirectory index))
+           dir-tail tail)
+      (if host
+          (setq dir-tail (replace-regexp-in-string "\\/$\\|^\\/" "" dirname))
+        (setq dir-tail (replace-regexp-in-string dirvish--dir-tail-regex "" dirname)))
+      (setq tail (if (equal dir-tail "") "" (concat dir-tail " ")))
+      (format " %s%s%s%s "
+              (propertize
+               (cond ((and host user) (concat user "@" host ": "))
+                     (host (concat host ": "))
+                     (t ""))
+               'face 'font-lock-builtin-face)
+              (propertize (cond (host "")
+                                ((string-prefix-p (getenv "HOME") dirname) "~ ")
+                                (t ": "))
+                          'face 'dired-header)
+              (propertize tail 'face 'dired-mark)
+              (propertize base 'face 'dired-header)))))
 
 (dirvish-define-mode-line sort "Current sort criteria."
   (let* ((switches (split-string dired-actual-switches))
