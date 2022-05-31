@@ -123,6 +123,19 @@ Here we create a dispatcher to preview the =README.md= file in a directory:
 If you find it useful, you can extend this dispatcher to support "README.org" or
 make it case insensitive etc.
 
+* Work with TRAMP
+
+Dirvish needs no additional configuration to work with TRAMP.  You have access
+to most of the features that work on localhost inside of a TRAMP connection
+except those expensive ones (git-msg, image preview, etc).  The other caveat is
+that if want use the =dirvish-yank= extension for file transfer between different
+host, you'll need to have a proper ssh config such as ssh-agent, because the
+~rsync~ command is always run locally as it requires working SSH authentication
+which bypasses the password entering to work.
+
+You can improve the speed and responsiveness of TRAMP by tweaking its options.
+See [[https://www.gnu.org/software/tramp/#Frequently-Asked-Questions][TRAMP-FAQ]] and example config below.
+
 * Hooks
 
 |----------------------------+-----------------------------------------|
@@ -177,16 +190,10 @@ make it case insensitive etc.
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
-  (dirvish-mode-line-format
-   '(:left
-     (sort file-time " " file-size symlink) ; it's ok to place string inside
-     :right
-     ;; For `dired-filter' users, replace `omit' with `filter' segment defined below
-     (omit yank index)))
-  (dirvish-attributes '(subtree-state
-                        ;; file-size
-                        ;; Feel free to replace `all-the-icons' with `vscode-icon'.
-                        all-the-icons))
+  (dirvish-mode-line-format ; it's ok to place string inside
+   '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
+  (dirvish-attributes '(subtree-state all-the-icons))
+  ;; (dirvish-attributes '(file-size vscode-icon)) ; Feel free to try different combination
   ;; Maybe the icons are too big to your eyes
   ;; (dirvish-all-the-icons-height 0.8)
   ;; In case you want the details at startup like `dired'
@@ -195,11 +202,6 @@ make it case insensitive etc.
   ;; Place this line under :init to ensure the overriding at startup, see #22
   (dirvish-override-dired-mode)
   (dirvish-peek-mode)
-  ;; Define mode line segment for `dired-filter'
-  ;; (dirvish-define-mode-line filter "Describe filters."
-  ;;   (when (bound-and-true-p dired-filter-mode)
-  ;;     (propertize (format " %s " (dired-filter--describe-filters))
-  ;;                 'face 'dired-filter-group-header)))
   :bind
   ;; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish-fd)
@@ -226,6 +228,17 @@ make it case insensitive etc.
 These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
+;; Some tips to speed Dirvish sessions over TRAMP
+(use-package tramp
+  :config
+  (add-to-list 'tramp-connection-properties
+               (list (regexp-quote "/ssh:YOUR_HOSTNAME:")
+                     "direct-async-process" t))
+  (setq tramp-verbose 0)
+  (setq tramp-auto-save-directory (locate-user-emacs-file "tramp/"))
+  (setq tramp-chunksize 2000)
+  (setq tramp-use-ssh-controlmaster-options nil))
+
 ;; Addtional syntax highlighting for dired
 (use-package diredfl
   :hook
@@ -239,29 +252,8 @@ These packages are only listed here for discoverability.
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 
-;; `ibuffer' like file filtering system
-(use-package dired-filter
-  :after dirvish
-  :config
-  :custom
-  ;; Do not touch the header line
-  (dired-filter-show-filters nil)
-  (dired-filter-revert 'always)
-  :bind
-  (:map dired-mode-map
-        ([remap dired-omit-mode] . dired-filter-mode)))
-
 (use-package dired-collapse
   :bind
   (:map dired-mode-map
         ("M-c" . dired-collapse-mode)))
-
-;; We already have `dirvish-toggle-subtree'
-;; But you can still use this package if you want those fancy features
-;; (use-package dired-subtree
-;;   :config
-;;   (setq dired-subtree-use-backgrounds nil)
-;;   :bind
-;;   (:map dired-mode-map
-;;         ("TAB" . dired-subtree-toggle)))
 #+end_src
