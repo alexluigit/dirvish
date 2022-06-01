@@ -263,6 +263,8 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
 (defvar dirvish-debug-p nil)
 (defvar dirvish-override-dired-mode nil)
 (defvar dirvish-extra-libs '(dirvish-extras dirvish-vc dirvish-yank dirvish-subtree))
+(defconst dirvish--dired-free-space
+  (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--cache-img-threshold (* 1024 1024 0.4))
@@ -333,7 +335,8 @@ Multiple calls under the same LABEL are ignored."
      ,@body
      (save-excursion
        (goto-char (point-min))
-       (let ((o (make-overlay (point) (progn (forward-line 1) (point)))))
+       (let ((o (make-overlay
+                 (point) (progn (forward-line (if dirvish--dired-free-space 2 1)) (point)))))
          (overlay-put o 'dirvish-remove-header t)
          (overlay-put o 'invisible t)))))
 
@@ -364,10 +367,11 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--normalize-util-windows (windows)
   "Normalize the size of utility WINDOWS, like header line window."
-  (dolist (win windows)
-    (let ((window-safe-min-height 0)
-          (window-resize-pixelwise t))
-      (fit-window-to-buffer win 2 1))))
+  (when (> emacs-major-version 28)
+    (dolist (win windows)
+      (let ((window-safe-min-height 0)
+            (window-resize-pixelwise t))
+        (fit-window-to-buffer win 2 1)))))
 
 (defun dirvish--goto-file (filename)
   "Go to line describing FILENAME."
