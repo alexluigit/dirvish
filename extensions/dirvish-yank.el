@@ -276,12 +276,13 @@ This command sync SRCS on SHOST to DEST on DHOST."
 Prompt for DEST when prefixed with \\[universal-argument].
 
 If you want to use this command and friends (such as
-`dirvish-move') for file transfer between different host, you'll
-need to have a proper ssh config, because the `rsync' shell
-command is always run locally as it requires working SSH
-authentication which bypasses the password entering to work.  A
-typical way to bypass the ssh authentication would be using
-ssh-agent, which see.
+`dirvish-move') for file transfer involving remote hosts, you'll
+need to have proper ssh configuration for those hosts, because an
+asynchronous TRAMP connection and the rsync command (which always
+run locally) require working SSH authentication which bypasses
+the password entering to work, which see Info
+node `(tramp)Improving performance of asynchronous remote
+processes' and the man page `rsync(1)'.
 
 To make TRAMP more responsive, follow the instructions in Info
 node `(tramp)Frequently Asked Questions' to speed it up."

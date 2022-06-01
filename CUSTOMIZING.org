@@ -125,16 +125,15 @@ make it case insensitive etc.
 
 * Work with TRAMP
 
-Dirvish needs no additional configuration to work with TRAMP.  You have access
-to most of the features that work on localhost inside of a TRAMP connection
-except those expensive ones (git-msg, image preview, etc).  The other caveat is
-that if want use the =dirvish-yank= extension for file transfer between different
-host, you'll need to have a proper ssh config such as ssh-agent, because the
-~rsync~ command is always run locally as it requires working SSH authentication
-which bypasses the password entering to work.
+Dirvish integrates TRAMP at its core.  But most of the features (file preview,
+asynchronous file transfer through =dirvish-yank= .etc) that are available in
+localhost are NOT enabled over a /synchronous/ TRAMP connection (see:
+[[https://www.gnu.org/software/tramp/#Improving-performance-of-asynchronous-remote-processes-1][TRAMP-async]]).  To enable them on a remote host, one will need to have a proper
+ssh config such as ssh-agent for that host, because it requires working SSH
+authentication which bypasses the password entering to work.
 
-You can improve the speed and responsiveness of TRAMP by tweaking its options.
-See [[https://www.gnu.org/software/tramp/#Frequently-Asked-Questions][TRAMP-FAQ]] and example config below.
+You can improve the speed and responsiveness of TRAMP by tweaking its options,
+see the example config below.
 
 * Hooks
 
