@@ -139,11 +139,12 @@ will visit the latest `project-root' after executing
     (setq dirvish-side--state-alist
           (delq (assoc scope dirvish-side--state-alist) dirvish-side--state-alist))))
 
-(defun dirvish-side-find-file-window-fn ()
-  "Return a window for opening files in `dirvish-side'."
-  (if (window-parameter (selected-window) 'window-side)
-      (funcall dirvish-side-open-file-window-function)
-    (selected-window)))
+(defun dirvish-side-on-file-open (dv)
+  "Called before opening a file in Dirvish-side session DV."
+  (unless (dv-layout dv)
+    (select-window (funcall dirvish-side-open-file-window-function)))
+  (dirvish-reclaim)
+  (when-let ((dv (dirvish-curr))) (dirvish-kill dv)))
 
 (defun dirvish-side-quit-window-fn (_dv)
   "Quit window action for `dirvish-side'."
@@ -171,7 +172,7 @@ will visit the latest `project-root' after executing
           (dirvish-reclaim)
           (setf (dv-index-dir dv) dirname)
           (dirvish-with-no-dedication
-           (switch-to-buffer (dirvish--buffer-for-dir dv dirname)))
+           (switch-to-buffer (dirvish--find-entry dv dirname)))
           (when (and filename (not (file-directory-p filename)))
             (dirvish-prop :child filename))
           (dirvish-build dv))))))
@@ -213,7 +214,7 @@ otherwise it defaults to `project-current'."
              (last (dv-index-dir dv)))
          (with-selected-window (dirvish--create-root-window dv)
            (dirvish-with-no-dedication
-            (switch-to-buffer (dirvish--buffer-for-dir dv last)))
+            (switch-to-buffer (dirvish--find-entry dv last)))
            (dirvish-reclaim)
            (if (and dirvish-side-follow-buffer-file followed)
                (progn
@@ -232,7 +233,7 @@ otherwise it defaults to `project-current'."
          :mode-line-format dirvish-side-mode-line-format
          :header-line-format dirvish-side-header-line-format
          :root-window-fn #'dirvish-side-root-window-fn
-         :find-file-window-fn #'dirvish-side-find-file-window-fn
+         :on-file-open #'dirvish-side-on-file-open
          :quit-window-fn #'dirvish-side-quit-window-fn)
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
 

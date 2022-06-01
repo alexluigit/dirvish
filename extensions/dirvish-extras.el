@@ -351,11 +351,10 @@ ARG defaults to 1."
   (interactive "^p")
   (or arg (setq arg 1))
   (let* ((dirs (reverse
-                (mapcar #'car (dv-root-dir-buf-alist (dirvish-curr)))))
+                (mapcar #'car (dv-roots (dirvish-curr)))))
          (len (length dirs))
          (idx (cl-position
-               (or (dirvish-prop :fd-dir) (dired-current-directory))
-               dirs :test #'equal))
+               (dv-index-dir (dirvish-curr)) dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
            (dirvish-find-file (nth (- len 1) dirs))
