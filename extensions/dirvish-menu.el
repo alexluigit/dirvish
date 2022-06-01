@@ -17,7 +17,7 @@
 
 (declare-function dirvish-curr "dirvish")
 (declare-function dirvish--refresh-slots "dirvish")
-(declare-function dv-root-dir-buf-alist "dirvish")
+(declare-function dv-roots "dirvish")
 (require 'transient)
 (require 'dired)
 (require 'dirvish nil t)
@@ -360,7 +360,7 @@ C-u p: separate PATHs into different lines "))
   (let* ((dv (dirvish-curr))
          (args (transient-args transient-current-command))
          (switches (or switches (string-join (append '("-l") args) " "))))
-    (dolist (buf (mapcar #'cdr (dv-root-dir-buf-alist dv)))
+    (dolist (buf (mapcar #'cdr (dv-roots dv)))
       (with-current-buffer buf
         (setq dired-actual-switches switches)
         (revert-buffer)))
@@ -563,9 +563,9 @@ invoke the navigation, PATH is the the argument for command
     ("1" '(0 nil  0.4)   layout   "       | CURRENT | preview")
     ("2" '(0 nil  0.8)   layout   "       | current | PREVIEW")
     ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW"
-     (not (dv-no-parents (dirvish-curr))))
+     (not (dirvish-prop :remote)))
     ("4" '(1 0.1  0.6)   layout   "parent | current | preview"
-     (not (dv-no-parents (dirvish-curr)))))
+     (not (dirvish-prop :remote))))
   "ITEMs for `dirvish-setup-menu'.
 A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
 where KEY is the keybinding for the item, VAR can be valid

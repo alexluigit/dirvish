@@ -28,7 +28,7 @@
          (and (eq system-type 'darwin) (not (executable-find "gls"))
               (warn "Please install `ls' from coreutils with 'brew install coreutils'"))))
 
-(defconst dirvish-fd--bufname "*Dirvish-FD@@%s@@%s@@%s*")
+(defconst dirvish-fd-bufname "FD####%s####%s####%s")
 (defvar dirvish-fd-program "fd" "The default fd program.")
 (defvar dirvish-fd-args-history nil "History list of fd arguments entered in the minibuffer.")
 (defvar dirvish-fd-last-input "" "Last used fd arguments.")
@@ -72,7 +72,7 @@ The command run is essentially:
   (setq dir (file-name-as-directory (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir) (user-error "'fd' command requires a directory: %s" dir))
   (let* ((reuse (when (dirvish-prop :fd-dir) (current-buffer)))
-         (buf-name (format dirvish-fd--bufname dir pattern (make-temp-name "")))
+         (buf-name (format dirvish-fd-bufname dir pattern (make-temp-name "")))
          (buffer (or reuse (get-buffer-create buf-name))))
     (dirvish-with-no-dedication (pop-to-buffer-same-window buffer))
     (with-current-buffer buffer
@@ -100,7 +100,8 @@ The command run is essentially:
         (set-process-filter proc #'dirvish-fd-proc-filter)
         (set-process-sentinel proc #'dirvish-find-dired-sentinel-ad)
         ;; Initialize the process marker; it is used by the filter.
-        (move-marker (process-mark proc) (point) buffer)))))
+        (move-marker (process-mark proc) (point) buffer)))
+    buffer))
 
 (cl-defmethod dirvish-search-switches (&context (dirvish-fd-actual-switches string))
   "Return a string showing the DIRVISH-FD-ACTUAL-SWITCHES."

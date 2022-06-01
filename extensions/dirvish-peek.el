@@ -71,7 +71,6 @@ one of categories in `dirvish-peek-categories'."
          new-dv)
     (when preview-category
       (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
-      (setq-local dirvish--props (make-hash-table :size 10))
       (unless (and old-dv (dv-preview-window old-dv))
         (setq new-dv (dirvish-new nil))
         (setf (dv-preview-window new-dv)

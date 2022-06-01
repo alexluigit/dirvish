@@ -146,8 +146,8 @@ otherwise it is passed to `start-process-shell-command'."
     (process-put proc 'dv (dirvish-curr))
     (set-process-sentinel proc #'dirvish-yank--sentinel)
     (when dirvish-yank-auto-unmark
-      (cl-dolist (buf (dirvish-get-all 'dired-buffers t t))
-        (with-current-buffer buf (dired-unmark-all-marks))))
+      (cl-loop for buf in (reverse (dirvish-get-all 'roots t t)) by 'cddr
+               do (with-current-buffer buf (dired-unmark-all-marks))))
     (setq dirvish-yank-task-counter (1+ dirvish-yank-task-counter))))
 
 (defun dirvish-yank--ensure-newname (file base-name fileset dest)
