@@ -196,7 +196,7 @@ This value is passed to function `format-time-string'."
          (icon-attrs (append face offset height))
          (icon (if (eq (car f-type) 'dir)
                    (apply #'all-the-icons-icon-for-dir f-name icon-attrs)
-                 (apply #'all-the-icons-icon-for-file f-name icon-attrs)))
+                 (apply #'all-the-icons-icon-for-file (file-name-nondirectory f-name) icon-attrs)))
          (icon-str (concat icon (propertize dirvish-icon-delimiter 'face hl-face)))
          (ov (make-overlay (1- f-beg) f-beg)))
     (overlay-put ov 'after-string icon-str) ov))
