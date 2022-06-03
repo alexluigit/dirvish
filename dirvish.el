@@ -1261,7 +1261,7 @@ default implementation is `find-args' with simple formatting."
                      ((member "--time=ctime" switches) "ctime")
                      ((member "--time=birth" switches) "birth")
                      (t "mtime")))
-         (rev (if (member "--reverse" switches) "↑" "↓")))
+         (rev (if (member "--reverse" switches) "↓" "↑")))
     (format " %s %s|%s "
             (propertize rev 'face 'font-lock-doc-markup-face)
             (propertize crit 'face 'font-lock-type-face)
