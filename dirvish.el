@@ -903,7 +903,7 @@ FILENAME and WILDCARD are their args."
                     (apply #'start-process "" nil "nohup"
                            (cl-substitute file "%f" ex-cmd :test 'string=))))
           (t (when-let ((dv (dirvish-prop :dv))) (funcall (dv-on-file-open dv) dv))
-             (funcall fn filename wildcard)))))
+             (funcall fn file wildcard)))))
 
 (defun dirvish-ignore-ad (fn &rest args)
   "Only apply FN with ARGS outside of Dirvish."
