@@ -153,7 +153,7 @@ This value is passed to function `format-time-string'."
 (defun dirvish--get-file-size-or-count (name attrs)
   "Get file size of file NAME from ATTRS."
   (let ((type (file-attribute-type attrs)))
-    (cond ((dirvish-prop :remote) (or (file-attribute-size attrs) "?"))
+    (cond ((dirvish-prop :tramp) (or (file-attribute-size attrs) "?"))
           ((stringp type)
            (let ((count
                   (dirvish-attribute-cache name :f-count
@@ -285,7 +285,7 @@ This value is passed to function `format-time-string'."
               (f-name (file-local-name name))
               (attrs (dirvish-attribute-cache f-name :builtin))
               (uid (and attrs (file-attribute-user-id attrs)))
-              (uname (if (dirvish-prop :remote) uid (user-login-name uid))))
+              (uname (if (dirvish-prop :tramp) uid (user-login-name uid))))
     (propertize uname 'face 'dirvish-file-user-id)))
 
 (dirvish-define-mode-line file-group
@@ -294,7 +294,7 @@ This value is passed to function `format-time-string'."
               (f-name (file-local-name name))
               (attrs (dirvish-attribute-cache f-name :builtin))
               (gid (and attrs (file-attribute-group-id attrs)))
-              (gname (if (dirvish-prop :remote) gid (group-name gid))))
+              (gname (if (dirvish-prop :tramp) gid (group-name gid))))
     (propertize gname 'face 'dirvish-file-group-id)))
 
 (dirvish-define-mode-line file-time
@@ -304,7 +304,7 @@ This value is passed to function `format-time-string'."
               (attrs (dirvish-attribute-cache f-name :builtin))
               (f-mtime (file-attribute-modification-time attrs))
               (time-string
-               (if (dirvish-prop :remote) f-mtime
+               (if (dirvish-prop :tramp) f-mtime
                  (format-time-string dirvish-time-format-string f-mtime))))
     (format "%s" (propertize time-string 'face 'dirvish-file-time))))
 

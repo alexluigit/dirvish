@@ -230,6 +230,10 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
          (add-hook 'tab-bar-tab-pre-close-functions   #'dirvish--deactivate-for-tab)
          (add-hook 'delete-frame-functions            #'dirvish--deactivate-for-frame)))
 
+(defcustom dirvish-whitelist-host-regex nil
+  "Regexp of host names that always enable extra features."
+  :group 'dirvish :type 'string)
+
 (defvar dirvish-preview-setup-hook nil
   "Hook functions for preview buffer initialization.")
 
@@ -280,6 +284,8 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
 (defconst dirvish--cache-img-threshold (* 1024 1024 0.4))
 (defconst dirvish--dir-tail-regex (concat (getenv "HOME") "/\\|\\/$\\|^\\/"))
 (defconst dirvish--preview-img-scale 0.92)
+(defconst dirvish--tramp-preview-cmd
+  "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &")
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
@@ -402,7 +408,7 @@ ALIST is window arguments passed to `window--display-buffer'."
   (when-let ((pj (project-current)))
     (car (with-no-warnings (project-roots pj)))))
 
-(defun dirvish--get-parent (path)
+(defun dirvish--get-parent-path (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
 
@@ -457,15 +463,14 @@ RANGE can be `buffer', `session', `frame', `all'."
         (dired-map-over-marks (dired-get-filename) nil))))
    :test #'equal))
 
-(defun dirvish--tramp-async-p (&optional dirname)
-  "Define `tramp-direct-async-process-p' for Emacs version< 28.
-DIRNAME defaults to `default-directory'."
-  (if (fboundp 'tramp-direct-async-process-p)
-      (funcall #'tramp-direct-async-process-p)
-    (let ((v (tramp-dissect-file-name (or dirname default-directory))))
-      (and (tramp-get-method-parameter v 'tramp-direct-async)
-           (tramp-get-connection-property v "direct-async-process" nil)
-           (not (when-let ((tfn (nth 7 v))) (string-suffix-p "|" tfn)))))))
+(defun dirvish--host-in-whitelist-p (&optional vec)
+  "Check if the TRAMP connection VEC should be dominated by Dirvish."
+  (when-let ((vec (or vec (dirvish-prop :tramp))))
+    (or (tramp-local-host-p vec)
+        (and dirvish-whitelist-host-regex
+             (string-match-p dirvish-whitelist-host-regex (nth 4 vec)))
+        (and (tramp-get-method-parameter vec 'tramp-direct-async)
+             (tramp-get-connection-property vec "direct-async-process" nil)))))
 
 ;;;; Core
 
@@ -717,7 +722,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
                (&key overlay if fn left right &allow-other-keys)
                attr (list overlay if fn left right))))
          (dp-names
-          (append '(remote disable) (dv-preview-dispatchers dv) '(default)))
+          (append '(tramp disable) (dv-preview-dispatchers dv) '(default)))
          (preview-fns
           (cl-loop for dp-name in dp-names collect
                    (intern (format "dirvish-%s-preview-dp" dp-name)))))
@@ -726,7 +731,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (let ((remotep (dirvish-prop :remote))
+  (let ((remotep (dirvish-prop :tramp))
         (curr-pos (point))
         (fr-h (frame-height))
         (fns (cl-loop with (wl . wr) = (cons dirvish--prefix-spaces 0)
@@ -888,7 +893,7 @@ FILENAME and WILDCARD are their args."
          (process-connection-type nil)
          (ex-cmd (cl-loop
                   for (type . (cmd . args)) in dirvish-open-with-programs
-                  thereis (and (not (dirvish-prop :remote))
+                  thereis (and (not (dirvish-prop :tramp))
                                (executable-find cmd)
                                (or (and (listp type) (member ext type))
                                    (and (stringp type) (string-match type mime)))
@@ -993,18 +998,16 @@ When PROC finishes, fill preview buffer with process result."
     (and (equal path (process-get proc 'path))
          (dirvish-debounce layout (dirvish-preview-update dv)))))
 
-(dirvish-define-preview remote (file _ dv)
-  "Preview files with `ls' or `cat' for remote files."
-  (when-let ((remotep (dirvish-prop :remote)))
-    (if (dirvish--tramp-async-p)
+(dirvish-define-preview tramp (file _ dv)
+  "Preview files with `ls' or `head' for tramp files."
+  (when-let ((tramp-info (dirvish-prop :tramp)))
+    (if (dirvish--host-in-whitelist-p tramp-info)
         (let ((process-connection-type nil)
               (localname (file-remote-p file 'localname))
               (buf (dirvish--util-buffer 'preview dv)) proc)
           (when-let ((proc (get-buffer-process buf))) (delete-process proc))
-          (tramp-handle-shell-command
-           (format "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &"
-                   localname localname) buf)
-          (setq proc (get-buffer-process buf))
+          (setq proc (tramp-handle-shell-command
+                      (format dirvish--tramp-preview-cmd localname localname) buf))
           (set-process-sentinel
            proc (lambda (proc _sig)
                   (when (memq (process-status proc) '(exit signal))
@@ -1323,11 +1326,10 @@ default implementation is `find-args' with simple formatting."
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
   (dirvish--hide-dired-header)
-  (if (dirvish-prop :remote)
-      (dirvish--remote-ls-issuer (current-buffer) default-directory)
+  (if-let ((vec (dirvish-prop :tramp)))
+      (dirvish--remote-ls-issuer vec (current-buffer) default-directory)
     (dirvish--preview-clean-cache-images (dired-get-marked-files))
-    (setq-local dirvish--attrs-hash
-                (make-hash-table :test #'equal :size 200)))
+    (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
   (run-hooks 'dirvish-after-revert-hook)
   (dirvish-update-body-h))
 
@@ -1371,37 +1373,36 @@ Dirvish sets `revert-buffer-function' to this function."
   "Return the root or PARENT buffer in DV for ENTRY.
 If the buffer is not available, create it with `dired-noselect'."
   (let ((pairs (if parent (dv-parents dv) (dv-roots dv)))
+        (bname (buffer-file-name))
         buffer enable-dir-local-variables)
     (cond ((equal entry "*Find*") (get-buffer-create "*Find*"))
           ((string-prefix-p "FD####" entry)
            (or (alist-get entry pairs nil nil #'equal)
                (pcase-let ((`(,_ ,dir ,pattern ,_) (split-string entry "####")))
-                 (require 'dirvish-fd) (dirvish-fd dir pattern))))
+                 (dirvish-fd dir pattern))))
           ((file-directory-p entry)
            (setq entry (file-name-as-directory (expand-file-name entry)))
            (setq buffer (alist-get entry pairs nil nil #'equal))
            (unless parent (setf (dv-index-dir dv) entry))
            (unless buffer
-             (let* ((bname (buffer-file-name))
-                    (remotep (file-remote-p entry))
-                    (dir-files (unless (or parent remotep)
-                                 (directory-files entry t nil t))))
-               (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
-                 (setq buffer (dired-noselect entry (dv-ls-switches dv))))
-               (ring-insert dirvish--history-ring entry)
-               (with-current-buffer buffer
-                 (dirvish-mode)
-                 (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200))
-                 (setq-local revert-buffer-function #'dirvish-revert)
-                 (setq-local dired-hide-details-hide-symlink-targets nil)
-                 (dirvish--hide-dired-header)
-                 (dirvish-prop :remote remotep)
-                 (dirvish-prop :files dir-files)
+             (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
+               (setq buffer (dired-noselect entry (dv-ls-switches dv))))
+             (ring-insert dirvish--history-ring entry)
+             (with-current-buffer buffer
+               (dirvish-mode)
+               (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200))
+               (setq-local revert-buffer-function #'dirvish-revert)
+               (setq-local dired-hide-details-hide-symlink-targets nil)
+               (dirvish--hide-dired-header)
+               (let* ((trampp (tramp-tramp-file-p entry))
+                      (vec (and trampp (tramp-dissect-file-name entry))))
+                 (dirvish-prop :tramp vec)
+                 (unless trampp (dirvish-prop :files (directory-files entry t nil t)))
                  (dirvish-prop :child (or bname entry))
-                 (unless (or remotep parent)
+                 (unless (or (dirvish-prop :tramp) parent)
                    (dirvish-prop :vc-backend
-                     (ignore-errors (vc-responsible-backend entry)))))
-               (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv)))))
+                     (ignore-errors (vc-responsible-backend entry))))))
+             (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))
            buffer))))
 
 (defun dirvish--autocache ()
@@ -1421,19 +1422,18 @@ If the buffer is not available, create it with `dired-noselect'."
 (defun dirvish--create-parent-windows (dv)
   "Create all dirvish parent windows for DV."
   (let* ((current (expand-file-name default-directory))
-         (parent (dirvish--get-parent current))
+         (parent (dirvish--get-parent-path current))
          (parent-dirs ())
          (depth (or (car (dv-layout dv)) 0))
          (i 0))
-    (setq depth (if (dirvish-prop :reomte) 0 depth))
     (dirvish-setup)
     (when (window-parameter (selected-window) 'window-side)
       (setq-local window-size-fixed 'width))
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)
-      (setq current (dirvish--get-parent current))
-      (setq parent (dirvish--get-parent parent)))
+      (setq current (dirvish--get-parent-path current))
+      (setq parent (dirvish--get-parent-path parent)))
     (when (> depth 0)
       (let* ((parent-width (nth 1 (dv-layout dv)))
              (remain (- 1 (nth 2 (dv-layout dv)) parent-width))
@@ -1499,11 +1499,11 @@ If the buffer is not available, create it with `dired-noselect'."
         (dirvish-update-body-h))))
   (delete-process proc))
 
-(cl-defun dirvish--remote-ls-issuer (buffer entry)
+(cl-defun dirvish--remote-ls-issuer (vec buffer entry)
   "Fetch metadata for files in ENTRY.
-This function issues a `ls' command on a remote host, the result
-is parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
-  (unless (dirvish--tramp-async-p)
+This function issues a `ls' command on a TRAMP VEC, the result is
+then parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
+  (unless (dirvish--host-in-whitelist-p vec)
     (cl-return-from dirvish--remote-ls-issuer))
   (let* ((process-connection-type nil)
          (outbuf (dirvish--util-buffer 'remote-ls))
@@ -1537,10 +1537,10 @@ is parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
                   ('global-global   '(footer header preview))))
          (w-actions
           `((preview (side . right) (window-width . ,(nth 2 layout)))
-            (header  (side . above) (window-height . -2)
-                     (window-parameters . ((no-other-window . t))))
-            (footer  (side . below) (window-height . -2)
-                     (window-parameters . ((no-other-window . t))))))
+            (header (side . above) (window-height . -2)
+                    (window-parameters . ((no-other-window . t))))
+            (footer (side . below) (window-height . -2)
+                    (window-parameters . ((no-other-window . t))))))
          maybe-abnormal)
     (dirvish--init-util-buffers dv)
     (if (not order)
@@ -1566,11 +1566,11 @@ is parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
       (with-current-buffer (dirvish--util-buffer 'header dv)
         (setq header-line-format h-fmt)))
     (dirvish--normalize-util-windows maybe-abnormal)
-    (when (and layout (not (dirvish-prop :remote)))
+    (when (and layout (not (dirvish-prop :tramp)))
       (dirvish-cache-images dv))
-    (when (and (dirvish-prop :remote) (not (dirvish-prop :remote-cache)))
+    (when (and (dirvish-prop :tramp) (not (dirvish-prop :remote-cache)))
       (run-with-timer 0.1 nil #'dirvish--remote-ls-issuer
-                      (current-buffer) default-directory))))
+                      (dirvish-prop :tramp) (current-buffer) default-directory))))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
@@ -1586,8 +1586,7 @@ in `dirvish-auto-cache-threshold'."
   (setq dv (or dv (dirvish-curr)))
   (with-current-buffer (window-buffer (dv-root-window dv))
     (when (or (called-interactively-p 'any)
-              (< (length (dirvish-prop :files))
-                 (car dirvish-auto-cache-threshold)))
+              (< (length (dirvish-prop :files)) (car dirvish-auto-cache-threshold)))
       (cl-loop
        with win = (dv-preview-window dv)
        with width = (window-width win)
@@ -1608,7 +1607,7 @@ If OTHER-WINDOW (the optional prefix arg), display the parent
 directory in another window."
   (interactive "P")
   (let* ((current (expand-file-name default-directory))
-         (parent (dirvish--get-parent current)))
+         (parent (dirvish--get-parent-path current)))
     (if (string= parent current)
         (user-error "Dirvish: you're in root directory")
       (if other-window
