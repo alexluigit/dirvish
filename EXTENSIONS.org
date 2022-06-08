@@ -15,6 +15,8 @@ Currently the following extensions come with the package:
 - [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
 - [[file:extensions/dirvish-fd.el][dirvish-fd.el]]: =fd= command interface in Dirvish.
 - [[file:extensions/dirvish-subtree.el][dirvish-subtree.el]]: Like =dired-subtree.el=, but simpler and faster.
+- [[file:extensions/dirvish-history.el][dirvish-history.el]]: History navigation commands for Dirvish.
+- [[file:extensions/dirvish-bookmark.el][dirvish-bookmark.el]]: Bookmark support for Dirvish.
 
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
@@ -100,17 +102,12 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 |------------------------------------+------------------------------------------|
 | Command                            | Description                              |
 |------------------------------------+------------------------------------------|
-| ~dirvish-show-history~               | Navigate to recently visited directories |
-| ~dirvish-go-forward-history~         | Go forward history (session locally)     |
-| ~dirvish-go-backward-history~        | Go backward history (session locally)    |
-| ~dirvish-other-buffer~               | Switch to most recent Dirvish buffer     |
 | ~dirvish-copy-file-name~             | Copy the file name ("foo.el")            |
 | ~dirvish-copy-file-path~             | Copy the file path ("path/to/foo/bar")   |
 | ~dirvish-copy-file-directory~        | Copy the parent file path                |
 | ~dirvish-find-file-true-path~        | Open the true name of symlinks           |
 | ~dirvish-total-file-size~            | Echo total file size of marked files     |
 | ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"      |
-| ~dirvish-roam~                       | Browse all directories using ~fd~ command  |
 | ~dirvish-switch-layout~              | Switch Dirvish layout                    |
 |------------------------------------+------------------------------------------|
 
@@ -150,6 +147,7 @@ TODO
 
 ** 'fd' interface in Dirvish (dirvish-fd.el)
 
+
 This is the BEST =fd= frontend, period.
 
 Here is a quick demo.
@@ -169,12 +167,29 @@ Too fast? Let's break it down:
 Wait, there's more: ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works
 for this buffer.
 
+*** Commands
+
+|-----------------+---------------------------------|
+| Command         | Description                     |
+|-----------------+---------------------------------|
+| ~dirvish-fd~      | See description above           |
+| ~dirvish-fd-roam~ | Browse all directories using ~fd~ |
+|-----------------+---------------------------------|
+
 ** Turn Dirvish into a tree browser (dirvish-subtree.el)
 
 This extension gives Dirvish the ability to toggle a directory as subtree
-(~dirvish-toggle-subtree~), which can be seen as a stripped-down version of
+(~dirvish-subtree-toggle~), which can be seen as a stripped-down version of
 =dired-subtree=. Unless you need ~dired-subtree-up~ and friends, you don't have to
 install the =dired-subtree= package.
+
+*** Commands
+
+|------------------------+-----------------------------------|
+| Command                | Description                       |
+|------------------------+-----------------------------------|
+| ~dirvish-subtree-toggle~ | Toggle directory subtree at point |
+|------------------------+-----------------------------------|
 
 *** Attributes
 
@@ -184,3 +199,18 @@ install the =dired-subtree= package.
 | ~subtree-state~ | Directory expanded state indicator |
 |---------------+------------------------------------|
 
+** History navigation commands (dirvish-history.el)
+*** Commands
+
+|-----------------------------+------------------------------------------|
+| Command                     | Description                              |
+|-----------------------------+------------------------------------------|
+| ~dirvish-history-jump~        | Navigate to recently visited directories |
+| ~dirvish-history-go-forward~  | Go forward history (session locally)     |
+| ~dirvish-history-go-backward~ | Go backward history (session locally)    |
+| ~dirvish-history-last~        | Switch to most recent Dirvish buffer     |
+|-----------------------------+------------------------------------------|
+
+** Bookmarks (dirvish-bookmark.el)
+
+TODO

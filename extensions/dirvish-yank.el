@@ -83,6 +83,28 @@ results of `dirvish-yank--get-remote-port'.")
              (lambda (p) (string-prefix-p "*Dirvish-yank" (process-name p)))
              (process-list)))))
 
+(defun dirvish-yank--get-srcs (&optional range)
+  "Get all marked filenames in RANGE.
+RANGE can be `buffer', `session', `frame', `all'."
+  (setq range (or range 'buffer))
+  (cl-remove-duplicates
+   (cl-loop
+    with case-fold-search = nil
+    with regexp = (dired-marker-regexp)
+    with buffers = (pcase range
+                     ('buffer (list (current-buffer)))
+                     ('session (mapcar #'cdr (dv-roots (dirvish-curr))))
+                     ('frame (cl-loop for i in (reverse (dirvish-get-all 'roots nil t))
+                                      by 'cddr collect i))
+                     ('all (cl-loop for i in (reverse (dirvish-get-all 'roots t t))
+                                    by 'cddr collect i)))
+    for buffer in (seq-filter #'buffer-live-p buffers) append
+    (with-current-buffer buffer
+      (when (save-excursion (goto-char (point-min))
+                            (re-search-forward regexp nil t))
+        (dired-map-over-marks (dired-get-filename) nil))))
+   :test #'equal))
+
 (defun dirvish-yank--read-dest (method)
   "Helper function to read dest dir for METHOD."
   (when current-prefix-arg
@@ -257,7 +279,7 @@ This command sync SRCS on SHOST to DEST on DHOST."
          (dhost (or (file-remote-p dest 'host) sysname))
          (srcs (or (and (functionp dirvish-yank-sources)
                         (funcall dirvish-yank-sources))
-                   (dirvish--marked-files dirvish-yank-sources)
+                   (dirvish-yank--get-srcs dirvish-yank-sources)
                    (user-error "Dirvish[error]: no marked files")))
          (src-0 (car srcs))
          (svec (and (tramp-tramp-file-p src-0) (tramp-dissect-file-name src-0)))

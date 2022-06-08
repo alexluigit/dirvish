@@ -156,42 +156,13 @@ this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
 ** Dired | Dirvish
 
 #+begin_src emacs-lisp
-(use-package dired
-  ;; :bind
-  ;; (:map dired-mode-map ; Dirvish respects all the keybindings in this map
-  ;; ("h" . dired-up-directory)
-  ;; ("j" . dired-next-line)
-  ;; ("k" . dired-previous-line)
-  ;; ("l" . dired-find-file)
-  ;; ("i" . wdired-change-to-wdired-mode)
-  ;; ("." . dired-omit-mode))
-  :config
-  (setq dired-recursive-deletes 'always)
-  (setq delete-by-moving-to-trash t)
-  (setq dired-dwim-target t)
-
-  ;; This is *NECESSARY* for Doom users who enabled `dired' module
-  ;; (map! :map dired-mode-map :ng "q" #'quit-window)
-
-  ;; Make sure to use the long name of flags when exists
-  ;; eg. use "--almost-all" instead of "-A"
-  ;; Otherwise some commands won't work properly
-  (setq dired-listing-switches
-        "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group"))
-
-(use-package dired-x
-  ;; Enable dired-omit-mode by default
-  ;; :hook
-  ;; (dired-mode . dired-omit-mode)
-  :config
-  ;; Make dired-omit-mode hide all "dotfiles"
-  (setq dired-omit-files
-        (concat dired-omit-files "\\|^\\..*$")))
+;; This is *NECESSARY* for Doom users who enabled `dired' module
+;; (map! :map dired-mode-map :ng "q" #'quit-window)
 
 (use-package dirvish
   :custom
   ;; Go back home? Just press `bh'
-  (dirvish-menu-bookmarks
+  (dirvish-bookmark-entries
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
@@ -209,25 +180,40 @@ this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
   ;; Place this line under :init to ensure the overriding at startup, see #22
   (dirvish-override-dired-mode)
   (dirvish-peek-mode)
+  ;; Dired options are respected except a few exceptions, see FAQ.org
+  (setq dired-recursive-deletes 'always)
+  (setq delete-by-moving-to-trash t)
+  (setq dired-dwim-target t)
+  ;; Make sure to use the long name of flags when exists
+  ;; eg. use "--almost-all" instead of "-A"
+  ;; Otherwise some commands won't work properly
+  (setq dired-listing-switches
+        "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
   :bind
   ;; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish-fd)
-   :map dired-mode-map
-   ("TAB" . dirvish-toggle-subtree)
-   ("SPC" . dirvish-show-history)
-   ("*"   . dirvish-mark-menu)
-   ("r"   . dirvish-roam)
-   ("b"   . dirvish-goto-bookmark)
-   ("f"   . dirvish-file-info-menu)
-   ("M-n" . dirvish-go-forward-history)
-   ("M-p" . dirvish-go-backward-history)
+   :map dired-mode-map ; Dirvish respects all the keybindings in this map
+   ;; ("h" . dired-up-directory)
+   ;; ("j" . dired-next-line)
+   ;; ("k" . dired-previous-line)
+   ;; ("l" . dired-find-file)
+   ;; ("i" . wdired-change-to-wdired-mode)
+   ;; ("." . dired-omit-mode)
+   ("TAB" . dirvish-subtree-toggle)
+   ("SPC" . dirvish-history-jump)
+   ("M-n" . dirvish-history-go-forward)
+   ("M-p" . dirvish-history-go-backward)
    ("M-s" . dirvish-setup-menu)
    ("M-f" . dirvish-toggle-fullscreen)
+   ("*"   . dirvish-mark-menu)
+   ("r"   . dirvish-fd-roam)
+   ("b"   . dirvish-bookmark-goto)
+   ("f"   . dirvish-file-info-menu)
    ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)
    ([remap dired-do-redisplay] . dirvish-ls-switches-menu)
    ([remap dired-summary] . dirvish-dispatch)
    ([remap dired-do-copy] . dirvish-yank-menu)
-   ([remap mode-line-other-buffer] . dirvish-other-buffer)))
+   ([remap mode-line-other-buffer] . dirvish-history-last)))
 #+end_src
 
 * Complementary packages
@@ -235,6 +221,15 @@ this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
 These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
+(use-package dired-x
+  ;; Enable dired-omit-mode by default
+  ;; :hook
+  ;; (dired-mode . dired-omit-mode)
+  :config
+  ;; Make dired-omit-mode hide all "dotfiles"
+  (setq dired-omit-files
+        (concat dired-omit-files "\\|^\\..*$")))
+
 ;; Some tips to speed Dirvish sessions over TRAMP
 (use-package tramp
   :config

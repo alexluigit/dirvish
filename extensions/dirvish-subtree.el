@@ -187,8 +187,10 @@ LOCALP is the arg for `dired-current-directory', which see."
       (add-face-text-property 0 1 hl-face t state-str))
     (overlay-put ov 'after-string state-str) ov))
 
+(defalias 'dirvish-toggle-subtree #'dirvish-subtree-toggle
+  "Insert subtree at point or remove it if it was not present.")
 ;;;###autoload
-(defun dirvish-toggle-subtree ()
+(defun dirvish-subtree-toggle ()
   "Insert subtree at point or remove it if it was not present."
   (interactive)
   (if (dirvish--subtree-expanded-p)

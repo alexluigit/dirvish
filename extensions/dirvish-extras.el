@@ -18,11 +18,6 @@
 ;; - `dirvish-copy-file-directory'
 ;; - `dirvish-total-file-size'
 ;; - `dirvish-rename-space-to-underscore'
-;; - `dirvish-other-buffer'
-;; - `dirvish-show-history'
-;; - `dirvish-go-forward-history'
-;; - `dirvish-go-backward-history'
-;; - `dirvish-roam'
 ;; - `dirvish-switch-layout'
 ;;
 ;; Attributes
@@ -149,6 +144,14 @@ This value is passed to function `format-time-string'."
   '((t (:inherit dirvish-file-link-number)))
   "Face used for filesystem device number mode-line segment."
   :group 'dirvish)
+
+(defun dirvish--count-file-size (fileset)
+  "Return file size of FILESET in bytes."
+  (cl-labels ((f-name (f) (if (file-directory-p f)
+                              (directory-files-recursively f ".*" nil t)
+                            f))
+              (f-size (f) (file-attribute-size (file-attributes f))))
+    (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
 
 (defun dirvish--get-file-size-or-count (name attrs)
   "Get file size of file NAME from ATTRS."
@@ -329,49 +332,6 @@ This value is passed to function `format-time-string'."
   (dirvish--format-file-attr 'device-number))
 
 ;;;###autoload
-(defun dirvish-show-history ()
-  "Open a target directory from `dirvish--history-ring'."
-  (interactive)
-  (let* ((history-w/metadata
-          (dirvish--append-metadata
-           'file (ring-elements dirvish--history-ring)))
-         (result (completing-read "Recently visited: " history-w/metadata)))
-      (when result (dirvish-find-file result))))
-
-;;;###autoload
-(defun dirvish-other-buffer ()
-  "Switch to the most recently visited dirvish buffer."
-  (interactive)
-  (dirvish-find-file (ring-ref dirvish--history-ring 1)))
-
-;;;###autoload
-(defun dirvish-go-forward-history (&optional arg)
-  "Navigate to next ARG directory in history.
-ARG defaults to 1."
-  (interactive "^p")
-  (or arg (setq arg 1))
-  (let* ((dirs (reverse
-                (mapcar #'car (dv-roots (dirvish-curr)))))
-         (len (length dirs))
-         (idx (cl-position
-               (dv-index-dir (dirvish-curr)) dirs :test #'equal))
-         (new-idx (+ idx arg)))
-    (cond ((>= new-idx len)
-           (dirvish-find-file (nth (- len 1) dirs))
-           (message "Dirvish: reached the end of history"))
-          ((< new-idx 0)
-           (dirvish-find-file (nth 0 dirs))
-           (message "Dirvish: reached the beginning of history"))
-          (t (dirvish-find-file (nth new-idx dirs))))))
-
-;;;###autoload
-(defun dirvish-go-backward-history (&optional arg)
-  "Navigate to last ARG directory in history.
-ARG defaults to -1."
-  (interactive "^p")
-  (dirvish-go-forward-history (- 0 (or arg 1))))
-
-;;;###autoload
 (defun dirvish-find-file-true-path ()
   "Open truename of (maybe) symlink file under the cursor."
   (interactive)
@@ -424,7 +384,7 @@ FILESET defaults to `dired-get-marked-files'."
   (let* ((fileset (or fileset (dired-get-marked-files)))
          (count (propertize (number-to-string (length fileset))
                             'face 'font-lock-builtin-face))
-         (size (file-size-human-readable (dirvish--get-filesize fileset))))
+         (size (file-size-human-readable (dirvish--count-file-size fileset))))
     (message "%s" (format "Total size of %s entries: %s" count size))))
 
 ;;;###autoload
@@ -440,21 +400,6 @@ FILESET defaults to `dired-get-marked-files'."
               markedFiles)
         (revert-buffer))
     (user-error "Not in a Dired buffer")))
-
-;;;###autoload
-(defun dirvish-roam ()
-  "Browse all directories using `fd' command.
-This command takes a while to index all the directories the first
-time you run it.  After the indexing, it fires up instantly."
-  (interactive)
-  (unless (executable-find "fd")
-    (user-error "Dirvish: install `fd' to use this command"))
-  (let* ((command "fd -H -td -0 . /")
-         (output (shell-command-to-string command))
-         (files-raw (split-string output "\0" t))
-         (files (dirvish--append-metadata 'file files-raw))
-         (file (completing-read "Goto: " files)))
-    (dired-jump nil file)))
 
 ;;;###autoload
 (defun dirvish-switch-layout (&optional recipe)

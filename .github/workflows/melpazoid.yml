@@ -31,6 +31,7 @@ jobs:
                                            "extensions/dirvish-side.el"
                                            "extensions/dirvish-yank.el"
                                            "extensions/dirvish-fd.el"
+                                           "extensions/dirvish-history.el"
                                            "extensions/dirvish-subtree.el" ))
         # set this to false (or remove it) if the package isn't on MELPA:
         EXIST_OK: false
