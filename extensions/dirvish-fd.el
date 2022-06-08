@@ -54,6 +54,37 @@
 		              (delete-region (point) (- (point) 2)))))))
       (delete-process proc))))
 
+(cl-defmethod dirvish-search-switches (&context (dirvish-fd-actual-switches string))
+  "Return a string showing the DIRVISH-FD-ACTUAL-SWITCHES."
+  (unless (dirvish-prop :fd-heading)
+    (dirvish-prop :fd-heading
+      (let* ((args (split-string dirvish-fd-actual-switches))
+             (globp (member "--glob" args))
+             (casep (member "--case-sensitive" args))
+             (ign-range (cond ((member "--no-ignore" args) "no")
+                              ((member "--no-ignore-vcs" args) "no_vcs")
+                              (t "all")))
+             (tf (and (member "--type=file" args) "file"))
+             (td (and (member "--type=directory" args) "dir"))
+             (ts (and (member "--type=symlink" args) "symlink"))
+             (tS (and (member "--type=socket" args) "socket"))
+             (tp (and (member "--type=pipe" args) "pipe"))
+             (te (and (member "--type=executable" args) "exe"))
+             (tE (and (member "--type=empty" args) "empty"))
+             (type (mapconcat #'concat (remove nil (list tf td ts tS tp te tE)) ",")))
+        (format " %s | %s %s | %s %s | %s %s | %s %s | %s "
+                (propertize "FD" 'face 'dired-header)
+                (propertize (if globp "glob:" "regex:") 'face 'font-lock-doc-face)
+                (propertize dirvish-fd-last-input 'face 'font-lock-regexp-grouping-construct)
+                (propertize "type:" 'face 'font-lock-doc-face)
+                (propertize (if (equal type "") "all" type) 'face 'font-lock-variable-name-face)
+                (propertize "case:" 'face 'font-lock-doc-face)
+                (propertize (if casep "sensitive" "smart") 'face 'font-lock-type-face)
+                (propertize "ignore:" 'face 'font-lock-doc-face)
+                (propertize ign-range 'face 'font-lock-comment-face)
+                (propertize (abbreviate-file-name default-directory) 'face 'dired-directory)))))
+  (dirvish-prop :fd-heading))
+
 ;;;###autoload
 (defun dirvish-fd (dir pattern)
   "Run `fd' on DIR and go into Dired mode on a buffer of the output.
@@ -103,36 +134,21 @@ The command run is essentially:
         (move-marker (process-mark proc) (point) buffer)))
     buffer))
 
-(cl-defmethod dirvish-search-switches (&context (dirvish-fd-actual-switches string))
-  "Return a string showing the DIRVISH-FD-ACTUAL-SWITCHES."
-  (unless (dirvish-prop :fd-heading)
-    (dirvish-prop :fd-heading
-      (let* ((args (split-string dirvish-fd-actual-switches))
-             (globp (member "--glob" args))
-             (casep (member "--case-sensitive" args))
-             (ign-range (cond ((member "--no-ignore" args) "no")
-                              ((member "--no-ignore-vcs" args) "no_vcs")
-                              (t "all")))
-             (tf (and (member "--type=file" args) "file"))
-             (td (and (member "--type=directory" args) "dir"))
-             (ts (and (member "--type=symlink" args) "symlink"))
-             (tS (and (member "--type=socket" args) "socket"))
-             (tp (and (member "--type=pipe" args) "pipe"))
-             (te (and (member "--type=executable" args) "exe"))
-             (tE (and (member "--type=empty" args) "empty"))
-             (type (mapconcat #'concat (remove nil (list tf td ts tS tp te tE)) ",")))
-        (format " %s | %s %s | %s %s | %s %s | %s %s | %s "
-                (propertize "FD" 'face 'dired-header)
-                (propertize (if globp "glob:" "regex:") 'face 'font-lock-doc-face)
-                (propertize dirvish-fd-last-input 'face 'font-lock-regexp-grouping-construct)
-                (propertize "type:" 'face 'font-lock-doc-face)
-                (propertize (if (equal type "") "all" type) 'face 'font-lock-variable-name-face)
-                (propertize "case:" 'face 'font-lock-doc-face)
-                (propertize (if casep "sensitive" "smart") 'face 'font-lock-type-face)
-                (propertize "ignore:" 'face 'font-lock-doc-face)
-                (propertize ign-range 'face 'font-lock-comment-face)
-                (propertize (abbreviate-file-name default-directory) 'face 'dired-directory)))))
-  (dirvish-prop :fd-heading))
+(define-obsolete-function-alias 'dirvish-roam #'dirvish-fd-roam "Jun 08, 2022")
+;;;###autoload
+(defun dirvish-fd-roam ()
+  "Browse all directories using `fd' command.
+This command takes a while to index all the directories the first
+time you run it.  After the indexing, it fires up instantly."
+  (interactive)
+  (unless (executable-find "fd")
+    (user-error "Dirvish: install `fd' to use this command"))
+  (let* ((command "fd -H -td -0 . /")
+         (output (shell-command-to-string command))
+         (files-raw (split-string output "\0" t))
+         (files (dirvish--append-metadata 'file files-raw))
+         (file (completing-read "Goto: " files)))
+    (dired-jump nil file)))
 
 (provide 'dirvish-fd)
 ;;; dirvish-fd.el ends here

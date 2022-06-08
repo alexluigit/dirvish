@@ -423,14 +423,6 @@ ALIST is window arguments passed to `window--display-buffer'."
   (save-excursion (< (dirvish--subtree-depth)
                      (progn (forward-line 1) (dirvish--subtree-depth)))))
 
-(defun dirvish--get-filesize (fileset)
-  "Return file size of FILESET in bytes."
-  (cl-labels ((f-name (f) (if (file-directory-p f)
-                              (directory-files-recursively f ".*" nil t)
-                            f))
-              (f-size (f) (file-attribute-size (file-attributes f))))
-    (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
-
 (defun dirvish--append-metadata (metadata completions)
   "Append METADATA for minibuffer COMPLETIONS."
   (let ((entry (if (functionp metadata)
@@ -440,28 +432,6 @@ ALIST is window arguments passed to `window--display-buffer'."
       (if (eq action 'metadata)
           entry
         (complete-with-action action completions string pred)))))
-
-(defun dirvish--marked-files (&optional range)
-  "Get all marked filenames in RANGE.
-RANGE can be `buffer', `session', `frame', `all'."
-  (setq range (or range 'buffer))
-  (cl-remove-duplicates
-   (cl-loop
-    with case-fold-search = nil
-    with regexp = (dired-marker-regexp)
-    with buffers = (pcase range
-                     ('buffer (list (current-buffer)))
-                     ('session (mapcar #'cdr (dv-roots (dirvish-curr))))
-                     ('frame (cl-loop for i in (reverse (dirvish-get-all 'roots nil t))
-                                      by 'cddr collect i))
-                     ('all (cl-loop for i in (reverse (dirvish-get-all 'roots t t))
-                                    by 'cddr collect i)))
-    for buffer in (seq-filter #'buffer-live-p buffers) append
-    (with-current-buffer buffer
-      (when (save-excursion (goto-char (point-min))
-                            (re-search-forward regexp nil t))
-        (dired-map-over-marks (dired-get-filename) nil))))
-   :test #'equal))
 
 (defun dirvish--host-in-whitelist-p (&optional vec)
   "Check if the TRAMP connection VEC should be dominated by Dirvish."
@@ -860,6 +830,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (bufname (buffer-name))
         buffer-read-only)
     (setf (dv-index-dir dv) bufname)
+    (ring-insert dirvish--history-ring bufname)
     (unless (alist-get bufname (dv-roots dv) nil nil #'equal)
       (push (cons bufname (current-buffer)) (dv-roots dv)))
     (with-current-buffer (process-buffer proc)

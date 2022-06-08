@@ -99,7 +99,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
    ("*" "  Manage marks"                        dirvish-mark-menu)]]
  [["Navigation"
    ("j" "  Jump to line for file"               dired-goto-file)
-   ("b" "  Go to bookmarks"                     dirvish-goto-bookmark)
+   ("b" "  Go to bookmarks"                     dirvish-bookmark-goto)
    ("^" "  Go to parent directory"              dired-up-directory)
    ("r" "  Roam the file system"                dirvish-roam :if (lambda () (featurep 'dirvish)))
    ("m" "  Go to the MRU buffer"                dirvish-other-buffer :if (lambda () (featurep 'dirvish)))
@@ -520,37 +520,6 @@ invoke the CMD, DOC is the documentation string."
             (transient-setup 'dirvish-yank-menu)
           (user-error "Not in a Dirvish buffer"))))))
 
-(define-obsolete-variable-alias 'dirvish-bookmarks-alist 'dirvish-menu-bookmarks "1.3.21")
-;;;###autoload (autoload 'dirvish-goto-bookmark "dirvish-menu" nil t)
-(defcustom dirvish-menu-bookmarks
-  '(("h" "~/"                          "Home")
-    ("d" "~/Downloads/"                "Downloads")
-    ("m" "/mnt/"                       "Drives")
-    ("t" "~/.local/share/Trash/files/" "TrashCan"))
-  "BOOKMARKs for command `dirvish-goto-bookmark'.
-A BOOKMARK is a (KEY PATH DOC) alist where KEY is the key to
-invoke the navigation, PATH is the the argument for command
-`dirvish-find-file', DOC (optional) is the documentation string."
-  :group 'dirvish :type 'alist
-  :set
-  (lambda (k v)
-    (set k v)
-    (let ((max-desc-len (seq-max (mapcar (lambda (i) (length (nth 2 i))) v))))
-      (eval
-       `(transient-define-prefix dirvish-goto-bookmark ()
-          "Open frequently visited directories using dirvish."
-          ["Go to Directory: "
-           ,@(cl-loop
-              for (key path desc) in v
-              collect
-              (list key
-                    (concat desc "  "
-                            (make-string (- max-desc-len (length desc)) ?\ )
-                            (propertize path 'face 'font-lock-comment-face))
-                    `(lambda ()
-                       (interactive)
-                       (dired-jump current-prefix-arg ,path))))])))))
-
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-menu-setup-items
   '(("i"  all-the-icons  attr     "File icons")
@@ -562,10 +531,8 @@ invoke the navigation, PATH is the the argument for command
     ("d"  vc-diff        preview  "Version control diff in preview window")
     ("1" '(0 nil  0.4)   layout   "       | CURRENT | preview")
     ("2" '(0 nil  0.8)   layout   "       | current | PREVIEW")
-    ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW"
-     (not (dirvish-prop :tramp)))
-    ("4" '(1 0.1  0.6)   layout   "parent | current | preview"
-     (not (dirvish-prop :tramp))))
+    ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW")
+    ("4" '(1 0.1  0.6)   layout   "parent | current | preview"))
   "ITEMs for `dirvish-setup-menu'.
 A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
 where KEY is the keybinding for the item, VAR can be valid
