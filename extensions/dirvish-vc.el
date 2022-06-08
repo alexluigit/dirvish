@@ -59,7 +59,7 @@ This variable is consumed by `vc-state' attribute in Dirvish."
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
   (:if (and (eq (dv-root-window dv) (selected-window))
-            (not (dirvish-prop :remote))))
+            (not (dirvish-prop :tramp))))
   (let* ((info (dirvish-attribute-cache f-name :git-msg
                  (let ((msg (dirvish--shell-to-string
                              "git" "log" "-1" "--pretty=%s" f-name)))

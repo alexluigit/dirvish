@@ -66,6 +66,7 @@ The value can be a symbol or a function that returns a fileset."
   "Yank methods and their flags."
   :group 'dirvish :type 'alist)
 
+(defconst dirvish-yank-fallback-methods '((yank . dired-copy-file) (move . dired-rename-file)))
 (defvar dirvish-yank-task-counter 0)
 (defvar dirvish-yank--link-methods '(symlink relalink hardlink))
 ;; copied from `dired-rsync'
@@ -101,8 +102,9 @@ results of `dirvish-yank--get-remote-port'.")
   "Get host of FILES."
   (cl-loop
    with hosts = ()
+   with sysname = (system-name)
    for f in files
-   for h = (or (file-remote-p f 'host) 'local)
+   for h = (or (file-remote-p f 'host) sysname)
    do (cl-pushnew h hosts :test #'equal)
    when (> (length hosts) 1)
    do (user-error "Dirvish[error]: SOURCEs need to be in the same host")
@@ -128,7 +130,7 @@ results of `dirvish-yank--get-remote-port'.")
     (when (and (buffer-live-p dv-buf)
                (or (eq dv-buf (current-buffer))
                    (not (with-current-buffer dv-buf
-                          (dirvish-prop :remote)))))
+                          (dirvish-prop :tramp)))))
       (with-current-buffer dv-buf (revert-buffer)))))
 
 (defun dirvish-yank--execute (cmd &optional remotep)
@@ -196,6 +198,15 @@ BASE-NAME is the filename of file without directory."
        (?q (user-error "Dirvish[info]: yank task aborted"))))
     (t (cons file (if (file-directory-p file) dest-local paste-name))))))
 
+(defun dirvish-yank--fallback-handler (method srcs dest)
+  "Execute a fallback yank command with type of METHOD.
+SRCS and DEST are source files and destination."
+  (cl-loop
+   with newnames = (dirvish-yank--prepare-dest-names srcs dest)
+   with fn = (alist-get method dirvish-yank-fallback-methods)
+   for (from . to) in newnames
+   do (apply fn from to t)))
+
 (defun dirvish-yank--l2l-handler (method srcs dest host)
   "Execute a local yank command with type of METHOD.
 SRCS and DEST have to be in the same HOST (local or remote)."
@@ -241,21 +252,27 @@ This command sync SRCS on SHOST to DEST on DHOST."
 (defun dirvish-yank--apply (method dest)
   "Apply yank METHOD to DEST."
   (let* ((dest (or dest (dired-current-directory)))
-         (dhost (or (file-remote-p dest 'host) 'local))
+         (sysname (system-name))
+         (dvec (and (tramp-tramp-file-p dest) (tramp-dissect-file-name dest)))
+         (dhost (or (file-remote-p dest 'host) sysname))
          (srcs (or (and (functionp dirvish-yank-sources)
                         (funcall dirvish-yank-sources))
                    (dirvish--marked-files dirvish-yank-sources)
                    (user-error "Dirvish[error]: no marked files")))
+         (src-0 (car srcs))
+         (svec (and (tramp-tramp-file-p src-0) (tramp-dissect-file-name src-0)))
          (shost (dirvish-yank--extract-host srcs)))
     (cond
      ((and (memq method dirvish-yank--link-methods)
            (not (equal shost dhost)))
       (user-error "Dirvish[error]: can not make links between different hosts"))
+     ((and (not (and (or (not svec) (dirvish--host-in-whitelist-p svec))
+                     (or (not dvec) (dirvish--host-in-whitelist-p dvec))))
+           (not (memq method dirvish-yank--link-methods)))
+      (dirvish-yank--fallback-handler method srcs dest))
      ((equal shost dhost)
-      (if (or (eq dhost 'local) (dirvish--tramp-async-p))
-          (dirvish-yank--l2l-handler method srcs dest shost)
-        (user-error "Dirvish[error]: async process is disabled in current TRAMP connection")))
-     ((not (or (eq shost 'local) (eq dhost 'local)))
+      (dirvish-yank--l2l-handler method srcs dest shost))
+     ((not (or (equal shost sysname) (equal dhost sysname)))
       (dirvish-yank--r2r-handler srcs dest shost dhost))
      (t
       (dirvish-yank--l2fr-handler srcs dest)))))
@@ -282,7 +299,9 @@ asynchronous TRAMP connection and the rsync command (which always
 run locally) require working SSH authentication which bypasses
 the password entering to work, which see Info
 node `(tramp)Improving performance of asynchronous remote
-processes' and the man page `rsync(1)'.
+processes' and the man page `rsync(1)'.  If the remote host does
+not come with proper ssh configuration, the fallback command
+defined in `dirvish-yank-fallback-methods' are used.
 
 To make TRAMP more responsive, follow the instructions in Info
 node `(tramp)Frequently Asked Questions' to speed it up."

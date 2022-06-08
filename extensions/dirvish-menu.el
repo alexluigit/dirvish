@@ -558,14 +558,14 @@ invoke the navigation, PATH is the the argument for command
     ("v"  vc-state       attr     "Version control state information"
      (dirvish-prop :vc-backend))
     ("m"  git-msg        attr     "Git commit messages"
-     (and (dirvish-prop :vc-backend) (not (dirvish-prop :remote))))
+     (and (dirvish-prop :vc-backend) (not (dirvish-prop :tramp))))
     ("d"  vc-diff        preview  "Version control diff in preview window")
     ("1" '(0 nil  0.4)   layout   "       | CURRENT | preview")
     ("2" '(0 nil  0.8)   layout   "       | current | PREVIEW")
     ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW"
-     (not (dirvish-prop :remote)))
+     (not (dirvish-prop :tramp)))
     ("4" '(1 0.1  0.6)   layout   "parent | current | preview"
-     (not (dirvish-prop :remote))))
+     (not (dirvish-prop :tramp))))
   "ITEMs for `dirvish-setup-menu'.
 A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
 where KEY is the keybinding for the item, VAR can be valid
@@ -611,7 +611,7 @@ when present, is wrapped with a lambda and being put into the
              ["File attributes:"
               ,@(mapcar #'expand-infix attr-alist)]]
             ["Preview:"
-             :if (lambda () (and (not (dirvish-prop :remote)) (dv-layout (dirvish-curr))))
+             :if (lambda () (and (not (dirvish-prop :tramp)) (dv-layout (dirvish-curr))))
              ,@(mapcar #'expand-infix preview-alist)]
             [:description
              (lambda ()
