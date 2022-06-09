@@ -253,9 +253,4 @@ These packages are only listed here for discoverability.
 ;; (use-package vscode-icon
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
-
-(use-package dired-collapse
-  :bind
-  (:map dired-mode-map
-        ("M-c" . dired-collapse-mode)))
 #+end_src

@@ -270,6 +270,38 @@ This value is passed to function `format-time-string'."
     (add-face-text-property 0 f-size-len face t f-size-str)
     (overlay-put ov 'after-string (concat spc f-size-str)) ov))
 
+(dirvish-define-attribute collapse
+  "Collapse unique nested paths."
+  (:if (and (eq (dv-root-window dv) (selected-window))
+            (or (not (dirvish-prop :tramp))
+                (tramp-local-host-p (dirvish-prop :tramp)))))
+  (let ((collapse
+         (dirvish-attribute-cache f-name :collapse
+           (let ((path f-name) files should-collapse)
+             (while (and (file-directory-p path)
+                         (setq files (ignore-errors (directory-files path t)))
+                         (= 3 (length files)))
+               (setq should-collapse t path (nth 2 files)))
+             (cond ((and (eq (length files) 2) (not should-collapse))
+                    (length (file-name-nondirectory f-name)))
+                   (should-collapse path)
+                   (t 'none))))))
+    (unless (eq collapse 'none)
+      (let* ((buffer-invisibility-spec nil)
+             (default-directory (dired-current-directory))
+             (path (and (stringp collapse)
+                        (substring collapse (length default-directory))))
+             (offset (if path (- (length path) (length (file-name-nondirectory path)))
+                       collapse)))
+        (when (stringp collapse)
+          (delete-region l-beg (1+ l-end))
+          (insert "  ")
+          (insert-directory path dired-actual-switches)
+          (forward-line -1)
+          (dired-align-file l-beg (1+ l-end)))
+        (let ((ov (make-overlay f-beg (+ offset f-beg))))
+          (prog1 nil (overlay-put ov 'face 'shadow)))))))
+
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
   (let ((free-space (or (dirvish-prop :free-space)
