@@ -276,7 +276,7 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
 (defvar dirvish-scopes
   '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window))
 (defvar dirvish-override-dired-mode nil)
-(defvar dirvish-extra-libs '(dirvish-extras dirvish-vc dirvish-yank dirvish-subtree))
+(defvar dirvish-extra-libs '(dirvish-icons dirvish-extras dirvish-vc dirvish-yank dirvish-subtree))
 (defconst dirvish--dired-free-space
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--prefix-spaces 2)
