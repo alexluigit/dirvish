@@ -522,8 +522,7 @@ invoke the CMD, DOC is the documentation string."
 
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-menu-setup-items
-  '(("i"  all-the-icons  attr     "File icons")
-    ("s"  file-size      attr     "File size")
+  '(("s"  file-size      attr     "File size")
     ("c"  collapse       attr     "Collapse unique nested paths"
      (or (not (dirvish-prop :tramp)) (tramp-local-host-p (dirvish-prop :tramp))))
     ("v"  vc-state       attr     "Version control state information"
