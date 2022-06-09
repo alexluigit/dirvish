@@ -113,17 +113,18 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 
 *** Attributes
 
-|----------------+-------------------------------------------------|
-| Attribute      | Description                                     |
-|----------------+-------------------------------------------------|
-| ~all-the-icons~  | File icons provided by =all-the-icons=            |
-| ~vscode-icon~    | File icons provided by =vscode-icon=              |
-| ~file-size~      | File size of files or file count of directories |
-|----------------+-------------------------------------------------|
+|---------------+-------------------------------------------------|
+| Attribute     | Description                                     |
+|---------------+-------------------------------------------------|
+| ~all-the-icons~ | File icons provided by =all-the-icons=            |
+| ~vscode-icon~   | File icons provided by =vscode-icon=              |
+| ~file-size~     | File size of files or file count of directories |
+| ~collapse~      | Collapse unique nested paths                    |
+|---------------+-------------------------------------------------|
 
 https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-84a8-d568517f0b50.mp4
 
-*Figure 3*. Toggle =expanded-state=, =all-the-icons=, =file-size= attributes
+*Figure 3*. Toggle =subtree-state=, =all-the-icons=, =file-size= attributes
 
 *** Mode-line segments
 

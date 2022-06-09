@@ -524,6 +524,8 @@ invoke the CMD, DOC is the documentation string."
 (defcustom dirvish-menu-setup-items
   '(("i"  all-the-icons  attr     "File icons")
     ("s"  file-size      attr     "File size")
+    ("c"  collapse       attr     "Collapse unique nested paths"
+     (or (not (dirvish-prop :tramp)) (tramp-local-host-p (dirvish-prop :tramp))))
     ("v"  vc-state       attr     "Version control state information"
      (dirvish-prop :vc-backend))
     ("m"  git-msg        attr     "Git commit messages"
