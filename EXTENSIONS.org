@@ -11,6 +11,7 @@ Currently the following extensions come with the package:
 - [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
 - [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: Preview files when narrowing candidates using minibuffer.
 - [[file:extensions/dirvish-vc.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
+- [[file:extensions/dirvish-icons.el][dirvish-icons.el]]: =all-the-icons/vscode-icon= integration for Dirvish.
 - [[file:extensions/dirvish-extras.el][dirvish-extras.el]]: Extra commands, UI elements, preview dispatchers for Dirvish.
 - [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
 - [[file:extensions/dirvish-fd.el][dirvish-fd.el]]: =fd= command interface in Dirvish.

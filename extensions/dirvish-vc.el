@@ -70,8 +70,7 @@ This variable is consumed by `vc-state' attribute in Dirvish."
          (f-base-str (buffer-substring f-beg f-end))
          (f-base-len (string-width f-base-str))
          (remained (- width f-base-len depth
-                      (car dirvish--attrs-width)
-                      (cdr dirvish--attrs-width)))
+                      (dirvish-prop :width-l) (dirvish-prop :width-r)))
          (msg-str (truncate-string-to-width (concat "\t" info) remained))
          (ov (make-overlay (1- f-end) f-end)))
     (add-face-text-property 0 (length msg-str) face t msg-str)
