@@ -33,7 +33,6 @@ otherwise the preview functionality may not work correctly.
 |-------------------------------+-----------------------------------------------------|
 | ~dirvish-cache-dir~             | Cache directory                                     |
 | ~dirvish-auto-cache-threshold~  | Generate cache images automatically                 |
-| ~dirvish-history-length~        | Maximum number of items in history                  |
 | ~dirvish-default-layout~        | Default layout for fullscreen sessions              |
 | ~dirvish-hide-details~          | Hide details as you see fit                         |
 | ~dirvish-mode-line-position~    | The place to put the mode line                      |
@@ -180,14 +179,16 @@ this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
 
 * Hooks
 
-|----------------------------+-----------------------------------------|
-| Hook                       | Description                             |
-|----------------------------+-----------------------------------------|
-| ~dirvish-activation-hook~    | Hook for dirvish session activation.    |
-| ~dirvish-deactivation-hook~  | Hook for dirvish session deactivation.  |
-| ~dirvish-mode-hook~          | Hook for parent buffer initialization.  |
-| ~dirvish-preview-setup-hook~ | Hook for preview buffer initialization. |
-|----------------------------+-----------------------------------------|
+|----------------------------+-----------------------------------------------------------------|
+| Hook                       | Description                                                     |
+|----------------------------+-----------------------------------------------------------------|
+| ~dirvish-activation-hook~    | Hook functions to be executed on session activation.            |
+| ~dirvish-deactivation-hook~  | Hook functions to be executed on session deactivation.          |
+| ~dirvish-preview-setup-hook~ | Hook functions to be executed on preview buffer initialization. |
+| ~dirvish-mode-hook~          | Hook functions to be executed on parent buffer initialization.  |
+| ~dirvish-after-revert-hook~  | Hook functions to be executed after ~dirvish-revert~.             |
+| ~dirvish-find-entry-hook~    | Hook functions to be executed after ~dirvish--find-entry~.        |
+|----------------------------+-----------------------------------------------------------------|
 
 * Example config
 ** Dired | Dirvish
