@@ -17,25 +17,37 @@
 (declare-function magit-stage-file "magit-apply")
 (declare-function magit-unstage-file "magit-apply")
 (require 'dirvish)
+(define-fringe-bitmap 'dirvish-vc-gutter [250] nil nil '(center repeated))
 
-(defcustom dirvish-vc-state-char-alist
-  '((up-to-date       . (" " . vc-up-to-date-state))
-    (edited           . ("M" . vc-edited-state))
-    (added            . ("+" . vc-locally-added-state))
-    (removed          . ("-" . vc-removed-state))
-    (missing          . ("!" . vc-missing-state))
-    (needs-merge      . ("M" . vc-state-base))
-    (conflict         . ("!" . vc-conflict-state))
-    (unlocked-changes . ("!" . vc-locked-state))
-    (needs-update     . ("U" . vc-needs-update-state))
-    (ignored          . (" " . dired-ignored))
-    (user             . ("U" . vc-state-base))
-    (unregistered     . ("?" . vc-state-base))
-    (nil              . (" " . vc-state-base)))
-  "Alist of vc-states to indicator characters.
-This variable is consumed by `vc-state' attribute in Dirvish."
+(defcustom dirvish-vc-state-face-alist
+  '((up-to-date       . nil)
+    (edited           . vc-edited-state)
+    (added            . vc-locally-added-state)
+    (removed          . vc-removed-state)
+    (missing          . vc-missing-state)
+    (needs-merge      . dirvish-vc-needs-merge-face)
+    (conflict         . vc-conflict-state)
+    (unlocked-changes . vc-locked-state)
+    (needs-update     . vc-needs-update-state)
+    (ignored          . dired-ignored)
+    (unregistered     . dirvish-vc-unregistered-face))
+  "Alist of (VC-STATE . FACE).
+This value is consumed by `vc-state' attribute in Dirvish.  FACE
+is the face used for that VC-STATE.  See `vc-state' in (in
+vc-hooks.el) for detail explanation of these states."
   :group 'dirvish
-  :type '(alist :key-type symbol :value-type 'cons))
+  :type '(alist :key-type symbol :value-type '(symbol :tag "Face")))
+
+(defface dirvish-vc-needs-merge-face
+  '((((background dark)) (:background "#500f29"))
+    (t                   (:background "#efcbcf")))
+  "Face used for `needs-merge' vc state in the Dirvish buffer."
+  :group 'dirvish)
+
+(defface dirvish-vc-unregistered-face
+  '((t (:inherit font-lock-constant-face)))
+  "Face used for `unregistered' vc state in the Dirvish buffer."
+  :group 'dirvish)
 
 (defface dirvish-git-commit-message-face
   '((t (:inherit font-lock-comment-face)))
@@ -45,16 +57,16 @@ This variable is consumed by `vc-state' attribute in Dirvish."
 (dirvish-define-attribute vc-state
   "The version control state at left fringe."
   (:if (and (eq (dv-root-window dv) (selected-window))
-            (dirvish-prop :vc-backend))
-       :left 1)
+            (dirvish-prop :vc-backend)
+            (or (set-window-fringes nil 5 1) t)))
   (let* ((state (dirvish-attribute-cache f-name :vc-state
                   (vc-state-refresh f-name (dirvish-prop :vc-backend))))
-         (state-cons (alist-get state dirvish-vc-state-char-alist))
-         (gutter-str (propertize (car state-cons) 'font-lock-face 'bold))
-         (face (or hl-face (cdr state-cons)))
-         (ov (make-overlay l-beg l-beg)))
-    (add-face-text-property 0 (length gutter-str) face t gutter-str)
-    (overlay-put ov 'before-string gutter-str) ov))
+         (face (alist-get state dirvish-vc-state-face-alist))
+         (display (and face `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
+         (gutter-str (and display (propertize "!" 'display display))) ov)
+    (when gutter-str
+      (prog1 (setq ov (make-overlay f-beg f-beg))
+        (overlay-put ov 'before-string gutter-str)))))
 
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
