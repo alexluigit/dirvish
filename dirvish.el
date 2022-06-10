@@ -259,10 +259,10 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
     (dired         dired-other-frame               dirvish-dired-other-frame-ad   :override)
     (dired         dired-up-directory              dirvish-up-directory           :override)
     (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
-    (wdired        wdired-change-to-wdired-mode    dirvish-wdired-mode-ad         :after)
-    (wdired        wdired-exit                     dirvish-setup                  :after)
-    (wdired        wdired-finish-edit              dirvish-setup                  :after)
-    (wdired        wdired-abort-changes            dirvish-setup                  :after)
+    (wdired        wdired-change-to-wdired-mode    dirvish-wdired-enter-ad        :after)
+    (wdired        wdired-exit                     dirvish-wdired-exit-ad         :after)
+    (wdired        wdired-finish-edit              dirvish-wdired-exit-ad         :after)
+    (wdired        wdired-abort-changes            dirvish-wdired-exit-ad         :after)
     (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
     (files         find-file                       dirvish-find-file-ad)
     (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
@@ -847,13 +847,17 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
 If ALL-FRAMES, search target directories in all frames."
   (delete (dired-current-directory) (dirvish-get-all 'index-dir all-frames t)))
 
-(defun dirvish-wdired-mode-ad (&rest _)
+(defun dirvish-wdired-enter-ad (&rest _)
   "Advisor function for `wdired-change-to-wdired-mode'."
   (dired-move-to-end-of-filename t)
   (setq-local cursor-type '(bar 4))
   (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
+
+(defun dirvish-wdired-exit-ad (&rest _)
+  "Advise function for exiting `wdired-mode'."
+  (dirvish--hide-dired-header (dirvish-setup)))
 
 (defun dirvish-find-file-ad (fn filename &optional wildcard)
   "Advice for FN `find-file' and `find-file-other-window'.
