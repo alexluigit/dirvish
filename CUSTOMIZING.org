@@ -228,7 +228,7 @@ this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
   (setq dired-listing-switches
         "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
   :bind
-  ;; Bind `dirvish|dirvish-dired|dirvish-side|dirvish-dwim' as you see fit
+  ;; Bind `dirvish|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish-fd)
    :map dired-mode-map ; Dirvish respects all the keybindings in this map
    ;; ("h" . dired-up-directory)

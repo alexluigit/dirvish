@@ -43,21 +43,21 @@ if you have melpa in your ~package-archives~.
 ;; If you want the extensions as well
 (add-to-list 'load-path "/path/to/dirvish/extensions")
 (require 'dirvish)
+
+;; It is recommended to enable `dirvish-override-dired-mode', which makes
+;; Dirvish to take over Dired globally.  This is not required, but why not?
+(dirvish-override-dired-mode)
 #+end_src
 
 ** Basic usage
 
-Start a Dirvish session by =M-x= ~dirvish~ or ~dirvish-dired~.
+Start a full frame Dirvish session by =M-x= ~dirvish~.
 
-- ~dirvish-dired~ creates a session in current window (like ~dired~).
-- ~dirvish~ creates a session that makes use of the whole frame.
+Start a single window Dirvish session by =M-x= ~dired~ | ~dired-jump~ | ... (make sure
+~dirvish-override-dired-mode~ is enabled).
 
 ~dirvish-toggle-fullscreen~ allows you to toggle the fullscreen state of the
 current session.
-
-It is also recommended to enable ~dirvish-override-dired-mode~, which makes all
-your Dired entry commands including ~dired[-other-window/tab/frame]~ initialize or
-reuse a Dirvish session automatically.
 
 That's it, you're all set. Use Dirvish in the same as you use Dired.
 
