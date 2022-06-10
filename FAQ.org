@@ -1,36 +1,25 @@
 * FAQ
-** How is Dirvish related to Dired?
+** How to prevent Dirvish from killing current buffer on session quit?
 
-A Dirvish session holds a set of buffers with ~dirvish-mode~ as its ~major-mode~. As
-discussed above, since ~dirvish-mode~ is a derived mode from ~dired-mode~, most of
-the Dired commands work exactly the same in a ~dirvish-mode~ buffer.
+Set ~dirvish-keep-alive-on-quit~ to t.
 
-Nonetheless, Dirvish and Dired handle these aspects differently:
+** Why the sort information in the mode-line does not update?
 
-+ Isolated sessions ::
++ Setup ~dired-listing-switches~ correctly.
++ Use ~dirvish-quicksort~ instead of ~dired-sort-toggle-or-edit~.
 
-  Each Dirvish has its own window layout along with some other isolated niceties
-  such as header string. This makes it easy for Dirvish to adapt itself towards
-  different file management tasks.
+  Note: you can use still use ~dired-sort-toggle-or-edit~, but you'll have to
+  enter the long names of corresponding flags to make the mode-line update
+  accordingly.
 
-+ Buffer management ::
-
-  =dired= command and friends create new Dired buffers, hence navigating through
-  the file system always end up with a lot of Dired buffers. To avoid this, one
-  can either replace ~dired-find-file~ with ~dired-find-alternate-file~ or enable
-  ~dired-kill-when-opening-new-dired-buffer~, but they introduce two new issues:
-
-  - The Dired buffers in other windows/tabs/frames might be killed unexpectedly
-  - The Dired buffers are no longer reusable
-
-  As a comparison, the directory/preview buffers are reused during a Dirvish
-  session and get killed when user explicitly exit the session.
-
-+ Mode line ::
-
-  Dirvish has its own mode-line that can be customized with
-  ~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option doesn't
-  work in Dirvish.
+#+begin_src emacs-lisp
+;; Make sure to use the long name of flags when exists
+;; eg. use "--almost-all" instead of "-A"
+;; Otherwise some commands won't work properly
+(setq dired-listing-switches
+      "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
+(define-key dired-mode-map [remap dired-sort-toggle-or-edit] #'dirvish-quicksort)
+#+end_src
 
 ** Why do I have duplicate icon columns?
 
@@ -71,7 +60,7 @@ Dired and =dired-sidebar= look consistent.
 
 See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]].
 
-** all-the-icons-dired.el
+** all-the-icons-dired
 
 This package ([[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]]) is *NOT* required at all unless you want to use
 Dirvish with ~dirvish-override-dired-mode~ *disabled*.
@@ -98,17 +87,21 @@ workaround (you'll still get stuck at large directories though):
 (add-hook 'dirvish-mode-hook #'turn-off-all-the-icons-dired)
 #+end_src
 
-** treemacs-icons-dired.el
+** treemacs-icons-dired
 
 Apart from similar concerns mentioned in the above =all-the-icons-dired.el=
 section, this package ([[https://melpa.org/#/treemacs-icons-dired][treemacs-icons-dired]]) also introduces duplicate icon
 columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.com/alexluigit/dirvish/issues/16][here]].
 
-** dired-subtree.el
+** dired-subtree (from dired-hacks)
 
 See [[file:EXTENSIONS.org][dirvish-subtree]].
 
-** find-dired.el | fd-dired.el
+** dired-collapse (from dired-hacks)
+
+The =collapse= attribute in Dirvish does the same thing, and faster.
+
+** find-dired | fd-dired
 
 It is quite hard to integrate =fd-dired.el= in Dirvish perfectly ([[https://github.com/yqrashawn/fd-dired/pull/21][my PR attempt]]),
 so I dropped the support for it and made =dirvish-fd=, which has better

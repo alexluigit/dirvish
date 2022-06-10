@@ -28,26 +28,63 @@ otherwise the preview functionality may not work correctly.
 
 * Customizing options
 
-|-------------------------------+----------------------------------------|
-| Option                        | Description                            |
-|-------------------------------+----------------------------------------|
-| ~dirvish-cache-dir~             | Cache directory                        |
-| ~dirvish-auto-cache-threshold~  | Generate cache images automatically    |
-| ~dirvish-history-length~        | Maximum number of items in history     |
-| ~dirvish-default-layout~        | Default layout for fullscreen sessions |
-| ~dirvish-hide-details~          | Hide details as you see fit            |
-| ~dirvish-mode-line-position~    | The place to put the mode line         |
-| ~dirvish-mode-line-height~      | The height of mode line                |
-| ~dirvish-mode-line-format~      | Mode line format in root window        |
-| ~dirvish-header-line-position~  | The place to put the header line       |
-| ~dirvish-header-line-height~    | The height of header line              |
-| ~dirvish-header-line-format~    | Header line format in root window      |
-| ~dirvish-preview-disabled-exts~ | Disable preview for some filetypes     |
-| ~dirvish-open-with-programs~    | Open certain files with external apps  |
-| ~dirvish-preview-dispatchers~   | See [[#Preview-strategies][Preview strategies]]                 |
-| ~dirvish-attributes~            | See [[#Extra-attributes][Extra attributes]]                   |
-|-------------------------------+----------------------------------------|
+|-------------------------------+-----------------------------------------------------|
+| Option                        | Description                                         |
+|-------------------------------+-----------------------------------------------------|
+| ~dirvish-cache-dir~             | Cache directory                                     |
+| ~dirvish-auto-cache-threshold~  | Generate cache images automatically                 |
+| ~dirvish-history-length~        | Maximum number of items in history                  |
+| ~dirvish-default-layout~        | Default layout for fullscreen sessions              |
+| ~dirvish-hide-details~          | Hide details as you see fit                         |
+| ~dirvish-mode-line-position~    | The place to put the mode line                      |
+| ~dirvish-mode-line-height~      | The height of mode line                             |
+| ~dirvish-mode-line-format~      | Mode line format in root window                     |
+| ~dirvish-header-line-position~  | The place to put the header line                    |
+| ~dirvish-header-line-height~    | The height of header line                           |
+| ~dirvish-header-line-format~    | Header line format in root window                   |
+| ~dirvish-preview-disabled-exts~ | Disable preview for some filetypes                  |
+| ~dirvish-open-with-programs~    | Open certain files with external apps               |
+| ~dirvish-keep-alive-on-quit~    | See [[#In relation to Dired][In relation to Dired]] |
+| ~dirvish-preview-dispatchers~   | See [[#Preview-strategies][Preview strategies]]                              |
+| ~dirvish-attributes~            | See [[#Extra-attributes][Extra attributes]]                                |
+|-------------------------------+-----------------------------------------------------|
 Consult the docstring of the options for details.
+
+* In relation to Dired
+
+A Dirvish session holds a set of buffers with ~dirvish-mode~ as its
+~major-mode~. Since ~dirvish-mode~ is a derived mode from ~dired-mode~, most of the
+Dired commands work exactly the same in a ~dirvish-mode~ buffer.
+
+Nonetheless, Dirvish and Dired handle these aspects differently:
+
++ Isolated sessions ::
+
+  Each Dirvish has its own window layout along with some other isolated niceties
+  such as header string. This makes it easy for Dirvish to adapt itself towards
+  different file management tasks.
+
++ Buffer management ::
+
+  =dired= command and friends create new Dired buffers, hence navigating through
+  the file system always end up with a lot of Dired buffers. To avoid this, one
+  can either replace ~dired-find-file~ with ~dired-find-alternate-file~ or enable
+  ~dired-kill-when-opening-new-dired-buffer~, but they introduce two new issues:
+
+  - The Dired buffers in other windows/tabs/frames might be killed unexpectedly
+  - The Dired buffers are no longer reusable
+
+  As a comparison, the directory/preview buffers are reused during a Dirvish
+  session and get killed when user explicitly exit the session.
+
+  The buffer holding the last entry of the session won't get killed on session
+  exit if ~dirvish-keep-alive-on-quit~ is enabled (disabled by default).
+
++ Mode line ::
+
+  Dirvish has its own mode-line that can be customized with
+  ~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option doesn't
+  work in Dirvish.
 
 * Extra attributes
 
