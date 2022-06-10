@@ -215,7 +215,7 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
                 :value-type ((repeat string) :tag "External command and args")))
 
 (defcustom dirvish-keep-alive-on-quit nil
-  "Whether to keep current buffer alive on session quit."
+  "Whether to kill the last entry buffer of the session when exit."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-hooks-alist '()
