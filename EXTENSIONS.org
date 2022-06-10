@@ -99,17 +99,18 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 ** Extra commands, attributes, mode-line segments (dirvish-extras.el)
 *** Commands
 
-|------------------------------------+------------------------------------------|
-| Command                            | Description                              |
-|------------------------------------+------------------------------------------|
-| ~dirvish-copy-file-name~             | Copy the file name ("foo.el")            |
-| ~dirvish-copy-file-path~             | Copy the file path ("path/to/foo/bar")   |
-| ~dirvish-copy-file-directory~        | Copy the parent file path                |
-| ~dirvish-find-file-true-path~        | Open the true name of symlinks           |
-| ~dirvish-total-file-size~            | Echo total file size of marked files     |
-| ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"      |
-| ~dirvish-switch-layout~              | Switch Dirvish layout                    |
-|------------------------------------+------------------------------------------|
+|------------------------------------+----------------------------------------|
+| Command                            | Description                            |
+|------------------------------------+----------------------------------------|
+| ~dirvish-dwim~                       | Start a session with a "smart" layout  |
+| ~dirvish-copy-file-name~             | Copy the file name ("foo.el")          |
+| ~dirvish-copy-file-path~             | Copy the file path ("path/to/foo/bar") |
+| ~dirvish-copy-file-directory~        | Copy the parent file path              |
+| ~dirvish-find-file-true-path~        | Open the true name of symlinks         |
+| ~dirvish-total-file-size~            | Echo total file size of marked files   |
+| ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"    |
+| ~dirvish-switch-layout~              | Switch Dirvish layout                  |
+|------------------------------------+----------------------------------------|
 
 *** Attributes
 

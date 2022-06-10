@@ -19,6 +19,7 @@
 ;; - `dirvish-total-file-size'
 ;; - `dirvish-rename-space-to-underscore'
 ;; - `dirvish-switch-layout'
+;; - `dirvish-dwim'
 ;;
 ;; Attributes
 ;; - `file-size'
@@ -359,6 +360,14 @@ current layout defined in `dirvish-layout-recipes'."
      (setf (dv-layout dv) new-recipe)
      (setf (dv-last-fs-layout dv) new-recipe)
      (dirvish-build dv))))
+
+;;;###autoload
+(defun dirvish-dwim (&optional path)
+  "Start a Dirvish session with optional PATH.
+The session takes the whole frame when `one-window-p'."
+  (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
+  (dirvish-new t :path (or path default-directory)
+    :layout (and (one-window-p) dirvish-default-layout)))
 
 (provide 'dirvish-extras)
 ;;; dirvish-extras.el ends here

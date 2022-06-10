@@ -804,7 +804,8 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
    (list nil (and current-prefix-arg (read-file-name "Dirvish jump to: "))))
   (if (and (dirvish-curr) (not other-window))
       (dirvish-find-file file-name)
-    (dirvish-dired (or file-name default-directory) other-window)))
+    (and other-window (switch-to-buffer-other-window (dirvish--util-buffer)))
+    (dirvish-new t :path (or file-name default-directory))))
 
 (defun dirvish-find-file-other-win-ad (&rest _)
   "Override `dired-find-file-other-window' command."
@@ -1621,7 +1622,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
-  "Override Dired with `dirvish-dired' globally."
+  "Let Dirvish take over Dired globally."
   :group 'dirvish :global t
   (if dirvish-override-dired-mode
       (progn
@@ -1640,23 +1641,8 @@ otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
   (dirvish-new t :path (or path default-directory) :layout dirvish-default-layout))
 
-;;;###autoload
-(defun dirvish-dired (&optional path other-window)
-  "Start a Dirvish session with optional PATH in current window.
-If called with \\[universal-arguments], prompt for PATH,
-otherwise it defaults to variable `buffer-file-name'.  Execute it
-in other window when OTHER-WINDOW is non-nil."
-  (interactive (list (and current-prefix-arg (read-file-name "Dirvish dired: ")) nil))
-  (and other-window (switch-to-buffer-other-window (dirvish--util-buffer)))
-  (dirvish-new t :path (or path default-directory)))
-
-;;;###autoload
-(defun dirvish-dwim (&optional path)
-  "Run command `dirvish' or `dirvish-dired' for PATH according to window layout.
-Enter fullscreen automatically when selected window is the only window."
-  (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-new t :path (or path default-directory)
-    :layout (and (one-window-p) dirvish-default-layout)))
+(define-obsolete-function-alias 'dirvish-dired #'dired-jump "Jun-11,2022"
+  "[Obsolete] Just enable `dirvish-override-dired-mode' and run `dired-jump'.")
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
