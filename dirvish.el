@@ -88,12 +88,6 @@ max number of cache processes."
   "Preview / thumbnail cache directory for dirvish."
   :group 'dirvish :type 'string)
 
-(defvar dirvish--history-ring nil)
-(defcustom dirvish-history-length 50
-  "Length of directory visiting history Dirvish will track."
-  :group 'dirvish :type 'integer
-  :set (lambda (k v) (set k v) (setq dirvish--history-ring (make-ring v))))
-
 (defcustom dirvish-default-layout '(1 0.11 0.55)
   "Default layout recipe for fullscreen Dirvish sessions.
 The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH).
@@ -238,13 +232,17 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
   "Hook functions for preview buffer initialization.")
 
 (defvar dirvish-activation-hook nil
-  "Hook runs after activation of a Dirvish session.")
+  "Hook functions to be executed on session activation.")
 
 (defvar dirvish-deactivation-hook nil
-  "Hook runs after deactivation of a Dirvish session.")
+  "Hook functions to be executed on session deactivation.")
 
 (defvar dirvish-after-revert-hook nil
-  "Hook for `dirvish-revert' to run after reverting.")
+  "Hook functions to be executed after `dirvish-revert'.")
+
+(defvar dirvish-find-entry-hook nil
+  "Hook functions to be executed after `dirvish--find-entry'.
+Each function takes ENTRY and BUFFER as its arguments.")
 
 ;;;; Internal variables
 
@@ -830,7 +828,6 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
         (bufname (buffer-name))
         buffer-read-only)
     (setf (dv-index-dir dv) bufname)
-    (ring-insert dirvish--history-ring bufname)
     (unless (alist-get bufname (dv-roots dv) nil nil #'equal)
       (push (cons bufname (current-buffer)) (dv-roots dv)))
     (with-current-buffer (process-buffer proc)
@@ -1339,7 +1336,6 @@ Dirvish sets `revert-buffer-function' to this function."
   (let* ((dir (file-name-as-directory (expand-file-name dir)))
          (dv (dirvish-new nil)))
     (setf (dv-index-dir dv) dir)
-    (ring-insert dirvish--history-ring dir)
     (with-current-buffer (dirvish--find-entry dv dir)
       (dirvish-build dv)
       (current-buffer))))
@@ -1350,11 +1346,11 @@ If the buffer is not available, create it with `dired-noselect'."
   (let ((pairs (if parent (dv-parents dv) (dv-roots dv)))
         (bname (buffer-file-name))
         buffer enable-dir-local-variables)
-    (cond ((equal entry "*Find*") (get-buffer-create "*Find*"))
+    (cond ((equal entry "*Find*") (setq buffer (get-buffer-create "*Find*")))
           ((string-prefix-p "FD####" entry)
-           (or (alist-get entry pairs nil nil #'equal)
-               (pcase-let ((`(,_ ,dir ,pattern ,_) (split-string entry "####")))
-                 (dirvish-fd dir pattern))))
+           (setq buffer (or (alist-get entry pairs nil nil #'equal)
+                            (pcase-let ((`(,_ ,dir ,pattern ,_) (split-string entry "####")))
+                              (dirvish-fd dir pattern)))))
           ((file-directory-p entry)
            (setq entry (file-name-as-directory (expand-file-name entry)))
            (setq buffer (alist-get entry pairs nil nil #'equal))
@@ -1362,7 +1358,6 @@ If the buffer is not available, create it with `dired-noselect'."
            (unless buffer
              (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
                (setq buffer (dired-noselect entry (dv-ls-switches dv))))
-             (ring-insert dirvish--history-ring entry)
              (with-current-buffer buffer
                (dirvish-mode)
                (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200))
@@ -1377,8 +1372,8 @@ If the buffer is not available, create it with `dired-noselect'."
                  (unless (or (dirvish-prop :tramp) parent)
                    (dirvish-prop :vc-backend
                      (ignore-errors (vc-responsible-backend entry))))))
-             (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))
-           buffer))))
+             (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))))
+    (prog1 buffer (and buffer (run-hook-with-args 'dirvish-find-entry-hook entry buffer)))))
 
 (defun dirvish--autocache ()
   "Pop and run the cache tasks in `dirvish--cache-pool'."
