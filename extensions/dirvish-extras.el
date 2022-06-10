@@ -158,7 +158,7 @@ This value is passed to function `format-time-string'."
          (f-size-len (length f-size-str))
          (f-base-str (buffer-substring f-beg f-end))
          (f-base-len (string-width f-base-str))
-         (remained (- width f-size-len depth (car dirvish--attrs-width)))
+         (remained (- width f-size-len depth (dirvish-prop :width-l)))
          (ov-pos (if (> remained f-base-len)
                      l-end
                    (let ((pos f-beg) (vis-str ""))

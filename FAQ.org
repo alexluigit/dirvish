@@ -3,9 +3,14 @@
 
 Set ~dirvish-keep-alive-on-quit~ to t.
 
-** Why the sort information in the mode-line does not update?
+** Sort information in the mode-line does not update
 
 + Setup ~dired-listing-switches~ correctly.
+
+  Make sure to use the long name of flags when exists. For example:
+  * use =--almost-all= instead of =-A=
+  * use =--sort=version= instead of =-v=
+
 + Use ~dirvish-quicksort~ instead of ~dired-sort-toggle-or-edit~.
 
   Note: you can use still use ~dired-sort-toggle-or-edit~, but you'll have to
@@ -13,9 +18,6 @@ Set ~dirvish-keep-alive-on-quit~ to t.
   accordingly.
 
 #+begin_src emacs-lisp
-;; Make sure to use the long name of flags when exists
-;; eg. use "--almost-all" instead of "-A"
-;; Otherwise some commands won't work properly
 (setq dired-listing-switches
       "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
 (define-key dired-mode-map [remap dired-sort-toggle-or-edit] #'dirvish-quicksort)

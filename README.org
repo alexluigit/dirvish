@@ -26,7 +26,9 @@ being dired at its core.
 -- @noctuid ([[https://github.com/alexluigit/dirvish/issues/34][source]])
 #+end_quote
 
-[[https://user-images.githubusercontent.com/16313743/169456875-ed5af1e7-57cd-4203-96e9-9038119721b9.png][https://user-images.githubusercontent.com/16313743/169456875-ed5af1e7-57cd-4203-96e9-9038119721b9.png]]
+[[https://user-images.githubusercontent.com/16313743/173186456-d5e8d02e-2148-4668-82cf-f9cb75fc7c70.png][https://user-images.githubusercontent.com/16313743/173186456-d5e8d02e-2148-4668-82cf-f9cb75fc7c70.png]]
+[[https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png][https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png]]
+[[https://user-images.githubusercontent.com/16313743/173187918-077f6038-f71f-46df-a7ac-5c21851c22a0.png][https://user-images.githubusercontent.com/16313743/173187918-077f6038-f71f-46df-a7ac-5c21851c22a0.png]]
 
 * Quickstart
 ** Installation
@@ -35,31 +37,21 @@ Dirvish is available on [[https://melpa.org][Melpa]], you can install it directl
 if you have melpa in your ~package-archives~.
 
 #+begin_src emacs-lisp
-;;; For straight.el user
-(straight-use-package 'dirvish)
-
-;;; Manual install
-(add-to-list 'load-path "/path/to/dirvish")
-;; If you want the extensions as well
-(add-to-list 'load-path "/path/to/dirvish/extensions")
-(require 'dirvish)
-
-;; It is recommended to enable `dirvish-override-dired-mode', which makes
-;; Dirvish to take over Dired globally.  This is not required, but why not?
-(dirvish-override-dired-mode)
+(use-package dirvish
+  :ensure t
+  :config
+  ;; let Dirvish takes over Dired globally, why not?
+  (dirvish-override-dired-mode))
 #+end_src
 
-** Basic usage
+** Quickstart
 
-Start a full frame Dirvish session by =M-x= ~dirvish~.
++ =M-x= ~dirvish~ gives you a 3-pane (parent+current+preview) session
++ =M-x= ~dired~ | ~dired-jump~ | ... gives you a "dirvish-ish" Dired buffer/session
++ =M-x= ~dirvish-toggle-fullscreen~ enters/exits fullscreen of the current session
++ =M-x= ~dirvish-dispatch~ will briefly tell you what Dirvish has to offer
 
-Start a single window Dirvish session by =M-x= ~dired~ | ~dired-jump~ | ... (make sure
-~dirvish-override-dired-mode~ is enabled).
-
-~dirvish-toggle-fullscreen~ allows you to toggle the fullscreen state of the
-current session.
-
-That's it, you're all set. Use Dirvish in the same as you use Dired.
+Now enjoy your brand-new Dired, or if you will, call it Dirvish 🐱.
 
 * Resources
 

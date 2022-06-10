@@ -301,7 +301,6 @@ Each function takes ENTRY and BUFFER as its arguments.")
 (defvar dirvish--cache-pool '())
 (defvar dirvish--subtree-prefix-len 2)
 (defvar-local dirvish--props '())
-(defvar-local dirvish--attrs-width `(,dirvish--prefix-spaces . 0))
 (defvar-local dirvish--attrs-hash nil)
 (put 'dired-subdir-alist 'permanent-local t)
 
@@ -702,14 +701,14 @@ If KEEP-CURRENT, do not kill the current directory buffer."
   (let ((remotep (dirvish-prop :tramp))
         (curr-pos (point))
         (fr-h (frame-height))
-        (fns (cl-loop with (wl . wr) = (cons dirvish--prefix-spaces 0)
+        (fns (cl-loop with wl = dirvish--prefix-spaces with wr = 0
                       for (ov pred fn left right) in (dv-attribute-fns dv)
                       do (remove-overlays (point-min) (point-max) ov t)
                       for valid = (funcall pred dv)
                       when valid do (progn (setq wl (+ wl (or (eval left) 0)))
                                            (setq wr (+ wr (or (eval right) 0))))
                       when valid collect
-                      (prog1 fn (setq-local dirvish--attrs-width (cons wl wr)))))
+                      (prog1 fn (dirvish-prop :width-l wl) (dirvish-prop :width-r wr))))
         buffer-read-only)
     (save-excursion
       (forward-line (- 0 fr-h))
@@ -871,10 +870,9 @@ FILENAME and WILDCARD are their args."
                                (or (and (listp type) (member ext type))
                                    (and (stringp type) (string-match type mime)))
                                (append (list cmd) args)))))
-    (cond (ex-cmd (let ((default-directory dirvish-cache-dir))
-                    (and recentf-mode (add-to-list 'recentf-list file))
-                    (apply #'start-process "" nil "nohup"
-                           (cl-substitute file "%f" ex-cmd :test 'string=))))
+    (cond (ex-cmd (and recentf-mode (add-to-list 'recentf-list file))
+                  (apply #'start-process "" nil "nohup"
+                         (cl-substitute file "%f" ex-cmd :test 'string=)))
           (t (when-let ((dv (dirvish-prop :dv))) (funcall (dv-on-file-open dv) dv))
              (funcall fn file wildcard)))))
 

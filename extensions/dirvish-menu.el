@@ -19,8 +19,7 @@
 (declare-function dirvish--refresh-slots "dirvish")
 (declare-function dv-roots "dirvish")
 (require 'transient)
-(require 'dired)
-(require 'dirvish nil t)
+(require 'dirvish)
 
 (defvar dirvish-fd-actual-switches nil)
 (defvar dirvish-fd-last-input)
@@ -138,6 +137,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("t" dirvish-menu--ls-time)
     ("T" dirvish-menu--ls-time-style)
     ("B" "Scale sizes when printing, eg. 10K" "--block-size=")
+    ""
     "toggles"
     ("r" "Reverse order while sorting" "--reverse")
     ("d" "List directories ontop" "--group-directories-first")
@@ -152,6 +152,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("P" "Powers of 1000 for file size rather than 1024" "--si")
     ("I" "Show index number" "--inode")
     ("S" "Show the allocated size" "--size")
+    ""
     "Actions"
     ("RET" "  Apply to this buffer" dirvish-menu--apply-ls-switches-to-buffer)
     ("M-RET" "Apply to this session" dirvish-menu--apply-switches-to-session :if-derived 'dirvish-mode)
@@ -171,7 +172,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   ALL: VCS + .ignore + .fdignore + $HOME/.config/fd/ignore"))
        (format "%s\n%s" (dirvish-menu--format-heading title)
                (propertize notes 'face 'font-lock-doc-face))))
-   ["File types (multiple types is allowed)"
+   ["File types (multiple types can be included)"
     (3 "f" " Search for regular files" "--type=file")
     (3 "d" " Search for directories" "--type=directory")
     (3 "l" " Search for symbolic links" "--type=symlink")
@@ -578,7 +579,7 @@ when present, is wrapped with a lambda and being put into the
             "Configure current Dirvish session."
             [:description
              (lambda () (dirvish-menu--format-heading "Setup Dirvish"))
-             ["File attributes:"
+             ["Attributes:"
               ,@(mapcar #'expand-infix attr-alist)]]
             ["Preview:"
              :if (lambda () (and (not (dirvish-prop :tramp)) (dv-layout (dirvish-curr))))

@@ -254,7 +254,7 @@ this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
    ([remap mode-line-other-buffer] . dirvish-history-last)))
 #+end_src
 
-* Complementary packages
+** Complementary packages
 
 These packages are only listed here for discoverability.
 
@@ -268,7 +268,7 @@ These packages are only listed here for discoverability.
   (setq dired-omit-files
         (concat dired-omit-files "\\|^\\..*$")))
 
-;; Some tips to speed Dirvish sessions over TRAMP
+;; Some tips to speed up Dired/Dirvish over TRAMP
 (use-package tramp
   :config
   (add-to-list 'tramp-connection-properties
