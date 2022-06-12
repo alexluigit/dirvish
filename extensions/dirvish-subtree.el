@@ -136,7 +136,9 @@ LOCALP is the arg for `dired-current-directory', which see."
         (overlay-put ov 'dired-subtree-name dirname)
         (overlay-put ov 'dired-subtree-depth depth)
         (overlay-put ov 'evaporate t)
-        (push ov dirvish-subtree--overlays)))))
+        (push ov dirvish-subtree--overlays))
+      ;; in case any `dirvish-attributes' modified the buffer content
+      (dirvish-update-body-h))))
 
 (defun dirvish-subtree--remove ()
   "Remove subtree at point."
