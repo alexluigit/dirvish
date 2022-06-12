@@ -1,3 +1,7 @@
+#+AUTHOR: Alex Lu
+#+EMAIL: alexluigit@gmail.com
+#+startup: content
+
 * FAQ
 ** How to prevent Dirvish from killing current buffer on session quit?
 
