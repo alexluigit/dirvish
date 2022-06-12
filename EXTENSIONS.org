@@ -1,4 +1,6 @@
-* Extensions
+#+AUTHOR: Alex Lu
+#+EMAIL: alexluigit@gmail.com
+#+startup: content
 
 Several small extension packages to Dirvish are maintained in the subdirectory
 extensions/. They are installed together with Dirvish if you pull the package
@@ -22,7 +24,7 @@ Currently the following extensions come with the package:
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
 
-** Transient based help menu (dirvish-menu.el)
+* Transient based help menu (dirvish-menu.el)
 
 This extension provides help menu powered by =transient.el= for Dirvish.
 
@@ -38,7 +40,7 @@ users to change the setup of a session on the fly (See *Figure 6* and *7* in thi
 The variable ~dirvish-menu-available-prefixs~ holds all available prefixs, bind
 them in ~dirvish-mode-map~ if you like.
 
-** Multi-stage copy/pasting of files (dirvish-yank.el)
+* Multi-stage copy/pasting of files (dirvish-yank.el)
 
 Here is a quote from [[https://github.com/Fuco1/dired-hacks][dired-ranger]] that justified the ~dired-ranger-move/paste~ commands:
 
@@ -66,7 +68,7 @@ meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
 - It's much simpler than ~dired-ranger~ because you mark files using built-in
   Dired commands such as ~dired-mark~, ~dired-mark-extension~.
   
-** Minibuffer file preview (dirvish-peek.el)
+* Minibuffer file preview (dirvish-peek.el)
 
 ~dirvish-peek-mode~ gives you a preview window when narrowing file candidates
 using minibuffer. It displays file preview for all of the file name narrowing
@@ -81,7 +83,7 @@ of the peek window.
 
 ~dirvish-peek-mode~ currently supports =vertico=, =selectrum=, =ivy= and =icomplete[-vertical]=.
 
-** Version-control (git) integration (dirvish-vc.el)
+* Version-control (git) integration (dirvish-vc.el)
 
 |-----------+-------------------------------------------------|
 | Attribute | Description                                     |
@@ -97,8 +99,8 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 
 *Figure 2*. Toggle =vc-state= (attribute), =git-msg= (attribute) and =vc-diff= (preview dispatcher).
 
-** Extra commands, attributes, mode-line segments (dirvish-extras.el)
-*** Commands
+* Extra commands, attributes, mode-line segments (dirvish-extras.el)
+** Commands
 
 |------------------------------------+----------------------------------------|
 | Command                            | Description                            |
@@ -113,7 +115,7 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 | ~dirvish-switch-layout~              | Switch Dirvish layout                  |
 |------------------------------------+----------------------------------------|
 
-*** Attributes
+** Attributes
 
 |---------------+-------------------------------------------------|
 | Attribute     | Description                                     |
@@ -128,7 +130,7 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 
 *Figure 3*. Toggle =subtree-state=, =all-the-icons=, =file-size= attributes
 
-*** Mode-line segments
+** Mode-line segments
 
 |--------------------+--------------------------------------------------------------|
 | Segment            | Description                                                  |
@@ -144,11 +146,11 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 | ~file-device-number~ | Filesystem device number                                     |
 |--------------------+--------------------------------------------------------------|
 
-** Toggle Dirvish in side window (dirvish-side.el)
+* Toggle Dirvish in side window (dirvish-side.el)
 
 TODO
 
-** 'fd' interface in Dirvish (dirvish-fd.el)
+* 'fd' interface in Dirvish (dirvish-fd.el)
 
 
 This is the BEST =fd= frontend, period.
@@ -170,7 +172,7 @@ Too fast? Let's break it down:
 Wait, there's more: ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works
 for this buffer.
 
-*** Commands
+** Commands
 
 |-----------------+---------------------------------|
 | Command         | Description                     |
@@ -179,14 +181,14 @@ for this buffer.
 | ~dirvish-fd-roam~ | Browse all directories using ~fd~ |
 |-----------------+---------------------------------|
 
-** Turn Dirvish into a tree browser (dirvish-subtree.el)
+* Turn Dirvish into a tree browser (dirvish-subtree.el)
 
 This extension gives Dirvish the ability to toggle a directory as subtree
 (~dirvish-subtree-toggle~), which can be seen as a stripped-down version of
 =dired-subtree=. Unless you need ~dired-subtree-up~ and friends, you don't have to
 install the =dired-subtree= package.
 
-*** Commands
+** Commands
 
 |------------------------+-----------------------------------|
 | Command                | Description                       |
@@ -194,7 +196,7 @@ install the =dired-subtree= package.
 | ~dirvish-subtree-toggle~ | Toggle directory subtree at point |
 |------------------------+-----------------------------------|
 
-*** Attributes
+** Attributes
 
 |---------------+------------------------------------|
 | Attribute     | Description                        |
@@ -202,8 +204,8 @@ install the =dired-subtree= package.
 | ~subtree-state~ | Directory expanded state indicator |
 |---------------+------------------------------------|
 
-** History navigation commands (dirvish-history.el)
-*** Commands
+* History navigation commands (dirvish-history.el)
+** Commands
 
 |-----------------------------+------------------------------------------|
 | Command                     | Description                              |
@@ -214,6 +216,6 @@ install the =dired-subtree= package.
 | ~dirvish-history-last~        | Switch to most recent Dirvish buffer     |
 |-----------------------------+------------------------------------------|
 
-** Bookmarks (dirvish-bookmark.el)
+* Bookmarks (dirvish-bookmark.el)
 
 TODO

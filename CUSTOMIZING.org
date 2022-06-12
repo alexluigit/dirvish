@@ -212,9 +212,9 @@ modular tools that are independent of each other yet can operate in tandem
 without any user interference, which means you don't need any ugly hacks in your
 configuration.
 
-For the reasons described above, you don't need this module if you want to use
-Dirvish in Doom Emacs. But if for some reason you still want the =dired= module,
-here are some requirements/recommendations.
+For the above reasons, you don't need this module if you want to use Dirvish in
+Doom Emacs. But if you still want to use the =dired= module, here are some
+requirements/recommendations.
 
 ** Remap/disable ~+dired/quit-all~ command
 
@@ -287,7 +287,8 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   ;; Place this line under :init to ensure the overriding at startup, see #22
   (dirvish-override-dired-mode)
   (dirvish-peek-mode)
-  ;; Dired options are respected except a few exceptions, see FAQ.org
+  ;; Dired options are respected except a few exceptions,
+  ;; see *In relation to Dired* section above
   (setq dired-recursive-deletes 'always)
   (setq delete-by-moving-to-trash t)
   (setq dired-dwim-target t)
