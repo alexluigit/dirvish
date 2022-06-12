@@ -13,6 +13,7 @@
 
 ;;; Code:
 
+(require 'ring)
 (require 'dirvish)
 
 (define-obsolete-function-alias 'dirvish-show-history #'dirvish-history-jump "Jun 08, 2022")

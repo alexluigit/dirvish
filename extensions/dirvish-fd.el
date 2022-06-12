@@ -96,6 +96,8 @@ The command run is essentially:
                           (read-directory-name "Fd target directory: " nil "" t))
                      (read-string "Fd search pattern: " dirvish-fd-last-input
                                   '(dirvish-fd-args-history . 1))))
+  (unless (executable-find "fd")
+    (user-error "Dirvish: install `fd' to use this command"))
   ;; In case users issue a new `dirvish-fd' when already in a result buffer
   (when (and (or (not dir) current-prefix-arg)
              dirvish-fd-actual-switches)

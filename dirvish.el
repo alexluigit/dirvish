@@ -27,7 +27,6 @@
 (require 'image-mode)
 (require 'ansi-color)
 (require 'project)
-(require 'ring)
 (require 'dired-x)
 (require 'tramp)
 (require 'recentf)
@@ -1054,7 +1053,7 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-preview pdf-preface (file preview-window)
   "Display a pdf preface image for FILE in PREVIEW-WINDOW."
-  (when (string= (file-name-extension file) "pdf")
+  (when (equal (mailcap-file-name-to-mime-type file) "application/pdf")
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
            (cache (dirvish--preview-cache-image-path file width))
@@ -1065,7 +1064,7 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-preview pdf-tools (file)
   "Open FILE with `find-file-noselect'."
-  (when (string= (file-name-extension file) "pdf")
+  (when (equal (mailcap-file-name-to-mime-type file) "application/pdf")
     `(buffer . ,(find-file-noselect file t nil))))
 
 (dirvish-define-preview archive (file)
@@ -1366,11 +1365,12 @@ If the buffer is not available, create it with `dired-noselect'."
                (let* ((trampp (tramp-tramp-file-p entry))
                       (vec (and trampp (tramp-dissect-file-name entry))))
                  (dirvish-prop :tramp vec)
-                 (unless trampp (dirvish-prop :files (directory-files entry t nil t)))
                  (dirvish-prop :child (or bname entry))
-                 (unless (or (dirvish-prop :tramp) parent)
-                   (dirvish-prop :vc-backend
-                     (ignore-errors (vc-responsible-backend entry))))))
+                 (unless trampp
+                   (dirvish-prop :files (directory-files entry t nil t))
+                   (unless parent
+                     (dirvish-prop :vc-backend
+                       (ignore-errors (vc-responsible-backend entry)))))))
              (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))))
     (prog1 buffer (and buffer (run-hook-with-args 'dirvish-find-entry-hook entry buffer)))))
 

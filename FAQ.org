@@ -3,27 +3,11 @@
 
 Set ~dirvish-keep-alive-on-quit~ to t.
 
-** Sort information in the mode-line does not update
+** Incorrect sort information on the mode-line
 
-+ Setup ~dired-listing-switches~ correctly.
+See [[https://github.com/alexluigit/dirvish/blob/main/CUSTOMIZING.org#in-relation-to-dired][Parsing switches]] and [[https://github.com/alexluigit/dirvish/blob/main/CUSTOMIZING.org#dired--dirvish][the example config]].
 
-  Make sure to use the long name of flags when exists. For example:
-  * use =--almost-all= instead of =-A=
-  * use =--sort=version= instead of =-v=
-
-+ Use ~dirvish-quicksort~ instead of ~dired-sort-toggle-or-edit~.
-
-  Note: you can use still use ~dired-sort-toggle-or-edit~, but you'll have to
-  enter the long names of corresponding flags to make the mode-line update
-  accordingly.
-
-#+begin_src emacs-lisp
-(setq dired-listing-switches
-      "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
-(define-key dired-mode-map [remap dired-sort-toggle-or-edit] #'dirvish-quicksort)
-#+end_src
-
-** Why do I have duplicate icon columns?
+** Duplicate icon columns / icons breaks line highlight
 
 See [[#all-the-icons-dired.el][all-the-icons-dired]] and [[#treemacs-icons-dired.el][treemacs-icons-dired]].
 
@@ -122,3 +106,9 @@ integration with the facilities of Dirvish:
 
 If for some reason you are not able to use the =fd= program, no worries, Dirvish
 supports the built-in =find-dired.el=.
+
+** dired-git-info | dired-k
+
+The ~vc-state~ and ~git-msg~ attributes in Dirvish can achieve the same
+functionality without sacrificing performance. Meanwhile, these packages doesn't
+mesh well with =dirvish-subtree= nor =dired-subtree=.
