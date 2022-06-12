@@ -77,14 +77,14 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
           (format "%s help menu" (if (derived-mode-p 'dirvish-mode) "Dirvish" "Dired")) 1.3))
    :if-derived dired-mode
    ["Essential commands"
-    ("RET" "Open file"              dired-find-file)
-    ("TAB" "Toggle subtree"         dirvish-toggle-subtree)
-    ("M-f" "Toggle fullscreen"      dirvish-toggle-fullscreen :if-derived dirvish-mode)
-    ("M-s" "Setup Dirvish"          dirvish-setup-menu)
-    ("g" "  Refresh buffer"         revert-buffer)
+    ("e" "  Open file"              dired-find-file)
     ("o" "  Open file other window" dired-find-file-other-window)
+    ("/" "  Search for files"       dirvish-fd)
     ("s" "  Sort current buffer"    dirvish-quicksort)
-    ("q" "  Quit current session"   quit-window)]
+    ("g" "  Refresh buffer"         revert-buffer)
+    ("M-s" "Setup Dirvish"          dirvish-setup-menu)
+    ("TAB" "Toggle subtree"         dirvish-toggle-subtree)
+    ("M-f" "Toggle fullscreen"      dirvish-toggle-fullscreen :if-derived dirvish-mode)]
    ["File operations"
     ("a" "  Add an empty file"      dired-create-empty-file)
     ("+" "  Add a directory"        dired-create-directory)
