@@ -192,18 +192,19 @@ This value is passed to function `format-time-string'."
     (unless (eq collapse 'none)
       (let* ((buffer-invisibility-spec nil)
              (default-directory (dired-current-directory))
-             (path (and (stringp collapse)
-                        (substring collapse (length default-directory))))
+             (head (stringp collapse))
+             (path (and head (substring collapse (length default-directory))))
              (offset (if path (- (length path) (length (file-name-nondirectory path)))
                        collapse)))
-        (when (stringp collapse)
+        (when head
+          (remove-overlays l-beg l-end 'dirvish-collapse t)
           (delete-region l-beg (1+ l-end))
           (insert "  ")
           (insert-directory path dired-actual-switches)
           (forward-line -1)
           (dired-align-file l-beg (1+ l-end)))
         (let ((ov (make-overlay f-beg (+ offset f-beg))))
-          (prog1 nil (overlay-put ov 'face 'shadow)))))))
+          (prog1 (if head nil ov) (overlay-put ov 'face 'shadow)))))))
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
