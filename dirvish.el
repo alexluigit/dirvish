@@ -438,6 +438,19 @@ ALIST is window arguments passed to `window--display-buffer'."
         (and (tramp-get-method-parameter vec 'tramp-direct-async)
              (tramp-get-connection-property vec "direct-async-process" nil)))))
 
+(defun dirvish--reuse-session (file)
+  "Reuse the first hidden Dirvish session and find FILE in it."
+  (when dirvish-keep-alive-on-quit
+    (cl-loop for dv-name in (dirvish-get-all 'name nil t)
+             for dv = (gethash dv-name dirvish--hash)
+             for index-dir = (dv-index-dir dv)
+             for index-buf = (alist-get index-dir (dv-roots dv) nil nil #'equal)
+             thereis (and (not (get-buffer-window index-buf))
+                          (eq (dv-quit-window-fn dv) #'ignore)
+                          (prog1 (switch-to-buffer index-buf)
+                            (dirvish-reclaim)
+                            (dirvish-find-file file))))))
+
 ;;;; Core
 
 (defun dirvish-curr (&optional frame)
@@ -649,7 +662,6 @@ If KEEP-CURRENT, do not kill the current directory buffer."
     (when (dv-layout dv)
       (set-window-configuration (dv-window-conf dv))
       (goto-char (plist-get (dv-scopes dv) :point))
-      (mapc #'kill-live (mapcar #'cdr (dv-roots dv)))
       (remhash (dv-name dv) dirvish--hash))
     (if keep-current
         (progn (mapc #'kill-live (seq-remove (lambda (i) (eq i (current-buffer)))
@@ -799,11 +811,14 @@ DIRNAME and SWITCHES are the same args in `dired'."
   "Override `dired-jump' command.
 OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
   (interactive
-   (list nil (and current-prefix-arg (read-file-name "Dirvish jump to: "))))
-  (if (and (dirvish-curr) (not other-window))
-      (dirvish-find-file file-name)
+   (list nil (and current-prefix-arg (read-directory-name "Dirvish jump to: "))))
+  (let ((file-name (expand-file-name (or file-name default-directory))))
     (and other-window (switch-to-buffer-other-window (dirvish--util-buffer)))
-    (dirvish-new t :path (or file-name default-directory))))
+    (if (dirvish-curr)
+        (dirvish-find-file file-name)
+      (dirvish--reuse-session file-name)
+      (unless (dirvish-prop :dv)
+        (dirvish-new t :path file-name)))))
 
 (defun dirvish-find-file-other-win-ad (&rest _)
   "Override `dired-find-file-other-window' command."

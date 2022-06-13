@@ -146,8 +146,11 @@ will visit the latest `project-root' after executing
   (dirvish-reclaim)
   (when-let ((dv (dirvish-curr))) (dirvish-kill dv)))
 
-(defun dirvish-side-quit-window-fn (_dv)
-  "Quit window action for `dirvish-side'."
+(defun dirvish-side-quit-window-fn (dv)
+  "Quit window action for `dirvish-side' session DV."
+  (let (kill-buffer-hook)
+    (mapc #'kill-buffer (mapcar #'cdr (dv-roots dv))))
+  (remhash (dv-name dv) dirvish--hash)
   (dirvish-side--set-state nil 'uninitialized))
 
 (defun dirvish-side-root-window-fn (dv)
