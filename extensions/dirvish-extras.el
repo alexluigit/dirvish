@@ -366,9 +366,13 @@ current layout defined in `dirvish-layout-recipes'."
 (defun dirvish-dwim (&optional path)
   "Start a Dirvish session with optional PATH.
 The session takes the whole frame when `one-window-p'."
-  (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-new t :path (or path default-directory)
-    :layout (and (one-window-p) dirvish-default-layout)))
+  (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
+  (let ((path (expand-file-name (or path default-directory))))
+    (dirvish--reuse-session path)
+    (if (dirvish-prop :dv)
+        (and (one-window-p) (dirvish-toggle-fullscreen))
+      (dirvish-new t :path path
+        :layout (and (one-window-p) dirvish-default-layout)))))
 
 (provide 'dirvish-extras)
 ;;; dirvish-extras.el ends here

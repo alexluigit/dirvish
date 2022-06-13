@@ -35,5 +35,5 @@ jobs:
                                            "extensions/dirvish-subtree.el"
                                            "extensions/dirvish-icons.el"))
         # set this to false (or remove it) if the package isn't on MELPA:
-        EXIST_OK: false
+        # EXIST_OK: false
       run: echo $GITHUB_REF && make -C ~/melpazoid
