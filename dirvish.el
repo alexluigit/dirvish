@@ -709,8 +709,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (let ((remotep (dirvish-prop :tramp))
-        (curr-pos (point))
+  (let ((curr-pos (point))
         (fr-h (frame-height))
         (fns (cl-loop with wl = dirvish--prefix-spaces with wr = 0
                       for (ov pred fn left right) in (dv-attribute-fns dv)
@@ -733,19 +732,12 @@ If KEEP-CURRENT, do not kill the current directory buffer."
                    (l-end (line-end-position)))
           (setq f-name (file-local-name f-name))
           (let ((f-attrs (dirvish-attribute-cache f-name :builtin
-                           (unless remotep (file-attributes f-name))))
-                (f-type (dirvish-attribute-cache f-name :type
-                          (if remotep
-                              (let ((type-char (save-excursion
-                                                 (back-to-indentation)
-                                                 (char-after))))
-                                `(,(if (eq type-char 100) 'dir 'file) . nil))
-                            (cond ((not (file-symlink-p f-name))
-                                   `(,(if (file-directory-p f-name) 'dir 'file) . nil))
-                                  ((file-directory-p f-name)
-                                   `(dir . ,(file-truename f-name)))
-                                  (t `(file . ,(file-truename f-name)))))))
+                           (and (dirvish-prop :fd-dir) (file-attributes f-name))))
+                (f-type (dirvish-attribute-cache f-name :type))
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
+            (unless f-type
+              (let ((ch (progn (back-to-indentation) (char-after))))
+                (setq f-type `(,(if (eq ch 100) 'dir 'file) . nil))))
             (unless (get-text-property f-beg 'mouse-face)
               (dired-insert-set-properties l-beg l-end))
             (dolist (fn fns)
@@ -845,7 +837,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
     (unless (alist-get bufname (dv-roots dv) nil nil #'equal)
       (push (cons bufname (current-buffer)) (dv-roots dv)))
     (with-current-buffer (process-buffer proc)
-      (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200))
+      (setq-local dirvish--attrs-hash (make-hash-table :test #'equal))
       (dirvish-prop :child (dired-get-filename nil t))
       (dirvish-prop :dv dv)
       (dirvish-prop :fd-dir bufname)
@@ -1311,10 +1303,10 @@ default implementation is `find-args' with simple formatting."
 Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
   (dirvish--hide-dired-header)
-  (if-let ((vec (dirvish-prop :tramp)))
-      (dirvish--remote-ls-issuer vec (current-buffer) default-directory)
-    (dirvish--preview-clean-cache-images (dired-get-marked-files))
-    (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200)))
+  (let ((vec (dirvish-prop :tramp)))
+    (setq dirvish--attrs-hash (make-hash-table :test #'equal))
+    (dirvish--print-directory vec (current-buffer) default-directory)
+    (unless vec (dirvish--preview-clean-cache-images (dired-get-marked-files))))
   (run-hooks 'dirvish-after-revert-hook)
   (dirvish-update-body-h))
 
@@ -1373,7 +1365,7 @@ If the buffer is not available, create it with `dired-noselect'."
                (setq buffer (dired-noselect entry (dv-ls-switches dv))))
              (with-current-buffer buffer
                (dirvish-mode)
-               (setq-local dirvish--attrs-hash (make-hash-table :test #'equal :size 200))
+               (setq dirvish--attrs-hash (make-hash-table :test #'equal))
                (setq-local revert-buffer-function #'dirvish-revert)
                (setq-local dired-hide-details-hide-symlink-targets nil)
                (dirvish--hide-dired-header)
@@ -1456,50 +1448,74 @@ If the buffer is not available, create it with `dired-noselect'."
     (setq header-line-format nil)
     (setq mode-line-format (dv-mode-line-format dv))))
 
-(defun dirvish--remote-ls-parser (proc str)
+(defun dirvish--print-directory-sentinel (proc _exit)
   "Parse the directory metadata from PROC's output STR."
-  (let ((buf (process-get proc 'dv-buf))
-        (lines (split-string str "\n")))
+  (let* ((buf (process-get proc 'dv-buf))
+         (vec (process-get proc 'vec))
+         (append (process-get proc 'append))
+         (str (with-current-buffer (process-buffer proc) (buffer-string)))
+         (content (if vec (split-string str "\n") (read str))))
     (when (buffer-live-p buf)
       (with-current-buffer buf
-        (setq-local dirvish--attrs-hash (make-hash-table :test #'equal))
-        (dolist (file (and (> (length lines) 2) (cl-subseq lines 2 -1)))
-          (cl-destructuring-bind
-              (inode priv lnum user group size date time &rest path)
-              (split-string file)
-            (let* ((symlinkp (cl-position "->" path :test #'equal))
-                   (f-name (string-join (cl-subseq path 0 symlinkp) " "))
-                   (f-base (file-name-base f-name))
-                   (f-mtime (concat date " " time))
-                   (f-truename (and symlinkp (string-join (cl-subseq path (1+ symlinkp)) " ")))
-                   (f-dirp (string-prefix-p "d" priv))
-                   (f-attr-type (or f-truename f-dirp)))
-              (when (equal f-base ".git") (dirvish-prop :vc-backend 'Git)) ; TODO: other backends
-              (dirvish-attribute-cache f-name :builtin
-                (list f-attr-type lnum user group nil f-mtime nil size priv nil inode))
-              (dirvish-attribute-cache f-name :type
-                (cons (if f-dirp 'dir 'file) f-truename)))))
-        (dirvish-prop :remote-cache t)
+        (unless (or vec append) (setq dirvish--attrs-hash content))
+        (if vec
+            (dolist (file (and (> (length content) 2) (cl-subseq content 2 -1)))
+              (cl-destructuring-bind
+                  (inode priv lnum user group size date time &rest path)
+                  (split-string file)
+                (let* ((symlinkp (cl-position "->" path :test #'equal))
+                       (f-name (string-join (cl-subseq path 0 symlinkp) " "))
+                       (f-base (file-name-base f-name))
+                       (f-mtime (concat date " " time))
+                       (f-truename (and symlinkp (string-join (cl-subseq path (1+ symlinkp)) " ")))
+                       (f-dirp (string-prefix-p "d" priv))
+                       (f-attr-type (or f-truename f-dirp)))
+                  (when (equal f-base ".git") (dirvish-prop :vc-backend 'Git)) ; TODO: other backends
+                  (dirvish-attribute-cache f-name :builtin
+                    (list f-attr-type lnum user group nil f-mtime nil size priv nil inode))
+                  (dirvish-attribute-cache f-name :type
+                    (cons (if f-dirp 'dir 'file) f-truename)))))
+          (and append (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) content)))
         (dirvish-update-body-h))))
-  (delete-process proc))
+  (delete-process proc)
+  (kill-buffer (process-buffer proc)))
 
-(cl-defun dirvish--remote-ls-issuer (vec buffer entry)
-  "Fetch metadata for files in ENTRY.
-This function issues a `ls' command on a TRAMP VEC, the result is
-then parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
-  (unless (dirvish--host-in-whitelist-p vec)
-    (cl-return-from dirvish--remote-ls-issuer))
-  (let* ((process-connection-type nil)
-         (outbuf (dirvish--util-buffer 'remote-ls))
-         (fmt "ls -1lad --human-readable --time-style=long-iso --inode %s{.*,*} &")
-         (async-shell-command-buffer nil) ; it's a hack for buffer reuse
-         (display-buffer-alist
-          '(("\\*Dirvish-remote-ls.*\\*" (display-buffer-no-window))))
-         (proc (tramp-handle-shell-command
-                (format fmt (file-remote-p entry 'localname)) outbuf)))
-    (process-put proc 'dv-buf buffer)
-    (set-process-sentinel proc #'ignore)
-    (set-process-filter proc #'dirvish--remote-ls-parser)))
+(defun dirvish--directory-printer (entry)
+  "Compose attributes printer for ENTRY."
+  `(message "%s" (with-temp-buffer
+                   (let ((hash (make-hash-table :test #'equal)))
+                     (dolist (file (directory-files ,entry t nil t))
+                       (let* ((attrs (file-attributes file))
+                              (tp (nth 0 attrs)))
+                         (cond
+                          ((eq t tp) (setq tp '(dir . nil)))
+                          (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
+                          (t (setq tp '(file . nil))))
+                         (puthash file `(:builtin ,attrs :type ,tp) hash)))
+                     (prin1 hash (current-buffer)))
+                   (buffer-substring-no-properties (point-min) (point-max)))))
+
+(defun dirvish--print-directory (vec buffer entry &optional append)
+  "Fetch `file-attributes' for files in ENTRY, stored locally in BUFFER.
+If VEC, the attributes are retrieved by parsing the output of
+`ls'.  If APPEND, append the results to the existing hash table."
+  (when (or (not vec) (dirvish--host-in-whitelist-p vec))
+    (let* ((process-connection-type nil)
+           (outbuf (dirvish--util-buffer (make-temp-name "print-dir-")))
+           (switches "-1la --human-readable --time-style=long-iso --inode")
+           (entry (file-local-name entry))
+           (msg (dirvish--directory-printer entry))
+           (cmd (if vec (format "ls %s %s &" switches entry) (format "%S" msg)))
+           (async-shell-command-buffer nil) ; it's a hack for buffer reuse
+           (display-buffer-alist
+            '(("\\*Dirvish-print-dir.*\\*" (display-buffer-no-window))))
+           (proc (if vec (tramp-handle-shell-command cmd outbuf)
+                   (start-process (buffer-name outbuf) outbuf
+                                  "emacs" "-q" "-batch" "--eval" cmd))))
+      (process-put proc 'dv-buf buffer)
+      (process-put proc 'vec vec)
+      (process-put proc 'append append)
+      (set-process-sentinel proc #'dirvish--print-directory-sentinel))))
 
 (defun dirvish-build (dv)
   "Build layout for Dirvish session DV."
@@ -1546,15 +1562,15 @@ then parsed by `dirvish--remote-ls-parser' and stored in BUFFER."
                               dirvish--search-switches nil nil
                               (and (buffer-live-p ,(current-buffer))
                                    ,(current-buffer))))
-                   (dv-header-line-format dv))))
+                   (dv-header-line-format dv)))
+          (vec (dirvish-prop :tramp)))
       (with-current-buffer (dirvish--util-buffer 'header dv)
-        (setq header-line-format h-fmt)))
-    (dirvish--normalize-util-windows maybe-abnormal)
-    (when (and layout (not (dirvish-prop :tramp)))
-      (dirvish-cache-images dv))
-    (when (and (dirvish-prop :tramp) (not (dirvish-prop :remote-cache)))
-      (run-with-timer 0.1 nil #'dirvish--remote-ls-issuer
-                      (dirvish-prop :tramp) (current-buffer) default-directory))))
+        (setq header-line-format h-fmt))
+      (dirvish--normalize-util-windows maybe-abnormal)
+      (when (and layout (not vec)) (dirvish-cache-images dv))
+      (unless (or (dirvish-prop :fd-dir) (dirvish-prop :cached))
+        (dirvish--print-directory vec (current-buffer) default-directory)
+        (dirvish-prop :cached t)))))
 
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
