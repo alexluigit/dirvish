@@ -176,6 +176,7 @@ This value is passed to function `format-time-string'."
 (dirvish-define-attribute collapse
   "Collapse unique nested paths."
   (:if (and (eq (dv-root-window dv) (selected-window))
+            (not (dirvish-prop :fd-dir))
             (or (not (dirvish-prop :tramp))
                 (tramp-local-host-p (dirvish-prop :tramp)))))
   (let ((collapse

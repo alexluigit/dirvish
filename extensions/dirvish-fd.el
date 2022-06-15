@@ -54,7 +54,7 @@
 		              (delete-region (point) (- (point) 2)))))))
       (delete-process proc))))
 
-(cl-defmethod dirvish-search-switches (&context (dirvish-fd-actual-switches string))
+(cl-defmethod dirvish-search-switches-ml (_dv &context (dirvish-fd-actual-switches string))
   "Return a string showing the DIRVISH-FD-ACTUAL-SWITCHES."
   (unless (dirvish-prop :fd-heading)
     (dirvish-prop :fd-heading
@@ -64,25 +64,24 @@
              (ign-range (cond ((member "--no-ignore" args) "no")
                               ((member "--no-ignore-vcs" args) "no_vcs")
                               (t "all")))
-             (tf (and (member "--type=file" args) "file"))
-             (td (and (member "--type=directory" args) "dir"))
-             (ts (and (member "--type=symlink" args) "symlink"))
-             (tS (and (member "--type=socket" args) "socket"))
-             (tp (and (member "--type=pipe" args) "pipe"))
-             (te (and (member "--type=executable" args) "exe"))
-             (tE (and (member "--type=empty" args) "empty"))
-             (type (mapconcat #'concat (remove nil (list tf td ts tS tp te tE)) ",")))
-        (format " %s | %s %s | %s %s | %s %s | %s %s | %s "
+             types exts)
+        (dolist (arg args)
+          (cond ((string-prefix-p "--type=" arg) (push (substring arg 8) types))
+                ((string-prefix-p "--extension=" arg) (push (substring arg 12) exts))))
+        (setq types (mapconcat #'concat types ","))
+        (setq exts (mapconcat #'concat exts ","))
+        (format " %s | %s %s | %s %s | %s %s | %s %s | %s %s | "
                 (propertize "FD" 'face 'dired-header)
                 (propertize (if globp "glob:" "regex:") 'face 'font-lock-doc-face)
                 (propertize dirvish-fd-last-input 'face 'font-lock-regexp-grouping-construct)
                 (propertize "type:" 'face 'font-lock-doc-face)
-                (propertize (if (equal type "") "all" type) 'face 'font-lock-variable-name-face)
+                (propertize (if (equal types "") "all" types) 'face 'font-lock-variable-name-face)
                 (propertize "case:" 'face 'font-lock-doc-face)
                 (propertize (if casep "sensitive" "smart") 'face 'font-lock-type-face)
                 (propertize "ignore:" 'face 'font-lock-doc-face)
                 (propertize ign-range 'face 'font-lock-comment-face)
-                (propertize (abbreviate-file-name default-directory) 'face 'dired-directory)))))
+                (propertize "exts:" 'face 'font-lock-doc-face)
+                (propertize (if (equal exts "") "all" exts) 'face 'font-lock-string-face)))))
   (dirvish-prop :fd-heading))
 
 ;;;###autoload
