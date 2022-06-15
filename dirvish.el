@@ -292,7 +292,7 @@ Each function takes ENTRY and BUFFER as its arguments.")
   (cl-loop for dp in '(image video epub)
            collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defconst dirvish--search-switches
-  '((:eval (dirvish--bar-image (dv-layout (dirvish-curr)) t)) (:eval (dirvish-search-switches))))
+  (dirvish--mode-line-fmt-setter '(:left (search-switches) :right (search-time pwd " ")) t))
 (defconst dirvish--img-always-cache-exts '("heic"))
 (defvar dirvish--hash (make-hash-table))
 (defvar dirvish--available-attrs '())
@@ -709,7 +709,8 @@ If KEEP-CURRENT, do not kill the current directory buffer."
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (let ((curr-pos (point))
+  (let ((in-tramp (dirvish-prop :tramp))
+        (curr-pos (point))
         (fr-h (frame-height))
         (fns (cl-loop with wl = dirvish--prefix-spaces with wr = 0
                       for (ov pred fn left right) in (dv-attribute-fns dv)
@@ -732,12 +733,11 @@ If KEEP-CURRENT, do not kill the current directory buffer."
                    (l-end (line-end-position)))
           (setq f-name (file-local-name f-name))
           (let ((f-attrs (dirvish-attribute-cache f-name :builtin
-                           (and (dirvish-prop :fd-dir) (file-attributes f-name))))
-                (f-type (dirvish-attribute-cache f-name :type))
+                           (unless in-tramp (file-attributes f-name))))
+                (f-type (dirvish-attribute-cache f-name :type
+                          (let ((ch (progn (back-to-indentation) (char-after))))
+                            `(,(if (eq ch 100) 'dir 'file) . nil))))
                 (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
-            (unless f-type
-              (let ((ch (progn (back-to-indentation) (char-after))))
-                (setq f-type `(,(if (eq ch 100) 'dir 'file) . nil))))
             (unless (get-text-property f-beg 'mouse-face)
               (dired-insert-set-properties l-beg l-end))
             (dolist (fn fns)
@@ -804,7 +804,7 @@ DIRNAME and SWITCHES are the same args in `dired'."
 OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
   (interactive
    (list nil (and current-prefix-arg (read-directory-name "Dirvish jump to: "))))
-  (let ((file-name (expand-file-name (or file-name default-directory))))
+  (let ((file-name (or file-name default-directory)))
     (and other-window (switch-to-buffer-other-window (dirvish--util-buffer)))
     (if (dirvish-curr)
         (dirvish-find-file file-name)
@@ -1194,7 +1194,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
                   (make-string (* 2 height) ?1) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
-(cl-defgeneric dirvish-search-switches ()
+(cl-defgeneric dirvish-search-switches-ml (_dv)
   "Return a string showing current search options and pattern.
 The string is placed at header after a search is issued.  The
 default implementation is `find-args' with simple formatting."
@@ -1264,6 +1264,19 @@ default implementation is `find-args' with simple formatting."
   (let ((cur-pos (- (line-number-at-pos (point)) 1))
         (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
     (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
+
+(dirvish-define-mode-line search-time
+  "Timestamp of search finished."
+  (unless (dirvish-prop :fd-time)
+    (dirvish-prop :fd-time
+      (format " %s %s  "
+              (propertize "Finished at:" 'face 'font-lock-doc-face)
+              (propertize (current-time-string) 'face 'success))))
+  (when (dv-layout dv) (dirvish-prop :fd-time)))
+
+(dirvish-define-mode-line pwd
+  "Current working directory."
+  (propertize (abbreviate-file-name default-directory) 'face 'dired-directory))
 
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
