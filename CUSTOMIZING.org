@@ -2,7 +2,7 @@
 #+EMAIL: alexluigit@gmail.com
 #+startup: content
 
-*TL;DR*: Grab the config from [[#Example-config][Example config]]. Read following docs in-depth if you
+*TL;DR*: Grab the config from [[#Sample-config][Sample config]]. Read following docs in-depth if you
 want further customizations.
 
 -----
@@ -194,7 +194,7 @@ ssh config such as ssh-agent for that host, because it requires working SSH
 authentication which bypasses the password entering to work.
 
 You can improve the speed and responsiveness of TRAMP by tweaking its options,
-see the example config below.
+see the sample config below.
 
 * Working with Doom Emacs
 
@@ -259,7 +259,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
 | ~dirvish-find-entry-hook~    | Hook functions to be executed after ~dirvish--find-entry~.        |
 |----------------------------+-----------------------------------------------------------------|
 
-* Example config
+* Sample config
 ** Dired | Dirvish
 
 #+begin_src emacs-lisp
