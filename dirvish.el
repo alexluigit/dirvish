@@ -6,7 +6,7 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "27.1") (transient "0.3.7"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -30,6 +30,7 @@
 (require 'dired-x)
 (require 'tramp)
 (require 'recentf)
+(require 'transient)
 (eval-when-compile
   (require 'subr-x)
   (require 'find-dired))
@@ -1685,6 +1686,50 @@ otherwise it defaults to variable `buffer-file-name'."
 
 (define-obsolete-function-alias 'dirvish-dired #'dired-jump "Jun-11,2022"
   "[Obsolete] Just enable `dirvish-override-dired-mode' and run `dired-jump'.")
+
+;;;###autoload (autoload 'dirvish-dispatch "dirvish" nil t)
+(transient-define-prefix dirvish-dispatch ()
+  "Main help menu for Dired/Dirvish."
+  [:description
+   (lambda () (propertize "Dirvish Help Menu" 'face '(:inherit dired-mark :underline t) 'display '((height 1.3))))
+   ["Essential commands"
+    ("e" "  Open file"              dired-find-file)
+    ("o" "  Open file other window" dired-find-file-other-window)
+    ("/" "  Search for files"       dirvish-fd)
+    ("s" "  Sort current buffer"    dirvish-quicksort)
+    ("g" "  Refresh buffer"         revert-buffer)
+    ("M-s" "Setup Dirvish"          dirvish-setup-menu)
+    ("TAB" "Toggle subtree"         dirvish-toggle-subtree)
+    ("M-f" "Toggle fullscreen"      dirvish-toggle-fullscreen)]
+   ["File operations"
+    ("a" "  Add an empty file"      dired-create-empty-file)
+    ("+" "  Add a directory"        dired-create-directory)
+    ("@" "  Rename files"           dirvish-renaming-menu)
+    ("X" "  Delete files"           dired-do-delete)
+    ("v" "  View this file"         dired-view-file)
+    ("y" "  Yank marked files"      dirvish-yank-menu)
+    ("." "  Filter by.."            dirvish-filter-menu :if (lambda () (featurep 'dired-filter)))
+    ("." "  Toggle file omitting"   dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
+    ("*" "  Manage marks"           dirvish-mark-menu)]]
+  [["Navigation"
+    ("j" "  Jump to line for file"  dired-goto-file)
+    ("b" "  Go to bookmarks"        dirvish-bookmark-goto)
+    ("^" "  Go to parent directory" dired-up-directory)
+    ("r" "  Roam the file system"   dirvish-fd-roam)
+    ("m" "  Go to the MRU buffer"   dirvish-history-last)
+    ("n" "  Forward history"        dirvish-history-go-forward :transient t)
+    ("p" "  Backward history"       dirvish-history-go-backward :transient t)
+    ("SPC" "Recently visited"       dirvish-history-jump)]
+   ["Others"
+    ("l" "  Setup listing switches" dirvish-ls-switches-menu)
+    ("f" "  Setup fd switches"      dirvish-fd-switches-menu :if (lambda () dirvish-fd-actual-switches))
+    ("i" "  Get file information"   dirvish-file-info-menu)
+    ("S" "  Manage subdirs"         dirvish-subdir-menu)
+    ("(" "  Toggle details"         dired-hide-details-mode)
+    ("=" "  Compare files"          dired-diff)
+    (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
+    ("N" "  Live narrowing"         consult-focus-lines :if (lambda () (featurep 'consult)))]]
+  (interactive) (when (derived-mode-p 'dired-mode) (transient-setup 'dirvish-dispatch)))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here

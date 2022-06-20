@@ -15,7 +15,6 @@
 
 (require 'transient)
 
-(define-obsolete-function-alias 'dirvish-goto-bookmark 'dirvish-bookmark-goto "Jun-08,2022")
 (define-obsolete-variable-alias 'dirvish-menu-bookmarks 'dirvish-bookmark-entries "Jun-08,2022")
 ;;;###autoload (autoload 'dirvish-bookmark-goto "dirvish-bookmark" nil t)
 (defcustom dirvish-bookmark-entries

@@ -9,7 +9,7 @@ Set ~dirvish-keep-alive-on-quit~ to t.
 
 ** Incorrect sort information on the mode-line
 
-See [[https://github.com/alexluigit/dirvish/blob/main/CUSTOMIZING.org#in-relation-to-dired][Parsing switches]] and [[https://github.com/alexluigit/dirvish/blob/main/CUSTOMIZING.org#dired--dirvish][the example config]].
+See [[https://github.com/alexluigit/dirvish/blob/main/CUSTOMIZING.org#in-relation-to-dired][Parsing switches]] and [[https://github.com/alexluigit/dirvish/blob/main/CUSTOMIZING.org#dired--dirvish][the sample config]].
 
 ** Duplicate icon columns / icons breaks line highlight
 

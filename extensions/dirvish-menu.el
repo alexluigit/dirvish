@@ -6,7 +6,6 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "25.1") (transient "0.3.7"))
 
 ;;; Commentary:
 
@@ -36,17 +35,19 @@
 
 (cl-defmethod transient-format-value ((obj dirvish-menu-toggles))
   "Format value for DIRVISH-MENU-TOGGLES instance OBJ."
-  (let* ((val (prin1-to-string (oref obj value)))
+  (let* ((val (oref obj value))
          (face (if (equal val "On") 'transient-argument 'transient-inactive-value)))
     (propertize val 'face face)))
 
 (cl-defmethod transient-init-value ((obj dirvish-menu-toggles))
   "Initialize value for DIRVISH-MENU-TOGGLES instance OBJ."
-  (oset obj value (if (memq (oref obj variable) (funcall (oref obj scope) (dirvish-curr))) 'On 'Off)))
+  (let ((sym (oref obj variable))
+        (scope (funcall (oref obj scope) (dirvish-curr))))
+    (oset obj value (if (memq sym scope) "On" "Off"))))
 
 (cl-defmethod transient-infix-read ((obj dirvish-menu-toggles))
   "Read value from DIRVISH-MENU-TOGGLES instance OBJ."
-  (oset obj value (if (eq (oref obj value) 'On) 'Off 'On)))
+  (oset obj value (if (equal (oref obj value) "On") "Off" "On")))
 
 (cl-defmethod transient-infix-set ((obj dirvish-menu-toggles) value)
   "Set relevant value in DIRVISH-MENU-TOGGLES instance OBJ to VALUE."
@@ -54,7 +55,7 @@
          (item (oref obj variable))
          (slot-name (oref obj scope))
          (curr-val (funcall slot-name dv))
-         (new-val (if (eq value 'On) (push item curr-val) (remq item curr-val))))
+         (new-val (if (equal value "On") (push item curr-val) (remq item curr-val))))
     (cl-case slot-name
       ('dv-attributes (setf (dv-attributes dv) new-val))
       ('dv-preview-dispatchers (setf (dv-preview-dispatchers dv) new-val)))
@@ -68,55 +69,6 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
   (propertize (capitalize string)
               'face '(:inherit dired-mark :underline t)
               'display `((raise (/ (- scale 1) 2)) (height ,scale))))
-
-;;;###autoload (autoload 'dirvish-dispatch "dirvish-menu" nil t)
-(transient-define-prefix dirvish-dispatch ()
-  "Main help menu for Dired/Dirvish."
-  [:description
-   (lambda () (dirvish-menu--format-heading
-          (format "%s help menu" (if (derived-mode-p 'dirvish-mode) "Dirvish" "Dired")) 1.3))
-   :if-derived dired-mode
-   ["Essential commands"
-    ("e" "  Open file"              dired-find-file)
-    ("o" "  Open file other window" dired-find-file-other-window)
-    ("/" "  Search for files"       dirvish-fd)
-    ("s" "  Sort current buffer"    dirvish-quicksort)
-    ("g" "  Refresh buffer"         revert-buffer)
-    ("M-s" "Setup Dirvish"          dirvish-setup-menu)
-    ("TAB" "Toggle subtree"         dirvish-toggle-subtree)
-    ("M-f" "Toggle fullscreen"      dirvish-toggle-fullscreen :if-derived dirvish-mode)]
-   ["File operations"
-    ("a" "  Add an empty file"      dired-create-empty-file)
-    ("+" "  Add a directory"        dired-create-directory)
-    ("@" "  Rename files"           dirvish-renaming-menu)
-    ("X" "  Delete files"           dired-do-delete)
-    ("v" "  View this file"         dired-view-file)
-    ("C" "  Copy"                   dired-do-copy :if-mode dired-mode)
-    ("y" "  Yank marked files"      dirvish-yank-menu :if-derived dirvish-mode)
-    ("." "  Filter by.."            dirvish-filter-menu :if (lambda () (featurep 'dired-filter)))
-    ("." "  Toggle file omitting"   dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
-    ("*" "  Manage marks"           dirvish-mark-menu)]]
-  [["Navigation"
-    ("j" "  Jump to line for file"  dired-goto-file)
-    ("b" "  Go to bookmarks"        dirvish-bookmark-goto)
-    ("^" "  Go to parent directory" dired-up-directory)
-    ("r" "  Roam the file system"   dirvish-fd-roam :if (lambda () (featurep 'dirvish-fd)))
-    ("m" "  Go to the MRU buffer"   dirvish-history-last :if (lambda () (featurep 'dirvish-history)))
-    ("n" "  Forward history"        dirvish-history-go-forward
-     :transient t :if (lambda () (featurep 'dirvish-history)))
-    ("p" "  Backward history"       dirvish-history-go-backward
-     :transient t :if (lambda () (featurep 'dirvish-history)))
-    ("SPC" "Recently visited"       dirvish-history-jump :if (lambda () (featurep 'dirvish-history)))]
-   ["Others"
-    ("l" "  Setup listing switches" dirvish-ls-switches-menu)
-    ("f" "  Setup fd switches"      dirvish-fd-switches-menu
-     :if (lambda () (and (dirvish-prop :fd-dir) dirvish-fd-actual-switches)))
-    ("i" "  Get file information"   dirvish-file-info-menu)
-    ("S" "  Manage subdirs"         dirvish-subdir-menu)
-    ("(" "  Toggle details"         dired-hide-details-mode)
-    ("=" "  Compare files"          dired-diff)
-    (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
-    ("N" "  Live narrowing"         consult-focus-lines :if (lambda () (featurep 'consult)))]])
 
 ;;;###autoload (autoload 'dirvish-ls-switches-menu "dirvish-menu" nil t)
 (transient-define-prefix dirvish-ls-switches-menu ()
@@ -549,8 +501,7 @@ when present, is wrapped with a lambda and being put into the
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
-    (set k (remove nil v))
-    (unless (require 'dirvish nil t) (setq v nil))
+    (set k v)
     (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attr)) v))
           (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview)) v))
           (layout-alist (seq-filter (lambda (i) (eq (nth 2 i) 'layout)) v)))

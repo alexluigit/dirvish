@@ -26,12 +26,13 @@ being dired at its core.
 -- @noctuid ([[https://github.com/alexluigit/dirvish/issues/34][source]])
 #+end_quote
 
+* Gallery
+
 [[https://user-images.githubusercontent.com/16313743/173186456-d5e8d02e-2148-4668-82cf-f9cb75fc7c70.png][https://user-images.githubusercontent.com/16313743/173186456-d5e8d02e-2148-4668-82cf-f9cb75fc7c70.png]]
 [[https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png][https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png]]
 [[https://user-images.githubusercontent.com/16313743/173187918-077f6038-f71f-46df-a7ac-5c21851c22a0.png][https://user-images.githubusercontent.com/16313743/173187918-077f6038-f71f-46df-a7ac-5c21851c22a0.png]]
 
-* Quickstart
-** Installation
+* Installation
 
 Dirvish is available on [[https://melpa.org][Melpa]], you can install it directly via ~package-install~
 if you have melpa in your ~package-archives~.
@@ -44,7 +45,7 @@ if you have melpa in your ~package-archives~.
   (dirvish-override-dired-mode))
 #+end_src
 
-** Quickstart
+* Quickstart
 
 + =M-x= ~dirvish~ gives you a 3-pane (parent+current+preview) session
 + =M-x= ~dired~ | ~dired-jump~ | ... gives you a "dirvish-ish" Dired buffer/session
