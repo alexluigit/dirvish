@@ -83,7 +83,7 @@ max number of cache processes."
                  (run-with-timer 0 0.25 #'dirvish--autocache)))))
 
 (defcustom dirvish-cache-dir
-  (concat (or (getenv "XDG_CACHE_HOME") (concat (getenv "HOME") "/.cache")) "/dirvish/")
+  (expand-file-name "dirvish/" user-emacs-directory)
   "Preview / thumbnail cache directory for dirvish."
   :group 'dirvish :type 'string)
 
@@ -279,7 +279,7 @@ Each function takes ENTRY and BUFFER as its arguments.")
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--cache-img-threshold (* 1024 1024 0.4))
-(defconst dirvish--dir-tail-regex (concat (getenv "HOME") "/\\|\\/$\\|^\\/"))
+(defconst dirvish--dir-tail-regex (concat (file-name-as-directory (getenv "HOME")) "\\|\\/$\\|^\\/"))
 (defconst dirvish--preview-img-scale 0.92)
 (defconst dirvish--tramp-preview-cmd
   "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &")
@@ -1221,7 +1221,7 @@ default implementation is `find-args' with simple formatting."
                      (t ""))
                'face 'font-lock-builtin-face)
               (propertize (cond (host "")
-                                ((string-prefix-p (getenv "HOME") dirname) "~ ")
+                                ((string-prefix-p (file-name-as-directory (getenv "HOME")) dirname) "~ ")
                                 (t ": "))
                           'face 'dired-header)
               (propertize tail 'face 'dired-mark)
