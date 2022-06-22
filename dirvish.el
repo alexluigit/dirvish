@@ -83,7 +83,7 @@ max number of cache processes."
                  (run-with-timer 0 0.25 #'dirvish--autocache)))))
 
 (defcustom dirvish-cache-dir
-  (concat (or (getenv "XDG_CACHE_HOME") (concat (file-name-as-directory (getenv "HOME")) ".cache")) "/dirvish/")
+  (expand-file-name "dirvish/" user-emacs-directory)
   "Preview / thumbnail cache directory for dirvish."
   :group 'dirvish :type 'string)
 
