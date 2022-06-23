@@ -34,6 +34,45 @@
 (defvar dirvish-fd-last-input "" "Last used fd arguments.")
 (defvar dirvish-fd-actual-switches nil)
 
+(defun dirvish-fd--apply-switches ()
+  "Apply fd SWITCHES to current buffer."
+  (interactive)
+  (let* ((args (transient-args transient-current-command))
+         (switches (string-join args " ")))
+    (setq dirvish-fd-actual-switches switches)
+    (revert-buffer)))
+
+(transient-define-infix dirvish-fd--extensions-switch ()
+  :description "Filter results by file extensions"
+  :class 'transient-option
+  :argument "--extension="
+  :multi-value 'repeat
+  :prompt
+  (lambda (o)
+    (let* ((val (oref o value))
+           (str (if val (format "(current: %s) " (mapconcat #'concat val ",")) "")))
+      (format "%sFile exts separated with comma: " str))))
+
+(transient-define-infix dirvish-fd--exclude-switch ()
+  :description "Exclude files/dirs that match the glob pattern"
+  :class 'transient-option
+  :argument "--exclude="
+  :multi-value 'repeat
+  :prompt
+  (lambda (o)
+    (let* ((val (oref o value))
+           (str (if val (format "(current: %s) " (mapconcat #'concat val ",")) "")))
+      (format "%sGlob patterns (such as *.pyc) separated with comma: " str))))
+
+(transient-define-infix dirvish-fd--search-pattern-infix ()
+  "Change search pattern."
+  :description "Change search pattern"
+  :class 'transient-lisp-variable
+  :variable 'dirvish-fd-last-input
+  :reader (lambda (_prompt _init _hist)
+            (completing-read "Input search pattern: "
+                             dirvish-fd-args-history nil nil dirvish-fd-last-input)))
+
 (defun dirvish-fd-proc-filter (proc string)
   "Filter for `dirvish-fd' processes PROC and output STRING."
   (let ((buf (process-buffer proc))
@@ -83,6 +122,67 @@
                 (propertize "exts:" 'face 'font-lock-doc-face)
                 (propertize (if (equal exts "") "all" exts) 'face 'font-lock-string-face)))))
   (dirvish-prop :fd-heading))
+
+;;;###autoload (autoload 'dirvish-fd-switches-menu "dirvish-fd" nil t)
+(transient-define-prefix dirvish-fd-switches-menu ()
+  "Setup fd switches."
+  :init-value
+  (lambda (o) (oset o value (split-string (or dirvish-fd-actual-switches ""))))
+  [:description
+   (lambda ()
+     (let ((title "setup fd switches")
+           (notes "Ignore Range (by default ignore ALL)
+  VCS: .gitignore + .git/info/exclude + $HOME/.config/git/ignore
+  ALL: VCS + .ignore + .fdignore + $HOME/.config/fd/ignore"))
+       (format "%s\n%s" (dirvish-menu--format-heading title)
+               (propertize notes 'face 'font-lock-doc-face))))
+   ["File types (multiple types can be included)"
+    (3 "f" " Search for regular files" "--type=file")
+    (3 "d" " Search for directories" "--type=directory")
+    (3 "l" " Search for symbolic links" "--type=symlink")
+    (3 "s" " Search for sockets" "--type=socket")
+    (3 "p" " Search for named pipes" "--type=pipe")
+    (3 "x" " Search for executable" "--type=executable")
+    (3 "e" " Search for empty files or directories" "--type=empty")
+    ""
+    "Toggles"
+    (3 "-H" "Include hidden files|dirs in the results" "--hidden")
+    (3 "-I" "Show results from ALL" "--no-ignore")
+    (4 "iv" "Show results from VCS" "--no-ignore-vcs")
+    (5 "ip" "Show results from .gitignore in parent dirs" "--no-ignore-parent")
+    (3 "-s" "Perform a case-sensitive search" "--case-sensitive")
+    (4 "-g" "Perform a glob-based (rather than regex-based) search" "--glob")
+    (4 "-F" "Treat the pattern as a literal string" "--fixed-strings")
+    (4 "-L" "Traverse symbolic links" "--follow")
+    (4 "-p" "Let the pattern match against the full path" "--full-path")
+    (5 "mr" "Maximum number of search results" "--max-results")
+    (5 "mt" "Do not descend into a different file systems" "--mount")
+    (5 "P" " Do not traverse into matching directories" "--prune")
+    ""
+    "Options"
+    (4 "-e" dirvish-fd--extensions-switch)
+    (4 "-E" dirvish-fd--exclude-switch)
+    (4 "-D" "Max level for directory traversing" "--max-depth=")
+    (5 "-d" "Only show results starting at the depth" "--mix-depth=")
+    (5 "gd" "Only show results starting at the exact given depth" "--exact-depth=")
+    (5 "if" "Add a custom ignore-file in '.gitignore' format" "--ignore-file="
+       :reader (lambda (_prompt _init _hist) (read-file-name "Choose ignore file: ")))
+    (5 "-S" "Limit results based on the size of files" "--size="
+       :reader (lambda (_prompt _init _hist)
+                 (read-string "Input file size using the format <+-><NUM><UNIT> (eg. +100m): ")))
+    (5 "cn" "Filter results based on the file mtime newer than" "--changed-within="
+       :reader (lambda (_prompt _init _hist)
+                 (read-string "Input a duration (10h, 1d, 35min) or a time point (2018-10-27 10:00:00): ")))
+    (5 "co" "Filter results based on the file mtime older than" "--changed-before="
+       :reader (lambda (_prompt _init _hist)
+                 (read-string "Input a duration (10h, 1d, 35min) or a time point (2018-10-27 10:00:00): ")))
+    (6 "-o" "Filter files by their user and/or group" "--owner="
+       :reader (lambda (_prompt _init _hist)
+                 (read-string "user|uid:group|gid - eg. john, :students, !john:students ('!' means to exclude files instead): ")))
+    ""
+    "Actions"
+    ("r" dirvish-fd--search-pattern-infix)
+    ("RET" "Apply switches" dirvish-fd--apply-switches)]])
 
 ;;;###autoload
 (defun dirvish-fd (dir pattern)
