@@ -1305,12 +1305,8 @@ default implementation is `find-args' with simple formatting."
 (defun dirvish-kill-buffer-h ()
   "Hook function added to `kill-buffer' locally."
   (let ((dv (dirvish-prop :dv)))
-    (if (dv-layout dv)
-        (let (kill-buffer-hook) (dirvish-kill dv))
-      (setf (dv-roots dv)
-            (assoc-delete-all (dv-index-dir dv) (dv-roots dv) #'equal))
-      (and (eq (length (dv-roots dv)) 0) (remhash (dv-name dv) dirvish--hash)))
-    (dirvish-reclaim)))
+    (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) (current-buffer))) (dv-roots dv)))
+    (unless (dv-roots dv) (remhash (dv-name dv) dirvish--hash))))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
