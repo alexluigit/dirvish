@@ -116,7 +116,8 @@ A list of file attributes such as ~file-size~ showing in file lines are stored i
 the variable ~dirvish-attributes~. Evaluate this to get all available attributes:
 
 #+begin_src emacs-lisp
-(prog1 (mapc #'require dirvish-extra-libs) (describe-variable 'dirvish--available-attrs))
+(prog1 (mapc #'require (mapcar #'car dirvish-attrs-library))
+  (describe-variable 'dirvish--available-attrs))
 #+end_src
 
 To change the attributes session locally, see [[file:EXTENSIONS.org][dirvish-menu]].
