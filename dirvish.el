@@ -274,7 +274,12 @@ Each function takes ENTRY and BUFFER as its arguments.")
 (defvar dirvish-scopes
   '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window))
 (defvar dirvish-override-dired-mode nil)
-(defvar dirvish-extra-libs '(dirvish-icons dirvish-extras dirvish-vc dirvish-yank dirvish-subtree))
+(defvar dirvish-attrs-library
+  '((dirvish-subtree  subtree-state)
+    (dirvish-icons    all-the-icons vscode-icon)
+    (dirvish-collapse collapse)
+    (dirvish-vc       vc-state git-msg)
+    (dirvish-extras   file-size)))
 (defconst dirvish--dired-free-space
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--prefix-spaces 2)
@@ -691,22 +696,22 @@ If KEEP-CURRENT, do not kill the current directory buffer."
 
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
-  (when dirvish-attributes (mapc #'require dirvish-extra-libs))
-  (let* ((attr-names (append dirvish--builtin-attrs (dv-attributes dv)))
-         (attrs-alist
-          (cl-loop
-           for name in attr-names
-           for attr = (cdr (assoc name dirvish--available-attrs)) collect
-           (cl-destructuring-bind
-               (&key overlay if fn left right &allow-other-keys)
-               attr (list overlay if fn left right))))
-         (dp-names
-          (append '(tramp disable) (dv-preview-dispatchers dv) '(default)))
-         (preview-fns
-          (cl-loop for dp-name in dp-names collect
-                   (intern (format "dirvish-%s-preview-dp" dp-name)))))
-    (setf (dv-attribute-fns dv) attrs-alist)
-    (setf (dv-preview-fns dv) preview-fns)))
+  (cl-loop with dv-attrs = (dv-attributes dv)
+           with reorder = dirvish--builtin-attrs
+           for (lib . attrs) in dirvish-attrs-library do
+           (when-let ((match (cl-intersection attrs dv-attrs)))
+             (require lib) (setq reorder (append reorder match)))
+           finally do
+           (setf (dv-attribute-fns dv)
+                 (cl-loop
+                  for name in reorder
+                  for attr = (cdr (assoc name dirvish--available-attrs)) collect
+                  (cl-destructuring-bind
+                      (&key overlay if fn left right &allow-other-keys)
+                      attr (list overlay if fn left right)))))
+  (setf (dv-preview-fns dv)
+        (cl-loop for dp in (append '(tramp disable) (dv-preview-dispatchers dv) '(default))
+                 collect (intern (format "dirvish-%s-preview-dp" dp)))))
 
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
