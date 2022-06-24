@@ -163,6 +163,7 @@ LOCALP is the arg for `dired-current-directory', which see."
    (push (cons depth name) st-alist)
    finally do
    (let ((sorted (sort st-alist (lambda (a b) (< (car a) (car b))))))
+     (setq dirvish-subtree--overlays nil)
      (cl-loop for (_depth . name) in sorted do
               (when (and (dirvish--goto-file name)
                          (not (dirvish--subtree-expanded-p)))
