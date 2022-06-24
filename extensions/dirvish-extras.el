@@ -23,7 +23,6 @@
 ;;
 ;; Attributes
 ;; - `file-size'
-;; - `collapse'
 ;;
 ;; Mode-line segments
 ;; - `free-space'
@@ -171,41 +170,9 @@ This value is passed to function `format-time-string'."
                           `(space :align-to (- right-fringe ,f-size-len)) 'face face))
          (ov (make-overlay ov-pos ov-pos)))
     (add-face-text-property 0 f-size-len face t f-size-str)
-    (overlay-put ov 'after-string (concat spc f-size-str)) ov))
-
-(dirvish-define-attribute collapse
-  "Collapse unique nested paths."
-  (:if (and (eq (dv-root-window dv) (selected-window))
-            (not (dirvish-prop :fd-dir))
-            (or (not (dirvish-prop :tramp))
-                (tramp-local-host-p (dirvish-prop :tramp)))))
-  (let ((collapse
-         (dirvish-attribute-cache f-name :collapse
-           (let ((path f-name) files should-collapse)
-             (while (and (file-directory-p path)
-                         (setq files (ignore-errors (directory-files path t)))
-                         (= 3 (length files)))
-               (setq should-collapse t path (nth 2 files)))
-             (cond ((and (eq (length files) 2) (not should-collapse))
-                    (length (file-name-nondirectory f-name)))
-                   (should-collapse path)
-                   (t 'none))))))
-    (unless (eq collapse 'none)
-      (let* ((buffer-invisibility-spec nil)
-             (default-directory (dired-current-directory))
-             (head (stringp collapse))
-             (path (and head (substring collapse (length default-directory))))
-             (offset (if path (- (length path) (length (file-name-nondirectory path)))
-                       collapse)))
-        (when head
-          (remove-overlays l-beg l-end 'dirvish-collapse t)
-          (delete-region l-beg (1+ l-end))
-          (insert "  ")
-          (insert-directory path dired-actual-switches)
-          (forward-line -1)
-          (dired-align-file l-beg (1+ l-end)))
-        (let ((ov (make-overlay f-beg (+ offset f-beg))))
-          (prog1 (if head nil ov) (overlay-put ov 'face 'shadow)))))))
+    (overlay-put ov 'after-string (concat spc f-size-str))
+    (overlay-put ov 'priority -98)
+    ov))
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
