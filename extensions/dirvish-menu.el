@@ -52,11 +52,13 @@
          (slot-name (oref obj scope))
          (curr-val (funcall slot-name dv))
          (new-val (if (equal value "On") (push item curr-val) (remq item curr-val))))
+    (dolist (ov (mapcar #'car (dv-attribute-fns dv)))
+      (remove-overlays (point-min) (point-max) ov t))
     (cl-case slot-name
       ('dv-attributes (setf (dv-attributes dv) new-val))
       ('dv-preview-dispatchers (setf (dv-preview-dispatchers dv) new-val)))
     (dirvish--refresh-slots dv)
-    (revert-buffer)))
+    (dirvish-update-body-h)))
 
 (defun dirvish-menu--format-heading (string &optional scale)
   "Format STRING as a menu heading.
@@ -282,7 +284,7 @@ when present, is wrapped with a lambda and being put into the
              :if (lambda () (dv-layout (dirvish-curr)))
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
-             ("RET" "Confirm and quit"
+             ("RET" "Quit and revert buffer"
               (lambda () (interactive) (dirvish-build (dirvish-curr)) (revert-buffer)))]
             (interactive)
             (if (or (derived-mode-p 'dirvish-mode)
