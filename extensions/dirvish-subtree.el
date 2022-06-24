@@ -175,7 +175,7 @@ LOCALP is the arg for `dired-current-directory', which see."
             (or dirvish-subtree-always-show-state
                 dirvish-subtree--overlays
                 (bound-and-true-p dired-subtree-overlays)))
-       :left 1)
+       :width 1)
   (let ((state-str
          (propertize (if (eq (car f-type) 'dir)
                          (if (dirvish--subtree-expanded-p)
