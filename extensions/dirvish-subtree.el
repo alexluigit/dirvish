@@ -99,16 +99,13 @@ LOCALP is the arg for `dired-current-directory', which see."
    finally return pov))
 
 (defun dirvish-subtree--readin (dirname)
-  "Read in the directory DIRNAME for `dirvish--subtree-insert'."
+  "Readin the directory DIRNAME as a string."
   (let ((switches (or dired-actual-switches dired-listing-switches)))
     (with-temp-buffer
-      (insert-directory dirname switches nil t)
+      (insert-directory dirname (concat switches " -A") nil t)
       (delete-char -1)
       (goto-char (point-min))
       (delete-region (point) (progn (forward-line 1) (point)))
-      (save-match-data
-        (while (re-search-forward "^ *d.* \\.\\.?/?\n" nil t)
-          (delete-region (match-beginning 0) (match-end 0))))
       (goto-char (point-min))
       (unless (looking-at-p "  ")
         (let ((indent-tabs-mode nil))
@@ -117,29 +114,30 @@ LOCALP is the arg for `dired-current-directory', which see."
 
 (defun dirvish-subtree--insert ()
   "Insert subtree under this directory."
-  (when (and (save-excursion (beginning-of-line) (looking-at "..[dl]"))
-             (not (dirvish--subtree-expanded-p)))
-    (let* ((dirname (dired-get-filename nil))
-           (listing (dirvish-subtree--readin dirname))
-           (inhibit-read-only t)
-           beg end)
-      (dirvish--print-directory (dirvish-prop :tramp) (current-buffer) dirname t)
-      (move-end-of-line 1)
-      (save-excursion (insert listing) (setq end (+ (point) 2)))
-      (newline)
-      (setq beg (point))
-      (remove-text-properties (1- beg) beg '(dired-filename))
-      (let* ((ov (make-overlay beg end))
-             (parent (dirvish-subtree--parent (1- beg)))
-             (depth (or (and parent (1+ (overlay-get parent 'dired-subtree-depth))) 1)))
-        (overlay-put ov 'line-prefix
-                     (apply #'concat (make-list depth dirvish-subtree-line-prefix)))
-        (overlay-put ov 'dired-subtree-name dirname)
-        (overlay-put ov 'dired-subtree-depth depth)
-        (overlay-put ov 'evaporate t)
-        (push ov dirvish-subtree--overlays))
-      ;; in case any `dirvish-attributes' modified the buffer content
-      (dirvish-update-body-h))))
+  (let* ((filename (dired-get-filename))
+         (dirname (pcase (progn (back-to-indentation) (char-after)) ; first char in priv
+                    (108 (let ((true (file-truename filename))) ; "l" = 108 = symlink
+                           (prog1 true (unless (file-directory-p true)
+                                         (user-error "Not a directory")))))
+                    (100 filename) ; "d" = 100 = directory
+                    (_ (user-error "Not a directory"))))
+         (listing (dirvish-subtree--readin dirname))
+         buffer-read-only beg end)
+    (dirvish--print-directory (dirvish-prop :tramp) (current-buffer) dirname t)
+    (save-excursion
+      (setq beg (progn (move-end-of-line 1) (insert "\n") (point)))
+      (setq end (progn (insert listing) (1+ (point)))))
+    (let* ((ov (make-overlay beg end))
+           (parent (dirvish-subtree--parent (1- beg)))
+           (depth (or (and parent (1+ (overlay-get parent 'dired-subtree-depth))) 1)))
+      (overlay-put ov 'line-prefix
+                   (apply #'concat (make-list depth dirvish-subtree-line-prefix)))
+      (overlay-put ov 'dired-subtree-name dirname)
+      (overlay-put ov 'dired-subtree-depth depth)
+      (overlay-put ov 'evaporate t)
+      (push ov dirvish-subtree--overlays))
+    ;; in case any `dirvish-attributes' modified the buffer content
+    (dirvish--render-attributes (dirvish-curr))))
 
 (defun dirvish-subtree--remove ()
   "Remove subtree at point."
@@ -154,7 +152,7 @@ LOCALP is the arg for `dired-current-directory', which see."
                          (>= (overlay-start o) beg)
                          (<= (overlay-end o) end))
                do (setq dirvish-subtree--overlays
-                       (delq o dirvish-subtree--overlays)))
+                        (delq o dirvish-subtree--overlays)))
       (delete-region (overlay-start ov) (overlay-end ov)))))
 
 (defun dirvish-subtree--revert ()
@@ -168,7 +166,8 @@ LOCALP is the arg for `dired-current-directory', which see."
    finally do
    (let ((sorted (sort st-alist (lambda (a b) (< (car a) (car b))))))
      (cl-loop for (_depth . name) in sorted do
-              (when (dirvish--goto-file name)
+              (when (and (dirvish--goto-file name)
+                         (not (dirvish--subtree-expanded-p)))
                 (dirvish-subtree--insert))))
    (dirvish--goto-file (dirvish-prop :child))))
 
@@ -198,7 +197,7 @@ LOCALP is the arg for `dired-current-directory', which see."
   (interactive)
   (if (dirvish--subtree-expanded-p)
       (progn (dired-next-line 1) (dirvish-subtree--remove))
-    (save-excursion (dirvish-subtree--insert))))
+    (dirvish-subtree--insert)))
 
 (provide 'dirvish-subtree)
 ;;; dirvish-subtree.el ends here
