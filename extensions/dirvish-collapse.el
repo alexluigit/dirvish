@@ -30,11 +30,10 @@
   "Face used for files in `collapse' attribute."
   :group 'dirvish)
 
-(defun dirvish-collapse--cache (f-name f-beg f-end)
-  "Cache collapse state for file F-NAME.
-F-BEG and F-END are beginning and end position of this file."
+(defun dirvish-collapse--cache (f-name)
+  "Cache collapse state for file F-NAME."
   (dirvish-attribute-cache f-name :collapse
-    (let ((path f-name) should-collapse files offset dir-p)
+    (let ((path f-name) should-collapse files dirp)
       (while (and (setq dirp (file-directory-p path))
                   (setq files (ignore-errors (directory-files path t)))
                   (= 3 (length files)))
@@ -60,16 +59,20 @@ F-BEG and F-END are beginning and end position of this file."
             (not (dirvish-prop :fd-dir))
             (or (not (dirvish-prop :tramp))
                 (tramp-local-host-p (dirvish-prop :tramp)))))
-  (when-let* ((cache (dirvish-collapse--cache f-name f-beg f-end))
+  (when-let* ((cache (dirvish-collapse--cache f-name))
               (head (car cache))
               (tail (cdr cache)))
     (let* ((emptyp (eq head 'empty))
-           (o (make-overlay (if emptyp f-beg f-end) f-end)) str)
+           (o (make-overlay (if emptyp f-beg f-end) f-end)))
       (if emptyp
           (overlay-put o 'face 'dirvish-collapse-empty-dir-face)
-        (setq str (concat head tail))
-        (and hl-face (add-face-text-property 0 (length str) hl-face nil str))
-        (overlay-put o 'after-string str))
+        (let* ((str (concat head tail))
+               (len (length str))
+               (remain (max (- remain f-wid) 0))
+               (overflow (< remain len)))
+          (and overflow (setq str (substring str 0 remain)))
+          (and hl-face (add-face-text-property 0 (if overflow remain len) hl-face nil str))
+          (overlay-put o 'after-string str)))
       o)))
 
 (provide 'dirvish-collapse)

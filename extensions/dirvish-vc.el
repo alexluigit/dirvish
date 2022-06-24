@@ -78,16 +78,14 @@ vc-hooks.el) for detail explanation of these states."
                              "git" "log" "-1" "--pretty=%s" f-name)))
                    (if (and msg (not (string= "" msg))) (substring msg 0 -1) ""))))
          (face (or hl-face 'dirvish-git-commit-message-face))
-         (width (window-width))
-         (depth (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))
-         (f-base-str (buffer-substring f-beg f-end))
-         (f-base-len (string-width f-base-str))
-         (remained (- width f-base-len depth
-                      (dirvish-prop :width-l) (dirvish-prop :width-r)))
-         (msg-str (truncate-string-to-width (concat "  " info) remained))
+         (str (concat "  " info))
+         (remain (max (- remain f-wid) 0))
+         (len (length str))
+         (overflow (< remain len))
          (ov (make-overlay f-end f-end)))
-    (add-face-text-property 0 (length msg-str) face t msg-str)
-    (overlay-put ov 'after-string msg-str) ov))
+    (and overflow (setq str (substring str 0 remain)))
+    (add-face-text-property 0 (if overflow remain len) face t str)
+    (overlay-put ov 'after-string str) ov))
 
 (dirvish-define-preview vc-diff ()
   "Show output of `vc-diff' as preview."

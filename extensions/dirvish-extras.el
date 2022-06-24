@@ -109,6 +109,12 @@ This value is passed to function `format-time-string'."
               (f-size (f) (file-attribute-size (file-attributes f))))
     (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
 
+(defun dirvish--file-size-add-spaces (str)
+  "Fill file size STR with leading spaces."
+  (let* ((spc (concat str " "))
+         (len (- 6 (length spc))))
+    (if (> len 0) (concat (make-string len ?\ ) spc) spc)))
+
 (defun dirvish--get-file-size-or-count (name attrs)
   "Get file size of file NAME from ATTRS."
   (let ((type (file-attribute-type attrs)))
@@ -117,22 +123,28 @@ This value is passed to function `format-time-string'."
            (let ((count
                   (dirvish-attribute-cache name :f-count
                     (condition-case nil
-                        (number-to-string
-                         (- (length (directory-files name nil nil t)) 2))
+                        (dirvish--file-size-add-spaces
+                         (number-to-string
+                          (- (length (directory-files name nil nil t)) 2)))
                       (file-error 'file)))))
              (if (eq count 'file)
-                 (file-size-human-readable
-                  (file-attribute-size (file-attributes name)))
+                 (dirvish-attribute-cache name :f-size
+                   (dirvish--file-size-add-spaces
+                    (file-size-human-readable
+                     (file-attribute-size (file-attributes name)))))
                count)))
           (type
            (let ((count
                   (dirvish-attribute-cache name :f-count
                     (condition-case nil
-                        (number-to-string
-                         (- (length (directory-files name nil nil t)) 2))
+                        (dirvish--file-size-add-spaces
+                         (number-to-string
+                          (- (length (directory-files name nil nil t)) 2)))
                       (file-error 'no-permission)))))
-             (if (eq count 'no-permission) "?" count)))
-          (t (file-size-human-readable (or (file-attribute-size attrs) 0))))))
+             (if (eq count 'no-permission) "NOPERM" count)))
+          (t (dirvish--file-size-add-spaces
+              (dirvish-attribute-cache name :f-size
+                (file-size-human-readable (or (file-attribute-size attrs) 0))))))))
 
 (defun dirvish--format-file-attr (attr-name)
   "Return a string of cursor file's attribute ATTR-NAME."
@@ -148,30 +160,22 @@ This value is passed to function `format-time-string'."
   "Show file size or directories file count at right fringe."
   (:if (and (eq (dv-root-window dv) (selected-window))
             dired-hide-details-mode)
-       :right 6)
-  (let* ((depth (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))
-         (width (window-width))
-         (info (dirvish--get-file-size-or-count f-name f-attrs))
-         (f-size-str (let* ((spc (concat info " ")) (len (- 6 (length spc))))
-                       (if (> len 0) (concat (make-string len ?\ ) spc) spc)))
-         (f-size-len (length f-size-str))
-         (f-base-str (buffer-substring f-beg f-end))
-         (f-base-len (string-width f-base-str))
-         (remained (- width f-size-len depth (dirvish-prop :width-l)))
-         (ov-pos (if (> remained f-base-len)
+       :width 7)
+  (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
+         (ov-pos (if (> remain f-wid)
                      l-end
                    (let ((pos f-beg) (vis-str ""))
-                     (while (< (string-width vis-str) remained)
+                     (while (< (string-width vis-str) remain)
                        (setq pos (1+ pos))
                        (setq vis-str (buffer-substring f-beg pos)))
                      pos)))
          (face (or hl-face 'dirvish-file-size))
          (spc (propertize " " 'display
-                          `(space :align-to (- right-fringe ,f-size-len)) 'face face))
+                          `(space :align-to (- right-fringe 6)) 'face face))
          (ov (make-overlay ov-pos ov-pos)))
-    (add-face-text-property 0 f-size-len face t f-size-str)
-    (overlay-put ov 'after-string (concat spc f-size-str))
-    (overlay-put ov 'priority -98)
+    (setq str (concat spc str))
+    (add-face-text-property 0 7 face t str)
+    (overlay-put ov 'after-string str)
     ov))
 
 (dirvish-define-mode-line free-space
