@@ -71,6 +71,7 @@ vc-hooks.el) for detail explanation of these states."
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
   (:if (and (eq (dv-root-window dv) (selected-window))
+            (dirvish-prop :vc-backend)
             (not (dirvish-prop :tramp))))
   (let* ((info (dirvish-attribute-cache f-name :git-msg
                  (let ((msg (dirvish--shell-to-string
@@ -83,8 +84,8 @@ vc-hooks.el) for detail explanation of these states."
          (f-base-len (string-width f-base-str))
          (remained (- width f-base-len depth
                       (dirvish-prop :width-l) (dirvish-prop :width-r)))
-         (msg-str (truncate-string-to-width (concat "\t" info) remained))
-         (ov (make-overlay (1- f-end) f-end)))
+         (msg-str (truncate-string-to-width (concat "  " info) remained))
+         (ov (make-overlay f-end f-end)))
     (add-face-text-property 0 (length msg-str) face t msg-str)
     (overlay-put ov 'after-string msg-str) ov))
 
