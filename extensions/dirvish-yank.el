@@ -1,4 +1,4 @@
-;;; dirvish-yank.el --- Multi-stage and async copy/paste/link utilities in Dirvish -*- lexical-binding: t -*-
+;;; dirvish-yank.el --- Multi-stage and async copy/paste/link utilities -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>

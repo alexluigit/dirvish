@@ -228,9 +228,6 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
   "Regexp of host names that always enable extra features."
   :group 'dirvish :type 'string)
 
-(defvar dirvish-preview-setup-hook nil
-  "Hook functions for preview buffer initialization.")
-
 (defvar dirvish-activation-hook nil
   "Hook functions to be executed on session activation.")
 
@@ -243,6 +240,9 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
 (defvar dirvish-find-entry-hook nil
   "Hook functions to be executed after `dirvish--find-entry'.
 Each function takes ENTRY and BUFFER as its arguments.")
+
+(defvar dirvish-setup-hook nil
+  "Hook functions to be executed after `dirvish--print-directory'.")
 
 ;;;; Internal variables
 
@@ -263,7 +263,6 @@ Each function takes ENTRY and BUFFER as its arguments.")
     (wdired        wdired-abort-changes            dirvish-wdired-exit-ad         :after)
     (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
     (files         find-file                       dirvish-find-file-ad)
-    (dired-subtree dired-subtree-remove            dirvish-subtree-remove-ad)
     (recentf       recentf-track-opened-file       dirvish-ignore-ad)
     (recentf       recentf-track-closed-file       dirvish-ignore-ad)
     (winner        winner-save-old-configurations  dirvish-ignore-ad)
@@ -345,9 +344,8 @@ Multiple calls under the same LABEL are ignored."
 
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
-  (with-current-buffer (current-buffer)
-    (ansi-color-apply-on-region
-     pos (progn (goto-char pos) (forward-line (frame-height)) (point)))))
+  (ansi-color-apply-on-region
+   pos (progn (goto-char pos) (forward-line (frame-height)) (point))))
 
 (defmacro dirvish--hide-dired-header (&rest body)
   "Execute BODY then hide the Dired header."
@@ -358,6 +356,7 @@ Multiple calls under the same LABEL are ignored."
        (goto-char (point-min))
        (let ((o (make-overlay
                  (point) (progn (forward-line (if dirvish--dired-free-space 2 1)) (point)))))
+         (dirvish-prop :content-beginning (point))
          (overlay-put o 'dirvish-remove-header t)
          (overlay-put o 'invisible t)))))
 
@@ -703,7 +702,8 @@ If KEEP-CURRENT, do not kill the current directory buffer."
            with reorder = dirvish--builtin-attrs
            for (lib . attrs) in dirvish-attrs-library do
            (when-let ((match (cl-intersection attrs dv-attrs)))
-             (require lib) (setq reorder (append reorder match)))
+             (unless (featurep lib) (require lib))
+             (setq reorder (append reorder match)))
            finally do
            (setf (dv-attribute-fns dv)
                  (cl-loop
@@ -774,10 +774,6 @@ If KEEP-CURRENT, do not kill the current directory buffer."
       (dirvish-kill (plist-get scope :dv)))))
 
 ;;;; Advices
-
-(defun dirvish-subtree-remove-ad (fn &rest _)
-  "Advisor for FN `dired-subtree-remove'."
-  (dirvish--hide-dired-header (funcall fn))) ; See `dired-hacks' #170
 
 (defun dirvish-dired-ad (dirname &optional switches)
   "Override `dired' command.
@@ -1170,8 +1166,7 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
         (setq other-window-scroll-buffer buffer)
         (set-window-buffer window buffer)
         (unless (memq buffer orig-buffer-list)
-          (push buffer (dv-preview-buffers dv)))
-        (with-current-buffer buffer (run-hooks 'dirvish-preview-setup-hook))))))
+          (push buffer (dv-preview-buffers dv)))))))
 
 ;;;; Builder
 
@@ -1321,7 +1316,8 @@ default implementation is `find-args' with simple formatting."
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
-  (dired-revert)
+  (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
+    (dired-revert))
   (dirvish--hide-dired-header)
   (let ((vec (dirvish-prop :tramp)))
     (setq dirvish--attrs-hash (make-hash-table :test #'equal))
@@ -1369,8 +1365,7 @@ Dirvish sets `revert-buffer-function' to this function."
   "Return the root or PARENT buffer in DV for ENTRY.
 If the buffer is not available, create it with `dired-noselect'."
   (let ((pairs (if parent (dv-parents dv) (dv-roots dv)))
-        (bname (buffer-file-name))
-        buffer enable-dir-local-variables)
+        (bname (buffer-file-name)) buffer)
     (cond ((equal entry "*Find*") (setq buffer (get-buffer-create "*Find*")))
           ((string-prefix-p "FD####" entry)
            (setq buffer (or (alist-get entry pairs nil nil #'equal)
@@ -1399,7 +1394,8 @@ If the buffer is not available, create it with `dired-noselect'."
                      (dirvish-prop :vc-backend
                        (ignore-errors (vc-responsible-backend entry)))))))
              (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))))
-    (prog1 buffer (and buffer (run-hook-with-args 'dirvish-find-entry-hook entry buffer)))))
+    (prog1 buffer (and buffer (run-hook-with-args
+                               'dirvish-find-entry-hook dv entry buffer)))))
 
 (defun dirvish--autocache ()
   "Pop and run the cache tasks in `dirvish--cache-pool'."
@@ -1496,6 +1492,7 @@ If the buffer is not available, create it with `dired-noselect'."
                   (dirvish-attribute-cache f-name :type
                     (cons (if f-dirp 'dir 'file) f-truename)))))
           (and append (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) content)))
+        (unless append (run-hooks 'dirvish-setup-hook))
         (dirvish-update-body-h))))
   (delete-process proc)
   (kill-buffer (process-buffer proc)))
@@ -1714,8 +1711,7 @@ otherwise it defaults to variable `buffer-file-name'."
     ("X" "  Delete files"           dired-do-delete)
     ("v" "  View this file"         dired-view-file)
     ("y" "  Yank marked files"      dirvish-yank-menu)
-    ("." "  Filter by.."            dirvish-filter-menu :if (lambda () (featurep 'dired-filter)))
-    ("." "  Toggle file omitting"   dired-omit-mode :if-not (lambda () (featurep 'dired-filter)))
+    ("." "  Manage pinned groups"   dirvish-emerge-menu)
     ("*" "  Manage marks"           dirvish-mark-menu)]]
   [["Navigation"
     ("j" "  Jump to line for file"  dired-goto-file)

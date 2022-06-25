@@ -185,8 +185,7 @@ for this buffer.
 
 This extension gives Dirvish the ability to toggle a directory as subtree
 (~dirvish-subtree-toggle~), which can be seen as a stripped-down version of
-=dired-subtree=. Unless you need ~dired-subtree-up~ and friends, you don't have to
-install the =dired-subtree= package.
+=dired-subtree=.
 
 ** Commands
 
