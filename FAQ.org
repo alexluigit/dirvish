@@ -83,11 +83,31 @@ Apart from similar concerns mentioned in the above =all-the-icons-dired.el=
 section, this package ([[https://melpa.org/#/treemacs-icons-dired][treemacs-icons-dired]]) also introduces duplicate icon
 columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.com/alexluigit/dirvish/issues/16][here]].
 
-** dired-subtree (from dired-hacks)
+** dired-hacks
 
-See [[file:EXTENSIONS.org][dirvish-subtree]].
+TODO
 
-** dired-collapse (from dired-hacks)
+*** dired-ranger
+
+TODO
+
+*** dired-subtree
+
+Comparing with =dired-subtree=, =dirvish-subtree= has several advantages:
+
+- Small code base: only 200+ lines
+- Way Faster: expands a directory with 50000+ entries almost instantly
+- Consistency: respects ~dired-actual-switches~
+
+*** dired-filter
+
+TODO
+
+*** dired-narrow
+
+TODO
+
+*** dired-collapse
 
 The =collapse= attribute in Dirvish does the same thing, and faster.
 

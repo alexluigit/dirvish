@@ -22,7 +22,7 @@
 (define-obsolete-function-alias 'dirvish-go-backward-history #'dirvish-history-go-backward "Jun 08, 2022")
 
 (defvar dirvish-history--ring nil)
-(defun dirvish-history-insert-entry-h (entry buffer)
+(defun dirvish-history-insert-entry-h (_dv entry buffer)
   "Add ENTRY name for BUFFER to `dirvish-history--ring'."
   (let ((entry (if (string-prefix-p "FD####" entry)
                    (buffer-name buffer) entry)))

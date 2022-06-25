@@ -58,57 +58,57 @@ Dirvish and Dired handle the following aspects differently.
 
 ** Parsing switches
 
-  Dirvish avoids regex-based solutions as much as possible, this also applies to
-  the parsing of ~dired-listing/actual-switches~ and ~dirvish-fd-switches~.  As a
-  result, in order to setup ~dired-listing-switches~ and ~dirvish-fd-switches~
-  correctly, there are a few rules here:
+Dirvish avoids regex-based solutions as much as possible, this also applies to
+the parsing of ~dired-listing/actual-switches~ and ~dirvish-fd-switches~.  As a
+result, in order to setup ~dired-listing-switches~ and ~dirvish-fd-switches~
+correctly, there are a few rules here:
 
-  1. Make sure to use the long name of ~ls~ flags whenever possible.
+1. Make sure to use the long name of ~ls~ flags whenever possible.
 
-     * use =--almost-all= instead of =-A=
-     * use =--sort=version= instead of =-v=
+   * use =--almost-all= instead of =-A=
+   * use =--sort=version= instead of =-v=
 
-  2. avoid duplicate flags which makes no sense.
+2. avoid duplicate flags which makes no sense.
 
-     These 3 patterns give the same directory listing result, but the =sort=
-     attribute would only get correct information with the last one.
+   These 3 patterns give the same directory listing result, but the =sort=
+   attribute would only get correct information with the last one.
 
-     * =--sort=version --sort=time= (duplicate, the latter flag is ignored)
-     * =-v --sort-time= (same as the above one, meanwhile this also violates rule NO.1)
-     * =--sort=time=
+   * =--sort=version --sort=time= (duplicate, the latter flag is ignored)
+   * =-v --sort-time= (same as the above one, meanwhile this also violates rule NO.1)
+   * =--sort=time=
 
-  3. Use ~dirvish-quicksort~ instead of ~dired-sort-toggle-or-edit~
+3. Use ~dirvish-quicksort~ instead of ~dired-sort-toggle-or-edit~
 
-     If you insist on using the ~dired-sort-toggle-or-edit~ command, you'll have
-     to obey the above rules when entering the ls flags.
+   If you insist on using the ~dired-sort-toggle-or-edit~ command, you'll have
+   to obey the above rules when entering the ls flags.
 
 ** Isolated sessions
 
-  Each Dirvish has its own window layout along with some other isolated niceties
-  such as header string. This makes it easy for Dirvish to adapt itself towards
-  different file management tasks.
+Each Dirvish has its own window layout along with some other isolated niceties
+such as header string. This makes it easy for Dirvish to adapt itself towards
+different file management tasks.
 
 ** Buffer management
 
-  =dired= command and friends create new Dired buffers, hence navigating through
-  the file system always end up with a lot of Dired buffers. To avoid this, one
-  can either replace ~dired-find-file~ with ~dired-find-alternate-file~ or enable
-  ~dired-kill-when-opening-new-dired-buffer~, but they introduce two new issues:
+=dired= command and friends create new Dired buffers, hence navigating through
+the file system always end up with a lot of Dired buffers. To avoid this, one
+can either replace ~dired-find-file~ with ~dired-find-alternate-file~ or enable
+~dired-kill-when-opening-new-dired-buffer~, but they introduce two new issues:
 
-  - Dired buffers in other windows/tabs/frames might be killed unexpectedly
-  - Dired buffers are no longer reusable
+- Dired buffers in other windows/tabs/frames might be killed unexpectedly
+- Dired buffers are no longer reusable
 
-  As a comparison, the directory/preview buffers are reused during a Dirvish
-  session and get killed when user explicitly exit the session.
+As a comparison, the directory/preview buffers are reused during a Dirvish
+session and get killed when user explicitly exit the session.
 
-  The buffer holding the last entry of the session won't get killed on session
-  exit if ~dirvish-keep-alive-on-quit~ is enabled (disabled by default).
+The buffer holding the last entry of the session won't get killed on session
+exit if ~dirvish-keep-alive-on-quit~ is enabled (disabled by default).
 
 ** Mode line
 
-  Dirvish has its own mode-line that can be customized with
-  ~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option is
-  ignored in Dirvish.
+Dirvish has its own mode-line that can be customized with
+~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option is
+ignored in Dirvish.
 
 * Extra attributes
 
@@ -200,48 +200,56 @@ see the sample config below.
 * Working with Doom Emacs
 
 The =dired= module in Doom Emacs provides a lot of features by the help of various
-third-party Dired packages. But to be honest, these packages doesn't mesh very
-well.  Unlike the =dired= module in Emacs, which comes with a lot of hacks to
-eliminate the conflicts among these packages (this actully happened to many
-people's Dired config), Dirvish implemented these features in a much polished
-fashion.
+third-party Dired packages, which works fine for users who just want a OOTB
+Dired experience.  But, alas, there are downsides to this.
 
-Dirvish not only includes almost every feature that the =dired= module has to
-offer, but also implemented them under the same architecture that =dirvish.el=
-provides in the form of separate extensions. As a result, all of them are
-modular tools that are independent of each other yet can operate in tandem
-without any user interference, which means you don't need any ugly hacks in your
-configuration.
+1. To make these utilities work together inside of Doom, it applied some hacks
+   to eliminate the conflicts among them (FWIW, this actully happened to many
+   people's Dired config), which may cause troubles when users want to tweak the
+   behaviors of these packages.
 
-For the above reasons, you don't need this module if you want to use Dirvish in
-Doom Emacs. But if you still want to use the =dired= module, here are some
-requirements/recommendations.
+2. Adopting a new functionality to Dired becomes very difficult since there are
+   too many moving parts involve with it.
 
-** Remap/disable ~+dired/quit-all~ command
+   If you've been using this module and other packages (say =hl-line=,
+   =dired-subtree=) intensively, I believe you've experienced at least one of
+   these: =all-the-icons-dired= breaks line highlighting, =dired-git-info= prevents
+   you from inserting a subtree, =diff-hl= refuses to highlight subtree entries,
+   among other things.
 
+Dirvish not only includes almost every feature that this module provides, but
+also implemented them under the same architecture powered by =dirvish.el= in the
+form of separate extensions. As a result, all of them are modular tools that are
+independent of each other yet can operate in tandem without any user
+interference, which means ugly hacks is no longer needed.
+
+If you still want to use the =dired= module in Doom, here are some caveats.
+
+*** Remap/disable ~+dired/quit-all~ command (required)
+  
 After you enable the =dired= module, Doom remaps =q= key to a custom command
 ~+dired/quit-all~, which doesn't work well with Dirvish. You can either override
 this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
 
-** Remove =+icons= flag in dired module
+*** Remove =+icons= flag in dired module (required)
 
 It's not recommended to use =all-the-icons-dired.el= and Dirvish together, see [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#all-the-icons-dired][FAQ]].
 
-** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
+*** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
 
 The ~vc-state~ attribute in Dirvish can achieve the same functionality without
 sacrificing performance. Meanwhile, ~diff-hl-dired-mode~ doesn't mesh well with
 =dirvish-subtree= nor =dired-subtree=.
 
-** Use ~git-msg~ attribute instead of =dired-git-info=
+*** Use ~git-msg~ attribute instead of =dired-git-info=
 
 For same reason describe in the above ~vc-state~ section.
 
-** Use ~dirvish-fd~ instead of =fd-dired=
+*** Use =dirvish-fd= instead of =fd-dired=
 
 See [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#find-dired--fd-dired][FAQ]].
 
-** Use =dirvish-yank= instead of =dired-rsync=
+*** Use =dirvish-yank= instead of =dired-rsync=
 
 Multi-stage copy/paste, asynchronous I/O (whenever applicable), work with TRAMP,
 =dirvish-yank= has all of them. =dirvish-yank= also handles file operations on the
@@ -249,16 +257,16 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
 
 * Hooks
 
-|----------------------------+-----------------------------------------------------------------|
-| Hook                       | Description                                                     |
-|----------------------------+-----------------------------------------------------------------|
-| ~dirvish-activation-hook~    | Hook functions to be executed on session activation.            |
-| ~dirvish-deactivation-hook~  | Hook functions to be executed on session deactivation.          |
-| ~dirvish-preview-setup-hook~ | Hook functions to be executed on preview buffer initialization. |
-| ~dirvish-mode-hook~          | Hook functions to be executed on parent buffer initialization.  |
-| ~dirvish-after-revert-hook~  | Hook functions to be executed after ~dirvish-revert~.             |
-| ~dirvish-find-entry-hook~    | Hook functions to be executed after ~dirvish--find-entry~.        |
-|----------------------------+-----------------------------------------------------------------|
+|---------------------------+-------------------------------------------|
+| Hook                      | Description                               |
+|---------------------------+-------------------------------------------|
+| ~dirvish-activation-hook~   | Executed on session activation.           |
+| ~dirvish-deactivation-hook~ | Executed on session deactivation.         |
+| ~dirvish-mode-hook~         | Executed on parent buffer initialization. |
+| ~dirvish-setup-hook~        | Executed after file-attributes retrieved. |
+| ~dirvish-after-revert-hook~ | Executed after ~dirvish-revert~.            |
+| ~dirvish-find-entry-hook~   | Executed after ~dirvish--find-entry~.       |
+|---------------------------+-------------------------------------------|
 
 * Sample config
 ** Dired | Dirvish
@@ -278,7 +286,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
   (dirvish-mode-line-format ; it's ok to place string inside
    '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
-  (dirvish-attributes '(subtree-state all-the-icons))
+  (dirvish-attributes '(subtree-state all-the-icons collapse))
   ;; (dirvish-attributes '(file-size vscode-icon)) ; Feel free to try different combination
   ;; Maybe the icons are too big to your eyes
   ;; (dirvish-all-the-icons-height 0.8)
