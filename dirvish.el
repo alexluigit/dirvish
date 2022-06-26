@@ -360,16 +360,6 @@ Multiple calls under the same LABEL are ignored."
          (overlay-put o 'dirvish-remove-header t)
          (overlay-put o 'invisible t)))))
 
-(defun dirvish--shell-to-string (program &rest args)
-  "Execute PROGRAM with arguments ARGS and return output string.
-If program returns non zero exit code return nil."
-  (let* ((exit-code nil)
-         (output
-          (with-output-to-string
-            (with-current-buffer standard-output
-              (setq exit-code (apply #'process-file program nil t nil args))))))
-    (when (eq exit-code 0) output)))
-
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER with ALIST.
 This splits the window at the designated side of the frame.
@@ -1389,10 +1379,7 @@ If the buffer is not available, create it with `dired-noselect'."
                  (dirvish-prop :tramp vec)
                  (dirvish-prop :child (or bname entry))
                  (unless trampp
-                   (dirvish-prop :files (directory-files entry t nil t))
-                   (unless parent
-                     (dirvish-prop :vc-backend
-                       (ignore-errors (vc-responsible-backend entry)))))))
+                   (dirvish-prop :files (directory-files entry t nil t)))))
              (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))))
     (prog1 buffer (and buffer (run-hook-with-args
                                'dirvish-find-entry-hook dv entry buffer)))))
@@ -1470,12 +1457,12 @@ If the buffer is not available, create it with `dired-noselect'."
          (vec (process-get proc 'vec))
          (append (process-get proc 'append))
          (str (with-current-buffer (process-buffer proc) (buffer-string)))
-         (content (if vec (split-string str "\n") (read str))))
+         (info (if vec (split-string str "\n") (read str))))
     (when (buffer-live-p buf)
       (with-current-buffer buf
-        (unless (or vec append) (setq dirvish--attrs-hash content))
+        (unless (or vec append) (setq dirvish--attrs-hash (cdr info)))
         (if vec
-            (dolist (file (and (> (length content) 2) (cl-subseq content 2 -1)))
+            (dolist (file (and (> (length info) 2) (cl-subseq info 2 -1)))
               (cl-destructuring-bind
                   (inode priv lnum user group size date time &rest path)
                   (split-string file)
@@ -1491,26 +1478,36 @@ If the buffer is not available, create it with `dired-noselect'."
                     (list f-attr-type lnum user group nil f-mtime nil size priv nil inode))
                   (dirvish-attribute-cache f-name :type
                     (cons (if f-dirp 'dir 'file) f-truename)))))
-          (and append (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) content)))
+          (if append (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) (cdr info))
+            (dirvish-prop :vc-backend (car info))))
         (unless append (run-hooks 'dirvish-setup-hook))
         (dirvish-update-body-h))))
   (delete-process proc)
   (kill-buffer (process-buffer proc)))
 
-(defun dirvish--directory-printer (entry)
+(defsubst dirvish--directory-printer (entry)
   "Compose attributes printer for ENTRY."
-  `(message "%s" (with-temp-buffer
-                   (let ((hash (make-hash-table :test #'equal)))
-                     (dolist (file (directory-files ,entry t nil t))
-                       (let* ((attrs (file-attributes file))
-                              (tp (nth 0 attrs)))
-                         (cond
-                          ((eq t tp) (setq tp '(dir . nil)))
-                          (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
-                          (t (setq tp '(file . nil))))
-                         (puthash file `(:builtin ,attrs :type ,tp) hash)))
-                     (prin1 hash (current-buffer)))
-                   (buffer-substring-no-properties (point-min) (point-max)))))
+  `(with-temp-buffer
+     (let ((hash (make-hash-table :test #'equal))
+           (bk ,(and (featurep 'dirvish-vc)
+                     `(ignore-errors (vc-responsible-backend ,entry)))))
+       (dolist (file (directory-files ,entry t nil t))
+         (let* ((attrs (file-attributes file))
+                (state (and bk (vc-state-refresh file bk)))
+                (git (and (eq bk 'Git) ; TODO: refactor this
+                          (shell-command-to-string
+                           (format "git log -1 --pretty=%%s %s" file))))
+                (tp (nth 0 attrs)))
+           (cond
+            ((eq t tp) (setq tp '(dir . nil)))
+            (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
+            (t (setq tp '(file . nil))))
+           (puthash file `(:builtin ,attrs :type ,tp
+                                    ,@(and state (list :vc-state state))
+                                    ,@(and git (list :git-msg git)))
+                    hash)))
+       (prin1 (cons bk hash) (current-buffer)))
+     (buffer-substring-no-properties (point-min) (point-max))))
 
 (defun dirvish--print-directory (vec buffer entry &optional append)
   "Fetch `file-attributes' for files in ENTRY, stored locally in BUFFER.
@@ -1521,7 +1518,7 @@ If VEC, the attributes are retrieved by parsing the output of
            (outbuf (dirvish--util-buffer (make-temp-name "print-dir-")))
            (switches "-1la --human-readable --time-style=long-iso --inode")
            (entry (file-local-name entry))
-           (msg (dirvish--directory-printer entry))
+           (msg `(message "%s" ,(dirvish--directory-printer entry)))
            (cmd (if vec (format "ls %s %s &" switches entry) (format "%S" msg)))
            (async-shell-command-buffer nil) ; it's a hack for buffer reuse
            (display-buffer-alist
