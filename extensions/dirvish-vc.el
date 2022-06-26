@@ -59,8 +59,7 @@ vc-hooks.el) for detail explanation of these states."
   (:if (and (eq (dv-root-window dv) (selected-window))
             (dirvish-prop :vc-backend)
             (or (set-window-fringes nil 5 1) t)))
-  (let* ((state (dirvish-attribute-cache f-name :vc-state
-                  (vc-state-refresh f-name (dirvish-prop :vc-backend))))
+  (let* ((state (dirvish-attribute-cache f-name :vc-state))
          (face (alist-get state dirvish-vc-state-face-alist))
          (display (and face `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
          (gutter-str (and display (propertize "!" 'display display))) ov)
@@ -71,14 +70,11 @@ vc-hooks.el) for detail explanation of these states."
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
   (:if (and (eq (dv-root-window dv) (selected-window))
-            (dirvish-prop :vc-backend)
+            (eq (dirvish-prop :vc-backend) 'Git)
             (not (dirvish-prop :tramp))))
-  (let* ((info (dirvish-attribute-cache f-name :git-msg
-                 (let ((msg (dirvish--shell-to-string
-                             "git" "log" "-1" "--pretty=%s" f-name)))
-                   (if (and msg (not (string= "" msg))) (substring msg 0 -1) ""))))
+  (let* ((info (dirvish-attribute-cache f-name :git-msg))
          (face (or hl-face 'dirvish-git-commit-message-face))
-         (str (concat "  " info))
+         (str (substring (concat "  " info) 0 -1))
          (remain (max (- remain f-wid) 0))
          (len (length str))
          (overflow (< remain len))
