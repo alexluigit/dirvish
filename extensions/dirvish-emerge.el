@@ -102,16 +102,19 @@ this variable to .dir-locals.el through `dirvish-emerge-menu'."
 (defmacro dirvish-emerge-define-predicate (name docstring &rest body)
   "Define a group predicate NAME with BODY.
 DOCSTRING is the documention of the predicate.
-The predicate takes 3 arguments:
+The predicate takes the following arguments:
 
-- `local-name' from `file-name-nondirectory'
-- `full-name' from `dired-get-filename'
-- `attrs' from `file-attributes'
+- `local-name': output from (file-name-nondirectory FILE)
+- `full-name': output from (dired-get-filename)
+- `type': a cons of (TYPE . SYM-TARGET).  TYPE is either `dir' or
+  `file'.  SYM-TARGET is the symlink target as a string when the
+  file is a symlink, otherwise nil.
+- `attrs': output from (file-attributes FILE)
 
 The predicate is consumed by `dirvish-emerge-groups'."
   (declare (indent defun) (doc-string 2))
-  `(let* ((fn (lambda (local-name full-name attrs)
-                (ignore local-name full-name attrs) ,@body))
+  `(let* ((fn (lambda (local-name full-name type attrs)
+                (ignore local-name full-name type attrs) ,@body))
           (pair (assq ',name dirvish-emerge--available-preds))
           (val (cons ',name (cons fn ,docstring))))
      (setf dirvish-emerge--max-pred-name-len
@@ -174,10 +177,10 @@ The predicate is consumed by `dirvish-emerge-groups'."
   (pcase-let* ((`(,type . ,val) recipe))
     (pcase type
       ('regex
-       `(lambda (local-name full-name attrs) (string-match ,val local-name)))
+       `(lambda (local-name _ _ _) (string-match ,val local-name)))
       ('extensions
        (let ((exts (format "\\.\\(%s\\)$" (mapconcat #'concat val "\\|"))))
-         `(lambda (local-name full-name attrs) (string-match ,exts local-name))))
+         `(lambda (local-name _ _ _) (string-match ,exts local-name))))
       ('predicate
        (cadr (assq (cdr recipe) dirvish-emerge--available-preds))))))
 
@@ -368,9 +371,10 @@ PREDS are locally composed predicates."
                  (l-end (line-end-position))
                  (local (buffer-substring-no-properties f-beg f-end))
                  (full (concat curr-dir local))
+                 (type (dirvish-attribute-cache full :type))
                  (attrs (dirvish-attribute-cache full :builtin))
                  (match (cl-loop for (index . fn) in preds
-                                 for match = (funcall fn local full attrs)
+                                 for match = (funcall fn local full type attrs)
                                  thereis (and match index))))
             (push (buffer-substring-no-properties l-beg l-end)
                   (alist-get (or match idx-m) groups))))
