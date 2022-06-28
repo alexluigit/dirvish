@@ -178,6 +178,7 @@ This value is passed to function `format-time-string'."
     (overlay-put ov 'after-string str)
     ov))
 
+;;;###autoload (autoload 'dirvish-free-space-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
   (let ((free-space (or (dirvish-prop :free-space)
@@ -186,10 +187,12 @@ This value is passed to function `format-time-string'."
     (format " %s %s " (propertize free-space 'face 'dirvish-free-space)
             (propertize "free" 'face 'font-lock-doc-face))))
 
+;;;###autoload (autoload 'dirvish-file-link-number-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-link-number
   "Number of links to file."
   (dirvish--format-file-attr 'link-number))
 
+;;;###autoload (autoload 'dirvish-file-link-number-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-user
   "User name of file."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
@@ -199,6 +202,7 @@ This value is passed to function `format-time-string'."
               (uname (if (dirvish-prop :tramp) uid (user-login-name uid))))
     (propertize uname 'face 'dirvish-file-user-id)))
 
+;;;###autoload (autoload 'dirvish-file-group-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-group
   "Group name of file."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
@@ -208,6 +212,7 @@ This value is passed to function `format-time-string'."
               (gname (if (dirvish-prop :tramp) gid (group-name gid))))
     (propertize gname 'face 'dirvish-file-group-id)))
 
+;;;###autoload (autoload 'dirvish-file-time-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-time
   "Last modification time of file."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
@@ -219,6 +224,7 @@ This value is passed to function `format-time-string'."
                  (format-time-string dirvish-time-format-string f-mtime))))
     (format "%s" (propertize time-string 'face 'dirvish-file-time))))
 
+;;;###autoload (autoload 'dirvish-file-size-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-size
   "File size of files or file count of directories."
   (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
@@ -227,14 +233,17 @@ This value is passed to function `format-time-string'."
               (size (and attrs (dirvish--get-file-size-or-count f-name attrs))))
     (format "%s" (propertize size 'face 'dirvish-file-size))))
 
+;;;###autoload (autoload 'dirvish-file-modes-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-modes
   "File modes, as a string of ten letters or dashes as in ls -l."
   (dirvish--format-file-attr 'modes))
 
+;;;###autoload (autoload 'dirvish-file-inode-number-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-inode-number
   "File's inode number, as a nonnegative integer."
   (dirvish--format-file-attr 'inode-number))
 
+;;;###autoload (autoload 'dirvish-file-device-number-ml "dirvish-extras" nil t)
 (dirvish-define-mode-line file-device-number
   "Filesystem device number, as an integer."
   (dirvish--format-file-attr 'device-number))

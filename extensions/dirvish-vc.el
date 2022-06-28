@@ -91,6 +91,7 @@ vc-hooks.el) for detail explanation of these states."
                (vc-diff)))
     '(buffer . "*vc-diff*")))
 
+;;;###autoload (autoload 'dirvish-vc-info-ml "dirvish-vc" nil t)
 (dirvish-define-mode-line vc-info
   "Version control info such as git branch."
   (when-let* ((bk (dirvish-prop :vc-backend))
