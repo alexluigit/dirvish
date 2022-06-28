@@ -16,6 +16,10 @@
 (declare-function dirvish-emerge--menu "dirvish-emerge")
 (require 'dirvish)
 
+(defun dirvish-emerge-safe-groups-p (groups)
+  "Return t if GROUPS is a list and has less than 100 items."
+  (and (listp groups) (< (length groups) 100)))
+
 (defcustom dirvish-emerge-groups '()
   "Default emerge groups applied to all Dirvish buffer.
 The value is an alist of (NAME . (TYPE . VALUE)) where NAME is a
@@ -49,7 +53,7 @@ You can set this variable globally, a more appropriate way would
 be set it directory locally though.  You can compose and save
 this variable to .dir-locals.el through `dirvish-emerge-menu'."
   :group 'dirvish :type 'alist)
-(put 'dirvish-emerge-groups 'safe-local-variable #'listp)
+(put 'dirvish-emerge-groups 'safe-local-variable #'dirvish-emerge-safe-groups-p)
 
 (defcustom dirvish-emerge-max-file-count 20000
   "Inhibit auto grouping in big directories.
@@ -181,7 +185,7 @@ The predicate is consumed by `dirvish-emerge-groups'."
 
 (defsubst dirvish-emerge--make-pred (recipe)
   "Make predicate function from RECIPE."
-  (pcase-let* ((`(,type . ,val) recipe))
+  (pcase-let ((`(,type . ,val) recipe))
     (pcase type
       ('regex
        `(lambda (local-name _ _ _) (string-match ,val local-name)))
@@ -205,14 +209,16 @@ corresponding slots."
 
 (defun dirvish-emerge--create-infixes ()
   "Define and collect emerge groups from 'dirvish-emerge-groups'."
-  (cl-loop for idx from 1
-           for (desc recipe hide selected) in dirvish-emerge-groups
+  (cl-loop with len = (length dirvish-emerge-groups)
+           for idx from 0
+           for (desc recipe hide selected) in (seq-take dirvish-emerge-groups 99)
            for ifx = (intern (format "dirvish-%s-infix"
                                      (replace-regexp-in-string " " "-" desc)))
+           for key = (format (if (> len 10) "%02i" "%i") idx)
            collect (progn
                      (dirvish-emerge--create-infix
                       ifx desc recipe selected hide)
-                     (list (number-to-string idx) ifx))))
+                     (list key ifx))))
 
 (defun dirvish-emerge--ifx-apply ()
   "Apply emerge infixes in `transient-current-suffixes'."
@@ -404,15 +410,18 @@ When FORCE, `dirvish-emerge-max-file-count' is ignored."
 (defun dirvish-emerge-menu ()
   "Manage pinned files in Dirvish."
   (interactive)
-  (dirvish-emerge--readin-groups
-   (dirvish-curr) nil (current-buffer))
+  (dirvish-emerge--readin-groups)
   (eval
    `(transient-define-prefix dirvish-emerge--menu ()
       "Configure current Dirvish session."
       [:description
-       (lambda () (propertize "Configure Emerging Groups"
-                         'face '(:inherit dired-mark :underline t)
-                         'display '((height 1.2))))
+       (lambda ()
+         (let ((title "Configure Emerging Groups")
+               (notes "Press the index (like \"1\") to select the group
+Press again to set the value for the group"))
+           (format "%s\n%s" (propertize title 'face '(:inherit dired-mark :underline t)
+                                        'display '((height 1.2)))
+                   (propertize notes 'face 'font-lock-doc-face))))
        ["Active groups:"
         ,@(if dirvish-emerge-groups
               (dirvish-emerge--create-infixes)

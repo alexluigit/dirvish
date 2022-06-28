@@ -239,7 +239,7 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
 
 (defvar dirvish-find-entry-hook nil
   "Hook functions to be executed after `dirvish--find-entry'.
-Each function takes ENTRY and BUFFER as its arguments.")
+Each function takes DV, ENTRY and BUFFER as its arguments.")
 
 (defvar dirvish-setup-hook nil
   "Hook functions to be executed after `dirvish--print-directory'.")
