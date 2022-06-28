@@ -297,21 +297,22 @@ If DEMOTE, shift them to the lowest instead."
 (defun dirvish-emerge--readin-groups-1 ()
   "Helper for `dirvish-emerge--readin-groups'."
   (hack-dir-local-variables)
-  (when-let ((pair (assq 'dirvish-emerge-groups
-                         file-local-variables-alist)))
-    (let ((vals (cdr pair)))
-      (hack-one-local-variable 'dirvish-emerge-groups vals)
-      (dirvish-prop :emerge-preds
-        (cl-loop for idx from 1 to (length vals)
-                 for (_desc recipe) in vals collect
-                 (cons idx (dirvish-emerge--make-pred recipe)))))))
+  (when-let ((vals (or (and (local-variable-if-set-p 'dirvish-emerge-groups)
+                            (buffer-local-value
+                             'dirvish-emerge-groups (current-buffer)))
+                       (cdr (assq 'dirvish-emerge-groups
+                                  file-local-variables-alist))
+                       (default-value 'dirvish-emerge-groups))))
+    (hack-one-local-variable 'dirvish-emerge-groups vals)
+    (dirvish-prop :emerge-preds
+      (cl-loop for idx from 1 to (length vals)
+               for (_desc recipe) in vals collect
+               (cons idx (dirvish-emerge--make-pred recipe))))))
 
-(defun dirvish-emerge--readin-groups (dv _entry buffer)
+(defun dirvish-emerge--readin-groups (&optional _dv _entry buffer)
   "Readin emerge groups in BUFFER for session DV."
-  (with-current-buffer buffer
-    (when (and (not dirvish-emerge-groups)
-               (memq buffer (mapcar #'cdr (dv-roots dv)))
-               (not (dirvish-prop :fd-dir)))
+  (with-current-buffer (or buffer (current-buffer))
+    (unless (dirvish-prop :fd-dir)
       (dirvish-emerge--readin-groups-1))))
 
 (defun dirvish-emerge--format-group-title (desc)
@@ -381,8 +382,7 @@ PREDS are locally composed predicates."
 
 (defun dirvish-emerge--apply ()
   "Readin `dirvish-emerge-groups' and apply them."
-  (dirvish-emerge--readin-groups
-   (dirvish-curr) nil (current-buffer))
+  (dirvish-emerge--readin-groups)
   (when-let ((preds (dirvish-prop :emerge-preds)))
     (dirvish-emerge--apply-1 preds)))
 
