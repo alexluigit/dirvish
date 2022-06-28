@@ -51,6 +51,13 @@ this variable to .dir-locals.el through `dirvish-emerge-menu'."
   :group 'dirvish :type 'alist)
 (put 'dirvish-emerge-groups 'safe-local-variable #'listp)
 
+(defcustom dirvish-emerge-max-file-count 20000
+  "Inhibit auto grouping in big directories.
+If file count of the directory is greater than this value,
+automatic grouping is disabled even if `dirvish-emerge-mode' is
+turned on in the buffer."
+  :group 'dirvish :type 'integer)
+
 (defface dirvish-emerge-group-title
   '((t :inherit dired-ignored))
   "Face used for emerge group title."
@@ -220,7 +227,7 @@ corresponding slots."
                                         (oref o hide) (oref o selected)))))
     (setq-local dirvish-emerge-groups groups)
     (dirvish-prop :emerge-preds preds)
-    (dirvish-emerge--apply)))
+    (dirvish-emerge--apply t)))
 
 (defun dirvish-emerge--ifx-unselect ()
   "Unselect selected emerge groups."
@@ -384,11 +391,14 @@ PREDS are locally composed predicates."
       (mapc #'dirvish-emerge--insert-group groups))
     (dired-goto-file old-f)))
 
-(defun dirvish-emerge--apply ()
-  "Readin `dirvish-emerge-groups' and apply them."
-  (dirvish-emerge--readin-groups)
-  (when-let ((preds (dirvish-prop :emerge-preds)))
-    (dirvish-emerge--apply-1 preds)))
+(defun dirvish-emerge--apply (&optional force)
+  "Readin `dirvish-emerge-groups' and apply them.
+When FORCE, `dirvish-emerge-max-file-count' is ignored."
+  (when (or force (< (hash-table-count dirvish--attrs-hash)
+                     dirvish-emerge-max-file-count))
+    (dirvish-emerge--readin-groups)
+    (when-let ((preds (dirvish-prop :emerge-preds)))
+      (dirvish-emerge--apply-1 preds))))
 
 ;;;###autoload
 (defun dirvish-emerge-menu ()
