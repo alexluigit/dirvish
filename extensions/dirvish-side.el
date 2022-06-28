@@ -180,6 +180,7 @@ will visit the latest `project-root' after executing
             (dirvish-prop :child filename))
           (dirvish-build dv))))))
 
+;;;###autoload (autoload 'dirvish-project-ml "dirvish-side" nil t)
 (dirvish-define-mode-line project
   "Return a string showing current project."
   (let ((project (dirvish--get-project-root)))
