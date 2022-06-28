@@ -110,15 +110,15 @@ The predicate takes 3 arguments:
 
 The predicate is consumed by `dirvish-emerge-groups'."
   (declare (indent defun) (doc-string 2))
-  `(let* ((name (format "%s" ',name))
-          (fn (lambda (local-name full-name attrs)
+  `(let* ((fn (lambda (local-name full-name attrs)
                 (ignore local-name full-name attrs) ,@body))
-          (pair (assoc name dirvish-emerge--available-preds #'equal))
-          (val (cons name (cons fn ,docstring))))
+          (pair (assq ',name dirvish-emerge--available-preds))
+          (val (cons ',name (cons fn ,docstring))))
      (setf dirvish-emerge--max-pred-name-len
-           (max dirvish-emerge--max-pred-name-len (length name)))
+           (max dirvish-emerge--max-pred-name-len
+                (length (format "%s" ',name))))
      (if pair
-         (setcdr (assoc name dirvish-emerge--available-preds #'equal) val)
+         (setcdr (assq ',name dirvish-emerge--available-preds) val)
        (push val dirvish-emerge--available-preds))))
 
 (dirvish-emerge-define-predicate recent-files-2h
@@ -160,30 +160,26 @@ The predicate is consumed by `dirvish-emerge-groups'."
   (let* ((table dirvish-emerge--available-preds)
          (coll (dirvish--append-metadata
                 (lambda (i)
-                  (concat
-                   (make-string
-                    (- dirvish-emerge--max-pred-name-len (length i) -8) ?\s)
-                   (cddr (assoc i table #'equal))))
+                  (let ((item (intern (format "%s" i))))
+                    (concat
+                     (make-string
+                      (- dirvish-emerge--max-pred-name-len (length i) -8) ?\s)
+                     (cddr (assq item table)))))
                 table))
          (pred (completing-read "Predicate: " coll)))
-    (if obj (oset obj recipe `(predicate . ,(read pred))) pred)))
+    (if obj (oset obj recipe `(predicate . ,(read pred))) (read pred))))
 
-(cl-defgeneric dirvish-emerge-make-pred (recipe)
-  "Doc.")
-
-(cl-defmethod dirvish-emerge-make-pred ((recipe (head regex)))
-  "Doc."
-  `(lambda (local-name full-name attrs) (string-match ,(cdr recipe) local-name)))
-
-(cl-defmethod dirvish-emerge-make-pred ((recipe (head extensions)))
-  "Doc."
-  (let ((exts (format "\\.\\(%s\\)$" (mapconcat #'concat (cdr recipe) "\\|"))))
-    `(lambda (local-name full-name attrs) (string-match ,exts local-name))))
-
-(cl-defmethod dirvish-emerge-make-pred ((recipe (head predicate)))
-  "Doc."
-  (cadr (assoc (format "%s" (cdr recipe))
-               dirvish-emerge--available-preds #'equal)))
+(defsubst dirvish-emerge--make-pred (recipe)
+  "Make predicate function from RECIPE."
+  (pcase-let* ((`(,type . ,val) recipe))
+    (pcase type
+      ('regex
+       `(lambda (local-name full-name attrs) (string-match ,val local-name)))
+      ('extensions
+       (let ((exts (format "\\.\\(%s\\)$" (mapconcat #'concat val "\\|"))))
+         `(lambda (local-name full-name attrs) (string-match ,exts local-name))))
+      ('predicate
+       (cadr (assq (cdr recipe) dirvish-emerge--available-preds))))))
 
 (defun dirvish-emerge--create-infix
     (ifx description recipe &optional selected hide)
@@ -215,7 +211,7 @@ corresponding slots."
                          collect o))
          (preds (cl-loop for idx from 1 to (length ifxes)
                          for obj in ifxes
-                         collect (cons idx (dirvish-emerge-make-pred (oref obj recipe)))))
+                         collect (cons idx (dirvish-emerge--make-pred (oref obj recipe)))))
          (groups (cl-loop for o in ifxes
                           collect (list (oref o description) (oref o recipe)
                                         (oref o hide) (oref o selected)))))
@@ -308,7 +304,7 @@ If DEMOTE, shift them to the lowest instead."
       (dirvish-prop :emerge-preds
         (cl-loop for idx from 1 to (length vals)
                  for (_desc recipe) in vals collect
-                 (cons idx (dirvish-emerge-make-pred recipe)))))))
+                 (cons idx (dirvish-emerge--make-pred recipe)))))))
 
 (defun dirvish-emerge--readin-groups (dv _entry buffer)
   "Readin emerge groups in BUFFER for session DV."
