@@ -1222,7 +1222,8 @@ default implementation is `find-args' with simple formatting."
               (propertize tail 'face 'dired-mark)
               (propertize base 'face 'dired-header)))))
 
-(dirvish-define-mode-line sort "Current sort criteria."
+(dirvish-define-mode-line sort
+  "Current sort criteria."
   (let* ((switches (split-string dired-actual-switches))
          (crit (cond (dired-sort-inhibit "DISABLED")
                      ((member "--sort=none" switches) "none")
@@ -1242,7 +1243,8 @@ default implementation is `find-args' with simple formatting."
             (propertize crit 'face 'font-lock-type-face)
             (propertize time 'face 'font-lock-doc-face))))
 
-(dirvish-define-mode-line omit "A `dired-omit-mode' indicator."
+(dirvish-define-mode-line omit
+  "A `dired-omit-mode' indicator."
   (and dired-omit-mode (propertize "Omit" 'face 'font-lock-negation-char-face)))
 
 (dirvish-define-mode-line symlink
@@ -1322,6 +1324,8 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-setup ()
   "Configurations for dirvish parent windows."
   (setq-local cursor-type nil)
+  (when (bound-and-true-p evil-normal-state-cursor)
+    (setq-local evil-normal-state-cursor '(bar . 0)))
   (set-window-fringes nil 1 1)
   (when-let ((child (dirvish-prop :child))) (dired-goto-file child))
   (let* ((dv (dirvish-curr))
@@ -1333,7 +1337,6 @@ Dirvish sets `revert-buffer-function' to this function."
              (dired-hide-details-mode t))))
     (dirvish--render-attributes dv)
     (dirvish-prop :dv dv)
-    (dirvish--add-advices '(evil))
     (setq mode-line-format (unless layout (dv-mode-line-format dv)))
     (setq header-line-format
           (cond (layout nil)
