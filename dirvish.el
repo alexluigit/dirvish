@@ -1730,7 +1730,7 @@ otherwise it defaults to variable `buffer-file-name'."
     ("(" "  Toggle details"         dired-hide-details-mode)
     ("=" "  Compare files"          dired-diff)
     (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
-    ("N" "  Live narrowing"         consult-focus-lines :if (lambda () (featurep 'consult)))]]
+    ("N" "  Live narrowing"         dirvish-narrow)]]
   (interactive) (when (derived-mode-p 'dired-mode) (transient-setup 'dirvish-dispatch)))
 
 (provide 'dirvish)

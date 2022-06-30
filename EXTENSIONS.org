@@ -16,10 +16,14 @@ Currently the following extensions come with the package:
 - [[file:extensions/dirvish-icons.el][dirvish-icons.el]]: =all-the-icons/vscode-icon= integration for Dirvish.
 - [[file:extensions/dirvish-extras.el][dirvish-extras.el]]: Extra commands, UI elements, preview dispatchers for Dirvish.
 - [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
+- [[file:extensions/dirvish-ls.el][dirvish-ls.el]]: Setup ls command switches on the fly.
 - [[file:extensions/dirvish-fd.el][dirvish-fd.el]]: =fd= command interface in Dirvish.
 - [[file:extensions/dirvish-subtree.el][dirvish-subtree.el]]: Like =dired-subtree.el=, but simpler and faster.
 - [[file:extensions/dirvish-history.el][dirvish-history.el]]: History navigation commands for Dirvish.
 - [[file:extensions/dirvish-bookmark.el][dirvish-bookmark.el]]: Bookmark support for Dirvish.
+- [[file:extensions/dirvish-collapse.el][dirvish-collapse.el]]: Collapse unique nested paths.
+- [[file:extensions/dirvish-narrow.el][dirvish-narrow.el]]: Live-narrowing of Dirvish buffer.
+- [[file:extensions/dirvish-emerge.el][dirvish-emerge.el]]: Pin files you are interested in at top.
 
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
@@ -150,8 +154,11 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 
 TODO
 
-* 'fd' interface in Dirvish (dirvish-fd.el)
+* Setup ls switches on the fly (dirvish-ls.el)
 
+TODO
+
+* fd interface in Dirvish (dirvish-fd.el)
 
 This is the BEST =fd= frontend, period.
 
@@ -216,5 +223,17 @@ This extension gives Dirvish the ability to toggle a directory as subtree
 |-----------------------------+------------------------------------------|
 
 * Bookmarks (dirvish-bookmark.el)
+
+TODO
+
+* Collapse unique nested paths (dirvish-collapse.el)
+
+TODO
+
+* Live-narrowing of Dirvish buffer (dirvish-narrow.el)
+
+TODO
+
+* Pin files you are interested in at top (dirvish-emerge.el)
 
 TODO

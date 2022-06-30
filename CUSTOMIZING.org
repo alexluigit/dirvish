@@ -323,6 +323,8 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ("M-s" . dirvish-setup-menu)
    ("M-f" . dirvish-toggle-fullscreen)
    ("*"   . dirvish-mark-menu)
+   ("E"   . dirvish-emerge-menu)
+   ("N"   . dirvish-narrow)
    ("r"   . dirvish-fd-roam)
    ("b"   . dirvish-bookmark-goto)
    ("f"   . dirvish-file-info-menu)
