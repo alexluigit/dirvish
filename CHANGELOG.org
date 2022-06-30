@@ -1,3 +1,46 @@
+* 1.8.14
+** Breaking changes
+
++ New extension: =dirvish-subtree=
++ New extension: =dirvish-collapse=
++ New extension: =dirvish-emerge=
++ New extension: =dirvish-fd=
++ New extension: =dirvish-narrow=
++ Require =transient.el= (inbuilt with Emacs 28)
+  + Extract =dirvish-ls= from =dirvish-menu=
+  + Extract =dirvish-bookmark= from =dirvish-menu=
+  + Extract =dirvish-history= from =dirvish-menu=
+  + Move ~dirvish-dispatch~ command from =dirvish-menu= to core.
++ Extract =dirvish-icons= from =dirvish-extras=
+
+** Changes since 1.3.20
+
+The lazy rendering and async I/O mechanism got a lot of improvements, Dirvish
+even outperforms Dired in terms of opening big directories.
+
++ =vc=: use fringe-bitmap to display vc-state attribute
++ =yank=: use TRAMP when SRC and DEST are in the same host ([[https://github.com/alexluigit/dirvish/issues/37][#37]])
++ =core=: add ~dirvish-open-with-programs~ user option
++ =core=: add ~dirvish-mode-line-position~ user option
++ =core=: deprecate ~dirvish-dired~ command
+
+** Fixes since 1.3.20
+
++ =core=: remove killed buffers from ~dv-roots~
++ =core=: hide dired header when exiting wdired-mode
++ =core=: ensure ~quit-window~ kill all dirvish buffers
++ =core=: incorrect ~default-directory~ for ~find-file~ ([[https://github.com/alexluigit/dirvish/issues/53][#53]])
++ =core=: do not quote filename when open externally ([[https://github.com/alexluigit/dirvish/issues/51][#51]])
++ =core=: Emacs crashes from dead index dirvish buffer ([[https://github.com/alexluigit/dirvish/issues/49][#49]])
++ =core=: uppercased file extensions
++ =core=: file name error on external file opening
++ =core=: make header/footer window dedicated ([[https://github.com/alexluigit/dirvish/issues/46][#46]])
++ =extras=: wrong-type-argument error in ~file-size-human-readable~
++ =core=: ensure the right cursor position when resuming
++ =core=: use new dirvish session for bookmark restoring
++ =core=: void :child prop caused by ~with-ivy-window~
++ =core=: ensure cursor hiding in ~evil-mode~ ([[https://github.com/alexluigit/dirvish/issues/43][#43]])
+
 * 1.3.20
 ** Breaking changes
 
@@ -87,4 +130,3 @@
 * 1.0.0
 
 First release.
-
