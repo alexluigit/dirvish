@@ -1291,10 +1291,12 @@ default implementation is `find-args' with simple formatting."
             (f-buf (dirvish--util-buffer 'footer dv t)))
         (dirvish-debounce layout
           (when (dv-layout dv)
-            (when (buffer-live-p h-buf)
-              (with-current-buffer h-buf (force-mode-line-update)))
-            (when (buffer-live-p f-buf)
+            (when (and (not (eq dirvish-mode-line-position 'disable))
+                       (buffer-live-p f-buf))
               (with-current-buffer f-buf (force-mode-line-update)))
+            (when (and (not (eq dirvish-header-line-position 'disable))
+                       (buffer-live-p h-buf))
+              (with-current-buffer h-buf (force-mode-line-update)))
             (dirvish-preview-update)))))))
 
 (defun dirvish-quit-window-h ()
@@ -1337,9 +1339,11 @@ Dirvish sets `revert-buffer-function' to this function."
              (dired-hide-details-mode t))))
     (dirvish--render-attributes dv)
     (dirvish-prop :dv dv)
-    (setq mode-line-format (unless layout (dv-mode-line-format dv)))
+    (setq mode-line-format
+          (cond ((or layout (eq dirvish-mode-line-position 'disable)) nil)
+                (t (dv-mode-line-format dv))))
     (setq header-line-format
-          (cond (layout nil)
+          (cond ((or layout (eq dirvish-header-line-position 'disable)) nil)
                 ((dirvish-prop :fd-dir) dirvish--search-switches)
                 (t (dv-header-line-format dv)))))
   (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil t)
