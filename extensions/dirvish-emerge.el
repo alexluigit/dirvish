@@ -5,6 +5,7 @@
 ;; Version: 1.8.14
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
+;; Package-Requires: ((emacs "28.1"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -146,6 +147,25 @@ The predicate is consumed by `dirvish-emerge-groups'."
   (let ((mtime (file-attribute-modification-time attrs)))
     (and (listp mtime)
          (< (float-time (time-subtract (current-time) mtime)) 86400))))
+
+(dirvish-emerge-define-predicate directories
+  "Matches directories."
+  (eq 'dir (car type)))
+
+(dirvish-emerge-define-predicate files
+  "Matches directories."
+  (eq 'file (car type)))
+
+(dirvish-emerge-define-predicate symlinks
+  "Matches symlimks."
+  (cdr type))
+
+;; Note the behavior of this predicate doesn't exactly match `file-executable-p'.
+;; It checks if the owner of the file can execute it and not if the current
+;; user can.
+(dirvish-emerge-define-predicate executables
+  "Matches executables."
+  (eq ?x (aref (file-attribute-modes attrs) 3)))
 
 (cl-defgeneric dirvish-emerge-read-recipe (recipe &optional obj)
   "Read RECIPE from user input and optionally save it to OBJ.")
