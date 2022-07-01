@@ -74,19 +74,19 @@ turned on in the buffer."
   "[Experimental] Class for Dirvish emerge groups.")
 
 (cl-defmethod transient-format-key ((obj dirvish-emerge-group))
-  "Format key for 'dirvish-emerge-group' instance OBJ."
+  "Format key for OBJ."
   (let ((key (oref obj key))
         (sel (oref obj selected)))
     (propertize key 'face (if sel 'transient-value 'transient-key))))
 
 (cl-defmethod transient-format-description ((obj dirvish-emerge-group))
-  "Format description for 'dirvish-emerge-group' instance OBJ."
+  "Format description for OBJ."
   (let ((desc (oref obj description))
         (sel (oref obj selected)))
     (propertize desc 'face (and sel 'transient-value))))
 
 (cl-defmethod transient-format-value ((obj dirvish-emerge-group))
-  "Format value for 'dirvish-emerge-group' instance OBJ."
+  "Format value for OBJ."
   (pcase-let* ((`(,type . ,val) (oref obj recipe))
                (face (if (oref obj hide) 'font-lock-comment-face
                        'transient-argument)))
@@ -97,12 +97,12 @@ turned on in the buffer."
       ('predicate (propertize (format "form: %s" val) 'face face)))))
 
 (cl-defmethod transient-infix-read ((obj dirvish-emerge-group))
-  "Read value from 'dirvish-emerge-group' instance OBJ."
+  "Read value from OBJ."
   (oset obj value (list (oref obj description) (oref obj recipe)
                         (oref obj hide) (oref obj selected))))
 
 (cl-defmethod transient-infix-set ((obj dirvish-emerge-group) _value)
-  "Set value for 'dirvish-emerge-group' instance OBJ."
+  "Set value for OBJ."
   (if-let ((sel (oref obj selected)))
       (dirvish-emerge-read-recipe (oref obj recipe) obj)
     (oset obj selected t)))
@@ -197,7 +197,7 @@ The predicate is consumed by `dirvish-emerge-groups'."
 
 (defun dirvish-emerge--create-infix
     (ifx description recipe &optional selected hide)
-  "Create a 'dirvish-emerge-group' infix IFX.
+  "Create an transient infix IFX of emerge group.
 DESCRIPTION, RECIPE, SELECTED and HIDE are inserted into the
 corresponding slots."
   (eval `(transient-define-infix ,ifx ()
@@ -208,7 +208,7 @@ corresponding slots."
            :description ,description)))
 
 (defun dirvish-emerge--create-infixes ()
-  "Define and collect emerge groups from 'dirvish-emerge-groups'."
+  "Define and collect emerge groups from `dirvish-emerge-groups'."
   (cl-loop with len = (length dirvish-emerge-groups)
            for idx from 0
            for (desc recipe hide selected) in (seq-take dirvish-emerge-groups 99)
