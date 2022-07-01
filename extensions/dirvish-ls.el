@@ -13,7 +13,7 @@
 
 ;;; Code:
 
-(require 'dired)
+(require 'dirvish)
 (require 'transient)
 
 (defun dirvish-ls--clear-switches-choices ()
@@ -26,6 +26,7 @@
   (interactive)
   (let* ((args (transient-args transient-current-command))
          (switches (or switches (string-join (append '("-l") args) " "))))
+    (when current-prefix-arg (setq dired-listing-switches switches))
     (setq dired-actual-switches switches)
     (revert-buffer)))
 
@@ -34,6 +35,8 @@
   (interactive)
   (let* ((args (transient-args transient-current-command))
          (switches (or switches (string-join (append '("-l") args) " "))))
+    (when current-prefix-arg (setq dired-listing-switches switches))
+    (setf (dv-ls-switches (dirvish-curr)) switches)
     (dolist (buf (cl-remove-if-not
                   (lambda (b) (with-current-buffer b (derived-mode-p 'dired-mode))) (buffer-list)))
       (with-current-buffer buf
@@ -138,12 +141,14 @@ invoke the sort function, SWITCHES is the the sort flags for
   (lambda (o) (oset o value (split-string (or dired-actual-switches ""))))
   [:description
    (lambda ()
-     (format "%s\n%s %s"
+     (format "%s\n%s %s\n%s %s"
              (propertize "Setup Listing Switches"
                          'face '(:inherit dired-mark :underline t)
                          'display '((height 1.2)))
              (propertize "lowercased switches also work in" 'face 'font-lock-doc-face)
-             (propertize "dired-hide-details-mode" 'face 'font-lock-doc-markup-face)))
+             (propertize "dired-hide-details-mode" 'face 'font-lock-doc-markup-face)
+             (propertize "C-u RET and C-u M-RET will modify" 'face 'font-lock-doc-face)
+             (propertize "dired-listing-switches" 'face 'font-lock-doc-markup-face)))
    ["options"
     ("a" dirvish-ls--filter-switch)
     ("s" dirvish-ls--sort-switch)
