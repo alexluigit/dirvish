@@ -85,8 +85,8 @@ LOCALP is the arg for `dired-current-directory', which see."
   "Advice for FN-ARGS `dired-get-subdir'."
   (unless (dirvish-subtree--parent) (apply fn-args)))
 
-(add-to-list 'dirvish-advice-alist '(dired dired-current-directory dirvish-curr-dir-ad))
-(add-to-list 'dirvish-advice-alist '(dired dired-get-subdir dirvish-get-subdir-ad))
+(advice-add 'dired-current-directory :around #'dirvish-curr-dir-ad)
+(advice-add 'dired-get-subdir :around #'dirvish-get-subdir-ad)
 
 (defun dirvish-subtree--parent (&optional p)
   "Get the parent subtree overlay at point P."

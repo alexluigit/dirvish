@@ -76,8 +76,7 @@ one of categories in `dirvish-peek-categories'."
         (setf (dv-preview-window new-dv)
               (display-buffer-in-side-window
                (dirvish--util-buffer)
-               dirvish-peek-display-alist))
-        (dirvish--add-advices)))
+               dirvish-peek-display-alist))))
     (set-frame-parameter nil 'dirvish--peek
                          `(:category ,preview-category :old ,old-dv))))
 
