@@ -153,8 +153,9 @@ LOCALP is the arg for `dired-current-directory', which see."
                         (delq o dirvish-subtree--overlays)))
       (delete-region (overlay-start ov) (overlay-end ov)))))
 
-(defun dirvish-subtree--revert ()
-  "Put the `dired-subtree-overlays' again after buffer reverting."
+(defun dirvish-subtree--revert (&optional clear)
+  "Put the `dired-subtree-overlays' again after buffer reverting.
+When CLEAR, remove all subtrees in the buffer."
   (cl-loop
    with st-alist = ()
    for ov in dirvish-subtree--overlays
@@ -165,9 +166,12 @@ LOCALP is the arg for `dired-current-directory', which see."
    (let ((sorted (sort st-alist (lambda (a b) (< (car a) (car b))))))
      (setq dirvish-subtree--overlays nil)
      (cl-loop for (_depth . name) in sorted do
-              (when (and (dirvish--goto-file name)
-                         (not (dirvish--subtree-expanded-p)))
-                (dirvish-subtree--insert))))
+              (when (dirvish--goto-file name)
+                (cond (clear
+                       (dired-next-line 1)
+                       (dirvish-subtree--remove))
+                      ((not (dirvish--subtree-expanded-p))
+                       (dirvish-subtree--insert))))))
    (dirvish--goto-file (dirvish-prop :child))))
 
 (dirvish-define-attribute subtree-state
