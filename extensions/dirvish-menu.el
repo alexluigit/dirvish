@@ -77,15 +77,25 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
    ("$" "  Hide subdir"      dired-hide-subdir :transient t)
    ("M-$" "Hide all subdirs" dired-hide-all)])
 
+;;;###autoload (autoload 'dirvish-chxxx-menu "dirvish-menu" nil t)
+(transient-define-prefix dirvish-chxxx-menu ()
+  "Help Menu for file attribute modification commands."
+  ["Modify file's attributes"
+   ("g"   "Change file's GROUP"          dired-do-chgrp)
+   ("m"   "Change file's MODE"           dired-do-chmod)
+   ("o"   "Change file's OWNER"          dired-do-chown)
+   ("t"   "Change file's TIMESTAMP"      dired-do-touch)
+   ("p"   "Change file's PATH"           dired-do-rename)])
+
 ;;;###autoload (autoload 'dirvish-mark-menu "dirvish-menu" nil t)
 (transient-define-prefix dirvish-mark-menu ()
-  "Help Menu for `dired-mark-*' commands."
+  "Help Menu for `dired-mark/do-*' commands."
   [["Mark or unmark files:"
     ("e" "  by Extension"                dired-mark-extension :transient t)
-    ("%" "  by Regexp (file name)"       dired-mark-files-regexp :transient t)
-    ("g" "  by Regexp (file content)"    dired-mark-files-containing-regexp :transient t)
+    ("*" "  by Regexp (file name)"       dired-mark-files-regexp :transient t)
+    ("c" "  by Regexp (file content)"    dired-mark-files-containing-regexp :transient t)
     ("s" "  by Subdir"                   dired-mark-subdir-files :transient t)
-    ("*" "  by Executable"               dired-mark-executables :transient t)
+    ("E" "  by Executable"               dired-mark-executables :transient t)
     ("/" "  by Directory"                dired-mark-directories :transient t)
     ("@" "  by Symlink"                  dired-mark-symlinks :transient t)
     ("&" "  by Garbage"                  dired-flag-garbage-files :transient t)
@@ -99,7 +109,7 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("n" "  Move to next marked file"    dired-next-marked-file :transient t)
     ("p" "  Move to prev marked file"    dired-prev-marked-file :transient t)]
    ["Actions on marked files:"
-    ("F"   "Open"                        dired-do-find-marked-files)
+    ("O"   "Open"                        dired-do-find-marked-files)
     ("S"   "Symlink"                     dired-do-symlink)
     ("H"   "Hardlink"                    dired-do-hardlink)
     ("P"   "Print"                       dired-do-print)
@@ -113,15 +123,9 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("!"   "Shell command"               dired-do-shell-command)
     ("&"   "Async shell command"         dired-do-async-shell-command)
     ("N"   "Echo number of marked files" dired-number-of-marked-files)
-    ("l"   "Redisplay all marked files"  dired-do-redisplay)
-    ("c"   "Change mark type"            dired-change-marks)
-    ("k"   "Kill lines"                  dired-do-kill-lines)]]
-  ["Change file attributes:"
-   ("R"   "Change file's NAME"           dired-do-rename)
-   ("G"   "Change file's GROUP"          dired-do-chgrp)
-   ("M"   "Change file's MODE"           dired-do-chmod)
-   ("O"   "Change file's OWNER"          dired-do-chown)
-   ("T"   "Change file's TIMESTAMP"      dired-do-touch)])
+    ("A"   "Modify file's attributes"    dirvish-chxxx-menu)
+    ("C"   "Change mark type"            dired-change-marks)
+    ("k"   "Kill lines"                  dired-do-kill-lines)]])
 
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
 (transient-define-prefix dirvish-file-info-menu ()
