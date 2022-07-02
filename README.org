@@ -41,7 +41,7 @@ if you have melpa in your ~package-archives~.
 (use-package dirvish
   :ensure t
   :config
-  ;; let Dirvish takes over Dired globally, why not?
+  ;; let Dirvish takes over Dired globally
   (dirvish-override-dired-mode))
 #+end_src
 

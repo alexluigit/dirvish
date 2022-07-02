@@ -17,7 +17,6 @@
 ;; - Multiple window layouts
 ;; - Always available file preview
 ;; - Isolated sessions
-;; - Asynchronous directory listing
 ;; - A modern and composable user interface
 
 ;;; Code:
@@ -247,29 +246,28 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 ;;;; Internal variables
 
 (defvar dirvish-advice-alist
-  '((dired         dired                           dirvish-dired-ad               :override)
-    (dired         dired-jump                      dirvish-dired-jump-ad          :override)
-    (dired         dired-find-file                 dirvish-find-file              :override)
-    (dired         dired-find-alternate-file       dirvish-find-file              :override)
-    (dired         dired-find-file-other-window    dirvish-find-file-other-win-ad :override)
-    (dired         dired-other-window              dirvish-dired-other-window-ad  :override)
-    (dired         dired-other-tab                 dirvish-dired-other-tab-ad     :override)
-    (dired         dired-other-frame               dirvish-dired-other-frame-ad   :override)
-    (dired         dired-up-directory              dirvish-up-directory           :override)
-    (dired-aux     dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
-    (wdired        wdired-change-to-wdired-mode    dirvish-wdired-enter-ad        :after)
-    (wdired        wdired-exit                     dirvish-wdired-exit-ad         :after)
-    (wdired        wdired-finish-edit              dirvish-wdired-exit-ad         :after)
-    (wdired        wdired-abort-changes            dirvish-wdired-exit-ad         :after)
-    (find-dired    find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
-    (files         find-file                       dirvish-find-file-ad)
-    (recentf       recentf-track-opened-file       dirvish-ignore-ad)
-    (recentf       recentf-track-closed-file       dirvish-ignore-ad)
-    (winner        winner-save-old-configurations  dirvish-ignore-ad)
-    (evil          evil-refresh-cursor             dirvish-ignore-ad)
-    (meow          meow--update-cursor             dirvish-ignore-ad)
-    (flycheck      flycheck-buffer                 dirvish-ignore-ad)
-    (lsp-mode      lsp-deferred                    dirvish-ignore-ad)))
+  '((dired                           dirvish-dired-ad               :override)
+    (dired-jump                      dirvish-dired-jump-ad          :override)
+    (dired-find-file                 dirvish-find-file              :override)
+    (dired-find-alternate-file       dirvish-find-file              :override)
+    (dired-find-file-other-window    dirvish-find-file-other-win-ad :override)
+    (dired-other-window              dirvish-dired-other-window-ad  :override)
+    (dired-other-tab                 dirvish-dired-other-tab-ad     :override)
+    (dired-other-frame               dirvish-dired-other-frame-ad   :override)
+    (dired-up-directory              dirvish-up-directory           :override)
+    (dired-dwim-target-next          dirvish-dwim-target-next-ad    :override)
+    (wdired-change-to-wdired-mode    dirvish-wdired-enter-ad        :after)
+    (wdired-exit                     dirvish-wdired-exit-ad         :after)
+    (wdired-finish-edit              dirvish-wdired-exit-ad         :after)
+    (wdired-abort-changes            dirvish-wdired-exit-ad         :after)
+    (find-dired-sentinel             dirvish-find-dired-sentinel-ad :after)
+    (find-file                       dirvish-find-file-ad)
+    (recentf-track-opened-file       dirvish-ignore-ad)
+    (recentf-track-closed-file       dirvish-ignore-ad)
+    (winner-save-old-configurations  dirvish-ignore-ad)
+    (meow--update-cursor             dirvish-ignore-ad)
+    (flycheck-buffer                 dirvish-ignore-ad)
+    (lsp-deferred                    dirvish-ignore-ad)))
 (defvar dirvish-scopes
   '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window))
 (defvar dirvish-override-dired-mode nil)
@@ -645,13 +643,10 @@ restore them after."
              (setq other-window-scroll-buffer
                    (window-buffer (dv-preview-window new))))
            (setf (dv-root-window new) (frame-selected-window frame-or-window))
-           (dirvish--add-advices)
            (set-frame-parameter nil 'dirvish--curr new))
           (t
            (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
            (setq other-window-scroll-buffer nil)
-           (dirvish--remove-advices
-            (and dirvish-override-dired-mode '(dired find-dired)))
            (set-frame-parameter nil 'dirvish--curr nil)))))
 
 (defun dirvish-kill (dv &optional keep-current)
@@ -883,21 +878,6 @@ FILENAME and WILDCARD are their args."
   "Only apply FN with ARGS outside of Dirvish."
   (when (or (not (dirvish-curr)) (derived-mode-p 'wdired-mode))
     (apply fn args)))
-
-(defun dirvish--add-advices (&optional packages)
-  "Add all advices listed in `dirvish-advice-alist'.
-If PACKAGES, only add advices for these packages."
-  (when packages (dolist (package packages) (require package nil t)))
-  (pcase-dolist (`(,pkg ,sym ,fn ,place) dirvish-advice-alist)
-    (when (or (and packages (memq pkg packages))
-              (and (not packages) (require pkg nil t)))
-      (advice-add sym (or place :around) fn))))
-
-(defun dirvish--remove-advices (&optional exclude-packages)
-  "Remove all advices listed in `dirvish-advice-alist'.
-If EXCLUDE-PACKAGES, do not remove advices for these packages."
-  (pcase-dolist (`(,pkg ,sym ,fn) dirvish-advice-alist)
-    (unless (memq pkg exclude-packages) (advice-remove sym fn))))
 
 ;;;; Preview
 
@@ -1327,6 +1307,8 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-setup ()
   "Configurations for dirvish parent windows."
   (setq-local cursor-type nil)
+  (when (boundp 'evil-normal-state-cursor)
+    (setq-local evil-normal-state-cursor '(bar . 0)))
   (set-window-fringes nil 1 1)
   (when-let ((child (dirvish-prop :child))) (dired-goto-file child))
   (let* ((dv (dirvish-curr))
@@ -1338,7 +1320,6 @@ Dirvish sets `revert-buffer-function' to this function."
              (dired-hide-details-mode t))))
     (dirvish--render-attributes dv)
     (dirvish-prop :dv dv)
-    (dirvish--add-advices '(evil))
     (setq mode-line-format
           (cond ((or layout (eq dirvish-mode-line-position 'disable)) nil)
                 (t (dv-mode-line-format dv))))
@@ -1679,10 +1660,11 @@ buffer, it defaults to filename under the cursor when it is nil."
   :group 'dirvish :global t
   (if dirvish-override-dired-mode
       (progn
-        (dirvish--add-advices '(dired find-dired))
+        (pcase-dolist (`(,sym ,fn ,place) dirvish-advice-alist)
+          (advice-add sym (or place :around) fn))
         (setq find-directory-functions
               (cl-substitute #'dirvish--noselect #'dired-noselect find-directory-functions)))
-    (dirvish--remove-advices)
+    (pcase-dolist (`(,sym ,fn) dirvish-advice-alist) (advice-remove sym fn))
     (setq find-directory-functions
           (cl-substitute #'dired-noselect #'dirvish--noselect find-directory-functions))))
 
