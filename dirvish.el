@@ -1327,8 +1327,6 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-setup ()
   "Configurations for dirvish parent windows."
   (setq-local cursor-type nil)
-  (when (bound-and-true-p evil-normal-state-cursor)
-    (setq-local evil-normal-state-cursor '(bar . 0)))
   (set-window-fringes nil 1 1)
   (when-let ((child (dirvish-prop :child))) (dired-goto-file child))
   (let* ((dv (dirvish-curr))
@@ -1340,6 +1338,7 @@ Dirvish sets `revert-buffer-function' to this function."
              (dired-hide-details-mode t))))
     (dirvish--render-attributes dv)
     (dirvish-prop :dv dv)
+    (dirvish--add-advices '(evil))
     (setq mode-line-format
           (cond ((or layout (eq dirvish-mode-line-position 'disable)) nil)
                 (t (dv-mode-line-format dv))))
