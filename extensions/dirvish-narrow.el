@@ -69,6 +69,15 @@ IDX the index of DIR in `dired-subdir-alist'."
              (when (string-match regex file)
                (insert line)))))
 
+(defun dirvish-narrow-minibuffer-setup-h ()
+  "Minibuffer setup function for `dirvish-narrow'."
+  (with-current-buffer (window-buffer (minibuffer-selected-window))
+    (if (>= (line-number-at-pos (point-max)) (frame-height))
+        (goto-char (window-start))
+      (dired-goto-file (dirvish-prop :child)))
+    (dirvish-update-body-h))
+  (add-hook 'post-command-hook #'dirvish-narrow-dirvish-update-h nil t))
+
 ;;;###autoload
 (defun dirvish-narrow ()
   "Narrow a Dirvish buffer to the files matching a regex."
@@ -76,8 +85,7 @@ IDX the index of DIR in `dired-subdir-alist'."
   (dirvish-narrow--build-indices)
   (when (minibufferp) (user-error "`%s' called inside the minibuffer" this-command))
   (let ((old-f (dirvish-prop :child)))
-    (minibuffer-with-setup-hook
-        (lambda () (add-hook 'post-command-hook #'dirvish-narrow-dirvish-update-h nil t))
+    (minibuffer-with-setup-hook #'dirvish-narrow-minibuffer-setup-h
       (unwind-protect
           (read-from-minibuffer "Focus on files: ")
         (dired-goto-file old-f)))))
