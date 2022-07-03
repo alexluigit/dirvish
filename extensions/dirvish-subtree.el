@@ -124,9 +124,10 @@ LOCALP is the arg for `dired-current-directory', which see."
          (listing (dirvish-subtree--readin dirname))
          buffer-read-only beg end)
     (dirvish--print-directory (dirvish-prop :tramp) (current-buffer) dirname t)
-    (save-excursion
-      (setq beg (progn (move-end-of-line 1) (insert "\n") (point)))
-      (setq end (progn (insert listing) (1+ (point)))))
+    (with-silent-modifications
+      (save-excursion
+        (setq beg (progn (move-end-of-line 1) (insert "\n") (point)))
+        (setq end (progn (insert listing) (1+ (point))))))
     (let* ((ov (make-overlay beg end))
            (parent (dirvish-subtree--parent (1- beg)))
            (depth (or (and parent (1+ (overlay-get parent 'dired-subtree-depth))) 1)))
@@ -142,15 +143,15 @@ LOCALP is the arg for `dired-current-directory', which see."
   (when-let* ((ov (dirvish-subtree--parent))
               (beg (overlay-start ov))
               (end (overlay-end ov)))
-    (let ((inhibit-read-only t))
-      (goto-char beg)
-      (dired-previous-line 1)
-      (cl-loop for o in (overlays-in (point-min) (point-max))
-               when (and (overlay-get o 'dired-subtree-depth)
-                         (>= (overlay-start o) beg)
-                         (<= (overlay-end o) end))
-               do (setq dirvish-subtree--overlays
-                        (delq o dirvish-subtree--overlays)))
+    (goto-char beg)
+    (dired-previous-line 1)
+    (cl-loop for o in (overlays-in (point-min) (point-max))
+             when (and (overlay-get o 'dired-subtree-depth)
+                       (>= (overlay-start o) beg)
+                       (<= (overlay-end o) end))
+             do (setq dirvish-subtree--overlays
+                      (delq o dirvish-subtree--overlays)))
+    (with-silent-modifications
       (delete-region (overlay-start ov) (overlay-end ov)))))
 
 (defun dirvish-subtree--revert (&optional clear)
