@@ -473,5 +473,33 @@ Press again to set the value for the group"))
     (remove-hook 'dirvish-setup-hook #'dirvish-emerge--apply t)
     (when (derived-mode-p 'dirvish-mode) (revert-buffer))))
 
+(defun dirvish-emerge--get-group-overlay ()
+  "Return overlay for the group at point."
+  (cl-find-if (lambda (o) (overlay-get o 'dirvish-emerge-group))
+              (overlays-at (point))))
+
+;;;; Interactive commands
+(defun dirvish-emerge-next-group ()
+  "Jump to the first file in the next visible group.
+If in the last group move to the end of buffer."
+  (interactive)
+  (if-let ((group-overlay (dirvish-emerge--get-group-overlay)))
+      (progn (goto-char (overlay-end group-overlay))
+             (forward-char)
+             (while (and (invisible-p (point)) (not (eobp)))
+               (forward-char 1)))
+    (goto-char (point-max))))
+
+(defun dirvish-emerge-previous-group ()
+  "Jump to the first file in the previous visible group.
+If in the first group move to the beginning of buffer."
+  (interactive)
+  (if-let ((group-overlay (dirvish-emerge--get-group-overlay)))
+      (progn (goto-char (overlay-start group-overlay))
+             (backward-char)
+             (while (and (invisible-p (point)) (not (bobp)))
+               (backward-char 1))
+             (goto-char (overlay-start (dirvish-emerge--get-group-overlay))))
+    (goto-char (point-min))))
 (provide 'dirvish-emerge)
 ;;; dirvish-emerge.el ends here
