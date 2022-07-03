@@ -372,7 +372,7 @@ If DEMOTE, shift them to the lowest instead."
            with start = (point)
            for file in (reverse files) do (insert file "\n")
            finally do (let ((o (make-overlay start (point))))
-                        (overlay-put o 'dirvish-emerge-group t)
+                        (overlay-put o 'dirvish-emerge-group idx)
                         (overlay-put o 'before-string
                                      (dirvish-emerge--format-group-title
                                       (concat desc (when hide " (Hidden)"))))
@@ -501,5 +501,20 @@ If in the first group move to the beginning of buffer."
                (backward-char 1))
              (goto-char (overlay-start (dirvish-emerge--get-group-overlay))))
     (goto-char (point-min))))
+
+;; Ideally this would be a toggle. But it is not possible to be
+;; inside a hidden group.
+(defun dirvish-emerge-hide-current-group ()
+  "Hide the current group."
+  (interactive)
+  (when-let ((group-overlay (dirvish-emerge--get-group-overlay))
+             (group-id (overlay-get group-overlay 'dirvish-emerge-group))
+             (group (nth (1- group-id) dirvish-emerge-groups)))
+    (overlay-put group-overlay 'before-string
+                 (dirvish-emerge--format-group-title
+                  (concat (nth 0 group) " (Hidden)")))
+    (overlay-put group-overlay 'invisible t)
+    (setf (nth 2 group) t)))
+
 (provide 'dirvish-emerge)
 ;;; dirvish-emerge.el ends here
