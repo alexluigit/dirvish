@@ -369,19 +369,15 @@ If DEMOTE, shift them to the lowest instead."
   (cl-loop with (idx . files) = group
            with hide = (nth 2 (nth (1- idx) dirvish-emerge-groups))
            with desc = (nth 0 (nth (1- idx) dirvish-emerge-groups))
-           with start = (let* ((pos (point))
-                               (o (make-overlay pos pos)))
-                          (prog1 pos
-                            (when (and (not hide) (> (length files) 0))
-                              (overlay-put o 'dirvish-emerge-title t)
-                              (overlay-put o 'invisible t)
-                              (overlay-put o 'after-string
-                                           (dirvish-emerge--format-group-title desc)))))
+           with start = (point)
            for file in (reverse files) do (insert file "\n")
-           finally do (when hide
-                        (let ((o (make-overlay start (point))))
-                          (overlay-put o 'dirvish-emerge-hide t)
-                          (overlay-put o 'invisible t)))))
+           finally do (let ((o (make-overlay start (point))))
+                        (overlay-put o 'dirvish-emerge-group t)
+                        (overlay-put o 'before-string
+                                     (dirvish-emerge--format-group-title
+                                      (concat desc (when hide " (Hidden)"))))
+                        (overlay-put o 'invisible hide)
+                        (overlay-put o 'evaporate t))))
 
 (defun dirvish-emerge--apply-1 (preds)
   "Helper for `dirvish-emerge--apply'.
@@ -392,8 +388,6 @@ PREDS are locally composed predicates."
         (idx-m (1+ (length preds)))
         curr-dir groups)
     (setq groups (cl-loop for i from 1 to idx-m collect (cons i '())))
-    (remove-overlays beg end 'dirvish-emerge-title t)
-    (remove-overlays beg end 'dirvish-emerge-hide t)
     (save-excursion
       (goto-char beg)
       (setq curr-dir (file-local-name (dired-current-directory)))
