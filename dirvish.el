@@ -270,7 +270,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (lsp-deferred                    dirvish-ignore-ad)))
 (defvar dirvish-scopes
   '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window))
-(defvar dirvish-override-dired-mode nil)
 (defvar dirvish-attrs-library
   '((dirvish-extras   file-size)
     (dirvish-vc       vc-state git-msg)
@@ -707,38 +706,38 @@ If KEEP-CURRENT, do not kill the current directory buffer."
   (let ((in-tramp (dirvish-prop :tramp))
         (curr-pos (point))
         (fr-h (frame-height))
-        (remain (window-width))
-        fns buffer-read-only)
+        (remain (window-width)) fns)
     (cl-loop for (ov pred fn width) in (dv-attribute-fns dv)
              do (remove-overlays (point-min) (point-max) ov t)
              for valid = (funcall pred dv)
              when valid do (progn (setq remain (- remain (or (eval width) 0)))
                                   (push fn fns)))
-    (save-excursion
-      (forward-line (- 0 fr-h))
-      (cl-dotimes (_ (* 2 fr-h))
-        (when (eobp) (cl-return))
-        (when-let* ((f-beg (dired-move-to-filename))
-                    (f-end (dired-move-to-end-of-filename t))
-                    (l-beg (line-beginning-position))
-                    (l-end (line-end-position))
-                    (f-str (buffer-substring f-beg f-end))
-                    (f-wid (string-width f-str))
-                    (f-dir (dired-current-directory))
-                    (f-name (file-local-name (expand-file-name f-str f-dir)))
-                    (remain (- remain (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))))
-          (let ((f-attrs (dirvish-attribute-cache f-name :builtin
-                           (unless in-tramp (file-attributes f-name))))
-                (f-type (dirvish-attribute-cache f-name :type
-                          (let ((ch (progn (back-to-indentation) (char-after))))
-                            `(,(if (eq ch 100) 'dir 'file) . nil))))
-                (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
-            (unless (get-text-property f-beg 'mouse-face)
-              (dired-insert-set-properties l-beg l-end))
-            (dolist (fn fns)
-              (funcall fn f-beg f-end f-str f-wid f-dir f-name
-                       f-attrs f-type l-beg l-end remain hl-face))))
-        (forward-line 1)))))
+    (with-silent-modifications
+      (save-excursion
+        (forward-line (- 0 fr-h))
+        (cl-dotimes (_ (* 2 fr-h))
+          (when (eobp) (cl-return))
+          (when-let* ((f-beg (dired-move-to-filename))
+                      (f-end (dired-move-to-end-of-filename t))
+                      (l-beg (line-beginning-position))
+                      (l-end (line-end-position))
+                      (f-str (buffer-substring f-beg f-end))
+                      (f-wid (string-width f-str))
+                      (f-dir (dired-current-directory))
+                      (f-name (file-local-name (expand-file-name f-str f-dir)))
+                      (remain (- remain (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))))
+            (let ((f-attrs (dirvish-attribute-cache f-name :builtin
+                             (unless in-tramp (file-attributes f-name))))
+                  (f-type (dirvish-attribute-cache f-name :type
+                            (let ((ch (progn (back-to-indentation) (char-after))))
+                              `(,(if (eq ch 100) 'dir 'file) . nil))))
+                  (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
+              (unless (get-text-property f-beg 'mouse-face)
+                (dired-insert-set-properties l-beg l-end))
+              (dolist (fn fns)
+                (funcall fn f-beg f-end f-str f-wid f-dir f-name
+                         f-attrs f-type l-beg l-end remain hl-face))))
+          (forward-line 1))))))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
@@ -1259,11 +1258,7 @@ default implementation is `find-args' with simple formatting."
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
-    (cond ((>= (line-number-at-pos (point))
-               (line-number-at-pos (point-max)))
-           (let (line-move-visual goal-column) (line-move -1 t))
-           (while (invisible-p (point)) (forward-char 1)))
-          ((bobp) (forward-line 1)))
+    (cond ((eobp) (forward-line -1)) ((bobp) (forward-line 1)))
     (dired-move-to-filename)
     (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
@@ -1331,7 +1326,8 @@ Dirvish sets `revert-buffer-function' to this function."
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'quit-window-hook #'dirvish-quit-window-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
-  (run-hooks 'dirvish-mode-hook))
+  (run-hooks 'dirvish-mode-hook)
+  (set-buffer-modified-p nil))
 
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."

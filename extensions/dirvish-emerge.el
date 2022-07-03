@@ -370,7 +370,7 @@ PREDS are locally composed predicates."
         (end (point-max))
         (old-f (dirvish-prop :child))
         (idx-m (1+ (length preds)))
-        buffer-read-only curr-dir groups)
+        curr-dir groups)
     (setq groups (cl-loop for i from 1 to idx-m collect (cons i '())))
     (remove-overlays beg end 'dirvish-emerge-title t)
     (remove-overlays beg end 'dirvish-emerge-hide t)
@@ -392,9 +392,10 @@ PREDS are locally composed predicates."
             (push (buffer-substring-no-properties l-beg l-end)
                   (alist-get (or match idx-m) groups))))
         (forward-line 1))
-      (delete-region beg end)
-      (goto-char beg)
-      (mapc #'dirvish-emerge--insert-group groups))
+      (with-silent-modifications
+        (delete-region beg end)
+        (goto-char beg)
+        (mapc #'dirvish-emerge--insert-group groups)))
     (dired-goto-file old-f)))
 
 (defun dirvish-emerge--apply (&optional force)
