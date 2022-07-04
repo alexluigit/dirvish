@@ -5,7 +5,6 @@
 ;; Version: 1.8.14
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
-;; Package-Requires: ((emacs "28.1"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
@@ -153,7 +152,7 @@ The predicate is consumed by `dirvish-emerge-groups'."
   (eq 'dir (car type)))
 
 (dirvish-emerge-define-predicate files
-  "Matches directories."
+  "Matches files."
   (eq 'file (car type)))
 
 (dirvish-emerge-define-predicate symlinks
@@ -353,7 +352,7 @@ If DEMOTE, shift them to the lowest instead."
 
 (defun dirvish-emerge--format-group-title (desc)
   "Format group title by DESC in Dirvish buffer."
-  (format "%s%s%s\n"
+  (format "%s%s%s"
           (propertize " " 'font-lock-face
                       '(:inherit dirvish-emerge-group-title
                                  :strike-through t))
@@ -369,13 +368,15 @@ If DEMOTE, shift them to the lowest instead."
   (cl-loop with (idx . files) = group
            with hide = (nth 2 (nth (1- idx) dirvish-emerge-groups))
            with desc = (nth 0 (nth (1- idx) dirvish-emerge-groups))
-           with start = (point)
+           with start = nil
+           initially do (when files
+                          (insert (dirvish-emerge--format-group-title
+                                   (concat desc (when hide " (Hidden)")))
+                                  "\n"))
+           initially do (setq start (point))
            for file in (reverse files) do (insert file "\n")
            finally do (let ((o (make-overlay start (point))))
                         (overlay-put o 'dirvish-emerge-group idx)
-                        (overlay-put o 'before-string
-                                     (dirvish-emerge--format-group-title
-                                      (concat desc (when hide " (Hidden)"))))
                         (overlay-put o 'invisible hide)
                         (overlay-put o 'evaporate t))))
 
@@ -475,8 +476,10 @@ Press again to set the value for the group"))
 
 (defun dirvish-emerge--get-group-overlay ()
   "Return overlay for the group at point."
-  (cl-find-if (lambda (o) (overlay-get o 'dirvish-emerge-group))
-              (overlays-at (point))))
+  (save-excursion
+    (or (cl-find-if (lambda (o) (overlay-get o 'dirvish-emerge-group))
+                    (overlays-at (point)))
+        (progn (forward-line 1) (dirvish-emerge--get-group-overlay)))))
 
 ;;;; Interactive commands
 (defun dirvish-emerge-next-group ()
@@ -504,17 +507,23 @@ If in the first group move to the beginning of buffer."
 
 ;; Ideally this would be a toggle. But it is not possible to be
 ;; inside a hidden group.
-(defun dirvish-emerge-hide-current-group ()
-  "Hide the current group."
+(defun dirvish-emerge-toggle-current-group ()
+  "Toggle the current group."
   (interactive)
   (when-let ((group-overlay (dirvish-emerge--get-group-overlay))
              (group-id (overlay-get group-overlay 'dirvish-emerge-group))
              (group (nth (1- group-id) dirvish-emerge-groups)))
-    (overlay-put group-overlay 'before-string
-                 (dirvish-emerge--format-group-title
-                  (concat (nth 0 group) " (Hidden)")))
-    (overlay-put group-overlay 'invisible t)
-    (setf (nth 2 group) t)))
+    (cl-callf not (overlay-get group-overlay 'invisible))
+    (if (< (length group) 3)
+        (cl-callf append (nth (1- group-id) dirvish-emerge-groups) '(t))
+      (cl-callf not (nth 2 group)))
+    (with-silent-modifications
+      (goto-char (1- (overlay-start group-overlay)))
+      (delete-region (line-beginning-position) (line-end-position))
+      (insert (dirvish-emerge--format-group-title
+               (concat (nth 0 group)
+                       (when (overlay-get group-overlay 'invisible)
+                         " (Hidden)")))))))
 
 (provide 'dirvish-emerge)
 ;;; dirvish-emerge.el ends here
