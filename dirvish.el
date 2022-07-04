@@ -614,7 +614,6 @@ restore them after."
               finally return res-plist))
        (when (and old ,kill-old (eq (dv-root-window old) (dv-root-window new)))
          (when (and (dv-layout old) (dv-layout new))
-           (message "here")
            (dirvish-kill new)
            (user-error "Dirvish: using existed session"))
          (dirvish-kill old))
@@ -1671,9 +1670,6 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
   (dirvish-new t :path (or path default-directory) :layout dirvish-default-layout))
-
-(define-obsolete-function-alias 'dirvish-dired #'dired-jump "Jun-11,2022"
-  "[Obsolete] Just enable `dirvish-override-dired-mode' and run `dired-jump'.")
 
 ;;;###autoload (autoload 'dirvish-dispatch "dirvish" nil t)
 (transient-define-prefix dirvish-dispatch ()
