@@ -207,8 +207,13 @@ Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
   :type '(alist :key-type ((choice string (repeat string)) :tag "File mimetype or extensions")
                 :value-type ((repeat string) :tag "External command and args")))
 
-(defcustom dirvish-keep-alive-on-quit nil
-  "Whether to kill the last entry buffer of the session when exit."
+(define-obsolete-variable-alias 'dirvish-keep-alive-on-quit 'dirvish-reuse-session "Jul 04, 2022")
+(defcustom dirvish-reuse-session nil
+  "Whether to reuse the hidden sessions.
+If this value is non-nil, Dirvish keeps the last buffer of
+the (single window) sessions alive on exit.  These hidden
+sessions can be reused in the future by command `dirvish' or
+`dired-jump'.  A fullscreen session is always reused."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-hooks-alist '()
@@ -430,15 +435,17 @@ ALIST is window arguments passed to `window--display-buffer'."
         (and (tramp-get-method-parameter vec 'tramp-direct-async)
              (tramp-get-connection-property vec "direct-async-process" nil)))))
 
-(defun dirvish--reuse-session (file)
-  "Reuse the first hidden Dirvish session and find FILE in it."
-  (when dirvish-keep-alive-on-quit
+(defun dirvish--reuse-session (file &optional fullscreen)
+  "Reuse the first hidden Dirvish session and find FILE in it.
+Only do it when `dirvish-reuse-session' or FULLSCREEN is non-nil."
+  (when (or dirvish-reuse-session fullscreen)
     (cl-loop for dv-name in (dirvish-get-all 'name nil t)
              for dv = (gethash dv-name dirvish--hash)
              for index-dir = (dv-index-dir dv)
              for index-buf = (alist-get index-dir (dv-roots dv) nil nil #'equal)
              thereis (and (not (get-buffer-window index-buf))
                           (eq (dv-quit-window-fn dv) #'ignore)
+                          (if fullscreen (dv-layout dv) t)
                           (prog1 (switch-to-buffer index-buf)
                             (dirvish-reclaim)
                             (dirvish-find-file file))))))
@@ -613,9 +620,6 @@ restore them after."
               (setq res-plist (append res-plist (list key (funcall value))))
               finally return res-plist))
        (when (and old ,kill-old (eq (dv-root-window old) (dv-root-window new)))
-         (when (and (dv-layout old) (dv-layout new))
-           (dirvish-kill new)
-           (user-error "Dirvish: using existed session"))
          (dirvish-kill old))
        (set-frame-parameter nil 'dirvish--curr new)
        (when-let ((path (dv-path new)))
@@ -672,7 +676,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
 
 (defun dirvish-on-file-open (dv)
   "Called before opening a file in Dirvish session DV."
-  (dirvish-kill dv dirvish-keep-alive-on-quit))
+  (dirvish-kill dv dirvish-reuse-session))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -1276,7 +1280,7 @@ default implementation is `find-args' with simple formatting."
 
 (defun dirvish-quit-window-h ()
   "Hook function added to `quit-window' locally."
-  (dirvish-kill (dirvish-prop :dv) dirvish-keep-alive-on-quit)
+  (dirvish-kill (dirvish-prop :dv) dirvish-reuse-session)
   (switch-to-buffer (dirvish--util-buffer)))
 
 (defun dirvish-kill-buffer-h ()
@@ -1669,7 +1673,9 @@ buffer, it defaults to filename under the cursor when it is nil."
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
-  (dirvish-new t :path (or path default-directory) :layout dirvish-default-layout))
+  (setq path (or path default-directory))
+  (or (dirvish--reuse-session path 'full)
+      (dirvish-new t :path path :layout dirvish-default-layout)))
 
 ;;;###autoload (autoload 'dirvish-dispatch "dirvish" nil t)
 (transient-define-prefix dirvish-dispatch ()

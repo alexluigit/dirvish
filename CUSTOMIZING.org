@@ -28,25 +28,25 @@ otherwise the preview functionality may not work correctly.
 
 * Customizing options
 
-|-------------------------------+-----------------------------------------------------|
-| Option                        | Description                                         |
-|-------------------------------+-----------------------------------------------------|
-| ~dirvish-cache-dir~             | Cache directory                                     |
-| ~dirvish-auto-cache-threshold~  | Generate cache images automatically                 |
-| ~dirvish-default-layout~        | Default layout for fullscreen sessions              |
-| ~dirvish-hide-details~          | Hide details as you see fit                         |
-| ~dirvish-mode-line-position~    | The place to put the mode line                      |
-| ~dirvish-mode-line-height~      | The height of mode line                             |
-| ~dirvish-mode-line-format~      | Mode line format in root window                     |
-| ~dirvish-header-line-position~  | The place to put the header line                    |
-| ~dirvish-header-line-height~    | The height of header line                           |
-| ~dirvish-header-line-format~    | Header line format in root window                   |
-| ~dirvish-preview-disabled-exts~ | Disable preview for some filetypes                  |
-| ~dirvish-open-with-programs~    | Open certain files with external apps               |
-| ~dirvish-keep-alive-on-quit~    | See [[#In relation to Dired][In relation to Dired]] |
-| ~dirvish-preview-dispatchers~   | See [[#Preview-strategies][Preview strategies]]                              |
-| ~dirvish-attributes~            | See [[#Extra-attributes][Extra attributes]]                                |
-|-------------------------------+-----------------------------------------------------|
+|-------------------------------+----------------------------------------|
+| Option                        | Description                            |
+|-------------------------------+----------------------------------------|
+| ~dirvish-cache-dir~             | Cache directory                        |
+| ~dirvish-auto-cache-threshold~  | Generate cache images automatically    |
+| ~dirvish-default-layout~        | Default layout for fullscreen sessions |
+| ~dirvish-hide-details~          | Hide details as you see fit            |
+| ~dirvish-mode-line-position~    | The place to put the mode line         |
+| ~dirvish-mode-line-height~      | The height of mode line                |
+| ~dirvish-mode-line-format~      | Mode line format in root window        |
+| ~dirvish-header-line-position~  | The place to put the header line       |
+| ~dirvish-header-line-height~    | The height of header line              |
+| ~dirvish-header-line-format~    | Header line format in root window      |
+| ~dirvish-preview-disabled-exts~ | Disable preview for some filetypes     |
+| ~dirvish-open-with-programs~    | Open certain files with external apps  |
+| ~dirvish-reuse-session~         | See [[#In relation to Dired][In relation to Dired]]               |
+| ~dirvish-preview-dispatchers~   | See [[#Preview-strategies][Preview strategies]]                 |
+| ~dirvish-attributes~            | See [[#Extra-attributes][Extra attributes]]                   |
+|-------------------------------+----------------------------------------|
 Consult the docstring of the options for details.
 
 * In relation to Dired
@@ -102,7 +102,7 @@ As a comparison, the directory/preview buffers are reused during a Dirvish
 session and get killed when user explicitly exit the session.
 
 The buffer holding the last entry of the session won't get killed on session
-exit if ~dirvish-keep-alive-on-quit~ is enabled (disabled by default).
+exit if ~dirvish-reuse-session~ is enabled (disabled by default).
 
 ** Mode line
 

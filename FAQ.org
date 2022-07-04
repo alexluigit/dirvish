@@ -5,7 +5,7 @@
 * FAQ
 ** How to prevent Dirvish from killing current buffer on session quit?
 
-Set ~dirvish-keep-alive-on-quit~ to t.
+Set ~dirvish-reuse-session~ to t.
 
 ** Incorrect sort information on the mode-line
 
