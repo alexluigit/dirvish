@@ -129,7 +129,7 @@ conditions. The variable ~dirvish-preview-dispatchers~, which holds all the acti
 dispatchers, has the default value looks like:
 
 #+begin_src emacs-lisp
-(text gif image video audio epub archive pdf-tools)
+(image gif video audio epub pdf archive)
 #+end_src
 
 Each dispatcher in this list handles the validation and preview content
