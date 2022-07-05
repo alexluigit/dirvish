@@ -44,8 +44,7 @@ You can get all available attributes in `dirvish--available-attrs'.
 See `dirvish-define-attribute'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
-(defcustom dirvish-preview-dispatchers
-  `(image gif video audio epub archive ,(if (require 'pdf-tools nil t) 'pdf-tools 'pdf-preface))
+(defcustom dirvish-preview-dispatchers '(image gif video audio epub archive pdf)
   "List of preview dispatchers.
 Preview dispatchers are defined by `dirvish-define-preview'.  It
 holds a function that takes current filename and preview window
@@ -283,7 +282,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
-(defconst dirvish--cache-img-threshold (* 1024 1024 0.4))
 (defconst dirvish--dir-tail-regex (concat (file-name-as-directory (getenv "HOME")) "\\|\\/$\\|^\\/"))
 (defconst dirvish--preview-img-scale 0.92)
 (defconst dirvish--tramp-preview-cmd
@@ -294,11 +292,11 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defconst dirvish--cache-embedded-video-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defconst dirvish--cache-img-fns
-  (cl-loop for dp in '(image video epub)
-           collect (intern (format "dirvish-%s-preview-dp" dp))))
+  (cl-loop for dp in '(image video epub) collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defconst dirvish--search-switches
   (dirvish--mode-line-fmt-setter '(:left (search-switches) :right (search-time pwd " ")) t))
 (defconst dirvish--img-always-cache-exts '("heic"))
+(defconst dirvish--img-cache-threshold (* 1024 1024 0.4))
 (defvar dirvish--hash (make-hash-table))
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-mode-line-segments '())
@@ -999,7 +997,7 @@ When PROC finishes, fill preview buffer with process result."
            (cache (dirvish--preview-cache-image-path file width ".jpg")))
       (cond ((file-exists-p cache)
              `(image . ,(create-image cache nil nil :max-width width :max-height height)))
-            ((or (> (nth 7 (file-attributes file)) dirvish--cache-img-threshold)
+            ((or (> (nth 7 (file-attributes file)) dirvish--img-cache-threshold)
                  (member ext dirvish--img-always-cache-exts))
              `(image-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
                               ,(number-to-string width) ,cache)))
@@ -1027,20 +1025,11 @@ When PROC finishes, fill preview buffer with process result."
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
         `(image-cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
 
-(dirvish-define-preview pdf-preface (file ext preview-window)
-  "Display a pdf preface image for FILE in PREVIEW-WINDOW."
-  (when (equal ext "pdf")
-    (let* ((width (dirvish--preview-image-size preview-window))
-           (height (dirvish--preview-image-size preview-window 'height))
-           (cache (dirvish--preview-cache-image-path file width))
-           (cache-jpg (concat cache ".jpg")))
-      (if (file-exists-p cache-jpg)
-          `(image . ,(create-image cache-jpg nil nil :max-width width :max-height height))
-        `(image-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
-
-(dirvish-define-preview pdf-tools (file)
+(dirvish-define-preview pdf (file ext)
   "Open FILE with `find-file-noselect'."
-  (when (equal ext "pdf") `(buffer . ,(find-file-noselect file t nil))))
+  (when (equal ext "pdf")
+    (if (featurep 'pdf-tools) `(buffer . ,(find-file-noselect file t nil))
+      '(info . "Emacs package 'pdf-tools' is required to preview pdf documents"))))
 
 (dirvish-define-preview archive (file ext)
   "Display output of corresponding unarchive commands for FILE."
@@ -1459,7 +1448,7 @@ If the buffer is not available, create it with `dired-noselect'."
           (if append (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) (cdr info))
             (dirvish-prop :vc-backend (car info))))
         (unless append (run-hooks 'dirvish-setup-hook))
-        (dirvish-update-body-h))))
+        (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
   (delete-process proc)
   (kill-buffer (process-buffer proc)))
 
