@@ -716,26 +716,28 @@ If KEEP-CURRENT, do not kill the current directory buffer."
         (forward-line (- 0 fr-h))
         (cl-dotimes (_ (* 2 fr-h))
           (when (eobp) (cl-return))
-          (when-let* ((f-beg (dired-move-to-filename))
-                      (f-end (dired-move-to-end-of-filename t))
-                      (l-beg (line-beginning-position))
-                      (l-end (line-end-position))
-                      (f-str (buffer-substring f-beg f-end))
-                      (f-wid (string-width f-str))
-                      (f-dir (dired-current-directory))
-                      (f-name (file-local-name (expand-file-name f-str f-dir)))
-                      (remain (- remain (* dirvish--subtree-prefix-len (dirvish--subtree-depth)))))
-            (let ((f-attrs (dirvish-attribute-cache f-name :builtin
-                             (unless in-tramp (file-attributes f-name))))
-                  (f-type (dirvish-attribute-cache f-name :type
-                            (let ((ch (progn (back-to-indentation) (char-after))))
-                              `(,(if (eq ch 100) 'dir 'file) . nil))))
-                  (hl-face (and (eq f-beg curr-pos) 'dirvish-hl-line)))
+          (let ((f-beg (dired-move-to-filename))
+                (f-end (dired-move-to-end-of-filename t))
+                (l-beg (line-beginning-position))
+                (l-end (line-end-position))
+                (remain (- remain (* dirvish--subtree-prefix-len (dirvish--subtree-depth))))
+                f-str f-wid f-dir f-name f-attrs f-type hl-face)
+            (setq hl-face (and (eq (or f-beg l-beg) curr-pos) 'dirvish-hl-line))
+            (when f-beg
+              (setq f-str (buffer-substring f-beg f-end))
+              (setq f-wid (string-width f-str))
+              (setq f-dir (dired-current-directory))
+              (setq f-name (file-local-name (expand-file-name f-str f-dir)))
+              (setq f-attrs (dirvish-attribute-cache f-name :builtin
+                              (unless in-tramp (file-attributes f-name))))
+              (setq f-type (dirvish-attribute-cache f-name :type
+                             (let ((ch (progn (back-to-indentation) (char-after))))
+                               `(,(if (eq ch 100) 'dir 'file) . nil))))
               (unless (get-text-property f-beg 'mouse-face)
-                (dired-insert-set-properties l-beg l-end))
-              (dolist (fn fns)
-                (funcall fn f-beg f-end f-str f-wid f-dir f-name
-                         f-attrs f-type l-beg l-end remain hl-face))))
+                (dired-insert-set-properties l-beg l-end)))
+            (dolist (fn (if f-beg fns '(dirvish-attribute-hl-line-rd)))
+              (funcall fn f-beg f-end f-str f-wid f-dir f-name
+                       f-attrs f-type l-beg l-end remain hl-face)))
           (forward-line 1))))))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
