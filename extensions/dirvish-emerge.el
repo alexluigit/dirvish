@@ -372,7 +372,8 @@ DESC and HIDE are the group title and visibility respectively."
   "Insert GROUP to buffer."
   (pcase-let* ((`(,idx . ,files) group)
                (`(,desc _ ,hide) (nth (1- idx) dirvish-emerge-groups))
-               (beg (progn (insert (dirvish-emerge--group-heading desc hide) "\n")
+               (beg (progn (when files
+                             (insert (dirvish-emerge--group-heading desc hide) "\n"))
                            (point))))
     (dolist (file (reverse files)) (insert file "\n"))
     (let ((o (make-overlay beg (point))))
