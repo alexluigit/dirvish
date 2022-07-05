@@ -22,7 +22,6 @@
 ;;; Code:
 
 (require 'so-long)
-(require 'mailcap)
 (require 'image-mode)
 (require 'ansi-color)
 (require 'project)
@@ -34,7 +33,6 @@
   (require 'subr-x)
   (require 'find-dired))
 (declare-function dirvish-fd "dirvish-fd")
-(mailcap-parse-mimetypes)
 
 ;;;; User Options
 
@@ -47,7 +45,7 @@ See `dirvish-define-attribute'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
 (defcustom dirvish-preview-dispatchers
-  `(text gif image video audio epub archive ,(if (require 'pdf-tools nil t) 'pdf-tools 'pdf-preface))
+  `(image gif video audio epub archive ,(if (require 'pdf-tools nil t) 'pdf-tools 'pdf-preface))
   "List of preview dispatchers.
 Preview dispatchers are defined by `dirvish-define-preview'.  It
 holds a function that takes current filename and preview window
@@ -59,8 +57,7 @@ the fallback dispatcher named `default' is used.  For details see
 `dirvish-preview-dispatch'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish preview dispatcher")))
 
-(defcustom dirvish-preview-disabled-exts
-  '("iso" "bin" "exe" "gpg" "elc" "eln")
+(defcustom dirvish-preview-disabled-exts '("iso" "bin" "exe" "gpg" "elc" "eln")
   "Do not preview files end with these extensions."
   :group 'dirvish :type '(repeat (string :tag "File name extension")))
 
@@ -191,20 +188,21 @@ Dirvish session as its argument."
                                  (const :tag "Never hide details" nil)
                                  (function :tag "Custom function")))
 
+(defconst dirvish-image-exts '("webp" "wmf" "pcx" "xif" "wbmp" "vtf" "tap" "s1j" "sjp" "sjpg" "s1g" "sgi" "sgif" "s1n" "spn" "spng" "xyze" "rgbe" "hdr" "b16" "mdi" "apng" "ico" "pgb" "rlc" "mmr" "fst" "fpx" "fbs" "dxf" "dwg" "djv" "uvvg" "uvg" "uvvi" "uvi" "azv" "psd" "tfx" "t38" "svgz" "svg" "pti" "btf" "btif" "ktx2" "ktx" "jxss" "jxsi" "jxsc" "jxs" "jxrs" "jxra" "jxr" "jxl" "jpf" "jpx" "jpgm" "jpm" "jfif" "jhc" "jph" "jpg2" "jp2" "jls" "hsj2" "hej2" "heifs" "heif" "heics" "heic" "fts" "fit" "fits" "emf" "drle" "cgm" "dib" "bmp" "hif" "avif" "avcs" "avci" "exr" "fax" "icon" "ief" "jpg" "macp" "pbm" "pgm" "pict" "png" "pnm" "ppm" "ras" "rgb" "tga" "tif" "tiff" "xbm" "xpm" "xwd" "jpe" "jpeg"))
+(defconst dirvish-audio-exts '("ape" "stm" "s3m" "ra" "rm" "ram" "wma" "wax" "m3u" "med" "669" "mtm" "m15" "uni" "ult" "mod" "mka" "flac" "axa" "kar" "midi" "mid" "s1m" "smp" "smp3" "rip" "multitrack" "ecelp9600" "ecelp7470" "ecelp4800" "vbk" "pya" "lvp" "plj" "dtshd" "dts" "mlp" "eol" "uvva" "uva" "koz" "xhe" "loas" "sofa" "smv" "qcp" "psid" "sid" "spx" "opus" "ogg" "oga" "mp1" "mpga" "m4a" "mxmf" "mhas" "l16" "lbc" "evw" "enw" "evb" "evc" "dls" "omg" "aa3" "at3" "atx" "aal" "acn" "awb" "amr" "ac3" "ass" "aac" "adts" "726" "abs" "aif" "aifc" "aiff" "au" "mp2" "mp3" "mp2a" "mpa" "mpa2" "mpega" "snd" "vox" "wav"))
+(defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
 (defcustom dirvish-open-with-programs
-  '(("video/"      . ("mpv" "%f"))
-    ("audio/"      . ("mpv" "%f"))
-    (("rm" "rmvb") . ("mpv" "%f")))
+  `((,dirvish-audio-exts . ("mpv" "%f"))
+    (,dirvish-video-exts . ("mpv" "%f")))
   "Association list of mimetype and external program for `find-file'.
-Each element is of the form (TYPE . (CMD . ARGS)).  TYPE can be a
- string that stands for a mimetype or a list of file name
- extensions.  Once the TYPE is matched with FILENAME in
- `find-file', a subprocess according to CMD and its ARGS is
- issued to open the file outside of Emacs.  The special
- placeholder \"%f\" in the ARGS is replaced by the FILENAME at
- runtime.  Set it to nil disables this feature."
+Each element is of the form (EXTS . (CMD . ARGS)).  EXTS is a
+list of file name extensions.  Once the EXTS is matched with
+FILENAME in `find-file', a subprocess according to CMD and its
+ARGS is issued to open the file outside of Emacs.  The special
+placeholder \"%f\" in the ARGS is replaced by the FILENAME at
+runtime.  Set it to nil disables this feature."
   :group 'dirvish
-  :type '(alist :key-type ((choice string (repeat string)) :tag "File mimetype or extensions")
+  :type '(alist :key-type ((repeat string) :tag "File mimetype or extensions")
                 :value-type ((repeat string) :tag "External command and args")))
 
 (define-obsolete-variable-alias 'dirvish-keep-alive-on-quit 'dirvish-reuse-session "Jul 04, 2022")
@@ -531,7 +529,7 @@ A dirvish preview dispatcher is a function consumed by
  is the docstring and body for this function."
   (declare (indent defun) (doc-string 3))
   (let* ((dp-name (intern (format "dirvish-%s-preview-dp" name)))
-         (default-arglist '(file preview-window dv))
+         (default-arglist '(file ext preview-window dv))
          (ignore-list (cl-set-difference default-arglist arglist)))
     `(progn (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
 
@@ -859,16 +857,14 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish-find-file-ad (fn filename &optional wildcard)
   "Advice for FN `find-file' and `find-file-other-window'.
 FILENAME and WILDCARD are their args."
-  (let* ((mime (or (mailcap-file-name-to-mime-type filename) ""))
-         (ext (file-name-extension filename))
+  (let* ((ext (downcase (or (file-name-extension filename) "")))
          (file (expand-file-name filename))
          (process-connection-type nil)
          (ex-cmd (cl-loop
-                  for (type . (cmd . args)) in dirvish-open-with-programs
+                  for (exts . (cmd . args)) in dirvish-open-with-programs
                   thereis (and (not (dirvish-prop :tramp))
                                (executable-find cmd)
-                               (or (and (listp type) (member ext type))
-                                   (and (stringp type) (string-match type mime)))
+                               (member ext exts)
                                (append (list cmd) args)))))
     (cond (ex-cmd (and recentf-mode (add-to-list 'recentf-list file))
                   (apply #'start-process "" nil "nohup"
@@ -980,14 +976,9 @@ When PROC finishes, fill preview buffer with process result."
             (member (downcase (or (file-name-extension file) "")) dirvish-preview-disabled-exts))
     `(info . ,(format "Preview for %s has been disabled" file))))
 
-(dirvish-define-preview text (file)
-  "Open FILE with `find-file-noselect'."
-  (when (string-match "text/" (or (mailcap-file-name-to-mime-type file) ""))
-    (dirvish--preview-inhibit-long-line file)))
-
-(dirvish-define-preview gif (file)
+(dirvish-define-preview gif (file ext)
   "Display an animated image FILE."
-  (when (string= (mailcap-file-name-to-mime-type file) "image/gif")
+  (when (equal ext "gif")
     (let ((gif-buf (find-file-noselect file t))
           (callback (lambda (buf)
                       (when (buffer-live-p buf)
@@ -996,28 +987,27 @@ When PROC finishes, fill preview buffer with process result."
       (run-with-idle-timer 1 nil callback gif-buf)
       `(buffer . ,gif-buf))))
 
-(dirvish-define-preview audio (file)
+(dirvish-define-preview audio (file ext)
   "Use output of `mediainfo' command for FILE as preview."
-  (when (string-match "audio/" (or (mailcap-file-name-to-mime-type file) ""))
-    `(shell . ("mediainfo" ,file))))
+  (when (member ext dirvish-audio-exts) `(shell . ("mediainfo" ,file))))
 
-(dirvish-define-preview image (file preview-window)
+(dirvish-define-preview image (file ext preview-window)
   "Display a image FILE in PREVIEW-WINDOW."
-  (when (string-match "image/" (or (mailcap-file-name-to-mime-type file) ""))
+  (when (member ext dirvish-image-exts)
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
            (cache (dirvish--preview-cache-image-path file width ".jpg")))
       (cond ((file-exists-p cache)
              `(image . ,(create-image cache nil nil :max-width width :max-height height)))
             ((or (> (nth 7 (file-attributes file)) dirvish--cache-img-threshold)
-                 (member (downcase (file-name-extension file)) dirvish--img-always-cache-exts))
+                 (member ext dirvish--img-always-cache-exts))
              `(image-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
                               ,(number-to-string width) ,cache)))
             (t `(image . ,(create-image file nil nil :max-width width :max-height height)))))))
 
-(dirvish-define-preview video (file preview-window)
+(dirvish-define-preview video (file ext preview-window)
   "Display a video thumbnail for FILE in PREVIEW-WINDOW."
-  (when (string-match "video/" (or (mailcap-file-name-to-mime-type file) ""))
+  (when (member ext dirvish-video-exts)
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
            (cache (dirvish--preview-cache-image-path file width ".jpg")))
@@ -1029,7 +1019,7 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-preview epub (file preview-window)
   "Display a epub thumbnail for FILE in PREVIEW-WINDOW."
-  (when (string= (file-name-extension file) "epub")
+  (when (equal ext "epub")
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
            (cache (dirvish--preview-cache-image-path file width ".jpg")))
@@ -1037,9 +1027,9 @@ When PROC finishes, fill preview buffer with process result."
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
         `(image-cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
 
-(dirvish-define-preview pdf-preface (file preview-window)
+(dirvish-define-preview pdf-preface (file ext preview-window)
   "Display a pdf preface image for FILE in PREVIEW-WINDOW."
-  (when (equal (mailcap-file-name-to-mime-type file) "application/pdf")
+  (when (equal ext "pdf")
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
            (cache (dirvish--preview-cache-image-path file width))
@@ -1050,15 +1040,12 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-preview pdf-tools (file)
   "Open FILE with `find-file-noselect'."
-  (when (equal (mailcap-file-name-to-mime-type file) "application/pdf")
-    `(buffer . ,(find-file-noselect file t nil))))
+  (when (equal ext "pdf") `(buffer . ,(find-file-noselect file t nil))))
 
-(dirvish-define-preview archive (file)
+(dirvish-define-preview archive (file ext)
   "Display output of corresponding unarchive commands for FILE."
-  (cond ((string= (file-name-extension file) "zip")
-         `(shell . ("zipinfo" ,file)))
-        ((member (file-name-extension file) '("tar" "zst"))
-         `(shell . ("tar" "-tvf" ,file)))))
+  (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
+        ((member ext '("tar" "zst")) `(shell . ("tar" "-tvf" ,file)))))
 
 (dirvish-define-preview default (file)
   "Default preview dispatcher for FILE."
@@ -1131,8 +1118,9 @@ string of TEXT-CMD or the generated cache image of IMAGE-CMD."
               (index (dirvish-prop :child)))
     (when (window-live-p window)
       (let* ((orig-buffer-list (buffer-list))
+             (ext (downcase (or (file-name-extension index) "")))
              (buffer (cl-loop for dp-fn in (dv-preview-fns dv)
-                              for (type . payload) = (funcall dp-fn index window dv)
+                              for (type . payload) = (funcall dp-fn index ext window dv)
                               thereis (and type (dirvish-preview-dispatch
                                                  type payload dv)))))
         (setq other-window-scroll-buffer buffer)
@@ -1594,12 +1582,11 @@ in `dirvish-auto-cache-threshold'."
       (cl-loop
        with win = (dv-preview-window dv)
        with width = (window-width win)
-       with files = (seq-remove (lambda (s) (string-suffix-p ".gif" s t))
-                                (dirvish-prop :files))
-       for file in files
+       for file in (dirvish-prop :files)
+       for ext = (downcase (or (file-name-extension file) ""))
        for (cmd . args) = (cl-loop
                            for fn in dirvish--cache-img-fns
-                           for (type . payload) = (funcall fn file win dv)
+                           for (type . payload) = (funcall fn file ext win dv)
                            thereis (and (eq type 'image-cache) payload))
        when cmd do (push (cons (format "%s-%s-img-cache" file width)
                                (list file width cmd args))
