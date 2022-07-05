@@ -15,7 +15,7 @@ want further customizations.
 | =Emacs 27.1=        | Support Emacs 27.1 onward  | Required |
 | =all-the-icons.el=  | Icon support               | Optional |
 | =vscode-icon.el=    | Icon support               | Optional |
-| =pdftoppm=          | Generate pdf preface image | Optional |
+| =pdf-tools=         | Preview pdf documents      | Optional |
 | =imagemagick=       | Generate image cache       | Optional |
 | =ffmpegthumbnailer= | Generate video thumbnailer | Optional |
 | =epub-thumbnailer=  | Generate epub thumbnailer  | Optional |
