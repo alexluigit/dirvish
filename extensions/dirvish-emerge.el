@@ -273,6 +273,7 @@ corresponding slots."
                      "Select group type: "
                      '(extensions predicate regex) nil t)))
         (names (mapcar #'car dirvish-emerge-groups))
+        (groups (buffer-local-value 'dirvish-emerge-groups (current-buffer)))
         (idx 1)
         (default "Anon-1")
         recipe title)
@@ -281,7 +282,8 @@ corresponding slots."
       (setq default (format "Anon-%s" idx)))
     (setq recipe (dirvish-emerge-read-recipe (cons type nil)))
     (setq title (read-string "Group title: " default))
-    (push (list title (cons type recipe)) dirvish-emerge-groups)
+    (push (list title (cons type recipe)) groups)
+    (setq-local dirvish-emerge-groups groups)
     (dirvish-emerge-menu)))
 
 (defun dirvish-emerge--ifx-remove ()
@@ -505,8 +507,6 @@ If in the first group move to the beginning of buffer."
              (goto-char (overlay-start (dirvish-emerge--get-group-overlay))))
     (goto-char (point-min))))
 
-;; Ideally this would be a toggle. But it is not possible to be
-;; inside a hidden group.
 (defun dirvish-emerge-toggle-current-group ()
   "Toggle the current group."
   (interactive)
