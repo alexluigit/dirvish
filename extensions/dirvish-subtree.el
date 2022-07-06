@@ -17,6 +17,7 @@
 (declare-function all-the-icons-octicon "all-the-icons")
 (require 'dirvish)
 
+(defvar dirvish-subtree--prefix-unit-len 2)
 (defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
 
 (defcustom dirvish-subtree-line-prefix "  "
@@ -25,7 +26,7 @@ The prefix is repeated \"depth\" times."
   :type 'string :group 'dirvish
   :set (lambda (k v)
          (set k v)
-         (setq dirvish--subtree-prefix-len
+         (setq dirvish-subtree--prefix-unit-len
                (cond ((bound-and-true-p dired-subtree-line-prefix)
                       (or (ignore-errors (length (bound-and-true-p dired-subtree-line-prefix))) 2))
                      (t (length v))))))
@@ -87,6 +88,32 @@ LOCALP is the arg for `dired-current-directory', which see."
 
 (advice-add 'dired-current-directory :around #'dirvish-curr-dir-ad)
 (advice-add 'dired-get-subdir :around #'dirvish-get-subdir-ad)
+
+(defun dirvish-subtree--goto-file (filename)
+  "Go to line describing FILENAME."
+  (goto-char (point-min))
+  (let (stop)
+    (while (and (not stop)
+                (= (forward-line) 0))
+      (when (equal filename (dired-get-filename nil t))
+        (setq stop t)
+        (dired-move-to-filename)))
+    stop))
+
+(defun dirvish-subtree--prefix-length ()
+  "Calculate subtree prefix length at point."
+  (* dirvish-subtree--prefix-unit-len (dirvish-subtree--depth)))
+
+(defun dirvish-subtree--depth ()
+  "Get subtree depth at point."
+  (let ((dps (cl-loop for ov in (overlays-at (point)) collect
+                      (or (overlay-get ov 'dired-subtree-depth) 0))))
+    (or (and dps (apply #'max dps)) 0)))
+
+(defun dirvish-subtree--expanded-p ()
+  "70x Faster version of `dired-subtree--is-expanded-p'."
+  (save-excursion (< (dirvish-subtree--depth)
+                     (progn (forward-line 1) (dirvish-subtree--depth)))))
 
 (defun dirvish-subtree--parent (&optional p)
   "Get the parent subtree overlay at point P."
@@ -167,13 +194,13 @@ When CLEAR, remove all subtrees in the buffer."
    (let ((sorted (sort st-alist (lambda (a b) (< (car a) (car b))))))
      (setq dirvish-subtree--overlays nil)
      (cl-loop for (_depth . name) in sorted do
-              (when (dirvish--goto-file name)
+              (when (dirvish-subtree--goto-file name)
                 (cond (clear
                        (dired-next-line 1)
                        (dirvish-subtree--remove))
-                      ((not (dirvish--subtree-expanded-p))
+                      ((not (dirvish-subtree--expanded-p))
                        (dirvish-subtree--insert))))))
-   (dirvish--goto-file (dirvish-prop :child))))
+   (dirvish-subtree--goto-file (dirvish-prop :child))))
 
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
@@ -184,7 +211,7 @@ When CLEAR, remove all subtrees in the buffer."
        :width 1)
   (let ((state-str
          (propertize (if (eq (car f-type) 'dir)
-                         (if (dirvish--subtree-expanded-p)
+                         (if (dirvish-subtree--expanded-p)
                              (car dirvish-subtree--state-icons)
                            (cdr dirvish-subtree--state-icons))
                        " ")))
@@ -199,7 +226,7 @@ When CLEAR, remove all subtrees in the buffer."
 (defun dirvish-subtree-toggle ()
   "Insert subtree at point or remove it if it was not present."
   (interactive)
-  (if (dirvish--subtree-expanded-p)
+  (if (dirvish-subtree--expanded-p)
       (progn (dired-next-line 1) (dirvish-subtree--remove))
     (dirvish-subtree--insert)))
 
