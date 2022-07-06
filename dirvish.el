@@ -715,7 +715,8 @@ If KEEP-CURRENT, do not kill the current directory buffer."
             (dolist (fn (if f-beg fns '(dirvish-attribute-hl-line-rd)))
               (funcall fn f-beg f-end f-str f-wid f-dir f-name
                        f-attrs f-type l-beg l-end remain hl-face)))
-          (forward-line 1))))))
+          (forward-line 1)
+          (while (invisible-p (point)) (forward-line 1)))))))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
@@ -1217,7 +1218,8 @@ default implementation is `find-args' with simple formatting."
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
-    (cond ((eobp) (forward-line -1)) ((bobp) (forward-line 1)))
+    (cond ((eobp) (forward-line -1))
+          ((bobp) (forward-line (if dirvish--dired-free-space 2 1))))
     (dired-move-to-filename)
     (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
