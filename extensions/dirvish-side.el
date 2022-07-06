@@ -178,7 +178,7 @@ will visit the latest `project-root' after executing
            (switch-to-buffer (dirvish--find-entry dv dirname)))
           (when (and filename (not (file-directory-p filename)))
             (dirvish-prop :child filename))
-          (dirvish-build dv))))))
+          (dirvish--build dv))))))
 
 ;;;###autoload (autoload 'dirvish-project-ml "dirvish-side" nil t)
 (dirvish-define-mode-line project
@@ -225,7 +225,7 @@ otherwise it defaults to `project-current'."
                  (dirvish-find-file (file-name-directory followed))
                  (dired-goto-file followed)
                  (dirvish-update-body-h))
-             (dirvish-build dv)))
+             (dirvish--build dv)))
          (dirvish-side--set-state dv 'visible)))
       ('uninitialized
        (dirvish-new t
