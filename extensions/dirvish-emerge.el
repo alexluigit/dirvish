@@ -354,19 +354,27 @@ If DEMOTE, shift them to the lowest instead."
     (unless (dirvish-prop :fd-dir)
       (dirvish-emerge--readin-groups-1))))
 
+(defvar dirvish-emerge-group-heading-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "TAB") 'dirvish-emerge-toggle-current-group)
+    map)
+  "Keymap used when over a group heading.")
+
 (defun dirvish-emerge--group-heading (desc hide)
   "Format emerge group heading in Dirvish buffer.
 DESC and HIDE are the group title and visibility respectively."
-  (format "%s%s%s"
-          (propertize " " 'font-lock-face
-                      '(:inherit dirvish-emerge-group-title
-                                 :strike-through t))
-          (propertize (format " %s%s " (or desc "-") (if hide " (Hidden)" ""))
-                      'font-lock-face 'dirvish-emerge-group-title)
-          (propertize " " 'display '(space :align-to right)
-                      'font-lock-face
-                      '(:inherit dirvish-emerge-group-title
-                                 :strike-through t))))
+  (let ((prefix (propertize " " 'font-lock-face
+                            '(:inherit dirvish-emerge-group-title
+                                       :strike-through t)))
+        (title (propertize (format " %s%s " (or desc "-")
+                                   (if hide " (Hidden)" ""))
+                           'font-lock-face 'dirvish-emerge-group-title))
+        (suffix (propertize " " 'display '(space :align-to right)
+                            'font-lock-face
+                            '(:inherit dirvish-emerge-group-title
+                                       :strike-through t))))
+    (propertize (format "%s%s%s" prefix title suffix)
+                'keymap dirvish-emerge-group-heading-map)))
 
 (defun dirvish-emerge--insert-group (group)
   "Insert GROUP to buffer."
