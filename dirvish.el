@@ -1667,7 +1667,7 @@ otherwise it defaults to variable `buffer-file-name'."
     ("s" "  Sort current buffer"    dirvish-quicksort)
     ("g" "  Refresh buffer"         revert-buffer)
     ("M-s" "Setup Dirvish"          dirvish-setup-menu)
-    ("TAB" "Toggle subtree"         dirvish-toggle-subtree)
+    ("TAB" "Toggle subtree"         dirvish-subtree-toggle)
     ("M-f" "Toggle fullscreen"      dirvish-toggle-fullscreen)]
    ["File operations"
     ("a" "  Add an empty file"      dired-create-empty-file)
