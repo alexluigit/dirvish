@@ -78,34 +78,17 @@ The value should be a integer between 23 to 128."
   "File icons provided by `vscode-icon.el'."
   (:width (1+ (length dirvish-icon-delimiter)))
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
-         (icon-info
+         (icon
           (dirvish-attribute-cache f-name :vscode-icon
             (let ((default-directory dirvish--vscode-icon-directory))
               (if (eq (car f-type) 'dir)
-                  (let* ((base-name (file-name-base f-name))
-                         (icon-base (or (cdr (assoc base-name vscode-icon-dir-alist))
-                                        base-name))
-                         (icon-path (vscode-icon-dir-exists-p icon-base))
-                         closed-icon opened-icon)
-                    (if icon-path
-                        (progn
-                          (setq closed-icon
-                                (vscode-icon-create-image icon-path))
-                          (setq opened-icon
-                                (vscode-icon-create-image
-                                 (expand-file-name
-                                  (format "folder_type_%s_opened.png" icon-base)))))
-                      (setq closed-icon
-                            (vscode-icon-create-image
-                             (expand-file-name "default_folder.png")))
-                      (setq opened-icon
-                            (vscode-icon-create-image
-                             (expand-file-name "default_folder_opened.png"))))
-                    (cons closed-icon opened-icon))
+                  (let* ((base (file-name-sans-extension f-str))
+                         (i-base (or (cdr (assoc base vscode-icon-dir-alist))
+                                     base))
+                         (i-path (vscode-icon-dir-exists-p i-base)))
+                    (vscode-icon-create-image
+                     (or i-path (expand-file-name "default_folder.png"))))
                 (vscode-icon-file f-name)))))
-         (icon (cond ((eq (car f-type) 'file) icon-info)
-                     ((dirvish--subtree-expanded-p) (cdr icon-info))
-                     (t (car icon-info))))
          (ov (make-overlay (1- f-beg) f-beg)))
     (overlay-put ov 'display icon)
     (overlay-put ov 'before-string (propertize " " 'face hl-face))

@@ -33,6 +33,7 @@
   (require 'subr-x)
   (require 'find-dired))
 (declare-function dirvish-fd "dirvish-fd")
+(declare-function dirvish-subtree--prefix-length "dirvish-subtree")
 
 ;;;; User Options
 
@@ -280,7 +281,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (dirvish-subtree  subtree-state)))
 (defconst dirvish--dired-free-space
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
-(defconst dirvish--prefix-spaces 2)
 (defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--dir-tail-regex (concat (file-name-as-directory (getenv "HOME")) "\\|\\/$\\|^\\/"))
 (defconst dirvish--preview-img-scale 0.92)
@@ -301,7 +301,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-mode-line-segments '())
 (defvar dirvish--cache-pool '())
-(defvar dirvish--subtree-prefix-len 2)
 (defvar-local dirvish--props '())
 (defvar-local dirvish--attrs-hash nil)
 (put 'dired-subdir-alist 'permanent-local t)
@@ -354,7 +353,6 @@ Multiple calls under the same LABEL are ignored."
        (goto-char (point-min))
        (let ((o (make-overlay
                  (point) (progn (forward-line (if dirvish--dired-free-space 2 1)) (point)))))
-         (dirvish-prop :content-beginning (point))
          (overlay-put o 'dirvish-remove-header t)
          (overlay-put o 'invisible t)))))
 
@@ -381,17 +379,6 @@ ALIST is window arguments passed to `window--display-buffer'."
             (window-resize-pixelwise t))
         (fit-window-to-buffer win 2 1)))))
 
-(defun dirvish--goto-file (filename)
-  "Go to line describing FILENAME."
-  (goto-char (point-min))
-  (let (stop)
-    (while (and (not stop)
-                (= (forward-line) 0))
-      (when (equal filename (dired-get-filename nil t))
-        (setq stop t)
-        (dired-move-to-filename)))
-    stop))
-
 (defun dirvish--get-project-root ()
   "Get root path of current project."
   (when-let ((pj (project-current)))
@@ -400,17 +387,6 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--get-parent-path (path)
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
-
-(defun dirvish--subtree-depth ()
-  "Get subtree depth at point."
-  (let ((dps (cl-loop for ov in (overlays-at (point)) collect
-                      (or (overlay-get ov 'dired-subtree-depth) 0))))
-    (or (and dps (apply #'max dps)) 0)))
-
-(defun dirvish--subtree-expanded-p ()
-  "70x Faster version of `dired-subtree--is-expanded-p'."
-  (save-excursion (< (dirvish--subtree-depth)
-                     (progn (forward-line 1) (dirvish--subtree-depth)))))
 
 (defun dirvish--append-metadata (metadata completions)
   "Append METADATA for minibuffer COMPLETIONS."
@@ -703,6 +679,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
   (let ((in-tramp (dirvish-prop :tramp))
+        (subtrees (bound-and-true-p dirvish-subtree--overlays))
         (curr-pos (point))
         (fr-h (frame-height))
         (remain (window-width)) fns)
@@ -720,7 +697,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
                 (f-end (dired-move-to-end-of-filename t))
                 (l-beg (line-beginning-position))
                 (l-end (line-end-position))
-                (remain (- remain (* dirvish--subtree-prefix-len (dirvish--subtree-depth))))
+                (remain (- remain (if subtrees (dirvish-subtree--prefix-length) 0)))
                 f-str f-wid f-dir f-name f-attrs f-type hl-face)
             (setq hl-face (and (eq (or f-beg l-beg) curr-pos) 'dirvish-hl-line))
             (when f-beg
