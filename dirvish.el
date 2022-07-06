@@ -835,7 +835,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
       (dirvish-prop :fd-dir bufname)
       (delete-matching-lines "find finished at.*\\|^ +$")
       (dirvish--hide-dired-header))
-    (dirvish-build dv)))
+    (dirvish--build dv)))
 
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
   "Replacement for `dired-dwim-target-next'.
@@ -1317,7 +1317,7 @@ Dirvish sets `revert-buffer-function' to this function."
          (dv (dirvish-new nil)))
     (setf (dv-index-dir dv) dir)
     (with-current-buffer (dirvish--find-entry dv dir)
-      (dirvish-build dv)
+      (dirvish--build dv)
       (current-buffer))))
 
 (defun dirvish--find-entry (dv entry &optional parent)
@@ -1500,7 +1500,7 @@ If VEC, the attributes are retrieved by parsing the output of
       (process-put proc 'append append)
       (set-process-sentinel proc #'dirvish--print-directory-sentinel))))
 
-(defun dirvish-build (dv)
+(defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
   (let* ((layout (dv-layout dv))
          (style (intern (format "%s-%s"
@@ -1614,7 +1614,7 @@ directory in another window."
     (with-selected-window (dirvish--create-root-window dv)
       (dirvish-with-no-dedication (switch-to-buffer buf))
       (dirvish-reclaim)
-      (dirvish-build dv)
+      (dirvish--build dv)
       (dirvish-debounce layout (dirvish-preview-update)))))
 
 (defun dirvish-find-file (&optional entry)
@@ -1628,7 +1628,7 @@ buffer, it defaults to filename under the cursor when it is nil."
     (if buffer
         (dirvish-with-no-dedication
          (switch-to-buffer buffer)
-         (when-let ((dv (dirvish-curr))) (dirvish-build dv)))
+         (when-let ((dv (dirvish-curr))) (dirvish--build dv)))
       (find-file entry))))
 
 ;;;###autoload

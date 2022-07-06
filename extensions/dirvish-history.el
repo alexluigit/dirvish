@@ -67,11 +67,10 @@
     (and match (dirvish-find-file match))))
 
 ;;;###autoload
-(defun dirvish-history-go-forward (&optional arg)
+(defun dirvish-history-go-forward (arg)
   "Navigate to next ARG directory in history.
 ARG defaults to 1."
   (interactive "^p")
-  (or arg (setq arg 1))
   (let* ((dirs (reverse
                 (mapcar #'car (dv-roots (dirvish-curr)))))
          (len (length dirs))
@@ -87,11 +86,11 @@ ARG defaults to 1."
           (t (dirvish-find-file (nth new-idx dirs))))))
 
 ;;;###autoload
-(defun dirvish-history-go-backward (&optional arg)
-  "Navigate to last ARG directory in history.
-ARG defaults to -1."
+(defun dirvish-history-go-backward (arg)
+  "Navigate to previous ARG directory in history.
+ARG defaults to 1."
   (interactive "^p")
-  (dirvish-history-go-forward (- 0 (or arg 1))))
+  (dirvish-history-go-forward (- 0 arg)))
 
 (provide 'dirvish-history)
 ;;; dirvish-history.el ends here

@@ -442,10 +442,10 @@ When FORCE, `dirvish-emerge-max-file-count' is ignored."
   (dirvish-emerge--readin-groups)
   (eval
    `(transient-define-prefix dirvish-emerge--menu ()
-      "Configure current Dirvish session."
+      "Manage pinned files in Dirvish."
       [:description
        (lambda ()
-         (let ((title "Configure Emerging Groups")
+         (let ((title "Manage Emerging Groups")
                (notes "Press the index (like \"1\") to select the group
 Press again to set the value for the group"))
            (format "%s\n%s" (propertize title 'face '(:inherit dired-mark :underline t)
@@ -470,11 +470,9 @@ Press again to set the value for the group"))
         (lambda () (interactive) (dirvish-emerge--ifx-promote)))
        ("b" "  Demote selected groups (bottom)"
         (lambda () (interactive) (dirvish-emerge--ifx-promote 'demote)))
-       ("n" "  Jump to next group"
-        (lambda () (interactive) (dirvish-emerge-next-group 1))
+       ("n" "  Jump to next group" dirvish-emerge-next-group
         :transient t :if (lambda () dirvish-emerge--group-overlays))
-       ("p" "  Jump to previous group"
-        (lambda () (interactive) (dirvish-emerge-previous-group 1))
+       ("p" "  Jump to previous group" dirvish-emerge-previous-group
         :transient t :if (lambda () dirvish-emerge--group-overlays))
        ("r" "  Read groups from .dir-locals.el"
         (lambda () (interactive) (dirvish-emerge--ifx-read)))
@@ -500,7 +498,7 @@ Press again to set the value for the group"))
                     (overlays-at (point)))
         (progn (forward-line 1) (dirvish-emerge--get-group-overlay)))))
 
-(defun dirvish-emerge-next-group (&optional arg)
+(defun dirvish-emerge-next-group (arg)
   "Jump to the first file in the next ARG visible group."
   (interactive "^p")
   (unless dirvish-emerge--group-overlays
@@ -520,7 +518,7 @@ Press again to set the value for the group"))
            (goto-char (overlay-start target-ov))
            (when (overlay-get target-ov 'invisible) (forward-line -1))))))
 
-(defun dirvish-emerge-previous-group (&optional arg)
+(defun dirvish-emerge-previous-group (arg)
   "Jump to the first file in the previous ARG visible group."
   (interactive "^p")
   (dirvish-emerge-next-group (- 0 arg)))
