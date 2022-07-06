@@ -257,7 +257,7 @@ when present, is wrapped with a lambda and being put into the
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
              ("RET" "Quit and revert buffer"
-              (lambda () (interactive) (dirvish-build (dirvish-curr)) (revert-buffer)))]
+              (lambda () (interactive) (dirvish--build (dirvish-curr)) (revert-buffer)))]
             (interactive)
             (if (or (derived-mode-p 'dirvish-mode)
                     (bound-and-true-p dirvish-override-dired-mode))

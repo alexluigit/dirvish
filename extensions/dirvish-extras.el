@@ -341,7 +341,7 @@ current layout defined in `dirvish-layout-recipes'."
           (new-recipe (nth new-idx recipes)))
      (setf (dv-layout dv) new-recipe)
      (setf (dv-last-fs-layout dv) new-recipe)
-     (dirvish-build dv))))
+     (dirvish--build dv))))
 
 ;;;###autoload
 (defun dirvish-dwim (&optional path)

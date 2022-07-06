@@ -442,44 +442,42 @@ When FORCE, `dirvish-emerge-max-file-count' is ignored."
   (dirvish-emerge--readin-groups)
   (eval
    `(transient-define-prefix dirvish-emerge--menu ()
-      "Configure current Dirvish session."
+      "Manage pinned files in Dirvish."
       [:description
        (lambda ()
-         (let ((title "Configure Emerging Groups")
+         (let ((title "Manage Emerging Groups")
                (notes "Press the index (like \"1\") to select the group
 Press again to set the value for the group"))
-           (format "%s\n%s" (propertize title 'face '(:inherit dired-mark :underline t)
-                                        'display '((height 1.2)))
+           (format "%s\n%s\n" (propertize title 'face '(:inherit dired-mark :underline t)
+                                          'display '((height 1.2)))
                    (propertize notes 'face 'font-lock-doc-face))))
        ["Active groups:"
         ,@(if dirvish-emerge-groups
               (dirvish-emerge--create-infixes)
             (list '("+" "  No active groups, press + to add one"
-                    (lambda () (interactive) (dirvish-emerge--ifx-add)))))]]
-      ["Actions:"
-       ("RET" "Apply current setup" (lambda () (interactive) (dirvish-emerge--ifx-apply)))
-       ("c" "  Clear selection"
-        (lambda () (interactive) (dirvish-emerge--ifx-unselect)) :transient t)
-       ("h" "  Hide/show selected group"
-        (lambda () (interactive) (dirvish-emerge--ifx-toggle-hiding)) :transient t)
-       ("a" "  Add a group"
-        (lambda () (interactive) (dirvish-emerge--ifx-add)))
-       ("x" "  Remove selected groups"
-        (lambda () (interactive) (dirvish-emerge--ifx-remove)))
-       ("t" "  Promote selected groups (top)"
-        (lambda () (interactive) (dirvish-emerge--ifx-promote)))
-       ("b" "  Demote selected groups (bottom)"
-        (lambda () (interactive) (dirvish-emerge--ifx-promote 'demote)))
-       ("n" "  Jump to next group"
-        (lambda () (interactive) (dirvish-emerge-next-group 1))
-        :transient t :if (lambda () dirvish-emerge--group-overlays))
-       ("p" "  Jump to previous group"
-        (lambda () (interactive) (dirvish-emerge-previous-group 1))
-        :transient t :if (lambda () dirvish-emerge--group-overlays))
-       ("r" "  Read groups from .dir-locals.el"
-        (lambda () (interactive) (dirvish-emerge--ifx-read)))
-       ("w" "  Write groups to .dir-locals.el"
-        (lambda () (interactive) (dirvish-emerge--ifx-write)))]))
+                    (lambda () (interactive) (dirvish-emerge--ifx-add)))))]
+       ["Actions:"
+        ("RET" "Apply current setup" (lambda () (interactive) (dirvish-emerge--ifx-apply)))
+        ("u" "  Unselect all groups"
+         (lambda () (interactive) (dirvish-emerge--ifx-unselect)) :transient t)
+        ("v" "  Toggle visibility of selected groups"
+         (lambda () (interactive) (dirvish-emerge--ifx-toggle-hiding)) :transient t)
+        ("a" "  Add a group"
+         (lambda () (interactive) (dirvish-emerge--ifx-add)))
+        ("x" "  Remove selected groups"
+         (lambda () (interactive) (dirvish-emerge--ifx-remove)))
+        ("t" "  Promote selected groups (top)"
+         (lambda () (interactive) (dirvish-emerge--ifx-promote)))
+        ("b" "  Demote selected groups (bottom)"
+         (lambda () (interactive) (dirvish-emerge--ifx-promote 'demote)))
+        ("n" "  Jump to next group" dirvish-emerge-next-group
+         :transient t :if (lambda () dirvish-emerge--group-overlays))
+        ("p" "  Jump to previous group" dirvish-emerge-previous-group
+         :transient t :if (lambda () dirvish-emerge--group-overlays))
+        ("r" "  Read groups from .dir-locals.el"
+         (lambda () (interactive) (dirvish-emerge--ifx-read)))
+        ("w" "  Write groups to .dir-locals.el"
+         (lambda () (interactive) (dirvish-emerge--ifx-write)))]]))
   (dirvish-emerge--menu))
 
 ;;;###autoload
@@ -500,7 +498,7 @@ Press again to set the value for the group"))
                     (overlays-at (point)))
         (progn (forward-line 1) (dirvish-emerge--get-group-overlay)))))
 
-(defun dirvish-emerge-next-group (&optional arg)
+(defun dirvish-emerge-next-group (arg)
   "Jump to the first file in the next ARG visible group."
   (interactive "^p")
   (unless dirvish-emerge--group-overlays
@@ -520,7 +518,7 @@ Press again to set the value for the group"))
            (goto-char (overlay-start target-ov))
            (when (overlay-get target-ov 'invisible) (forward-line -1))))))
 
-(defun dirvish-emerge-previous-group (&optional arg)
+(defun dirvish-emerge-previous-group (arg)
   "Jump to the first file in the previous ARG visible group."
   (interactive "^p")
   (dirvish-emerge-next-group (- 0 arg)))
