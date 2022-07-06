@@ -379,6 +379,10 @@ ALIST is window arguments passed to `window--display-buffer'."
             (window-resize-pixelwise t))
         (fit-window-to-buffer win 2 1)))))
 
+(defun dirvish--kill-buffer (buffer)
+  "Kill BUFFER when it is a live one."
+  (and (buffer-live-p buffer) (kill-buffer buffer)))
+
 (defun dirvish--get-project-root ()
   "Get root path of current project."
   (when-let ((pj (project-current)))
@@ -626,22 +630,21 @@ restore them after."
 (defun dirvish-kill (dv &optional keep-current)
   "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 If KEEP-CURRENT, do not kill the current directory buffer."
-  (cl-labels ((kill-live (b) (and (buffer-live-p b) (kill-buffer b))))
-    (when (dv-layout dv)
-      (set-window-configuration (dv-window-conf dv))
-      (goto-char (plist-get (dv-scopes dv) :point))
-      (remhash (dv-name dv) dirvish--hash))
-    (if keep-current
-        (progn (mapc #'kill-live (seq-remove (lambda (i) (eq i (current-buffer)))
-                                             (mapcar #'cdr (dv-roots dv))))
-               (setf (dv-roots dv) (list (cons (dv-index-dir dv) (current-buffer))))
-               (unless (dv-layout dv) (let (quit-window-hook) (quit-window))))
-      (mapc #'kill-live (mapcar #'cdr (dv-roots dv)))
-      (remhash (dv-name dv) dirvish--hash))
-    (dolist (type '(preview header footer))
-      (kill-live (dirvish--util-buffer type dv)))
-    (mapc #'kill-live (dv-preview-buffers dv))
-    (mapc #'kill-live (mapcar #'cdr (dv-parents dv))))
+  (when (dv-layout dv)
+    (set-window-configuration (dv-window-conf dv))
+    (goto-char (plist-get (dv-scopes dv) :point))
+    (remhash (dv-name dv) dirvish--hash))
+  (if keep-current
+      (progn (mapc #'dirvish--kill-buffer (seq-remove (lambda (i) (eq i (current-buffer)))
+                                           (mapcar #'cdr (dv-roots dv))))
+             (setf (dv-roots dv) (list (cons (dv-index-dir dv) (current-buffer))))
+             (unless (dv-layout dv) (let (quit-window-hook) (quit-window))))
+    (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-roots dv)))
+    (remhash (dv-name dv) dirvish--hash))
+  (dolist (type '(preview header footer))
+    (dirvish--kill-buffer (dirvish--util-buffer type dv)))
+  (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
+  (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv)))
   (funcall (dv-quit-window-fn dv) dv)
   (dirvish-reclaim)
   (run-hooks 'dirvish-deactivation-hook))
@@ -1245,7 +1248,10 @@ default implementation is `find-args' with simple formatting."
   "Hook function added to `kill-buffer' locally."
   (let ((dv (dirvish-prop :dv)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) (current-buffer))) (dv-roots dv)))
-    (unless (dv-roots dv) (remhash (dv-name dv) dirvish--hash))))
+    (unless (dv-roots dv)
+      (remhash (dv-name dv) dirvish--hash)
+      (dolist (type '(preview header footer))
+        (dirvish--kill-buffer (dirvish--util-buffer type dv))))))
 
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
