@@ -162,13 +162,7 @@ This value is passed to function `format-time-string'."
             dired-hide-details-mode)
        :width 7)
   (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
-         (ov-pos (if (> remain f-wid)
-                     l-end
-                   (let ((pos f-beg) (vis-str ""))
-                     (while (< (string-width vis-str) remain)
-                       (setq pos (1+ pos))
-                       (setq vis-str (buffer-substring f-beg pos)))
-                     pos)))
+         (ov-pos (if (> remain f-wid) l-end (+ f-beg remain)))
          (face (or hl-face 'dirvish-file-size))
          (spc (propertize " " 'display
                           `(space :align-to (- right-fringe 6)) 'face face))
