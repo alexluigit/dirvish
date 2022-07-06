@@ -385,14 +385,15 @@ DESC and HIDE are the group title and visibility respectively."
 (defun dirvish-emerge--apply-1 (preds)
   "Helper for `dirvish-emerge--apply'.
 PREDS are locally composed predicates."
-  (let ((beg (dirvish-prop :content-beginning))
-        (end (point-max))
-        (old-f (dirvish-prop :child))
-        (idx-m (1+ (length preds)))
-        curr-dir groups)
+  (let* ((old-f (dirvish-prop :child))
+         (beg (progn (goto-char (cdar (last dired-subdir-alist)))
+                     (forward-line (if dirvish--dired-free-space 2 1))
+                     (point)))
+         (end (- (dired-subdir-max) (if (= (length dired-subdir-alist) 1) 0 1)))
+         (idx-m (1+ (length preds)))
+         curr-dir groups)
     (setq groups (cl-loop for i from 1 to idx-m collect (cons i '())))
     (save-excursion
-      (goto-char beg)
       (setq curr-dir (file-local-name (dired-current-directory)))
       (while (< (point) end)
         (when-let ((f-beg (dired-move-to-filename))
@@ -411,7 +412,6 @@ PREDS are locally composed predicates."
         (forward-line 1))
       (with-silent-modifications
         (delete-region beg end)
-        (goto-char beg)
         (mapc #'dirvish-emerge--insert-group groups)))
     (dired-goto-file old-f)))
 
