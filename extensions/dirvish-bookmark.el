@@ -16,13 +16,15 @@
 (require 'transient)
 
 (define-obsolete-variable-alias 'dirvish-menu-bookmarks 'dirvish-bookmark-entries "Jun-08,2022")
+(define-obsolete-function-alias 'dirvish-bookmark-goto 'dirvish-bookmark-jump "Jul-07,2022")
+;;;###autoload (autoload 'dirvish-bookmark-jump "dirvish-bookmark" nil t)
 ;;;###autoload (autoload 'dirvish-bookmark-goto "dirvish-bookmark" nil t)
 (defcustom dirvish-bookmark-entries
   '(("h" "~/"                          "Home")
     ("d" "~/Downloads/"                "Downloads")
     ("m" "/mnt/"                       "Drives")
     ("t" "~/.local/share/Trash/files/" "TrashCan"))
-  "BOOKMARKs for command `dirvish-bookmark-goto'.
+  "BOOKMARKs for command `dirvish-bookmark-jump'.
 A BOOKMARK is a (KEY PATH DOC) alist where KEY is the key to
 invoke the navigation, PATH is the the argument for command
 `dirvish-find-file', DOC (optional) is the documentation string."
@@ -32,8 +34,8 @@ invoke the navigation, PATH is the the argument for command
     (set k v)
     (let ((max-desc-len (seq-max (mapcar (lambda (i) (length (nth 2 i))) v))))
       (eval
-       `(transient-define-prefix dirvish-bookmark-goto ()
-          "Open frequently visited directories using dirvish."
+       `(transient-define-prefix dirvish-bookmark-jump ()
+          "Jump to Dirvish bookmarks."
           ["Go to Directory: "
            ,@(cl-loop
               for (key path desc) in v

@@ -1664,8 +1664,8 @@ otherwise it defaults to variable `buffer-file-name'."
     ("." "  Manage pinned groups"   dirvish-emerge-menu)
     ("*" "  Manage marks"           dirvish-mark-menu)]]
   [["Navigation"
-    ("j" "  Jump to line for file"  dired-goto-file)
-    ("b" "  Go to bookmarks"        dirvish-bookmark-goto)
+    ("j" "  Goto to line for file"  dired-goto-file)
+    ("b" "  Jump to bookmarks"      dirvish-bookmark-jump)
     ("^" "  Go to parent directory" dired-up-directory)
     ("r" "  Roam the file system"   dirvish-fd-roam)
     ("m" "  Go to the MRU buffer"   dirvish-history-last)
