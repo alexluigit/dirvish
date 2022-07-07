@@ -679,47 +679,48 @@ If KEEP-CURRENT, do not kill the current directory buffer."
         (cl-loop for dp in (append '(tramp disable) (dv-preview-dispatchers dv) '(default))
                  collect (intern (format "dirvish-%s-preview-dp" dp)))))
 
+(defun dirvish--render-attributes-1 (height width subtrees pos tramp fns)
+  "HEIGHT WIDTH SUBTREES POS TRAMP FNS."
+  (forward-line (- 0 height))
+  (cl-dotimes (_ (* 2 height))
+    (when (eobp) (cl-return))
+    (let ((f-beg (dired-move-to-filename))
+          (f-end (dired-move-to-end-of-filename t))
+          (l-beg (line-beginning-position))
+          (l-end (line-end-position))
+          (width (- width (if subtrees (dirvish-subtree--prefix-length) 0)))
+          f-str f-wid f-dir f-name f-attrs f-type hl-face)
+      (setq hl-face (and (eq (or f-beg l-beg) pos) 'dirvish-hl-line))
+      (when f-beg
+        (setq f-str (buffer-substring f-beg f-end))
+        (setq f-wid (string-width f-str))
+        (setq f-dir (dired-current-directory))
+        (setq f-name (file-local-name (expand-file-name f-str f-dir)))
+        (setq f-attrs (dirvish-attribute-cache f-name :builtin
+                        (unless tramp (file-attributes f-name))))
+        (setq f-type (dirvish-attribute-cache f-name :type
+                       (let ((ch (progn (back-to-indentation) (char-after))))
+                         `(,(if (eq ch 100) 'dir 'file) . nil))))
+        (unless (get-text-property f-beg 'mouse-face)
+          (dired-insert-set-properties l-beg l-end)))
+      (dolist (fn (if f-beg fns '(dirvish-attribute-hl-line-rd)))
+        (funcall fn f-beg f-end f-str f-wid f-dir f-name
+                 f-attrs f-type l-beg l-end width hl-face)))
+    (forward-line 1)))
+
 (defun dirvish--render-attributes (dv)
   "Render attributes in Dirvish session DV's body."
-  (let ((in-tramp (dirvish-prop :tramp))
-        (subtrees (bound-and-true-p dirvish-subtree--overlays))
-        (curr-pos (point))
-        (fr-h (frame-height))
-        (remain (window-width)) fns)
-    (cl-loop for (ov pred fn width) in (dv-attribute-fns dv)
-             do (remove-overlays (point-min) (point-max) ov t)
-             for valid = (funcall pred dv)
-             when valid do (progn (setq remain (- remain (or (eval width) 0)))
-                                  (push fn fns)))
-    (with-silent-modifications
-      (save-excursion
-        (forward-line (- 0 fr-h))
-        (cl-dotimes (_ (* 2 fr-h))
-          (when (eobp) (cl-return))
-          (let ((f-beg (dired-move-to-filename))
-                (f-end (dired-move-to-end-of-filename t))
-                (l-beg (line-beginning-position))
-                (l-end (line-end-position))
-                (remain (- remain (if subtrees (dirvish-subtree--prefix-length) 0)))
-                f-str f-wid f-dir f-name f-attrs f-type hl-face)
-            (setq hl-face (and (eq (or f-beg l-beg) curr-pos) 'dirvish-hl-line))
-            (when f-beg
-              (setq f-str (buffer-substring f-beg f-end))
-              (setq f-wid (string-width f-str))
-              (setq f-dir (dired-current-directory))
-              (setq f-name (file-local-name (expand-file-name f-str f-dir)))
-              (setq f-attrs (dirvish-attribute-cache f-name :builtin
-                              (unless in-tramp (file-attributes f-name))))
-              (setq f-type (dirvish-attribute-cache f-name :type
-                             (let ((ch (progn (back-to-indentation) (char-after))))
-                               `(,(if (eq ch 100) 'dir 'file) . nil))))
-              (unless (get-text-property f-beg 'mouse-face)
-                (dired-insert-set-properties l-beg l-end)))
-            (dolist (fn (if f-beg fns '(dirvish-attribute-hl-line-rd)))
-              (funcall fn f-beg f-end f-str f-wid f-dir f-name
-                       f-attrs f-type l-beg l-end remain hl-face)))
-          (forward-line 1)
-          (while (invisible-p (point)) (forward-line 1)))))))
+  (cl-loop with tramp = (dirvish-prop :tramp)
+           with subtrees = (bound-and-true-p dirvish-subtree--overlays)
+           with height = (frame-height) ; use `window-height' here breaks `dirvish-narrow'
+           with width = (window-width) with fns = ()
+           for (ov pred fn wd) in (dv-attribute-fns dv)
+           do (remove-overlays (point-min) (point-max) ov t)
+           when (funcall pred dv) do
+           (progn (setq width (- width (or (eval wd) 0))) (push fn fns))
+           finally do (with-silent-modifications
+                        (save-excursion (dirvish--render-attributes-1
+                                         height width subtrees (point) tramp fns)))))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
