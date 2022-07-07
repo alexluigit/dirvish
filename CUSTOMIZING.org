@@ -326,7 +326,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ("E"   . dirvish-emerge-menu)
    ("N"   . dirvish-narrow)
    ("r"   . dirvish-fd-roam)
-   ("b"   . dirvish-bookmark-goto)
+   ("b"   . dirvish-bookmark-jump)
    ("f"   . dirvish-file-info-menu)
    ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)
    ([remap dired-do-redisplay] . dirvish-ls-switches-menu)
