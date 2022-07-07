@@ -684,7 +684,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
   (let ((in-tramp (dirvish-prop :tramp))
         (subtrees (bound-and-true-p dirvish-subtree--overlays))
         (curr-pos (point))
-        (fr-h (frame-height))
+        (win-h (window-height))
         (remain (window-width)) fns)
     (cl-loop for (ov pred fn width) in (dv-attribute-fns dv)
              do (remove-overlays (point-min) (point-max) ov t)
@@ -693,8 +693,8 @@ If KEEP-CURRENT, do not kill the current directory buffer."
                                   (push fn fns)))
     (with-silent-modifications
       (save-excursion
-        (forward-line (- 0 fr-h))
-        (cl-dotimes (_ (* 2 fr-h))
+        (goto-char (1- (window-start)))
+        (cl-dotimes (_ (+ 2 win-h))
           (when (eobp) (cl-return))
           (let ((f-beg (dired-move-to-filename))
                 (f-end (dired-move-to-end-of-filename t))
@@ -719,7 +719,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
               (funcall fn f-beg f-end f-str f-wid f-dir f-name
                        f-attrs f-type l-beg l-end remain hl-face)))
           (forward-line 1)
-          (while (invisible-p (point)) (forward-line 1)))))))
+          (while (and (invisible-p (point)) (not (eobp))) (forward-line 1)))))))
 
 (defun dirvish--deactivate-for-tab (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
