@@ -136,9 +136,9 @@ Each dispatcher in this list handles the validation and preview content
 generation for the corresponding filetype. Consult ~dirvish-define-preview~ and
 ~dirvish-preview-dispatch~ for details.
 
-Here are two customization examples.
+Here are two customization samples.
 
-** Example 1: directory preview using ~exa~ command
+** Sample 1: directory preview using ~exa~ command
 
 Let's assume you don't like the default directory preview results provided by
 Dired, you can create a directory previewer that utilizes the ~exa~ command:
@@ -167,23 +167,29 @@ the coloring in the preview window.
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 [screenshot from the ~doom-one~ theme]
 
-** Example 2: preview =README.md= in a project when it exists
+** Sample 2: preview PDF files with generated thumbnail
 
-Here we create a dispatcher to preview the =README.md= file in a directory:
+Here we create a dispatcher to generate preface image for pdf files and use
+those images as the pdf preview. This is useful for those who don't want to
+install the =pdf-tools= package but still want to preview pdf files inside Emacs.
+
+Note: this dispatcher requires the =pdftoppm= executable.
 
 #+begin_src emacs-lisp
-(dirvish-define-preview readme (file)
-  "Preview README.md file in a directory when it exists."
-  (when (file-directory-p file)
-    (let ((readme-file (expand-file-name "README.md" file)))
-      (when (file-exists-p readme-file) ; when the README.md exists
-        `(buffer . ,(find-file-noselect readme-file t nil)))))) ; use the file buffer as preview
+(dirvish-define-preview pdf-preface (file ext preview-window)
+  "Display a pdf preface image for FILE in PREVIEW-WINDOW."
+  (when (equal ext "pdf")
+    (let* ((width (dirvish--preview-image-size preview-window))
+           (height (dirvish--preview-image-size preview-window 'height))
+           (cache (dirvish--preview-cache-image-path file width))
+           (cache-jpg (concat cache ".jpg")))
+      (if (file-exists-p cache-jpg)
+          `(image . ,(create-image cache-jpg nil nil :max-width width :max-height height))
+        `(image-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
 
-(add-to-list 'dirvish-preview-dispatchers 'readme)
+(setq dirvish-preview-dispatchers
+      (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers))
 #+end_src
-
-If you find it useful, you can extend this dispatcher to support "README.org" or
-make it case insensitive etc.
 
 * Working with TRAMP
 
@@ -286,8 +292,8 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
   (dirvish-mode-line-format ; it's ok to place string inside
    '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
-  (dirvish-attributes '(subtree-state all-the-icons collapse))
-  ;; (dirvish-attributes '(file-size vscode-icon)) ; Feel free to try different combination
+  ;; Don't worry, enable all of them won't slow you down
+  (dirvish-attributes '(all-the-icons file-size collapse subtree-state vc-state git-msg))
   ;; Maybe the icons are too big to your eyes
   ;; (dirvish-all-the-icons-height 0.8)
   ;; In case you want the details at startup like `dired'
