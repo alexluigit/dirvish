@@ -246,15 +246,13 @@ corresponding slots."
   (let* ((ifxes (cl-loop for o in transient-current-suffixes
                          when (eq (type-of o) 'dirvish-emerge-group)
                          collect o))
-         (preds (cl-loop for idx from 1 to (length ifxes)
-                         for obj in ifxes
-                         collect (cons idx (dirvish-emerge--make-pred (oref obj recipe)))))
          (groups (cl-loop for o in ifxes
                           collect (list (oref o description) (oref o recipe)
                                         (oref o hide) (oref o selected)))))
-    (setq-local dirvish-emerge-groups groups)
-    (dirvish-prop :emerge-preds preds)
-    (dirvish-emerge--apply t)))
+    (dirvish-emerge-mode 1)
+    (revert-buffer)
+    (dirvish-prop :force-emerge t)
+    (setq-local dirvish-emerge-groups groups)))
 
 (defun dirvish-emerge--ifx-unselect ()
   "Unselect selected emerge groups."
@@ -344,7 +342,7 @@ If DEMOTE, shift them to the lowest instead."
                        (default-value 'dirvish-emerge-groups))))
     (hack-one-local-variable 'dirvish-emerge-groups vals)
     (dirvish-prop :emerge-preds
-      (cl-loop for idx from 1 to (length vals)
+      (cl-loop for idx from 0 to (1- (length vals))
                for (_desc recipe) in vals collect
                (cons idx (dirvish-emerge--make-pred recipe))))))
 
@@ -366,71 +364,88 @@ DESC and HIDE are the group title and visibility respectively."
   (let ((prefix (propertize " " 'font-lock-face
                             '(:inherit dirvish-emerge-group-title
                                        :strike-through t)))
-        (title (propertize (format " %s%s " (or desc "-")
-                                   (if hide " (Hidden)" ""))
+        (title (propertize (format " %s%s " desc (if hide " (Hidden)" ""))
                            'font-lock-face 'dirvish-emerge-group-title))
         (suffix (propertize " " 'display '(space :align-to right)
                             'font-lock-face
                             '(:inherit dirvish-emerge-group-title
                                        :strike-through t))))
-    (propertize (format "%s%s%s" prefix title suffix)
+    (propertize (format "%s%s%s\n" prefix title suffix)
                 'keymap dirvish-emerge-group-heading-map)))
 
 (defun dirvish-emerge--insert-group (group)
-  "Insert GROUP to buffer."
-  (pcase-let* ((`(,idx . ,files) group)
-               (`(,desc _ ,hide) (nth (1- idx) dirvish-emerge-groups))
-               (beg (progn (when files
-                             (insert (dirvish-emerge--group-heading desc hide) "\n"))
-                           (point))))
-    (dolist (file (reverse files)) (insert file "\n"))
+  "Insert an individual GROUP to buffer."
+  (pcase-let* ((`(,idx ,desc ,hide ,files) group)
+               (beg (point)) (empty nil))
+    (when (listp files)
+      (setq empty (not files)
+            files (mapconcat #'concat (nreverse files))))
+    (unless empty (insert (dirvish-emerge--group-heading desc hide)))
+    (unless hide (insert files))
     (let ((o (make-overlay beg (point))))
-      (overlay-put o 'dirvish-emerge-group idx)
       (overlay-put o 'evaporate t)
-      (overlay-put o 'invisible hide)
+      (overlay-put o 'dirvish-emerge
+                   (list idx desc hide (unless empty files) empty))
       (push o dirvish-emerge--group-overlays))))
+
+(defun dirvish-emerge--insert-groups (groups &optional pos beg end)
+  "Insert GROUPS then resume cursor to POS.
+POS can be a integer or filename.
+BEG and END, if provided, determine the boundary of groups."
+  (let ((beg (or beg (progn (goto-char (cdar (last dired-subdir-alist)))
+                            (forward-line (if dirvish--dired-free-space 2 1))
+                            (point))))
+        (end (or end (- (dired-subdir-max)
+                        (if (= (length dired-subdir-alist) 1) 0 1)))))
+    (with-silent-modifications
+      (setq dirvish-emerge--group-overlays nil)
+      (delete-region beg end)
+      (mapc #'dirvish-emerge--insert-group groups)
+      (setq dirvish-emerge--group-overlays
+            (nreverse dirvish-emerge--group-overlays)))
+    (cond ((numberp pos) (goto-char pos))
+          ((stringp pos) (dired-goto-file pos)))))
 
 (defun dirvish-emerge--apply-1 (preds)
   "Helper for `dirvish-emerge--apply'.
 PREDS are locally composed predicates."
-  (let* ((old-f (dirvish-prop :child))
-         (beg (progn (goto-char (cdar (last dired-subdir-alist)))
-                     (forward-line (if dirvish--dired-free-space 2 1))
-                     (point)))
-         (end (- (dired-subdir-max) (if (= (length dired-subdir-alist) 1) 0 1)))
-         (idx-m (1+ (length preds)))
-         curr-dir groups)
-    (setq groups (cl-loop for i from 1 to idx-m collect (cons i '())))
-    (save-excursion
-      (setq curr-dir (file-local-name (dired-current-directory)))
-      (while (< (point) end)
-        (when-let ((f-beg (dired-move-to-filename))
-                   (f-end (dired-move-to-end-of-filename)))
-          (let* ((l-beg (line-beginning-position))
-                 (l-end (line-end-position))
-                 (local (buffer-substring-no-properties f-beg f-end))
-                 (full (concat curr-dir local))
-                 (type (dirvish-attribute-cache full :type))
-                 (attrs (dirvish-attribute-cache full :builtin))
-                 (match (cl-loop for (index . fn) in preds
-                                 for match = (funcall fn local full type attrs)
-                                 thereis (and match index))))
-            (push (buffer-substring-no-properties l-beg l-end)
-                  (alist-get (or match idx-m) groups))))
-        (forward-line 1))
-      (with-silent-modifications
-        (delete-region beg end)
-        (mapc #'dirvish-emerge--insert-group groups)))
-    (dired-goto-file old-f)))
+  (let ((old-file (dirvish-prop :child))
+        (groups (cl-loop
+                 with grs = (append dirvish-emerge-groups
+                                    '(("-" nil nil)))
+                 for i from 0
+                 for (desc _ hide) in grs
+                 collect (list i desc hide '())))
+        (min (progn (goto-char (cdar (last dired-subdir-alist)))
+                    (forward-line (if dirvish--dired-free-space 2 1))
+                    (point)))
+        (max (- (dired-subdir-max) (if (= (length dired-subdir-alist) 1) 0 1)))
+        (max-idx (length preds))
+        (dir (file-local-name (dired-current-directory))))
+    (while (< (point) max)
+      (when-let ((f-beg (dired-move-to-filename))
+                 (f-end (dired-move-to-end-of-filename)))
+        (let* ((l-beg (line-beginning-position))
+               (l-end (1+ (line-end-position)))
+               (local (buffer-substring-no-properties f-beg f-end))
+               (full (concat dir local))
+               (type (dirvish-attribute-cache full :type))
+               (attrs (dirvish-attribute-cache full :builtin))
+               (match (cl-loop for (index . fn) in preds
+                               for match = (funcall fn local full type attrs)
+                               thereis (and match index))))
+          (push (buffer-substring-no-properties l-beg l-end)
+                (nth 3 (nth (or match max-idx) groups)))))
+      (forward-line 1))
+    (dirvish-emerge--insert-groups groups old-file)))
 
-(defun dirvish-emerge--apply (&optional force)
-  "Readin `dirvish-emerge-groups' and apply them.
-When FORCE, `dirvish-emerge-max-file-count' is ignored."
-  (when (or force (< (hash-table-count dirvish--attrs-hash)
-                     dirvish-emerge-max-file-count))
+(defun dirvish-emerge--apply ()
+  "Readin `dirvish-emerge-groups' and apply them."
+  (when (or (dirvish-prop :force-emerge)
+            (< (hash-table-count dirvish--attrs-hash)
+               dirvish-emerge-max-file-count))
     (dirvish-emerge--readin-groups)
     (when-let ((preds (dirvish-prop :emerge-preds)))
-      (setq dirvish-emerge--group-overlays nil)
       (dirvish-emerge--apply-1 preds))))
 
 ;;;; Interactive commands
@@ -487,36 +502,35 @@ Press again to set the value for the group"))
   (if dirvish-emerge-mode
       (progn
         (add-hook 'dirvish-setup-hook #'dirvish-emerge--apply nil t)
-        (when (derived-mode-p 'dirvish-mode) (dirvish-emerge--apply)))
+        (unless dirvish-emerge--group-overlays (dirvish-emerge--apply)))
     (remove-hook 'dirvish-setup-hook #'dirvish-emerge--apply t)
     (when (derived-mode-p 'dirvish-mode) (revert-buffer))))
 
 (defun dirvish-emerge--get-group-overlay ()
   "Return overlay for the group at point."
-  (save-excursion
-    (or (cl-find-if (lambda (o) (overlay-get o 'dirvish-emerge-group))
-                    (overlays-at (point)))
-        (progn (forward-line 1) (dirvish-emerge--get-group-overlay)))))
+  (unless dirvish-emerge--group-overlays
+    (user-error "Dirvish: no groups applied here"))
+  (let ((pos (point)))
+    (cl-find-if (lambda (o) (and (overlay-start o)
+                            (< pos (overlay-end o))
+                            (>= pos (overlay-start o))))
+                dirvish-emerge--group-overlays)))
 
 (defun dirvish-emerge-next-group (arg)
   "Jump to the first file in the next ARG visible group."
   (interactive "^p")
-  (unless dirvish-emerge--group-overlays
-    (user-error "Dirvish: no available `dirvish-emerge-groups' for this buffer"))
   (let* ((old-ov (dirvish-emerge--get-group-overlay))
          (old-idx (cl-position old-ov dirvish-emerge--group-overlays))
-         (target (- old-idx arg))
-         (group-len (length dirvish-emerge--group-overlays))
-         (idx (max (min group-len target) 0))
+         (target (+ old-idx arg))
+         (len (1- (length dirvish-emerge--group-overlays)))
+         (idx (max (min len target) 0))
          (target-ov (nth idx dirvish-emerge--group-overlays)))
-    (while (and (not (or (>= idx group-len) (< idx 0)))
+    (while (and (not (or (>= idx len) (< idx 0)))
                 (not (overlay-start target-ov)))
-      (setq idx (max (min group-len (- idx (if (> arg 0) 1 -1))) 0))
+      (setq idx (max (min len (+ idx (if (> arg 0) 1 -1))) 0))
       (setq target-ov (nth idx dirvish-emerge--group-overlays)))
     (cond ((eq old-idx idx))
-          (target-ov
-           (goto-char (overlay-start target-ov))
-           (when (overlay-get target-ov 'invisible) (forward-line -1))))))
+          (target-ov (goto-char (overlay-start target-ov))))))
 
 (defun dirvish-emerge-previous-group (arg)
   "Jump to the first file in the previous ARG visible group."
@@ -526,19 +540,25 @@ Press again to set the value for the group"))
 (defun dirvish-emerge-toggle-current-group ()
   "Toggle the current group."
   (interactive)
-  (when-let ((group-overlay (dirvish-emerge--get-group-overlay))
-             (group-id (overlay-get group-overlay 'dirvish-emerge-group))
-             (group (nth (1- group-id) dirvish-emerge-groups)))
-    (cl-callf not (overlay-get group-overlay 'invisible))
-    (if (< (length group) 3)
-        (cl-callf append (nth (1- group-id) dirvish-emerge-groups) '(t))
-      (cl-callf not (nth 2 group)))
-    (with-silent-modifications
-      (goto-char (1- (overlay-start group-overlay)))
-      (delete-region (line-beginning-position) (line-end-position))
-      (insert (dirvish-emerge--group-heading
-               (nth 0 group)
-               (overlay-get group-overlay 'invisible))))))
+  (cl-loop
+   with curr-ov = (dirvish-emerge--get-group-overlay)
+   with groups = ()
+   with pos = (if (dirvish-prop :child) (overlay-start curr-ov) (point))
+   for o in dirvish-emerge--group-overlays
+   for (idx desc hide files) = (overlay-get o 'dirvish-emerge)
+   do (when (eq curr-ov o)
+        (setq hide (not hide))
+        (let ((group (nth idx dirvish-emerge-groups)))
+          (if (< (length group) 3)
+              (cl-callf append group '(t))
+            (cl-callf not (nth 2 group))))
+        (when hide
+          (setq files (buffer-substring
+                       (save-excursion (goto-char (overlay-start o))
+                                       (forward-line 1) (point))
+                       (overlay-end o)))))
+   do (push (list idx desc hide files) groups)
+   finally do (dirvish-emerge--insert-groups (nreverse groups) pos)))
 
 (provide 'dirvish-emerge)
 ;;; dirvish-emerge.el ends here
