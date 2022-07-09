@@ -379,7 +379,7 @@ DESC and HIDE are the group title and visibility respectively."
                (beg (point)) (empty nil))
     (when (listp files)
       (setq empty (not files)
-            files (mapconcat #'concat (nreverse files))))
+            files (mapconcat #'concat (nreverse files) "")))
     (unless empty (insert (dirvish-emerge--group-heading desc hide)))
     (unless hide (insert files))
     (let ((o (make-overlay beg (point))))
@@ -437,7 +437,7 @@ PREDS are locally composed predicates."
           (push (buffer-substring-no-properties l-beg l-end)
                 (nth 3 (nth (or match max-idx) groups)))))
       (forward-line 1))
-    (dirvish-emerge--insert-groups groups old-file)))
+    (dirvish-emerge--insert-groups groups old-file min max)))
 
 (defun dirvish-emerge--apply ()
   "Readin `dirvish-emerge-groups' and apply them."
