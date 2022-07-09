@@ -49,7 +49,7 @@
           (dirvish--append-metadata
            'file (ring-elements dirvish-history--ring)))
          (result (completing-read "Recently visited: " history-w/metadata)))
-      (when result (dirvish-find-file result))))
+      (when result (dirvish-find-entry-ad result))))
 
 ;;;###autoload
 (defun dirvish-history-last ()
@@ -64,7 +64,7 @@
           for entry in entries
           thereis (and (member entry local-entries)
                        (not (equal entry (dired-current-directory))) entry))))
-    (and match (dirvish-find-file match))))
+    (and match (dirvish-find-entry-ad match))))
 
 ;;;###autoload
 (defun dirvish-history-go-forward (arg)
@@ -78,12 +78,12 @@ ARG defaults to 1."
                (dv-index-dir (dirvish-curr)) dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
-           (dirvish-find-file (nth (- len 1) dirs))
+           (dirvish-find-entry-ad (nth (- len 1) dirs))
            (message "Dirvish: reached the end of history"))
           ((< new-idx 0)
-           (dirvish-find-file (nth 0 dirs))
+           (dirvish-find-entry-ad (nth 0 dirs))
            (message "Dirvish: reached the beginning of history"))
-          (t (dirvish-find-file (nth new-idx dirs))))))
+          (t (dirvish-find-entry-ad (nth new-idx dirs))))))
 
 ;;;###autoload
 (defun dirvish-history-go-backward (arg)

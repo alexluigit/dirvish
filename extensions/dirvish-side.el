@@ -222,7 +222,7 @@ otherwise it defaults to `project-current'."
            (dirvish-reclaim)
            (if (and dirvish-side-follow-buffer-file followed)
                (progn
-                 (dirvish-find-file (file-name-directory followed))
+                 (dirvish-find-entry-ad (file-name-directory followed))
                  (dired-goto-file followed)
                  (dirvish-update-body-h))
              (dirvish--build dv)))
