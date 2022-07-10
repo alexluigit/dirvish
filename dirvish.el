@@ -328,6 +328,20 @@ Multiple calls under the same LABEL are ignored."
        ,@body
        (set-window-dedicated-p window dedicated))))
 
+(defun dirvish--cache-path-for-file (file type &optional ext no-mkdir)
+  "Get FILE's cache path.
+TYPE is either a string indicating the subdir of
+`dirvish-cache-dir' to use or a number indicating the subdir is
+\"images/TYPE\".  The EXT, such as \".jpg\", is attached to FILE.
+A new directory is created unless NO-MKDIR."
+  (let* ((base (if (numberp type) (concat "images/" (number-to-string type)) type))
+         (file (if dirvish--os-windows-p
+                   (concat "/" (replace-regexp-in-string ":" "" file)) file))
+         (cache (concat dirvish-cache-dir base file)))
+    (and (not no-mkdir) (not (file-exists-p cache))
+         (make-directory (file-name-directory cache) t))
+    (concat cache ext)))
+
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
   (ansi-color-apply-on-region
@@ -875,18 +889,6 @@ FILENAME and WILDCARD are their args."
   (floor (* dirvish--preview-img-scale
             (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
 
-(defun dirvish--preview-cache-image-path (file size &optional ext no-mkdir)
-  "Get image cache filepath for FILE.
-SIZE is window pixelwise width of current dirvish preview window.
-A optional extension EXT, such as \".jpg\", can be given to the
-cache image. A new directory is created unless NO-MKDIR."
-  (let ((cache (concat dirvish-cache-dir "images/" (number-to-string size)
-                       (when dirvish--os-windows-p "/")
-                       (replace-regexp-in-string ":" "" file))))
-    (and (not no-mkdir) (not (file-exists-p cache))
-         (make-directory (file-name-directory cache) t))
-    (concat cache ext)))
-
 (defun dirvish--preview-insert-image (image dv)
   "Insert IMAGE at preview window of DV."
   (insert " ")
@@ -918,7 +920,7 @@ cache image. A new directory is created unless NO-MKDIR."
       (setq size (dirvish--preview-image-size win))
       (dolist (file fileset)
         (mapc #'delete-file (file-expand-wildcards
-                             (dirvish--preview-cache-image-path file size ".*" t) t))))))
+                             (dirvish--cache-path-for-file file size ".*" t) t))))))
 
 (defun dirvish--preview-fill-string-sentinel (proc _exitcode)
   "A sentinel for dirvish preview process.
@@ -986,7 +988,7 @@ When PROC finishes, fill preview buffer with process result."
   (when (member ext dirvish-image-exts)
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
-           (cache (dirvish--preview-cache-image-path file width ".jpg")))
+           (cache (dirvish--cache-path-for-file file width ".jpg")))
       (cond ((file-exists-p cache)
              `(image . ,(create-image cache nil nil :max-width width :max-height height)))
             ((or (> (nth 7 (file-attributes file)) dirvish--img-cache-threshold)
@@ -1000,7 +1002,7 @@ When PROC finishes, fill preview buffer with process result."
   (when (member ext dirvish-video-exts)
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
-           (cache (dirvish--preview-cache-image-path file width ".jpg")))
+           (cache (dirvish--cache-path-for-file file width ".jpg")))
       (if (file-exists-p cache)
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
         `(image-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s"
@@ -1012,7 +1014,7 @@ When PROC finishes, fill preview buffer with process result."
   (when (equal ext "epub")
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
-           (cache (dirvish--preview-cache-image-path file width ".jpg")))
+           (cache (dirvish--cache-path-for-file file width ".jpg")))
       (if (file-exists-p cache)
           `(image . ,(create-image cache nil nil :max-width width :max-height height))
         `(image-cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))

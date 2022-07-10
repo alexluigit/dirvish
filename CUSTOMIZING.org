@@ -224,7 +224,7 @@ Note: this dispatcher requires the =pdftoppm= executable.
   (when (equal ext "pdf")
     (let* ((width (dirvish--preview-image-size preview-window))
            (height (dirvish--preview-image-size preview-window 'height))
-           (cache (dirvish--preview-cache-image-path file width))
+           (cache (dirvish--cache-path-for-file file width))
            (cache-jpg (concat cache ".jpg")))
       (if (file-exists-p cache-jpg)
           `(image . ,(create-image cache-jpg nil nil :max-width width :max-height height))
