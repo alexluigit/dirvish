@@ -1,4 +1,4 @@
-;;; dirvish-extras.el --- Extra commands, attributes, and mode line segments -*- lexical-binding: t -*-
+;;; dirvish-extras.el --- Extra commands and mode line segments -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
