@@ -276,6 +276,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
+(defconst dirvish--no-update-preview-cmds '(scroll-other-window scroll-other-window-down))
 (defconst dirvish--cache-embedded-video-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defconst dirvish--cache-img-fns
@@ -330,7 +331,7 @@ Multiple calls under the same LABEL are ignored."
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
   (ansi-color-apply-on-region
-   pos (progn (goto-char pos) (forward-line (frame-height)) (point))))
+   pos (save-excursion (goto-char pos) (forward-line (frame-height)) (point))))
 
 (defmacro dirvish--hide-dired-header (&rest body)
   "Execute BODY then hide the Dired header."
@@ -930,8 +931,7 @@ When PROC finishes, fill preview buffer with process result."
              (p-min (point-min)))
         (with-current-buffer proc-buf (erase-buffer))
         (insert result-str)
-        (ansi-color-apply-on-region
-         p-min (progn (goto-char p-min) (forward-line (frame-height)) (point)))))))
+        (dirvish-apply-ansicolor-h nil p-min)))))
 
 (defun dirvish--preview-img-cache-sentinel (proc _exitcode)
   "Sentinel for image cache process PROC."
@@ -1234,7 +1234,8 @@ default implementation is `find-args' with simple formatting."
     (when-let ((filename (dired-get-filename nil t)))
       (dirvish-prop :child filename)
       (let ((h-buf (dirvish--util-buffer 'header dv t))
-            (f-buf (dirvish--util-buffer 'footer dv t)))
+            (f-buf (dirvish--util-buffer 'footer dv t))
+            (this-cmd this-command))
         (dirvish-debounce layout
           (when (dv-layout dv)
             (when (and (not (eq dirvish-mode-line-position 'disable))
@@ -1243,7 +1244,8 @@ default implementation is `find-args' with simple formatting."
             (when (and (not (eq dirvish-header-line-position 'disable))
                        (buffer-live-p h-buf))
               (with-current-buffer h-buf (force-mode-line-update)))
-            (dirvish-preview-update)))))))
+            (unless (memq this-cmd dirvish--no-update-preview-cmds)
+              (dirvish-preview-update))))))))
 
 (defun dirvish-quit-window-h ()
   "Hook function added to `quit-window' locally."
