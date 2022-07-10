@@ -7,24 +7,6 @@ extensions/. They are installed together with Dirvish if you pull the package
 from MELPA, Dirvish can work properly with or without them though. These
 extensions are inactive by default and can be enabled manually if desired.
 
-Currently the following extensions come with the package:
-
-- [[file:extensions/dirvish-menu.el][dirvish-menu.el]]: Keybindings help menu powered by =transient.el=.
-- [[file:extensions/dirvish-yank.el][dirvish-yank.el]]: Multi-stage copy/pasting of files.
-- [[file:extensions/dirvish-peek.el][dirvish-peek.el]]: Preview files when narrowing candidates using minibuffer.
-- [[file:extensions/dirvish-vc.el][dirvish-vc.el]]: Version-control (git) integration for Dirvish.
-- [[file:extensions/dirvish-icons.el][dirvish-icons.el]]: =all-the-icons/vscode-icon= integration for Dirvish.
-- [[file:extensions/dirvish-extras.el][dirvish-extras.el]]: Extra commands, UI elements, preview dispatchers for Dirvish.
-- [[file:extensions/dirvish-side.el][dirvish-side.el]]: Toggle Dirvish in side window like [[https://github.com/jaypei/neotree][neotree]].
-- [[file:extensions/dirvish-ls.el][dirvish-ls.el]]: Setup ls command switches on the fly.
-- [[file:extensions/dirvish-fd.el][dirvish-fd.el]]: =fd= command interface in Dirvish.
-- [[file:extensions/dirvish-subtree.el][dirvish-subtree.el]]: Like =dired-subtree.el=, but simpler and faster.
-- [[file:extensions/dirvish-history.el][dirvish-history.el]]: History navigation commands for Dirvish.
-- [[file:extensions/dirvish-bookmark.el][dirvish-bookmark.el]]: Bookmark support for Dirvish.
-- [[file:extensions/dirvish-collapse.el][dirvish-collapse.el]]: Collapse unique nested paths.
-- [[file:extensions/dirvish-narrow.el][dirvish-narrow.el]]: Live-narrowing of Dirvish buffer.
-- [[file:extensions/dirvish-emerge.el][dirvish-emerge.el]]: Pin files you are interested in at top.
-
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
 
@@ -64,14 +46,15 @@ buffers into a single "clipboard", then copy or move all of them to the target
 location.
 #+end_quote
 
-The ~dirvish-yank~ command can do similar things as ~dired-ranger-move/paste~,
-meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
+Multi-stage copy/paste, asynchronous I/O (whenever applicable), work with TRAMP,
+=dirvish-yank= has all of them. =dirvish-yank= also handles file operations on the
+same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
 
-- It paste/move files using external processes, hence heavy I/O tasks won't
-  block the main process of Emacs.
-- It's much simpler than ~dired-ranger~ because you mark files using built-in
-  Dired commands such as ~dired-mark~, ~dired-mark-extension~.
-  
+To copy/move/symlink/hardlink files from A to B, just mark the files in A, go to
+B, and paste them with ~dirvish-yank/move/symlink/hardlink~.
+
+See also: [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#dired-ranger][comparison with dired-ranger]]
+
 * Minibuffer file preview (dirvish-peek.el)
 
 ~dirvish-peek-mode~ gives you a preview window when narrowing file candidates
@@ -89,21 +72,19 @@ of the peek window.
 
 * Version-control (git) integration (dirvish-vc.el)
 
-|-----------+-------------------------------------------------|
-| Attribute | Description                                     |
-|-----------+-------------------------------------------------|
-| ~vc-state~  | A VC state indicator (such as "M" for modified) |
-| ~git-msg~   | Show git commit messages after the file name    |
-|-----------+-------------------------------------------------|
+This extension gives Dirvish the ablity to display version-control data in
+different ways.  For now we have:
 
-This extension also provides the ~vc-diff~ preview dispatcher which shows changes
-between the working tree and the index of selected files at preview window.
++ ~vc-state~: an attribute to display the VC state as a bitmap at left fringe
++ ~git-msg~: an attribute to display git commit messages after the file name    
++ ~vc-diff~: a preview dispatcher which shows changes between the working tree and
+  the index of selected files at preview window.
 
 https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-ad5d-ae4a088a69b4.mp4
 
 *Figure 2*. Toggle =vc-state= (attribute), =git-msg= (attribute) and =vc-diff= (preview dispatcher).
 
-* Extra commands, attributes, mode-line segments (dirvish-extras.el)
+* Extra commands and mode-line segments (dirvish-extras.el)
 ** Commands
 
 |------------------------------------+----------------------------------------|
@@ -118,21 +99,6 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 | ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"    |
 | ~dirvish-switch-layout~              | Switch Dirvish layout                  |
 |------------------------------------+----------------------------------------|
-
-** Attributes
-
-|---------------+-------------------------------------------------|
-| Attribute     | Description                                     |
-|---------------+-------------------------------------------------|
-| ~all-the-icons~ | File icons provided by =all-the-icons=            |
-| ~vscode-icon~   | File icons provided by =vscode-icon=              |
-| ~file-size~     | File size of files or file count of directories |
-| ~collapse~      | Collapse unique nested paths                    |
-|---------------+-------------------------------------------------|
-
-https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-84a8-d568517f0b50.mp4
-
-*Figure 3*. Toggle =subtree-state=, =all-the-icons=, =file-size= attributes
 
 ** Mode-line segments
 
@@ -150,15 +116,33 @@ https://user-images.githubusercontent.com/16313743/159040575-44485f8e-291b-43dc-
 | ~file-device-number~ | Filesystem device number                                     |
 |--------------------+--------------------------------------------------------------|
 
+* Show icons at front of file name (dirvish-icons.el)
+
+This extension provides two attributes: ~all-the-icons~ and ~vscode-icon~.  To tweak
+the appearance of the icons, you have these options:
+
++ ~dirvish-all-the-icons-height~
++ ~dirvish-all-the-icons-offset~
++ ~dirvish-all-the-icons-palette~
++ ~dirvish-vscode-icon-size~
+
 * Toggle Dirvish in side window (dirvish-side.el)
 
-TODO
+This extension provides the ~dirvish-side~ command. It toggles a Dirvish session
+as a sidebar in the frame.
+
+[[https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png][https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png]]
 
 * Setup ls switches on the fly (dirvish-ls.el)
 
-TODO
+This extension provides commands to changing the ls listing switches like a
+breeze. No manual editing anymore!
 
-* fd interface in Dirvish (dirvish-fd.el)
+[[https://user-images.githubusercontent.com/16313743/178141860-784e5744-a5b7-4a7b-9bdb-f0f981ca2dba.svg][https://user-images.githubusercontent.com/16313743/178141860-784e5744-a5b7-4a7b-9bdb-f0f981ca2dba.svg]]
+
+*Figure 3*. left: ~dirvish-quicksort~  right: ~dirvish-ls-switches-menu~
+
+* Dirvish as the interface of fd (dirvish-fd.el)
 
 This is the BEST =fd= frontend, period.
 
@@ -179,14 +163,8 @@ Too fast? Let's break it down:
 Wait, there's more: ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works
 for this buffer.
 
-** Commands
-
-|-----------------+---------------------------------|
-| Command         | Description                     |
-|-----------------+---------------------------------|
-| ~dirvish-fd~      | See description above           |
-| ~dirvish-fd-roam~ | Browse all directories using ~fd~ |
-|-----------------+---------------------------------|
+This extension also provides ~dirvish-fd-roam~ which helps you to browse all
+directories using =fd=.
 
 * Turn Dirvish into a tree browser (dirvish-subtree.el)
 
@@ -194,45 +172,53 @@ This extension gives Dirvish the ability to toggle a directory as subtree
 (~dirvish-subtree-toggle~), which can be seen as a stripped-down version of
 =dired-subtree=.
 
-** Commands
-
-|------------------------+-----------------------------------|
-| Command                | Description                       |
-|------------------------+-----------------------------------|
-| ~dirvish-subtree-toggle~ | Toggle directory subtree at point |
-|------------------------+-----------------------------------|
-
-** Attributes
-
-|---------------+------------------------------------|
-| Attribute     | Description                        |
-|---------------+------------------------------------|
-| ~subtree-state~ | Directory expanded state indicator |
-|---------------+------------------------------------|
+You can use ~dirvish-subtree-toggle~ to toggle the directory under the cursor as a
+subtree.  Add ~subtree-state~ to ~dirvish-attributes~ gives you an indicator about
+whether the directory is expanded or not.
 
 * History navigation commands (dirvish-history.el)
-** Commands
 
-|-----------------------------+------------------------------------------|
-| Command                     | Description                              |
-|-----------------------------+------------------------------------------|
-| ~dirvish-history-jump~        | Navigate to recently visited directories |
-| ~dirvish-history-go-forward~  | Go forward history (session locally)     |
-| ~dirvish-history-go-backward~ | Go backward history (session locally)    |
-| ~dirvish-history-last~        | Switch to most recent Dirvish buffer     |
-|-----------------------------+------------------------------------------|
+|-----------------------------+---------------------------------------|
+| Command                     | Description                           |
+|-----------------------------+---------------------------------------|
+| ~dirvish-history-jump~        | Go to recently visited directories    |
+| ~dirvish-history-go-forward~  | Go forward history (session locally)  |
+| ~dirvish-history-go-backward~ | Go backward history (session locally) |
+| ~dirvish-history-last~        | Go to most recent used Dirvish buffer |
+|-----------------------------+---------------------------------------|
 
 * Bookmarks (dirvish-bookmark.el)
 
-TODO
+This extension gives you the ability of jumping to anywhere in the filesystem
+with minimal (2 usually) keystrokes.  Just define the bookmarks in
+~dirvish-bookmark-entries~ and access them by calling ~dirvish-bookmark-jump~.
 
 * Collapse unique nested paths (dirvish-collapse.el)
 
-TODO
+This extension provides the ~collapse~ attribute.
+
+#+begin_quote
+Often times we find ourselves in a situation where a single file or directory is
+nested in a chain of nested directories with no other content. This is sometimes
+due to various mandatory layouts demanded by packaging tools or tools generating
+these deeply-nested "unique" paths to disambiguate architectures or versions
+(but we often use only one anyway). If the user wants to access these
+directories they have to quite needlessly drill-down through varying number of
+"uninteresting" directories to get to the content.
+
+                                                   -- from [[https://github.com/Fuco1/dired-hacks][dired-collapse]]
+#+end_quote
+
+See also: [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#dired-collapse][comparison with dired-collapse]]
 
 * Live-narrowing of Dirvish buffer (dirvish-narrow.el)
 
-TODO
+This package provides live filtering of files in dirvish buffers.  In general,
+after calling ~dirvish-narrow~ you type a filter string into the minibuffer.
+After each change the changes automatically reflect in the buffer. Typing RET
+will exit the live filtering mode and leave the dired buffer in the narrowed
+state.  To bring it back to the original view, you can call ~revert-buffer~
+(usually bound to =g=).
 
 * Pin files you are interested in at top (dirvish-emerge.el)
 

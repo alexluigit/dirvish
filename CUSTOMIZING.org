@@ -23,38 +23,30 @@ want further customizations.
 | =mediainfo=         | Display media metadata     | Optional |
 |-------------------+----------------------------+----------|
 
-It is recommended to use the latest version of these packages/applications,
-otherwise the preview functionality may not work correctly.
-
-* Customizing options
-
-|-------------------------------+----------------------------------------|
-| Option                        | Description                            |
-|-------------------------------+----------------------------------------|
-| ~dirvish-cache-dir~             | Cache directory                        |
-| ~dirvish-auto-cache-threshold~  | Generate cache images automatically    |
-| ~dirvish-default-layout~        | Default layout for fullscreen sessions |
-| ~dirvish-hide-details~          | Hide details as you see fit            |
-| ~dirvish-mode-line-position~    | The place to put the mode line         |
-| ~dirvish-mode-line-height~      | The height of mode line                |
-| ~dirvish-mode-line-format~      | Mode line format in root window        |
-| ~dirvish-header-line-position~  | The place to put the header line       |
-| ~dirvish-header-line-height~    | The height of header line              |
-| ~dirvish-header-line-format~    | Header line format in root window      |
-| ~dirvish-preview-disabled-exts~ | Disable preview for some filetypes     |
-| ~dirvish-open-with-programs~    | Open certain files with external apps  |
-| ~dirvish-reuse-session~         | See [[#In relation to Dired][In relation to Dired]]               |
-| ~dirvish-preview-dispatchers~   | See [[#Preview-strategies][Preview strategies]]                 |
-| ~dirvish-attributes~            | See [[#Extra-attributes][Extra attributes]]                   |
-|-------------------------------+----------------------------------------|
-Consult the docstring of the options for details.
+It is recommended to use the latest version of these packages/applications.
 
 * In relation to Dired
 
 A Dirvish session holds a set of buffers with ~dirvish-mode~ as its
 ~major-mode~. Since ~dirvish-mode~ is a derived mode from ~dired-mode~, most of the
-Dired commands work exactly the same in a ~dirvish-mode~ buffer. Nonetheless,
-Dirvish and Dired handle the following aspects differently.
+Dired commands work exactly the same in a ~dirvish-mode~ buffer.  Here are some
+Dirvish exclusive features or aspects that Dired and Dirvish handle differently.
+
+** Cache directory
+
+Dirvish uses ~dirvish-cache-dir~ to store cached images and other persistent data.
+
+** File details display
+
+Dirvish hides the file details by default. If you want the details at buffer
+initialization like in Dired, you can customize the ~dirvish-hide-details~ option.
+
+** Open files externally
+
+For some filetypes such as media files or special documents, you may want to
+open them with an external application by default.  You can achieve this by
+customizing the ~dirvish-open-with-programs~ option.  By default, it instructs
+Emacs to open video/audio files using =mpv=.
 
 ** Parsing switches
 
@@ -86,7 +78,20 @@ correctly, there are a few rules here:
 
 Each Dirvish has its own window layout along with some other isolated niceties
 such as header string. This makes it easy for Dirvish to adapt itself towards
-different file management tasks.
+different file management tasks.  You can customize the ~dirvish-default-layout~
+option to setup the defualt window layout for fullscreen sessions.
+
+** TRAMP integration
+
+Dirvish integrates TRAMP at its core.  But most of the features (file preview,
+asynchronous file transfer through =dirvish-yank= .etc) that are available in
+localhost are NOT enabled over a /synchronous/ TRAMP connection (see:
+[[https://www.gnu.org/software/tramp/#Improving-performance-of-asynchronous-remote-processes-1][TRAMP-async]]).  To enable them on a remote host, one will need to have a proper
+ssh config such as ssh-agent for that host, because it requires working SSH
+authentication which bypasses the password entering to work.
+
+You can improve the speed and responsiveness of TRAMP by tweaking its options,
+see the sample config below.
 
 ** Buffer management
 
@@ -108,21 +113,59 @@ exit if ~dirvish-reuse-session~ is enabled (disabled by default).
 
 Dirvish has its own mode-line that can be customized with
 ~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option is
-ignored in Dirvish.
+ignored in Dirvish.  For those want to tweak the appearance of mode-line, just
+customize the ~dirvish-mode-line-position~ and ~dirvish-mode-line-height~ option.
 
-* Extra attributes
+Dirvish also allows you to customize the header line in the same way of
+customizing mode line. Check out ~dirvish-header-line-format/position/height~.
 
-A list of file attributes such as ~file-size~ showing in file lines are stored in
-the variable ~dirvish-attributes~. Evaluate this to get all available attributes:
+** Hooks
+
+Apart from the hooks provided by Dired, Dirvish got some additions.
+
+|---------------------------+-------------------------------------------|
+| Hook                      | Description                               |
+|---------------------------+-------------------------------------------|
+| ~dirvish-activation-hook~   | Executed on session activation.           |
+| ~dirvish-deactivation-hook~ | Executed on session deactivation.         |
+| ~dirvish-mode-hook~         | Executed on parent buffer initialization. |
+| ~dirvish-setup-hook~        | Executed after the root buffer is ready.  |
+| ~dirvish-after-revert-hook~ | Executed after ~dirvish-revert~.            |
+| ~dirvish-find-entry-hook~   | Executed after ~dirvish-find-entry~.        |
+|---------------------------+-------------------------------------------|
+
+* Dirvish "attributes"
+
+A Dirvish attribute is a visual element that shows up within the file line,
+which provides extra information for that file.
+
+For now Dirvish ships with these attributes:
+
++ ~subtree-state~: A indicator for directory expanding state.
++ ~all-the-icons~: File icons provided by =all-the-icons.el=.
++ ~vscode-icon~: File icons provided by =vscode-icon.el=.
++ ~collapse~: Collapse unique nested paths.
++ ~git-msg~: Append git commit message to filename.
++ ~vc-state~: The version control state at left fringe.
++ ~file-size~: Show file size or directories file count at right fringe.
+
+Here is an overview of how does these attributes look like:
+
+[[https://user-images.githubusercontent.com/16313743/178137697-3ff4ca5a-aaf3-44d4-b644-9e9a2e7f911a.svg][https://user-images.githubusercontent.com/16313743/178137697-3ff4ca5a-aaf3-44d4-b644-9e9a2e7f911a.svg]]
+
+To achieve this, the only thing you need to do is put these symbols into
+~dirvish-attributes~ like this (order doesn't matter):
 
 #+begin_src emacs-lisp
-(prog1 (mapc #'require (mapcar #'car dirvish-attrs-library))
-  (describe-variable 'dirvish--available-attrs))
+(setq dirvish-attributes '(vc-state subtree-state all-the-icons collapse git-msg file-size))
 #+end_src
 
-To change the attributes session locally, see [[file:EXTENSIONS.org][dirvish-menu]].
+* File Preview
+** Preview strategies
 
-* Preview strategies
+Dirvish uses different strategies towards various filetypes.  You may want to
+turn off preview for certain file extensions, ~dirvish-preview-disabled-exts~
+allows you to do that.
 
 A preview dispatcher represents a strategy for file preview on certain
 conditions. The variable ~dirvish-preview-dispatchers~, which holds all the active
@@ -138,7 +181,7 @@ generation for the corresponding filetype. Consult ~dirvish-define-preview~ and
 
 Here are two customization samples.
 
-** Sample 1: directory preview using ~exa~ command
+*** Sample 1: directory preview using ~exa~ command
 
 Let's assume you don't like the default directory preview results provided by
 Dired, you can create a directory previewer that utilizes the ~exa~ command:
@@ -167,7 +210,7 @@ the coloring in the preview window.
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 [screenshot from the ~doom-one~ theme]
 
-** Sample 2: preview PDF files with generated thumbnail
+*** Sample 2: preview PDF files with generated thumbnail
 
 Here we create a dispatcher to generate preface image for pdf files and use
 those images as the pdf preview. This is useful for those who don't want to
@@ -191,17 +234,16 @@ Note: this dispatcher requires the =pdftoppm= executable.
       (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers))
 #+end_src
 
-* Working with TRAMP
+** Auto caching
 
-Dirvish integrates TRAMP at its core.  But most of the features (file preview,
-asynchronous file transfer through =dirvish-yank= .etc) that are available in
-localhost are NOT enabled over a /synchronous/ TRAMP connection (see:
-[[https://www.gnu.org/software/tramp/#Improving-performance-of-asynchronous-remote-processes-1][TRAMP-async]]).  To enable them on a remote host, one will need to have a proper
-ssh config such as ssh-agent for that host, because it requires working SSH
-authentication which bypasses the password entering to work.
+Some preview dispatchers generate cache images to improve the preview
+experience.  Everytime you enter a directory, Dirvish scans the the content of
+that directory and determines the fileset within the directory that requires
+cache image for preview, the corresponding cache images for the fileset are
+generated later when Emacs is idle.
 
-You can improve the speed and responsiveness of TRAMP by tweaking its options,
-see the sample config below.
+You can tweak the behavior of auto caching or turn off this feature completely
+by customizing the ~dirvish-auto-cache-threshold~ option.
 
 * Working with Doom Emacs
 
@@ -231,48 +273,33 @@ interference, which means ugly hacks is no longer needed.
 
 If you still want to use the =dired= module in Doom, here are some caveats.
 
-*** Remap/disable ~+dired/quit-all~ command (required)
+** Remap/disable ~+dired/quit-all~ command (required)
   
 After you enable the =dired= module, Doom remaps =q= key to a custom command
 ~+dired/quit-all~, which doesn't work well with Dirvish. You can either override
 this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
 
-*** Remove =+icons= flag in dired module (required)
+** Remove =+icons= flag in dired module (required)
 
 It's not recommended to use =all-the-icons-dired.el= and Dirvish together, see [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#all-the-icons-dired][FAQ]].
 
-*** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
+** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
 
 The ~vc-state~ attribute in Dirvish can achieve the same functionality without
 sacrificing performance. Meanwhile, ~diff-hl-dired-mode~ doesn't mesh well with
 =dirvish-subtree= nor =dired-subtree=.
 
-*** Use ~git-msg~ attribute instead of =dired-git-info=
+For same reason, =dired-git-info= can be mirrored by ~vc-state~.
 
-For same reason describe in the above ~vc-state~ section.
-
-*** Use =dirvish-fd= instead of =fd-dired=
+** Use =dirvish-fd= instead of =fd-dired=
 
 See [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#find-dired--fd-dired][FAQ]].
 
-*** Use =dirvish-yank= instead of =dired-rsync=
+** Use =dirvish-yank= instead of =dired-rsync=
 
 Multi-stage copy/paste, asynchronous I/O (whenever applicable), work with TRAMP,
 =dirvish-yank= has all of them. =dirvish-yank= also handles file operations on the
 same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
-
-* Hooks
-
-|---------------------------+-------------------------------------------|
-| Hook                      | Description                               |
-|---------------------------+-------------------------------------------|
-| ~dirvish-activation-hook~   | Executed on session activation.           |
-| ~dirvish-deactivation-hook~ | Executed on session deactivation.         |
-| ~dirvish-mode-hook~         | Executed on parent buffer initialization. |
-| ~dirvish-setup-hook~        | Executed after file-attributes retrieved. |
-| ~dirvish-after-revert-hook~ | Executed after ~dirvish-revert~.            |
-| ~dirvish-find-entry-hook~   | Executed after ~dirvish--find-entry~.       |
-|---------------------------+-------------------------------------------|
 
 * Sample config
 ** Dired | Dirvish
@@ -292,7 +319,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
   (dirvish-mode-line-format ; it's ok to place string inside
    '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
-  ;; Don't worry, enable all of them won't slow you down
+  ;; Don't worry, Dirvish is still performant even you enable all these attributes
   (dirvish-attributes '(all-the-icons file-size collapse subtree-state vc-state git-msg))
   ;; Maybe the icons are too big to your eyes
   ;; (dirvish-all-the-icons-height 0.8)
