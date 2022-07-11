@@ -19,11 +19,13 @@
 (define-obsolete-function-alias 'dirvish-bookmark-goto 'dirvish-bookmark-jump "Jul-07,2022")
 ;;;###autoload (autoload 'dirvish-bookmark-jump "dirvish-bookmark" nil t)
 ;;;###autoload (autoload 'dirvish-bookmark-goto "dirvish-bookmark" nil t)
-(defcustom dirvish-bookmark-entries '()
+(defcustom dirvish-bookmark-entries
+  `(("h" "~/"                  "Home")
+    ("e" ,user-emacs-directory "Emacs user directory"))
   "BOOKMARKs for command `dirvish-bookmark-jump'.
 A BOOKMARK is a (KEY PATH DOC) alist where KEY is the key to
 invoke the navigation, PATH is the the argument for command
-`dirvish-find-file', DOC (optional) is the documentation string."
+`dired-jump', DOC (optional) is the documentation string."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
