@@ -210,7 +210,7 @@ the coloring in the preview window.
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 [screenshot from the ~doom-one~ theme]
 
-*** Sample 2: preview PDF files with generated thumbnail
+*** COMMENT Sample 2: preview PDF files with generated thumbnail
 
 Here we create a dispatcher to generate preface image for pdf files and use
 those images as the pdf preview. This is useful for those who don't want to
@@ -236,14 +236,14 @@ Note: this dispatcher requires the =pdftoppm= executable.
 
 ** Auto caching
 
-Some preview dispatchers generate cache images to improve the preview
-experience.  Everytime you enter a directory, Dirvish scans the the content of
-that directory and determines the fileset within the directory that requires
-cache image for preview, the corresponding cache images for the fileset are
-generated later when Emacs is idle.
+By default, Dirvish enabled all dispatchers defined in ~dirvish-media.el~.  Some
+of them generate cache images to improve the preview experience.  Everytime you
+enter a directory, Dirvish scans the the content of that directory and
+determines the subset of the directory that requires cache image generation, the
+corresponding caches are generated later when Emacs is idle.
 
 You can tweak the behavior of auto caching or turn off this feature completely
-by customizing the ~dirvish-auto-cache-threshold~ option.
+by customizing the ~dirvish-media-auto-cache-threshold~ option.
 
 * Working with Doom Emacs
 
