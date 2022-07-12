@@ -14,6 +14,7 @@
 ;;; Code:
 
 (require 'transient)
+(require 'subr-x)
 
 (define-obsolete-variable-alias 'dirvish-menu-bookmarks 'dirvish-bookmark-entries "Jun-08,2022")
 (define-obsolete-function-alias 'dirvish-bookmark-goto 'dirvish-bookmark-jump "Jul-07,2022")
