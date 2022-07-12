@@ -4,8 +4,11 @@
 
 Several small extension packages to Dirvish are maintained in the subdirectory
 extensions/. They are installed together with Dirvish if you pull the package
-from MELPA, Dirvish can work properly with or without them though. These
-extensions are inactive by default and can be enabled manually if desired.
+from MELPA, Dirvish can work properly with or without them though.
+
+=dirvish-media= is the extension that handles the preview of media files (image,
+video, etc.), it is enabled by default.  Apart from that, all extensions are
+inactive by default and can be enabled manually if desired.
 
 With these extensions it is possible to adapt Dirvish such that it matches your
 preference or behaves similar to other familiar file explorers.
@@ -15,16 +18,20 @@ preference or behaves similar to other familiar file explorers.
 This extension provides help menu powered by =transient.el= for Dirvish.
 
 ~dirvish-dispatch~ is the prefix to invoke the top-level help menu, just like
-~magit-dispatch~ as to =magit= (see Figure 1. in [[https://github.com/alexluigit/dirvish/#screenshots][README.org]]). The menu contains most
-of the built-in Dired commands and all of the Dirvish commands. Some sub-level
-prefix commands such as ~dirvish-marking-menu~ were created because it makes sense
-to group together the Dired/Dirvish commands that serve similar purposes.
+~magit-dispatch~ as to =magit=. The menu contains most of the built-in Dired
+commands and all of the Dirvish commands. Some sub-level prefix commands such as
+~dirvish-mark-menu~ were created because it makes sense to group together the
+Dired/Dirvish commands that serve similar purposes.
 
-An interesting prefix worth mentioning is ~dirvish-setup-menu~, because it enables
-users to change the setup of a session on the fly (See *Figure 6* and *7* in this page).
+Here is a list of all prefixes provided by this extension:
 
-The variable ~dirvish-menu-available-prefixs~ holds all available prefixs, bind
-them in ~dirvish-mode-map~ if you like.
++ ~dirvish-setup-menu~: change the session UI/layout/preview setup on the fly
++ ~dirvish-mark-menu~: a collection of ~dired-mark/do-*~ commands
++ ~dirvish-file-info-menu~: gather file information such as path
++ ~dirvish-chxxx-menu~: modify file attributes
++ ~dirvish-subdir-menu~: manage subdirs in the buffer
++ ~dirvish-renaming-menu~: different ways to rename files
++ ~dirvish-epa-dired-menu~: a collection of ~epa-dired-do-*~ commands
 
 * Multi-stage copy/pasting of files (dirvish-yank.el)
 

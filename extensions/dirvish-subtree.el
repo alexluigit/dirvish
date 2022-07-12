@@ -77,8 +77,8 @@ The value can be one of: `plus', `arrow', `chevron'."
 (defun dirvish-curr-dir-ad (fn &optional localp)
   "Advice for FN `dired-current-directory'.
 LOCALP is the arg for `dired-current-directory', which see."
-  (if-let ((parent (dirvish-subtree--parent))
-           (dir (concat (overlay-get parent 'dired-subtree-name) "/")))
+  (if-let* ((parent (dirvish-subtree--parent))
+            (dir (concat (overlay-get parent 'dired-subtree-name) "/")))
       (if localp (dired-make-relative dir default-directory) dir)
     (funcall fn localp)))
 
