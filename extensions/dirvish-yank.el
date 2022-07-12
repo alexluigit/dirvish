@@ -363,5 +363,29 @@ see `dirvish-yank' for additional information."
   (interactive (dirvish-yank--read-dest 'hardlink))
   (dirvish-yank--apply 'hardlink dest))
 
+;;;###autoload (autoload 'dirvish-yank-menu "dirvish-yank" nil t)
+(defcustom dirvish-yank-keys
+  '(("y" "Yank (paste) here"           dirvish-yank)
+    ("m" "Move here"                   dirvish-move)
+    ("s" "Make symlinks here"          dirvish-symlink)
+    ("r" "Make relative symlinks here" dirvish-relative-symlink)
+    ("h" "Make hardlinks here"         dirvish-hardlink))
+  "YANK-KEYs for command `dirvish-yank-menu'.
+A YANK-KEY is a (KEY DOC CMD) alist where KEY is the key to
+invoke the CMD, DOC is the documentation string."
+  :group 'dirvish :type 'alist
+  :set
+  (lambda (k v)
+    (set k v)
+    (eval
+     `(transient-define-prefix dirvish-yank-menu ()
+        "Yank commands menu."
+        [:if-derived 'dirvish-mode
+                     "Select yank operation on marked files:" ,@v]
+        (interactive)
+        (if (derived-mode-p 'dirvish-mode)
+            (transient-setup 'dirvish-yank-menu)
+          (user-error "Not in a Dirvish buffer"))))))
+
 (provide 'dirvish-yank)
 ;;; dirvish-yank.el ends here

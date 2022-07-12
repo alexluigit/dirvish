@@ -109,15 +109,9 @@ session and get killed when user explicitly exit the session.
 The buffer holding the last entry of the session won't get killed on session
 exit if ~dirvish-reuse-session~ is enabled (disabled by default).
 
-** Mode line
+** Switches in mode line
 
-Dirvish has its own mode-line that can be customized with
-~dirvish-mode-line-format~, hence the ~dired-switches-in-mode-line~ option is
-ignored in Dirvish.  For those want to tweak the appearance of mode-line, just
-customize the ~dirvish-mode-line-position~ and ~dirvish-mode-line-height~ option.
-
-Dirvish also allows you to customize the header line in the same way of
-customizing mode line. Check out ~dirvish-header-line-format/position/height~.
+See [[#Mode-line--Header-line][Mode line | Header line]].  The ~dired-switches-in-mode-line~ option is ignored in Dirvish.
 
 ** Hooks
 
@@ -160,7 +154,17 @@ To achieve this, the only thing you need to do is put these symbols into
 (setq dirvish-attributes '(vc-state subtree-state all-the-icons collapse git-msg file-size))
 #+end_src
 
-* File Preview
+* Mode line | Header line
+
+Put the segments you wanted into ~dirvish-mode-line-format~.
+
+For those want to tweak the appearance of mode-line, just
+customize the ~dirvish-mode-line-position~ and ~dirvish-mode-line-height~ option.
+
+Dirvish also allows you to customize the header line in the same way of
+customizing mode line. Check out ~dirvish-header-line-format/position/height~.
+
+* File preview
 ** Preview strategies
 
 Dirvish uses different strategies towards various filetypes.  You may want to
