@@ -193,8 +193,9 @@ Dired, you can create a directory previewer that utilizes the ~exa~ command:
 #+begin_src emacs-lisp
 (dirvish-define-preview exa (file)
   "Use `exa' to generate directory preview."
+  :require ("exa") ; tell Dirvish to check if we have the executable
   (when (file-directory-p file) ; we only interest in directories here
-    `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the output of `exa' command as preview
+    `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the command output as preview
 
 (add-to-list 'dirvish-preview-dispatchers 'exa)
 #+end_src
