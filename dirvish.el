@@ -249,6 +249,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
   "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &")
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
+(defconst dirvish--builtin-dps '(tramp disable default))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--no-update-preview-cmds '(scroll-other-window scroll-other-window-down))
 (defconst dirvish--search-switches
@@ -257,6 +258,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defvar dirvish--hash (make-hash-table))
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-mode-line-segments '())
+(defvar dirvish--available-preview-dispatchers '())
 (defvar-local dirvish--props '())
 (defvar-local dirvish--attrs-hash nil)
 (put 'dired-subdir-alist 'permanent-local t)
@@ -464,8 +466,27 @@ A dirvish preview dispatcher is a function consumed by
   (declare (indent defun) (doc-string 3))
   (let* ((dp-name (intern (format "dirvish-%s-preview-dp" name)))
          (default-arglist '(file ext preview-window dv))
-         (ignore-list (cl-set-difference default-arglist arglist)))
-    `(progn (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
+         (ignore-list (cl-set-difference default-arglist arglist))
+         (keywords `(:doc ,docstring)))
+    (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) keywords)))
+    `(progn
+       (add-to-list
+        'dirvish--available-preview-dispatchers (cons ',name ',keywords))
+       (cl-loop
+        with doc-head = "All available `dirvish-preview-dispatchers'.
+This is a internal variable and should *NOT* be set manually.  To
+get rid of the warnings upon session initialization, please
+install the dependencies (recommended) or remove corresponding
+items from `dirvish-preview-dispatchers'."
+        with dp-docs = ""
+        with dps = (seq-remove (lambda (i) (memq (car i) dirvish--builtin-dps))
+                               dirvish--available-preview-dispatchers)
+        for (dp-name . dp-plist) in dps
+        do (setq dp-docs (format "%s\n\n`%s': %s" dp-docs dp-name
+                                 (plist-get dp-plist :doc)))
+        finally do (put 'dirvish--available-preview-dispatchers 'variable-documentation
+                        (format "%s%s" doc-head dp-docs)))
+       (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
 
 (cl-defmacro dirvish-define-mode-line (name &optional docstring &rest body)
   "Define a mode line segment NAME with BODY and DOCSTRING."
@@ -477,11 +498,11 @@ A dirvish preview dispatcher is a function consumed by
        (cl-loop
         with doc-head = "All available segments for `dirvish-mode/header-line-format'.
 This is a internal variable and should *NOT* be set manually."
-        with attr-docs = ""
+        with seg-docs = ""
         for (seg-name . doc) in dirvish--available-mode-line-segments
-        do (setq attr-docs (format "%s\n\n`%s': %s" attr-docs seg-name doc))
+        do (setq seg-docs (format "%s\n\n`%s': %s" seg-docs seg-name doc))
         finally do (put 'dirvish--available-mode-line-segments 'variable-documentation
-                        (format "%s%s" doc-head attr-docs)))
+                        (format "%s%s" doc-head seg-docs)))
        (defun ,ml-name (dv) ,docstring (ignore dv) ,@body))))
 
 (defun dirvish-get-all (slot &optional all-frame flatten)
@@ -615,6 +636,21 @@ If KEEP-CURRENT, do not kill the current directory buffer."
     (setf (dv-root-window dv) win)
     win))
 
+(defun dirvish--preview-dps-validate (dps)
+  "Check if the requirements of dispatchers DPS are met."
+  (cl-loop with res = ()
+           with fmt = "[Dirvish]: install '%s' executable to preview %s files.
+See `dirvish--available-preview-dispatchers' for details."
+           for dp in (append '(tramp disable) dps '(default))
+           for info = (alist-get dp dirvish--available-preview-dispatchers)
+           for requirements = (plist-get info :require)
+           for met = t
+           do (progn (dolist (pkg requirements)
+                       (unless (executable-find pkg)
+                         (message fmt pkg dp) (setq met nil)))
+                     (when met (push (intern (format "dirvish-%s-preview-dp" dp)) res)))
+           finally return (reverse res)))
+
 (defun dirvish--refresh-slots (dv)
   "Update dynamic slot values of DV."
   (cl-loop with dv-attrs = (dv-attributes dv)
@@ -626,9 +662,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
              (and (or m-attr m-dp) (not (featurep lib)) (require lib))
              (and m-attr (setq attrs (append attrs m-attr))))
            finally do
-           (setf (dv-preview-fns dv)
-                 (cl-loop for dp in (append '(tramp disable) dv-dps '(default))
-                          collect (intern (format "dirvish-%s-preview-dp" dp))))
+           (setf (dv-preview-fns dv) (dirvish--preview-dps-validate dv-dps))
            (setf (dv-attribute-fns dv)
                  (cl-loop
                   for name in attrs

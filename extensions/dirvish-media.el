@@ -152,11 +152,17 @@ A new directory is created unless NO-MKDIR."
 (add-hook 'dirvish-setup-hook #'dirvish-media--cache-imgs)
 
 (dirvish-define-preview audio (file ext)
-  "Use output of `mediainfo' command for FILE as preview."
+  "Preview audio files by printing its metadata.
+Require: `mediainfo' (executable)"
+  :require ("mediainfo")
   (when (member ext dirvish-audio-exts) `(shell . ("mediainfo" ,file))))
 
 (dirvish-define-preview image (file ext preview-window)
-  "Display a image FILE in PREVIEW-WINDOW."
+  "Preview image files.
+Note: you can preview images without this dispatcher,
+      but that would be very slow, almost unusable.
+Require: `convert' (executable from `imagemagick' suite)"
+  :require ("convert")
   (when (member ext dirvish-image-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
@@ -167,7 +173,7 @@ A new directory is created unless NO-MKDIR."
                          ,(number-to-string width) ,cache))))))
 
 (dirvish-define-preview gif (file ext)
-  "Display an animated image FILE."
+  "Preview gif images with animations."
   (when (equal ext "gif")
     (let ((gif-buf (find-file-noselect file t))
           (callback (lambda (buf)
@@ -178,7 +184,9 @@ A new directory is created unless NO-MKDIR."
       `(buffer . ,gif-buf))))
 
 (dirvish-define-preview video (file ext preview-window)
-  "Display a video thumbnail for FILE in PREVIEW-WINDOW."
+  "Preview video files.
+Require: `ffmpegthumbnailer' (executable)"
+  :require ("ffmpegthumbnailer")
   (when (member ext dirvish-video-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
@@ -190,7 +198,9 @@ A new directory is created unless NO-MKDIR."
                          ,(if dirvish-media--embedded-video-thumb "-m" "")))))))
 
 (dirvish-define-preview epub (file preview-window)
-  "Display a epub thumbnail for FILE in PREVIEW-WINDOW."
+  "Preview epub files.
+Require: `epub-thumbnailer' (executable)"
+  :require ("epub-thumbnailer")
   (when (equal ext "epub")
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
@@ -200,13 +210,21 @@ A new directory is created unless NO-MKDIR."
         `(media-cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
 
 (dirvish-define-preview pdf (file ext)
-  "Open FILE with `find-file-noselect'."
+  "Preview pdf files.
+Note: you can preview pdf files without this dispatcher,
+      but that would be very slow, almost unusable.
+Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
     (if (featurep 'pdf-tools) `(buffer . ,(find-file-noselect file t nil))
       '(info . "Emacs package 'pdf-tools' is required to preview pdf documents"))))
 
 (dirvish-define-preview archive (file ext)
-  "Display output of corresponding unarchive commands for FILE."
+  "Preview archive files.
+Note: you can preview archive files without this dispatcher,
+      but that would be very slow, almost unusable.
+Require: `zipinfo' (executable)
+Require: `tar' (executable)"
+  :require ("zipinfo" "tar")
   (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
         ((member ext '("tar" "zst")) `(shell . ("tar" "-tvf" ,file)))))
 
