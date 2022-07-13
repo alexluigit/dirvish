@@ -22,28 +22,12 @@
 (require 'dirvish)
 (require 'find-func)
 
-(defvar dirvish-peek--cand-fn nil)
-(defcustom dirvish-peek-backend
-  (or (require 'vertico nil t)
-      (require 'selectrum nil t)
-      (require 'ivy nil t)
-      'icomplete)
-  "Completion framework for `dirvish-peek-mode'.
-These framework are supported: `vertico', `selectrum', `ivy', or
-the inbuilt `icomplete\[-vertical-mode\]'."
-  :group 'dirvish :type 'symbol
-  :set
-  (lambda (k v)
-    (set k v)
-    (setq dirvish-peek--cand-fn
-          (pcase v
-            ('vertico #'vertico--candidate)
-            ('selectrum (lambda ()
-                          (selectrum--get-full
-                           (selectrum--get-candidate
-                            selectrum--current-candidate-index))))
-            ('ivy (lambda () (ivy-state-current ivy-last)))
-            ('icomplete (lambda () (car completion-all-sorted-completions)))))))
+(defcustom dirvish-peek-candidate-fetcher nil
+  "Function to get current candidate in minibuffer.
+If this value is nil, a candidate fetcher function is
+automatically choosed according to your completion framework
+being used at runtime."
+  :group 'dirvish :type '(choice function nil))
 
 (defcustom dirvish-peek-categories '(file project-file library)
   "Minibuffer metadata categories to show file preview."
@@ -55,6 +39,21 @@ the inbuilt `icomplete\[-vertical-mode\]'."
     (window-width . 0.5))
   "Display alist for preview window of `dirvish-peek'."
   :group 'dirvish :type 'alist)
+
+(defvar dirvish-peek--cand-fetcher nil)
+(defun dirvish-peek--prepare-cand-fetcher ()
+  "Set candidate fetcher according to current completion framework."
+  (setq dirvish-peek--cand-fetcher
+        (cond (dirvish-peek-candidate-fetcher
+               dirvish-peek-candidate-fetcher)
+              ((featurep 'vertico) #'vertico--candidate)
+              ((featurep 'selectrum)
+               (lambda ()
+                 (selectrum--get-full
+                  (selectrum--get-candidate
+                   selectrum--current-candidate-index))))
+              ((featurep 'ivy) (lambda () (ivy-state-current ivy-last)))
+              ((featurep 'icomplete) (lambda () (car completion-all-sorted-completions))))))
 
 (defun dirvish-peek--create ()
   "Create dirvish minibuffer preview window.
@@ -70,6 +69,7 @@ one of categories in `dirvish-peek-categories'."
          (preview-category (and (memq category dirvish-peek-categories) category))
          new-dv)
     (when preview-category
+      (dirvish-peek--prepare-cand-fetcher)
       (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
       (unless (and old-dv (dv-preview-window old-dv))
         (setq new-dv (dirvish-new nil))
@@ -90,7 +90,7 @@ one of categories in `dirvish-peek-categories'."
   "Hook for `post-command-hook' to update peek window."
   (when-let* ((category
                (plist-get (frame-parameter nil 'dirvish--peek) :category))
-              (cand (funcall dirvish-peek--cand-fn)))
+              (cand (funcall dirvish-peek--cand-fetcher)))
     (pcase category
       ('file
        (setq cand (expand-file-name cand)))
