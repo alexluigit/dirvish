@@ -46,14 +46,14 @@ being used at runtime."
   (setq dirvish-peek--cand-fetcher
         (cond (dirvish-peek-candidate-fetcher
                dirvish-peek-candidate-fetcher)
-              ((featurep 'vertico) #'vertico--candidate)
-              ((featurep 'selectrum)
+              ((bound-and-true-p vertico-mode) #'vertico--candidate)
+              ((bound-and-true-p selectrum-mode)
                (lambda ()
                  (selectrum--get-full
                   (selectrum--get-candidate
                    selectrum--current-candidate-index))))
-              ((featurep 'ivy) (lambda () (ivy-state-current ivy-last)))
-              ((featurep 'icomplete) (lambda () (car completion-all-sorted-completions))))))
+              ((bound-and-true-p ivy-mode) (lambda () (ivy-state-current ivy-last)))
+              ((bound-and-true-p icomplete-mode) (lambda () (car completion-all-sorted-completions))))))
 
 (defun dirvish-peek--create ()
   "Create dirvish minibuffer preview window.
