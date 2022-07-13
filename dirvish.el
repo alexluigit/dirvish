@@ -815,7 +815,8 @@ If OTHER-WINDOW, display the parent directory in other window."
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
   "Replacement for `dired-dwim-target-next'.
 If ALL-FRAMES, search target directories in all frames."
-  (delete (dired-current-directory) (dirvish-get-all 'index-dir all-frames t)))
+  (delete (when (derived-mode-p 'dired-mode) (dired-current-directory))
+          (dirvish-get-all 'index-dir all-frames t)))
 
 (defun dirvish-wdired-enter-ad (&rest _)
   "Advisor function for `wdired-change-to-wdired-mode'."
