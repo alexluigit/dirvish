@@ -101,6 +101,9 @@ This value is passed to function `format-time-string'."
   "Face used for filesystem device number mode-line segment."
   :group 'dirvish)
 
+;; A small value (< 7) would cause line skipping on Emacs 28-, see #77
+(defconst dirvish--file-size-str-len (if (>= emacs-major-version 29) 7 8))
+
 (defun dirvish--count-file-size (fileset)
   "Return file size of FILESET in bytes."
   (cl-labels ((f-name (f) (if (file-directory-p f)
@@ -112,7 +115,7 @@ This value is passed to function `format-time-string'."
 (defun dirvish--file-size-add-spaces (str)
   "Fill file size STR with leading spaces."
   (let* ((spc (concat str " "))
-         (len (- 6 (length spc))))
+         (len (- dirvish--file-size-str-len (length spc))))
     (if (> len 0) (concat (make-string len ?\ ) spc) spc)))
 
 (defun dirvish--get-file-size-or-count (name attrs)
@@ -160,15 +163,17 @@ This value is passed to function `format-time-string'."
   "Show file size or directories file count at right fringe."
   (:if (and (eq (dv-root-window dv) (selected-window))
             dired-hide-details-mode)
-       :width 7)
+       :width (1+ dirvish--file-size-str-len))
   (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
          (ov-pos (if (> remain f-wid) l-end (+ f-beg remain)))
          (face (or hl-face 'dirvish-file-size))
          (spc (propertize " " 'display
-                          `(space :align-to (- right-fringe 6)) 'face face))
+                          `(space :align-to (- right-fringe
+                                               ,dirvish--file-size-str-len))
+                          'face face))
          (ov (make-overlay ov-pos ov-pos)))
     (setq str (concat spc str))
-    (add-face-text-property 0 7 face t str)
+    (add-face-text-property 0 (1+ dirvish--file-size-str-len) face t str)
     (overlay-put ov 'after-string str)
     ov))
 
