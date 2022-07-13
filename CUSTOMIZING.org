@@ -314,6 +314,8 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
 ;; (map! :map dired-mode-map :ng "q" #'quit-window)
 
 (use-package dirvish
+  :init
+  (dirvish-override-dired-mode)
   :custom
   ;; Go back home? Just press `bh'
   (dirvish-bookmark-entries
@@ -331,8 +333,6 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   ;; In case you want the details at startup like `dired'
   ;; (dirvish-hide-details nil)
   :config
-  ;; Place this line under :init to ensure the overriding at startup, see #22
-  (dirvish-override-dired-mode)
   (dirvish-peek-mode)
   ;; Dired options are respected except a few exceptions,
   ;; see *In relation to Dired* section above
