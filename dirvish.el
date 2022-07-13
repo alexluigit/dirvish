@@ -261,6 +261,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defvar dirvish--available-preview-dispatchers '())
 (defvar-local dirvish--props '())
 (defvar-local dirvish--attrs-hash nil)
+(put 'dirvish--props 'permanent-local t)
 (put 'dired-subdir-alist 'permanent-local t)
 
 ;;;; Helpers
@@ -828,7 +829,7 @@ If ALL-FRAMES, search target directories in all frames."
 
 (defun dirvish-wdired-exit-ad (&rest _)
   "Advise function for exiting `wdired-mode'."
-  (dirvish--hide-dired-header (dirvish-setup)))
+  (dirvish--init-dired-buffer t))
 
 (defun dirvish-find-file-ad (fn filename &optional wildcard)
   "Advice for FN `find-file' and `find-file-other-window'.
@@ -1178,6 +1179,15 @@ Dirvish sets `revert-buffer-function' to this function."
       (dirvish--build dv)
       (current-buffer))))
 
+(defun dirvish--init-dired-buffer (&optional setup)
+  "Turn a Dired buffer into a Dirvish buffer.
+With non-nil SETUP, also run `dirvish-setup' in the buffer."
+  (dirvish-mode)
+  (setq dirvish--attrs-hash (make-hash-table :test #'equal))
+  (setq-local revert-buffer-function #'dirvish-revert)
+  (setq-local dired-hide-details-hide-symlink-targets nil)
+  (dirvish--hide-dired-header (and setup (dirvish-setup))))
+
 (defun dirvish--find-entry (dv entry &optional parent)
   "Return the root or PARENT buffer in DV for ENTRY.
 If the buffer is not available, create it with `dired-noselect'."
@@ -1196,11 +1206,7 @@ If the buffer is not available, create it with `dired-noselect'."
              (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
                (setq buffer (dired-noselect entry (dv-ls-switches dv))))
              (with-current-buffer buffer
-               (dirvish-mode)
-               (setq dirvish--attrs-hash (make-hash-table :test #'equal))
-               (setq-local revert-buffer-function #'dirvish-revert)
-               (setq-local dired-hide-details-hide-symlink-targets nil)
-               (dirvish--hide-dired-header)
+               (dirvish--init-dired-buffer)
                (let* ((trampp (tramp-tramp-file-p entry))
                       (vec (and trampp (tramp-dissect-file-name entry))))
                  (dirvish-prop :tramp vec)
