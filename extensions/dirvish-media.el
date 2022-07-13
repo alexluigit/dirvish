@@ -46,14 +46,12 @@ max number of cache processes."
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defconst dirvish-media--img-scale 0.92)
 
-(defun dirvish-media--cache-img-path (file type &optional ext no-mkdir)
+(defun dirvish-media--cache-path (file &optional base ext no-mkdir)
   "Get FILE's cache path.
-TYPE is either a string indicating the subdir of
-`dirvish-cache-dir' to use or a number indicating the subdir is
-\"images/TYPE\".  The EXT, such as \".jpg\", is attached to FILE.
+BASE is a string indicating the subdir of `dirvish-cache-dir' to
+use.  EXT is a suffix such as \".jpg\" that is attached to FILE.
 A new directory is created unless NO-MKDIR."
-  (let* ((base (if (numberp type) (concat "images/" (number-to-string type)) type))
-         (file (if dirvish--os-windows-p
+  (let* ((file (if dirvish--os-windows-p
                    (concat "/" (replace-regexp-in-string ":" "" file)) file))
          (cache (concat dirvish-cache-dir base file)))
     (and (not no-mkdir) (not (file-exists-p cache))
@@ -85,7 +83,9 @@ A new directory is created unless NO-MKDIR."
   "Cache image/video-thumbnail for index directory in DV."
   (setq dv (or dv (dirvish-curr)))
   (with-current-buffer (window-buffer (dv-root-window dv))
-    (when (and (< (length (dirvish-prop :files)) (car dirvish-media-auto-cache-threshold))
+    (when (and (< (length (dirvish-prop :files))
+                  (car dirvish-media-auto-cache-threshold))
+               (dv-layout dv)
                (not (dirvish-prop :tramp)))
       (cl-loop
        with win = (dv-preview-window dv)
@@ -117,6 +117,7 @@ A new directory is created unless NO-MKDIR."
       buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head media-cache)) dv)
+  "Generate cache image according to RECIPE and session DV."
   (let* ((path (dirvish-prop :child))
          (buf (dirvish--util-buffer 'preview dv))
          (name (format "%s-%s-img-cache" path
@@ -146,7 +147,7 @@ A new directory is created unless NO-MKDIR."
       (setq size (dirvish-media--img-size win))
       (dolist (file (dired-get-marked-files))
         (mapc #'delete-file (file-expand-wildcards
-                             (dirvish-media--cache-img-path file size ".*" t) t))))))
+                             (dirvish-media--cache-path file (format "images/%s" size) ".*" t) t))))))
 
 (add-hook 'dirvish-after-revert-hook #'dirvish-media--clean-caches)
 (add-hook 'dirvish-setup-hook #'dirvish-media--cache-imgs)
@@ -166,7 +167,7 @@ Require: `convert' (executable from `imagemagick' suite)"
   (when (member ext dirvish-image-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-img-path file width ".jpg")))
+           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
       (if (file-exists-p cache)
           `(media-img . ,(create-image cache nil nil :max-width width :max-height height))
         `(media-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
@@ -190,7 +191,7 @@ Require: `ffmpegthumbnailer' (executable)"
   (when (member ext dirvish-video-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-img-path file width ".jpg")))
+           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
       (if (file-exists-p cache)
           `(media-img . ,(create-image cache nil nil :max-width width :max-height height))
         `(media-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s"
@@ -204,7 +205,7 @@ Require: `epub-thumbnailer' (executable)"
   (when (equal ext "epub")
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-img-path file width ".jpg")))
+           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
       (if (file-exists-p cache)
           `(media-img . ,(create-image cache nil nil :max-width width :max-height height))
         `(media-cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
