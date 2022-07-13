@@ -125,7 +125,11 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
     ("N"   "Echo number of marked files" dired-number-of-marked-files)
     ("A"   "Modify file's attributes"    dirvish-chxxx-menu)
     ("C"   "Change mark type"            dired-change-marks)
-    ("k"   "Kill lines"                  dired-do-kill-lines)]])
+    ("k"   "Kill lines"                  dired-do-kill-lines)]]
+  (interactive)
+  (require 'dired-x)
+  (require 'dired-aux)
+  (transient-setup 'dirvish-mark-menu))
 
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
 (transient-define-prefix dirvish-file-info-menu ()

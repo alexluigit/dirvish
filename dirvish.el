@@ -1488,7 +1488,10 @@ otherwise it defaults to variable `buffer-file-name'."
     ("=" "  Compare files"          dired-diff)
     (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
     ("N" "  Live narrowing"         dirvish-narrow)]]
-  (interactive) (when (derived-mode-p 'dired-mode) (transient-setup 'dirvish-dispatch)))
+  (interactive)
+  (if dirvish--props
+      (transient-setup 'dirvish-dispatch)
+    (message "Not in a Dirvish buffer.")))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
