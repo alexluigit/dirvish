@@ -386,6 +386,17 @@ Only do it when `dirvish-reuse-session' or FULLSCREEN is non-nil."
                             (dirvish-reclaim)
                             (dirvish-find-entry-ad file))))))
 
+(defun dirvish--format-menu-heading (title &optional note)
+  "Format TITLE as a menu heading.
+When NOTE is non-nil, append it the next line."
+  (let ((no-wb (= (frame-bottom-divider-width) 0)))
+    (format "%s%s%s"
+            (propertize title 'face `(:inherit dired-mark :overline ,no-wb)
+                        'display '((height 1.1)))
+            (propertize " " 'face `(:inherit dired-mark :overline ,no-wb)
+                        'display '(space :align-to right))
+            (propertize (if note (concat "\n" note) "") 'face 'font-lock-doc-face))))
+
 ;;;; Core
 
 (defun dirvish-curr (&optional frame)
@@ -1460,7 +1471,7 @@ otherwise it defaults to variable `buffer-file-name'."
 (transient-define-prefix dirvish-dispatch ()
   "Main help menu for Dired/Dirvish."
   [:description
-   (lambda () (propertize "Dirvish Help Menu" 'face '(:inherit dired-mark :underline t) 'display '((height 1.3))))
+   (lambda () (dirvish--format-menu-heading "Dirvish Help Menu"))
    ["Essential commands"
     ("e" "  Open file"              dired-find-file)
     ("o" "  Open file other window" dired-find-file-other-window)

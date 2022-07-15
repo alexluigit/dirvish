@@ -23,23 +23,24 @@
 
 (cl-defmethod transient-format-description ((obj dirvish-menu-toggles))
   "Format description for DIRVISH-MENU-TOGGLES instance OBJ."
-  (or (oref obj description) (symbol-name (oref obj variable))))
+  (format "%s%s" (oref obj description)
+          (propertize " " 'display '(space :align-to (- right 5)))))
 
 (cl-defmethod transient-format-value ((obj dirvish-menu-toggles))
   "Format value for DIRVISH-MENU-TOGGLES instance OBJ."
   (let* ((val (oref obj value))
-         (face (if (equal val "On") 'transient-argument 'transient-inactive-value)))
+         (face (if (equal val "+") 'transient-argument 'transient-inactive-value)))
     (propertize val 'face face)))
 
 (cl-defmethod transient-init-value ((obj dirvish-menu-toggles))
   "Initialize value for DIRVISH-MENU-TOGGLES instance OBJ."
   (let ((sym (oref obj variable))
         (scope (funcall (oref obj scope) (dirvish-curr))))
-    (oset obj value (if (memq sym scope) "On" "Off"))))
+    (oset obj value (if (memq sym scope) "+" "-"))))
 
 (cl-defmethod transient-infix-read ((obj dirvish-menu-toggles))
   "Read value from DIRVISH-MENU-TOGGLES instance OBJ."
-  (oset obj value (if (equal (oref obj value) "On") "Off" "On")))
+  (oset obj value (if (equal (oref obj value) "+") "-" "+")))
 
 (cl-defmethod transient-infix-set ((obj dirvish-menu-toggles) value)
   "Set relevant value in DIRVISH-MENU-TOGGLES instance OBJ to VALUE."
@@ -47,7 +48,7 @@
          (item (oref obj variable))
          (slot-name (oref obj scope))
          (curr-val (funcall slot-name dv))
-         (new-val (if (equal value "On") (push item curr-val) (remq item curr-val))))
+         (new-val (if (equal value "+") (push item curr-val) (remq item curr-val))))
     (cl-loop for buf in (mapcar #'cdr (dv-roots dv)) do
              (with-current-buffer buf
                (dolist (ov (mapcar #'car (dv-attribute-fns dv)))
@@ -58,17 +59,10 @@
     (dirvish--refresh-slots dv)
     (dirvish-update-body-h)))
 
-(defun dirvish-menu--format-heading (string &optional scale)
-  "Format STRING as a menu heading.
-When CENTER, align it at center.  SCALE defaults to 1.2."
-  (setq scale (or scale 1.2))
-  (propertize (capitalize string)
-              'face '(:inherit dired-mark :underline t)
-              'display `((raise (/ (- scale 1) 2)) (height ,scale))))
-
 (transient-define-prefix dirvish-subdir-menu ()
   "Help Menu for Dired subdir management."
-  ["Manage subdirs"
+  [:description
+   (lambda () (dirvish--format-menu-heading "Manage subdirs"))
    ("i" "  Insert subdir"    dired-maybe-insert-subdir :transient t)
    ("k" "  Kill subdir"      dired-kill-subdir :transient t)
    ("n" "  Next subdir"      dired-next-subdir :transient t)
@@ -80,7 +74,8 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
 ;;;###autoload (autoload 'dirvish-chxxx-menu "dirvish-menu" nil t)
 (transient-define-prefix dirvish-chxxx-menu ()
   "Help Menu for file attribute modification commands."
-  ["Modify file's attributes"
+  [:description
+   (lambda () (dirvish--format-menu-heading "Modify file's attributes"))
    ("g"   "Change file's GROUP"          dired-do-chgrp)
    ("m"   "Change file's MODE"           dired-do-chmod)
    ("o"   "Change file's OWNER"          dired-do-chown)
@@ -135,12 +130,10 @@ When CENTER, align it at center.  SCALE defaults to 1.2."
 (transient-define-prefix dirvish-file-info-menu ()
   "Gather file information."
   [:description
-   (lambda ()
-     (let ((title "get file information")
-           (notes "C-u n: separate NAMEs into different lines
+   (lambda () (dirvish--format-menu-heading
+          "Get File Information"
+          "C-u n: separate NAMEs into different lines
 C-u p: separate PATHs into different lines "))
-       (format "%s\n%s" (dirvish-menu--format-heading title)
-               (propertize notes 'face 'font-lock-doc-face))))
    ("n"   "Copy file NAMEs"                dirvish-copy-file-name)
    ("p"   "Copy file PATHs"                dirvish-copy-file-path)
    ("d"   "Copy file DIRECTORY"            dirvish-copy-file-directory)
@@ -154,7 +147,8 @@ C-u p: separate PATHs into different lines "))
 
 (transient-define-prefix dirvish-renaming-menu ()
   "Help Menu for file renaming in Dired."
-  ["File renaming"
+  [:description
+   (lambda () (dirvish--format-menu-heading "File renaming"))
    ("u"   "Upper-case file name"          dired-upcase)
    ("l"   "Lower-case file name"          dired-downcase)
    ("_"   "Replace SPC with UNDERSCORE"   dirvish-rename-space-to-underscore :if-derived 'dirvish-mode)
@@ -162,7 +156,8 @@ C-u p: separate PATHs into different lines "))
 
 (transient-define-prefix dirvish-epa-dired-menu ()
   "Help menu for `epa-dired-do-*' commands."
-  ["GNUpg assistant"
+  [:description
+   (lambda () (dirvish--format-menu-heading "GNUpg assistant"))
    ("e" "Encrypt" epa-dired-do-encrypt)
    ("d" "Decrypt" epa-dired-do-decrypt)
    ("v" "Verify"  epa-dired-do-verify)
@@ -170,14 +165,14 @@ C-u p: separate PATHs into different lines "))
 
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-menu-setup-items
-  '(("s"  file-size      attr     "File size                             ")
-    ("c"  collapse       attr     "Collapse unique nested paths          "
+  '(("s"  file-size      attr     "File size")
+    ("c"  collapse       attr     "Collapse unique nested paths"
      (or (not (dirvish-prop :tramp)) (tramp-local-host-p (dirvish-prop :tramp))))
-    ("v"  vc-state       attr     "Version control state                 "
+    ("v"  vc-state       attr     "Version control state"
      (dirvish-prop :vc-backend))
-    ("m"  git-msg        attr     "Git commit messages                   "
+    ("m"  git-msg        attr     "Git commit messages"
      (and (dirvish-prop :vc-backend) (not (dirvish-prop :tramp))))
-    ("d"  vc-diff        preview  "Version control diff                  ")
+    ("d"  vc-diff        preview  "Version control diff")
     ("1" '(0 nil  0.4)   layout   "     -       | current (60%) | preview (40%)")
     ("2" '(0 nil  0.8)   layout   "     -       | current (20%) | preview (80%)")
     ("3" '(1 0.08 0.8)   layout   "parent (8%)  | current (12%) | preview (80%)")
@@ -222,9 +217,7 @@ when present, is wrapped with a lambda and being put into the
          `(transient-define-prefix dirvish-setup-menu ()
             "Configure current Dirvish session."
             [:description
-             (lambda () (propertize "Setup Dirvish UI"
-                               'face '(:inherit dired-mark :underline t)
-                               'display '((height 1.25))))
+             (lambda () (dirvish--format-menu-heading "Setup Dirvish UI"))
              ["Attributes:"
               ,@(mapcar #'expand-infix attr-alist)]]
             ["Preview:"

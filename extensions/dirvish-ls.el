@@ -127,7 +127,8 @@ invoke the sort function, SWITCHES is the the sort flags for
     (eval
      `(transient-define-prefix dirvish-quicksort ()
         "Sort Dirvish buffer by different criteria."
-        ["Sort by: "
+        [:description
+         (lambda () (dirvish--format-menu-heading "Sort by:"))
          ,@(cl-loop
             for (key switches desc) in v collect
             (list key desc `(lambda ()
