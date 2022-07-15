@@ -36,15 +36,27 @@ max number of cache processes."
            (setq dirvish-media--auto-cache-timer
                  (run-with-timer 0 0.25 #'dirvish-media--autocache)))))
 
-(defcustom dirvish-media-metadata t
-  "Doc."
-  :group 'dirvish :type 'boolean)
+(defface dirvish-media-info-heading
+  '((t :inherit (dired-header bold)))
+  "Face used for heading of media property groups."
+  :group 'dirvish)
+
+(defface dirvish-media-info-property-key
+  '((t :inherit (italic)))
+  "Face used for emerge group title."
+  :group 'dirvish)
 
 (defconst dirvish-media--cache-img-fns
   (cl-loop for dp in '(image video epub) collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defconst dirvish-media--embedded-video-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
-(defconst dirvish-media--img-scale 0.92)
+(defconst dirvish-media--img-scale-h 0.75)
+(defconst dirvish-media--img-scale-w 0.92)
+(defconst dirvish-media--info
+  "General;(Full-name . \"\"%FileName%\"\")(Format . \"\"%Format%\"\")(File-size . \"\"%FileSize/String1%\"\")(Duration . \"\"%Duration/String3%\"\")
+Image;(Width . \"\"%Width/String%\"\")(Height . \"\"%Height/String%\"\")(Bit-depth . \"\"%BitDepth/String%\"\")(Color-space . \"\"%ColorSpace%\"\")(Chroma-subsampling . \"\"%ChromaSubsampling%\"\")(Compression-mode . \"\"%Compression_Mode/String%\"\")
+Video;(Resolution . \"\"%Width% x %Height%\"\")(Video-codec . \"\"%CodecID%\"\")(Framerate . \"\"%FrameRate%\"\")(Video-bitrate . \"\"%BitRate/String%\"\")
+Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\")(Audio-sampling-rate . \"\"%SamplingRate/String%\"\")(Audio-channels . \"\"%ChannelLayout%\"\")")
 
 (defun dirvish-media--cache-path (file &optional base ext no-mkdir)
   "Get FILE's cache path.
@@ -100,6 +112,91 @@ A new directory is created unless NO-MKDIR."
                                (list file width cmd args))
                          dirvish-media--cache-pool)))))
 
+(defun dirvish-media--group-heading (group-titles)
+  "Format media group heading in Dirvish preview buffer.
+GROUP-TITLES is a list of group titles."
+  (let ((prefix (propertize "    " 'face
+                            '(:inherit dirvish-media-info-heading
+                                       :strike-through t)))
+        (title (propertize
+                (format " %s " (mapconcat #'concat group-titles " & "))
+                'face 'dirvish-media-info-heading))
+        (suffix (propertize " " 'display '(space :align-to right)
+                            'face '(:inherit dirvish-media-info-heading
+                                             :strike-through t))))
+    (format "%s%s%s\n\n" prefix title suffix)))
+
+(defun dirvish-media--metadata-from-mediainfo (file)
+  "Return result string from command `mediainfo' for FILE."
+  (read (format "(%s)" (shell-command-to-string
+                        (format "mediainfo --Output=$'%s' %s"
+                                dirvish-media--info
+                                (shell-quote-argument file))))))
+
+(defun dirvish-media--format-metadata (mediainfo properties)
+  "Return a formatted string of PROPERTIES from MEDIAINFO."
+  (cl-loop for prop in properties
+           for p-name = (replace-regexp-in-string
+                            "-" " " (format "%s" prop))
+           for info = (alist-get prop mediainfo)
+           concat (format "       %s:\t%s\n"
+                          (propertize p-name 'face 'dirvish-media-info-property-key)
+                          info)))
+
+(cl-defgeneric dirvish-media-metadata (file)
+  "Get media file FILE's metadata.")
+
+(cl-defmethod dirvish-media-metadata ((file (head image)))
+  "Get metadata for image FILE."
+  (let ((minfo (dirvish-media--metadata-from-mediainfo (cdr file))))
+    (format "%s%s\n%s%s"
+            (dirvish-media--group-heading '("General"))
+            (dirvish-media--format-metadata minfo '(Full-name Format File-size))
+            (dirvish-media--group-heading '("Image"))
+            (dirvish-media--format-metadata
+             minfo '(Width Height Color-space Chroma-subsampling Bit-depth Compression-mode)))))
+
+(cl-defmethod dirvish-media-metadata ((file (head video)))
+  "Get metadata for video FILE."
+  (let ((minfo (dirvish-media--metadata-from-mediainfo (cdr file))))
+    (format "%s%s\n%s%s\n%s%s"
+            (dirvish-media--group-heading '("General"))
+            (dirvish-media--format-metadata
+             minfo '(Full-name Format File-size Duration))
+            (dirvish-media--group-heading '("Video"))
+            (dirvish-media--format-metadata
+             minfo '(Resolution Video-codec Framerate Video-bitrate))
+            (dirvish-media--group-heading '("Audio"))
+            (dirvish-media--format-metadata
+             minfo '(Audio-codec Audio-bitrate Audio-sampling-rate Audio-channels)))))
+
+(defun dirvish-media--type (ext)
+  "Return media file type from file name extension EXT."
+  (cond ((member ext dirvish-image-exts) 'image)
+        ((member ext dirvish-video-exts) 'video)
+        (t (user-error "Not a media file"))))
+
+(defun dirvish-media-properties ()
+  "Display media file's metadata in preview window."
+  (interactive)
+  (unless (executable-find "mediainfo")
+    (user-error "`dirvish-media-properties' command requires `mediainfo' executable"))
+  (let* ((file (or (dirvish-prop :child)
+                   (user-error "No file under the cursor")))
+         (ext (downcase (or (file-name-extension file) "")))
+         (type (dirvish-media--type ext))
+         (buf (dirvish--util-buffer 'preview (dirvish-curr) t)))
+    (with-current-buffer buf
+      (let ((pivot (dirvish-prop :mediainfo-pivot)) beg)
+        (when (eq pivot 0) (user-error "Media properties already displayed"))
+        (when (> pivot 3) (delete-region 3 pivot))
+        (goto-char (point-max))
+        (insert "\n\n\n")
+        (setq beg (point))
+        (insert (dirvish-media-metadata (cons type file)))
+        (align-regexp beg (point) "\\(\\\t\\)[^\\\t\\\n]+" 1 4 t)
+        (dirvish-prop :mediainfo-pivot 0)))))
+
 (cl-defmethod dirvish-preview-dispatch ((recipe (head media-img)) dv)
   "Insert RECIPE as an image at preview window of DV."
   (let ((buf (dirvish--util-buffer 'preview dv))
@@ -113,7 +210,9 @@ A new directory is created unless NO-MKDIR."
                (w-offset (max (round (/ (- (window-width p-window) iw) 2)) 0))
                (h-offset (max (round (/ (- (window-height p-window) ih) 2)) 0)))
           (goto-char 1)
-          (insert (make-string h-offset ?\n) (make-string w-offset ?\s))))
+          (insert (make-string h-offset ?\n))
+          (dirvish-prop :mediainfo-pivot (point-marker))
+          (insert (make-string w-offset ?\s))))
       buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head media-cache)) dv)
@@ -136,7 +235,7 @@ A new directory is created unless NO-MKDIR."
 
 (defun dirvish-media--img-size (window &optional height)
   "Get corresponding image width or HEIGHT in WINDOW."
-  (floor (* dirvish-media--img-scale
+  (floor (* (if height dirvish-media--img-scale-h dirvish-media--img-scale-w)
             (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
 
 (defun dirvish-media--clean-caches ()

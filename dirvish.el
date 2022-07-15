@@ -251,7 +251,8 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--builtin-dps '(tramp disable default))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
-(defconst dirvish--no-update-preview-cmds '(scroll-other-window scroll-other-window-down))
+(defconst dirvish--no-update-preview-cmds
+  '(ace-select-window other-window scroll-other-window scroll-other-window-down dirvish-media-properties dirvish-setup-menu))
 (defconst dirvish--search-switches
   (dirvish--mode-line-fmt-setter '(:left (search-switches) :right (search-time pwd " ")) t))
 (defvar recentf-list)
@@ -1256,6 +1257,7 @@ If the buffer is not available, create it with `dired-noselect'."
   "Initialize util buffers for DV."
   (with-current-buffer (dirvish--util-buffer 'preview dv)
     (setq cursor-type nil)
+    (normal-mode)
     (setq mode-line-format nil)
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
   (with-current-buffer (dirvish--util-buffer 'header dv)
