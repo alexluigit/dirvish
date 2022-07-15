@@ -14,7 +14,7 @@
 ;;; Code:
 
 (require 'transient)
-(require 'subr-x)
+(require 'dirvish)
 
 (define-obsolete-variable-alias 'dirvish-menu-bookmarks 'dirvish-bookmark-entries "Jun-08,2022")
 (define-obsolete-function-alias 'dirvish-bookmark-goto 'dirvish-bookmark-jump "Jul-07,2022")
@@ -36,7 +36,8 @@ invoke the navigation, PATH is the the argument for command
       (eval
        `(transient-define-prefix dirvish-bookmark-jump ()
           "Jump to Dirvish bookmarks."
-          ["Go to Directory: "
+          [:description
+           (lambda () (dirvish--format-menu-heading "Go to Directory: "))
            ,@(cl-loop
               for (key path desc) in v
               collect

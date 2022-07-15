@@ -380,8 +380,9 @@ invoke the CMD, DOC is the documentation string."
     (eval
      `(transient-define-prefix dirvish-yank-menu ()
         "Yank commands menu."
-        [:if-derived 'dirvish-mode
-                     "Select yank operation on marked files:" ,@v]
+        [:description
+         (lambda () (dirvish--format-menu-heading "Select yank operation on marked files:"))
+         ,@v]
         (interactive)
         (if (derived-mode-p 'dirvish-mode)
             (transient-setup 'dirvish-yank-menu)

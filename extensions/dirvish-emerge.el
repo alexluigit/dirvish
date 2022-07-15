@@ -459,13 +459,10 @@ PREDS are locally composed predicates."
    `(transient-define-prefix dirvish-emerge--menu ()
       "Manage pinned files in Dirvish."
       [:description
-       (lambda ()
-         (let ((title "Manage Emerging Groups")
-               (notes "Press the index (like \"1\") to select the group
+       (lambda () (dirvish--format-menu-heading
+              "Manage Emerging Groups"
+              "Press the index (like \"1\") to select the group
 Press again to set the value for the group"))
-           (format "%s\n%s\n" (propertize title 'face '(:inherit dired-mark :underline t)
-                                          'display '((height 1.2)))
-                   (propertize notes 'face 'font-lock-doc-face))))
        ["Active groups:"
         ,@(if dirvish-emerge-groups
               (dirvish-emerge--create-infixes)

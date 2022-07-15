@@ -128,14 +128,11 @@
   "Setup fd switches."
   :init-value
   (lambda (o) (oset o value (split-string (or dirvish-fd-actual-switches ""))))
-  [:description
-   (lambda ()
-     (let ((title "setup fd switches")
-           (notes "Ignore Range (by default ignore ALL)
+  [:description (lambda () (dirvish--format-menu-heading
+                       "Setup FD Switches"
+                       "Ignore Range (by default ignore ALL)
   VCS: .gitignore + .git/info/exclude + $HOME/.config/git/ignore
   ALL: VCS + .ignore + .fdignore + $HOME/.config/fd/ignore"))
-       (format "%s\n%s" (dirvish-menu--format-heading title)
-               (propertize notes 'face 'font-lock-doc-face))))
    ["File types (multiple types can be included)"
     (3 "f" " Search for regular files" "--type=file")
     (3 "d" " Search for directories" "--type=directory")

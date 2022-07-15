@@ -22,7 +22,7 @@ being dired at its core.
 -- @noctuid ([[https://github.com/alexluigit/dirvish/issues/34][source]])
 #+end_quote
 
-[[https://user-images.githubusercontent.com/16313743/179264837-53fd0878-db88-46a6-9f43-1be26baf59b5.png][https://user-images.githubusercontent.com/16313743/179264837-53fd0878-db88-46a6-9f43-1be26baf59b5.png]]
+[[https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png][https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png]]
 
 * Installation
 
