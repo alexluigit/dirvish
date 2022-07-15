@@ -149,7 +149,8 @@ C-u p: separate PATHs into different lines "))
    ("L"   "Go to symlink's truename"       dirvish-find-file-true-path
     :if (lambda () (file-symlink-p (dired-get-filename nil t))))
    ("s"   "Get total size of marked files" dirvish-total-file-size)
-   ("t"   "show file TYPE"                 dired-show-file-type)])
+   ("t"   "Show file TYPE"                 dired-show-file-type)
+   ("m"   "Show media properties"          dirvish-media-properties)])
 
 (transient-define-prefix dirvish-renaming-menu ()
   "Help Menu for file renaming in Dired."
