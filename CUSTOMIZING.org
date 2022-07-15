@@ -334,11 +334,12 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   ;; (dirvish-hide-details nil)
   :config
   (dirvish-peek-mode)
-  ;; Dired options are respected except a few exceptions,
-  ;; see *In relation to Dired* section above
-  (setq dired-recursive-deletes 'always)
-  (setq delete-by-moving-to-trash t)
+  ;; Dired options are respected except a few exceptions, see *In relation to Dired* section above
   (setq dired-dwim-target t)
+  (setq delete-by-moving-to-trash t)
+  ;; Enable mouse drag-and-drop files to other applications
+  (setq dired-mouse-drag-files t)                   ; added in Emacs 29
+  (setq mouse-drag-and-drop-region-cross-program t) ; added in Emacs 29
   ;; Make sure to use the long name of flags when exists
   ;; eg. use "--almost-all" instead of "-A"
   ;; Otherwise some commands won't work properly
@@ -354,23 +355,23 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ;; ("l" . dired-find-file)
    ;; ("i" . wdired-change-to-wdired-mode)
    ;; ("." . dired-omit-mode)
+   ("b"   . dirvish-bookmark-jump)
+   ("f"   . dirvish-file-info-menu)
+   ("y"   . dirvish-yank-menu)
+   ("N"   . dirvish-narrow)
+   ("^"   . dirvish-history-last)
+   ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)   ; "s" by default
+   ([remap dired-do-redisplay] . dirvish-ls-switches-menu)   ; "l" by default
+   ([remap dired-summary] . dirvish-dispatch)                ; "?" by default
    ("TAB" . dirvish-subtree-toggle)
    ("SPC" . dirvish-history-jump)
    ("M-n" . dirvish-history-go-forward)
    ("M-p" . dirvish-history-go-backward)
-   ("M-s" . dirvish-setup-menu)
+   ("M-m" . dirvish-mark-menu)
    ("M-f" . dirvish-toggle-fullscreen)
-   ("*"   . dirvish-mark-menu)
-   ("E"   . dirvish-emerge-menu)
-   ("N"   . dirvish-narrow)
-   ("r"   . dirvish-fd-roam)
-   ("b"   . dirvish-bookmark-jump)
-   ("f"   . dirvish-file-info-menu)
-   ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)
-   ([remap dired-do-redisplay] . dirvish-ls-switches-menu)
-   ([remap dired-summary] . dirvish-dispatch)
-   ([remap dired-do-copy] . dirvish-yank-menu)
-   ([remap mode-line-other-buffer] . dirvish-history-last)))
+   ("M-s" . dirvish-setup-menu)
+   ("M-e" . dirvish-emerge-menu)
+   ("M-r" . dirvish-fd-roam)))
 #+end_src
 
 ** Complementary packages

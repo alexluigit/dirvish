@@ -170,18 +170,18 @@ C-u p: separate PATHs into different lines "))
 
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-menu-setup-items
-  '(("s"  file-size      attr     "File size")
-    ("c"  collapse       attr     "Collapse unique nested paths"
+  '(("s"  file-size      attr     "File size                             ")
+    ("c"  collapse       attr     "Collapse unique nested paths          "
      (or (not (dirvish-prop :tramp)) (tramp-local-host-p (dirvish-prop :tramp))))
-    ("v"  vc-state       attr     "Version control state information"
+    ("v"  vc-state       attr     "Version control state                 "
      (dirvish-prop :vc-backend))
-    ("m"  git-msg        attr     "Git commit messages"
+    ("m"  git-msg        attr     "Git commit messages                   "
      (and (dirvish-prop :vc-backend) (not (dirvish-prop :tramp))))
-    ("d"  vc-diff        preview  "Version control diff in preview window")
-    ("1" '(0 nil  0.4)   layout   "       | CURRENT | preview")
-    ("2" '(0 nil  0.8)   layout   "       | current | PREVIEW")
-    ("3" '(1 0.08 0.8)   layout   "parent | current | PREVIEW")
-    ("4" '(1 0.1  0.6)   layout   "parent | current | preview"))
+    ("d"  vc-diff        preview  "Version control diff                  ")
+    ("1" '(0 nil  0.4)   layout   "     -       | current (60%) | preview (40%)")
+    ("2" '(0 nil  0.8)   layout   "     -       | current (20%) | preview (80%)")
+    ("3" '(1 0.08 0.8)   layout   "parent (8%)  | current (12%) | preview (80%)")
+    ("4" '(1 0.11 0.55)  layout   "parent (11%) | current (33%) | preview (55%)"))
   "ITEMs for `dirvish-setup-menu'.
 A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
 where KEY is the keybinding for the item, VAR can be valid
@@ -213,35 +213,31 @@ when present, is wrapped with a lambda and being put into the
                                :description ,(nth 3 i)
                                :if (lambda () ,(if infix-pred `,@infix-pred t))))))
                   (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
-                  (layout-option (i) (list (car i) (nth 3 i)
-                                           `(lambda () (interactive) (dirvish-switch-layout ,(nth 1 i)))
-                                           :if `(lambda () ,(if (nth 4 i) `,@(nth 4 i) t)))))
+                  (layout-option (i) (list (car i)
+                                           (propertize (nth 3 i) 'face 'font-lock-doc-face)
+                                           `(lambda () (interactive) (dirvish-switch-layout ,(nth 1 i))))))
         (mapc #'new-infix attr-alist)
         (mapc #'new-infix preview-alist)
         (eval
          `(transient-define-prefix dirvish-setup-menu ()
             "Configure current Dirvish session."
             [:description
-             (lambda () (dirvish-menu--format-heading "Setup Dirvish"))
+             (lambda () (propertize "Setup Dirvish UI"
+                               'face '(:inherit dired-mark :underline t)
+                               'display '((height 1.25))))
              ["Attributes:"
               ,@(mapcar #'expand-infix attr-alist)]]
             ["Preview:"
              :if (lambda () (and (not (dirvish-prop :tramp)) (dv-layout (dirvish-curr))))
              ,@(mapcar #'expand-infix preview-alist)]
-            [:description
-             (lambda ()
-               (format "%s\n%s"
-                       (propertize "Layout:" 'face 'transient-heading)
-                       (propertize "Uppercased pane has the biggest size"
-                                   'face 'font-lock-doc-face)))
+            ["Switch layouts:"
              :if (lambda () (dv-layout (dirvish-curr)))
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
              ("RET" "Quit and revert buffer"
               (lambda () (interactive) (dirvish--build (dirvish-curr)) (revert-buffer)))]
             (interactive)
-            (if (or (derived-mode-p 'dirvish-mode)
-                    (bound-and-true-p dirvish-override-dired-mode))
+            (if dirvish--props
                 (transient-setup 'dirvish-setup-menu)
               (user-error "`dirvish-setup-menu' is for Dirvish only"))))))))
 

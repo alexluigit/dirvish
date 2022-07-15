@@ -3,18 +3,14 @@
 #+startup: content
 #+html: <img src="https://user-images.githubusercontent.com/16313743/159204052-c8caf89d-c44f-42c7-a177-4cd2491eaab6.svg" align="center" width="100%">
 -----
-#+html: <p align="center"><i>A minimalistic yet versatile file manager based on</i> <b>Dired</b></p>
+#+html: <p align="center"><i>A polished </i> <b>Dired</b> with batteries included</p>
 
 * Introduction
 
-This package gives Dired the following features:
-
-+ Multiple window layouts
-+ Always available file preview
-+ Isolated sessions
-+ A modern and composable user interface
-
-... to name a few.
+Dirvish is an improved version of the Emacs inbuilt package [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Dired.html][Dired]].  It not only
+gives Dired an appealing and highly customizable user interface, but also comes
+together with almost all possible parts required for full usability as a modern
+file manager.
 
 #+begin_quote
 The experience of dirvish is surreal and even bizarre after all these years of
@@ -26,7 +22,7 @@ being dired at its core.
 -- @noctuid ([[https://github.com/alexluigit/dirvish/issues/34][source]])
 #+end_quote
 
-[[https://user-images.githubusercontent.com/16313743/173186456-d5e8d02e-2148-4668-82cf-f9cb75fc7c70.png][https://user-images.githubusercontent.com/16313743/173186456-d5e8d02e-2148-4668-82cf-f9cb75fc7c70.png]]
+[[https://user-images.githubusercontent.com/16313743/179264837-53fd0878-db88-46a6-9f43-1be26baf59b5.png][https://user-images.githubusercontent.com/16313743/179264837-53fd0878-db88-46a6-9f43-1be26baf59b5.png]]
 
 * Installation
 
@@ -36,8 +32,8 @@ if you have melpa in your ~package-archives~.
 #+begin_src emacs-lisp
 (use-package dirvish
   :ensure t
-  :config
-  ;; let Dirvish takes over Dired globally
+  :init
+  ;; Let Dirvish take over Dired globally
   (dirvish-override-dired-mode))
 #+end_src
 
