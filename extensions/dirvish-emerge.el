@@ -93,10 +93,10 @@ turned on in the buffer."
                (face (if (oref obj hide) 'font-lock-comment-face
                        'transient-argument)))
     (pcase type
-      ('regex (propertize (format "regex: %s" val) 'face face))
-      ('extensions (propertize (format "extensions: %s" (mapconcat #'concat val ","))
+      ('regex (propertize (format "\"%s\"" val) 'face face))
+      ('extensions (propertize (format "%s" (mapconcat #'concat val ","))
                                'face face))
-      ('predicate (propertize (format "form: %s" val) 'face face)))))
+      ('predicate (propertize "PRED" 'face face)))))
 
 (cl-defmethod transient-infix-read ((obj dirvish-emerge-group))
   "Read value from OBJ."
@@ -216,6 +216,16 @@ The predicate is consumed by `dirvish-emerge-groups'."
       ('predicate
        (cadr (assq (cdr recipe) dirvish-emerge--available-preds))))))
 
+(defun dirvish-emerge--update-groups (groups)
+  "Update dir-local groups to GROUPS."
+  (setq-local dirvish-emerge-groups groups)
+  (setf (alist-get 'dirvish-emerge-groups
+                   (alist-get
+                    'dirvish-mode
+                    (alist-get (expand-file-name default-directory)
+                               dir-locals-class-alist nil nil #'string=)))
+        groups))
+
 (defun dirvish-emerge--create-infix
     (ifx description recipe &optional selected hide)
   "Create an transient infix IFX of emerge group.
@@ -269,9 +279,10 @@ corresponding slots."
 
 (defun dirvish-emerge--ifx-add ()
   "Add a new emerge group to `transient-current-suffixes'."
-  (let ((type (read (completing-read
-                     "Select group type: "
-                     '(extensions predicate regex) nil t)))
+  (let ((type (pcase (read-char-choice
+                      "Press e for extensions, p for predicate, r for regex: "
+                      '(?e ?p ?r))
+                (101 'extensions) (112 'predicate) ('114 'regex)))
         (names (mapcar #'car dirvish-emerge-groups))
         (groups (buffer-local-value 'dirvish-emerge-groups (current-buffer)))
         (idx 1)
@@ -283,7 +294,7 @@ corresponding slots."
     (setq recipe (dirvish-emerge-read-recipe (cons type nil)))
     (setq title (read-string "Group title: " default))
     (push (list title (cons type recipe)) groups)
-    (setq-local dirvish-emerge-groups groups)
+    (dirvish-emerge--update-groups groups)
     (dirvish-emerge-menu)))
 
 (defun dirvish-emerge--ifx-remove ()
@@ -291,9 +302,9 @@ corresponding slots."
   (cl-loop for obj in transient-current-suffixes
            when (and (eq (type-of obj) 'dirvish-emerge-group)
                      (oref obj selected))
-           do (setf dirvish-emerge-groups
-                    (assoc-delete-all
-                     (oref obj description) dirvish-emerge-groups #'equal)))
+           do (dirvish-emerge--update-groups
+               (assoc-delete-all (oref obj description)
+                                 dirvish-emerge-groups #'equal)))
   (dirvish-emerge-menu))
 
 (defun dirvish-emerge--ifx-promote (&optional demote)
@@ -312,14 +323,14 @@ If DEMOTE, shift them to the lowest instead."
            (let* ((sel (cl-loop for o in (reverse sel) collect
                                 (list (oref o description) (oref o recipe)
                                       (oref o hide) (oref o selected))))
-                  (new-groups (if demote (append dirvish-emerge-groups sel)
+                  (groups (if demote (append dirvish-emerge-groups sel)
                                 (append sel dirvish-emerge-groups))))
-             (setf dirvish-emerge-groups new-groups)))
+             (dirvish-emerge--update-groups groups)))
   (dirvish-emerge-menu))
 
 (defun dirvish-emerge--ifx-read ()
   "Read groups from .dir-locals.el."
-  (dirvish-emerge--readin-groups-1)
+  (dirvish-emerge--readin-groups-1 t)
   (dirvish-emerge-menu))
 
 (defun dirvish-emerge--ifx-write ()
@@ -331,19 +342,24 @@ If DEMOTE, shift them to the lowest instead."
             (list (oref o description) (oref o recipe)
                   (oref o hide) (oref o selected)))))
 
-(defun dirvish-emerge--readin-groups-1 ()
-  "Helper for `dirvish-emerge--readin-groups'."
-  (hack-dir-local-variables)
-  (when-let ((vals (or (and (local-variable-if-set-p 'dirvish-emerge-groups)
-                            (buffer-local-value
-                             'dirvish-emerge-groups (current-buffer)))
-                       (cdr (assq 'dirvish-emerge-groups
-                                  file-local-variables-alist))
-                       (default-value 'dirvish-emerge-groups))))
-    (hack-one-local-variable 'dirvish-emerge-groups vals)
+(defun dirvish-emerge--readin-groups-1 (&optional re-read)
+  "Helper for `dirvish-emerge--readin-groups'.
+When RE-READ, read groups from .dir-locals.el regardless of cache."
+  (let ((dir-locals-directory-cache
+         (if re-read nil dir-locals-directory-cache)))
+    (hack-dir-local-variables))
+  (let* ((dir-local (cdr (assq 'dirvish-emerge-groups
+                               file-local-variables-alist)))
+         (groups
+          (cond (re-read dir-local)
+                ((local-variable-if-set-p 'dirvish-emerge-groups)
+                 (buffer-local-value 'dirvish-emerge-groups (current-buffer)))
+                (dir-local dir-local)
+                (t (default-value 'dirvish-emerge-groups)))))
+    (hack-one-local-variable 'dirvish-emerge-groups groups)
     (dirvish-prop :emerge-preds
-      (cl-loop for idx from 0 to (1- (length vals))
-               for (_desc recipe) in vals collect
+      (cl-loop for idx from 0 to (1- (length groups))
+               for (_desc recipe) in groups collect
                (cons idx (dirvish-emerge--make-pred recipe))))))
 
 (defun dirvish-emerge--readin-groups (&optional _dv _entry buffer)
@@ -466,7 +482,7 @@ Press again to set the value for the group"))
        ["Active groups:"
         ,@(if dirvish-emerge-groups
               (dirvish-emerge--create-infixes)
-            (list '("+" "  No active groups, press + to add one"
+            (list '("+" "  Press + to add a group"
                     (lambda () (interactive) (dirvish-emerge--ifx-add)))))]
        ["Actions:"
         ("RET" "Apply current setup" (lambda () (interactive) (dirvish-emerge--ifx-apply)))
