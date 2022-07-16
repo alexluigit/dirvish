@@ -1144,8 +1144,7 @@ default implementation is `find-args' with simple formatting."
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
-  (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
-    (dired-revert))
+  (dired-revert)
   (dirvish--hide-dired-header)
   (setq dirvish--attrs-hash (make-hash-table :test #'equal))
   (dirvish--print-directory

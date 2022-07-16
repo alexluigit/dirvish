@@ -36,8 +36,8 @@ The prefix is repeated \"depth\" times."
   :type 'boolean :group 'dirvish
   :set (lambda (k v)
          (set k v)
-         (funcall (if v #'add-hook #'remove-hook)
-                  'dirvish-after-revert-hook #'dirvish-subtree--revert)))
+         (if v (add-hook 'dirvish-setup-hook #'dirvish-subtree--revert 10)
+           (remove-hook 'dirvish-setup-hook #'dirvish-subtree--revert))))
 
 (defcustom dirvish-subtree-always-show-state nil
   "Non-nil means always show the subtree state indicator."
