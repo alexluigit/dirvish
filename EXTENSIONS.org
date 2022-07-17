@@ -222,10 +222,17 @@ See also: [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#dired-collap
 
 This package provides live filtering of files in dirvish buffers.  In general,
 after calling ~dirvish-narrow~ you type a filter string into the minibuffer.
-After each change the changes automatically reflect in the buffer. Typing RET
+After each change the changes automatically reflect in the buffer. Typing =RET=
 will exit the live filtering mode and leave the dired buffer in the narrowed
-state.  To bring it back to the original view, you can call ~revert-buffer~
+state.  Typing =C-g= will cancel the narrowing and restore the original view.  To
+bring it back to the original view after the narrowing, just call ~revert-buffer~
 (usually bound to =g=).
+
+After invoking the ~dirvish-narrow~ command, the user input in the minibuffer is
+converted to regexps by a compiler function.  You can customize the
+~dirvish-narrow-regex-builder~ option to specify this function.  For example, set
+this option to ~orderless-pattern-compiler~ enables orderless style pattern
+matching while narrowing the Dirvish buffer.
 
 * Pin files you are interested in at top (dirvish-emerge.el)
 
