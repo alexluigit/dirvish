@@ -102,7 +102,7 @@ This value is passed to function `format-time-string'."
   :group 'dirvish)
 
 ;; A small value (< 7) would cause line skipping on Emacs 28-, see #77
-(defconst dirvish--file-size-str-len (if (>= emacs-major-version 29) 7 8))
+(defconst dirvish--file-size-str-len 8)
 
 (defun dirvish--count-file-size (fileset)
   "Return file size of FILESET in bytes."
@@ -144,7 +144,7 @@ This value is passed to function `format-time-string'."
                          (number-to-string
                           (- (length (directory-files name nil nil t)) 2)))
                       (file-error 'no-permission)))))
-             (if (eq count 'no-permission) "NOPERM" count)))
+             (if (eq count 'no-permission) " NOPERM " count)))
           (t (dirvish--file-size-add-spaces
               (dirvish-attribute-cache name :f-size
                 (file-size-human-readable (or (file-attribute-size attrs) 0))))))))
