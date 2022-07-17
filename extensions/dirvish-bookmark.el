@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 1.8.14
+;; Version: 1.9.23
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -16,10 +16,7 @@
 (require 'transient)
 (require 'dirvish)
 
-(define-obsolete-variable-alias 'dirvish-menu-bookmarks 'dirvish-bookmark-entries "Jun-08,2022")
-(define-obsolete-function-alias 'dirvish-bookmark-goto #'dirvish-bookmark-jump "Jul-07,2022")
 ;;;###autoload (autoload 'dirvish-bookmark-jump "dirvish-bookmark" nil t)
-;;;###autoload (autoload 'dirvish-bookmark-goto "dirvish-bookmark" nil t)
 (defcustom dirvish-bookmark-entries
   `(("h" "~/"                  "Home")
     ("e" ,user-emacs-directory "Emacs user directory"))
