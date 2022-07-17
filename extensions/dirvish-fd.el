@@ -232,9 +232,10 @@ The command run is essentially:
         (move-marker (process-mark proc) (point) buffer)))
     buffer))
 
-(define-obsolete-function-alias 'dirvish-roam #'dirvish-fd-roam "Jun 08, 2022")
+(define-obsolete-function-alias 'dirvish-roam #'dirvish-fd-jump "Jun 08, 2022")
+(define-obsolete-function-alias 'dirvish-fd-roam #'dirvish-fd-jump "Jul 17, 2022")
 ;;;###autoload
-(defun dirvish-fd-roam ()
+(defun dirvish-fd-jump ()
   "Browse all directories using `fd' command.
 This command takes a while to index all the directories the first
 time you run it.  After the indexing, it fires up instantly."
@@ -245,7 +246,7 @@ time you run it.  After the indexing, it fires up instantly."
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))
          (files (dirvish--append-metadata 'file files-raw))
-         (file (completing-read "Goto: " files)))
+         (file (completing-read "Go to: " files)))
     (dired-jump nil file)))
 
 (provide 'dirvish-fd)

@@ -1493,7 +1493,7 @@ otherwise it defaults to variable `buffer-file-name'."
     ("j" "  Goto to line for file"  dired-goto-file)
     ("b" "  Jump to bookmarks"      dirvish-bookmark-jump)
     ("^" "  Go to parent directory" dired-up-directory)
-    ("r" "  Roam the file system"   dirvish-fd-roam)
+    ("r" "  Roam the file system"   dirvish-fd-jump)
     ("m" "  Go to the MRU buffer"   dirvish-history-last)
     ("n" "  Forward history"        dirvish-history-go-forward :transient t)
     ("p" "  Backward history"       dirvish-history-go-backward :transient t)

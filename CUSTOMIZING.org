@@ -360,18 +360,18 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ("y"   . dirvish-yank-menu)
    ("N"   . dirvish-narrow)
    ("^"   . dirvish-history-last)
-   ([remap dired-sort-toggle-or-edit] . dirvish-quicksort)   ; "s" by default
-   ([remap dired-do-redisplay] . dirvish-ls-switches-menu)   ; "l" by default
-   ([remap dired-summary] . dirvish-dispatch)                ; "?" by default
+   ("s"   . dirvish-quicksort) ; remapped `dired-sort-toggle-or-edit'
+   ("?"   . dirvish-dispatch)  ; remapped `dired-summary'
    ("TAB" . dirvish-subtree-toggle)
    ("SPC" . dirvish-history-jump)
    ("M-n" . dirvish-history-go-forward)
    ("M-p" . dirvish-history-go-backward)
+   ("M-l" . dirvish-ls-switches-menu)
    ("M-m" . dirvish-mark-menu)
    ("M-f" . dirvish-toggle-fullscreen)
    ("M-s" . dirvish-setup-menu)
    ("M-e" . dirvish-emerge-menu)
-   ("M-r" . dirvish-fd-roam)))
+   ("M-j" . dirvish-fd-jump)))
 #+end_src
 
 ** Complementary packages
