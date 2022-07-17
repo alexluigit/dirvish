@@ -170,8 +170,8 @@ Too fast? Let's break it down:
 Wait, there's more: ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works
 for this buffer.
 
-This extension also provides ~dirvish-fd-roam~ which helps you to browse all
-directories using =fd=.
+This extension also provides the ~dirvish-fd-jump~ command which allows you to go
+to any directory in the file system using results from =fd= command as completions.
 
 * Turn Dirvish into a tree browser (dirvish-subtree.el)
 
