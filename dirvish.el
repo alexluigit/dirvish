@@ -237,7 +237,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defvar dirvish-libraries
   '((dirvish-extras   file-size)
     (dirvish-vc       vc-state git-msg vc-diff)
-    (dirvish-media    audio image gif video epub pdf archive)
+    (dirvish-media    audio image gif video epub pdf pdf-preface archive)
     (dirvish-collapse collapse)
     (dirvish-icons    all-the-icons vscode-icon)
     (dirvish-subtree  subtree-state)))
