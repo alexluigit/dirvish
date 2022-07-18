@@ -384,6 +384,7 @@ Only do it when `dirvish-reuse-session' or FULLSCREEN is non-nil."
                           (if fullscreen (dv-layout dv) t)
                           (prog1 (switch-to-buffer index-buf)
                             (dirvish-reclaim)
+                            (when fullscreen (dirvish--save-env dv))
                             (dirvish-find-entry-ad file))))))
 
 (defun dirvish--format-menu-heading (title &optional note)
@@ -555,10 +556,19 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-buffers () :documentation "holds all file preview buffers in this session.")
   (preview-window nil :documentation "is the window to display preview buffer.")
   (name (cl-gensym) :documentation "is an unique symbol for every session.")
-  (window-conf (current-window-configuration) :documentation "is the saved window configuration.")
+  (window-conf nil :documentation "is the saved window configuration.")
   (roots () :documentation "is a alist of (INDEX-DIR . CORRESPONDING-BUFFER).")
   (parents () :documentation "is like ROOT, but for parent windows.")
   (index-dir "" :documentation "is the `default-directory' in ROOT-WINDOW."))
+
+(defun dirvish--save-env (dv)
+  "Save the environment information of DV."
+  (setf (dv-window-conf dv) (current-window-configuration))
+  (setf (dv-scopes dv) (cl-loop
+                        with env = `(:dv ,dv :point ,(point))
+                        for (key value) on dirvish-scopes by 'cddr do
+                        (setq env (append env (list key (funcall value))))
+                        finally return env)))
 
 (defmacro dirvish-new (kill-old &rest args)
   "Create a new dirvish struct and put it into `dirvish--hash'.
@@ -578,13 +588,8 @@ restore them after."
            (new (make-dirvish ,@keywords)))
        (puthash (dv-name new) new dirvish--hash)
        (dirvish--refresh-slots new)
+       (dirvish--save-env new)
        (dirvish--create-root-window new)
-       (setf (dv-scopes new)
-             (cl-loop
-              with res-plist = `(:dv ,new :point ,(point))
-              for (key value) on dirvish-scopes by 'cddr do
-              (setq res-plist (append res-plist (list key (funcall value))))
-              finally return res-plist))
        (when (and old ,kill-old (eq (dv-root-window old) (dv-root-window new)))
          (dirvish-kill old))
        (set-frame-parameter nil 'dirvish--curr new)
@@ -612,6 +617,13 @@ restore them after."
                    (window-buffer (dv-preview-window new))))
            (setf (dv-root-window new) (frame-selected-window frame-or-window))
            (set-frame-parameter nil 'dirvish--curr new))
+          ((and old (dv-layout old) (not new)
+                (window-live-p (dv-preview-window old)))
+           (set-window-configuration (dv-window-conf old))
+           (switch-to-buffer bufname)
+           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+           (setq other-window-scroll-buffer nil)
+           (set-frame-parameter nil 'dirvish--curr nil))
           (t
            (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
            (setq other-window-scroll-buffer nil)
@@ -1436,7 +1448,7 @@ If VEC, the attributes are retrieved by parsing the output of
       (with-selected-window (dv-root-window dv)
         (let (quit-window-hook) (quit-window))))
     (setf (dv-layout dv) new-layout)
-    (setf (dv-window-conf dv) (current-window-configuration))
+    (dirvish--save-env dv)
     (with-selected-window (dirvish--create-root-window dv)
       (dirvish-with-no-dedication (switch-to-buffer buf))
       (dirvish-reclaim)
