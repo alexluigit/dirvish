@@ -362,10 +362,10 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ("y"   . dirvish-yank-menu)
    ("N"   . dirvish-narrow)
    ("^"   . dirvish-history-last)
-   ("s"   . dirvish-quicksort) ; remapped `dired-sort-toggle-or-edit'
-   ("?"   . dirvish-dispatch)  ; remapped `dired-summary'
+   ("h"   . dirvish-history-jump) ; remapped `describe-mode'
+   ("s"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
+   ("?"   . dirvish-dispatch)     ; remapped `dired-summary'
    ("TAB" . dirvish-subtree-toggle)
-   ("SPC" . dirvish-history-jump)
    ("M-n" . dirvish-history-go-forward)
    ("M-p" . dirvish-history-go-backward)
    ("M-l" . dirvish-ls-switches-menu)
