@@ -251,6 +251,24 @@ You can tweak the behavior of auto caching or turn off this feature completely
 by customizing the ~dirvish-media-auto-cache-threshold~ option.
 
 * Working with Doom Emacs
+** Using dired module with ~+dirvish~ flag
+
+Doom provides a ~+dirvish~ flag in its dired module which can be enabled like this.
+
+#+begin_src emacs-lisp
+;; .doom.d/init.el
+:emacs
+(dired +dirvish)
+#+end_src
+
+It is recommended to use the latest version the package.
+
+#+begin_src emacs-lisp
+;; .doom.d/packages.el
+(unpin! dirvish)
+#+end_src
+
+** Using dired module w/o ~+dirvish~ flag
 
 The =dired= module in Doom Emacs provides a lot of features by the help of various
 third-party Dired packages, which works fine for users who just want a OOTB
@@ -264,12 +282,6 @@ Dired experience.  But, alas, there are downsides to this.
 2. Adopting a new functionality to Dired becomes very difficult since there are
    too many moving parts involve with it.
 
-   If you've been using this module and other packages (say =hl-line=,
-   =dired-subtree=) intensively, I believe you've experienced at least one of
-   these: =all-the-icons-dired= breaks line highlighting, =dired-git-info= prevents
-   you from inserting a subtree, =diff-hl= refuses to highlight subtree entries,
-   among other things.
-
 Dirvish not only includes almost every feature that this module provides, but
 also implemented them under the same architecture powered by =dirvish.el= in the
 form of separate extensions. As a result, all of them are modular tools that are
@@ -278,29 +290,25 @@ interference, which means ugly hacks is no longer needed.
 
 If you still want to use the =dired= module in Doom, here are some caveats.
 
-** Remap/disable ~+dired/quit-all~ command (required)
+*** Remap/disable ~+dired/quit-all~ command (required)
   
 After you enable the =dired= module, Doom remaps =q= key to a custom command
 ~+dired/quit-all~, which doesn't work well with Dirvish. You can either override
 this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
 
-** Remove =+icons= flag in dired module (required)
-
-It's not recommended to use =all-the-icons-dired.el= and Dirvish together, see [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#all-the-icons-dired][FAQ]].
-
-** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
+*** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
 
 The ~vc-state~ attribute in Dirvish can achieve the same functionality without
 sacrificing performance. Meanwhile, ~diff-hl-dired-mode~ doesn't mesh well with
 =dirvish-subtree= nor =dired-subtree=.
 
-For same reason, =dired-git-info= can be mirrored by ~vc-state~.
+=dired-git-info= can be mirrored by the ~git-msg~ attribute.
 
-** Use =dirvish-fd= instead of =fd-dired=
+*** Use =dirvish-fd= instead of =fd-dired=
 
 See [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#find-dired--fd-dired][FAQ]].
 
-** Use =dirvish-yank= instead of =dired-rsync=
+*** Use =dirvish-yank= instead of =dired-rsync=
 
 Multi-stage copy/paste, asynchronous I/O (whenever applicable), work with TRAMP,
 =dirvish-yank= has all of them. =dirvish-yank= also handles file operations on the
