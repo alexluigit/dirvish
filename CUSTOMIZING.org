@@ -185,7 +185,25 @@ generation for the corresponding filetype. Consult ~dirvish-define-preview~ and
 
 Here are two customization samples.
 
-*** Sample 1: directory preview using ~exa~ command
+*** Sample 1: preview PDF files with generated thumbnail
+
+The default ~pdf~ preview method in Dirvish uses =pdf-tools= to open the document,
+which works fine for most of the pdf documents, but it feels sluggish for some
+documents especially those big ones.
+
+Dirvish provided an alternative PDF preview dispatcher ~pdf-preface~ which
+generates preface image for pdf files and use those preface images as the
+preview.  This allows the user to preview big pdf files in a non-blocking
+fashion.
+
+Note: this dispatcher requires the =pdftoppm= executable.
+
+#+begin_src emacs-lisp
+(setq dirvish-preview-dispatchers
+      (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers))
+#+end_src
+
+*** Sample 2: directory preview using ~exa~ command
 
 Let's assume you don't like the default directory preview results provided by
 Dired, you can create a directory previewer that utilizes the ~exa~ command:
@@ -214,30 +232,6 @@ the coloring in the preview window.
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 [screenshot from the ~doom-one~ theme]
-
-*** COMMENT Sample 2: preview PDF files with generated thumbnail
-
-Here we create a dispatcher to generate preface image for pdf files and use
-those images as the pdf preview. This is useful for those who don't want to
-install the =pdf-tools= package but still want to preview pdf files inside Emacs.
-
-Note: this dispatcher requires the =pdftoppm= executable.
-
-#+begin_src emacs-lisp
-(dirvish-define-preview pdf-preface (file ext preview-window)
-  "Display a pdf preface image for FILE in PREVIEW-WINDOW."
-  (when (equal ext "pdf")
-    (let* ((width (dirvish--preview-image-size preview-window))
-           (height (dirvish--preview-image-size preview-window 'height))
-           (cache (dirvish--cache-path-for-file file width))
-           (cache-jpg (concat cache ".jpg")))
-      (if (file-exists-p cache-jpg)
-          `(image . ,(create-image cache-jpg nil nil :max-width width :max-height height))
-        `(image-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
-
-(setq dirvish-preview-dispatchers
-      (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers))
-#+end_src
 
 ** Auto caching
 

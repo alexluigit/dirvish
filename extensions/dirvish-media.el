@@ -318,6 +318,18 @@ Require: `pdf-tools' (Emacs package)"
     (if (featurep 'pdf-tools) `(buffer . ,(find-file-noselect file t nil))
       '(info . "Emacs package 'pdf-tools' is required to preview pdf documents"))))
 
+(dirvish-define-preview pdf-preface (file ext preview-window)
+  "Display the preface image as preview for pdf files."
+  :require ("pdftoppm")
+  (when (equal ext "pdf")
+    (let* ((width (dirvish-media--img-size preview-window))
+           (height (dirvish-media--img-size preview-window 'height))
+           (cache (dirvish-media--cache-path file (format "images/%s" width)))
+           (cache-jpg (concat cache ".jpg")))
+      (if (file-exists-p cache-jpg)
+          `(media-img . ,(create-image cache-jpg nil nil :max-width width :max-height height))
+        `(media-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
+
 (dirvish-define-preview archive (file ext)
   "Preview archive files.
 Note: you can preview archive files without this dispatcher,
