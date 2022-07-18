@@ -732,7 +732,9 @@ See `dirvish--available-preview-dispatchers' for details."
 (defun dirvish-dired-ad (dirname &optional switches)
   "Override `dired' command.
 DIRNAME and SWITCHES are same with command `dired'."
-  (dirvish-new t :path dirname :ls-switches switches))
+  (if (dirvish-curr)
+      (dirvish-find-entry-ad dirname)
+    (dirvish-new t :path dirname :ls-switches switches)))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
