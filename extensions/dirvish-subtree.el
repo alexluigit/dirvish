@@ -129,7 +129,8 @@ LOCALP is the arg for `dired-current-directory', which see."
   "Readin the directory DIRNAME as a string."
   (let ((switches (or dired-actual-switches dired-listing-switches)))
     (with-temp-buffer
-      (insert-directory dirname (concat switches " -A") nil t)
+      (insert-directory (file-name-as-directory dirname)
+                        (concat switches " -A") nil t)
       (delete-char -1)
       (goto-char (point-min))
       (delete-region (point) (progn (forward-line 1) (point)))
