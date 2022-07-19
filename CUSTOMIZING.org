@@ -350,7 +350,8 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   :bind
   ;; Bind `dirvish|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish-fd)
-   :map dired-mode-map ; Dirvish respects all the keybindings in this map
+   ;; Dirvish has all the keybindings (except `dired-summary') in `dired-mode-map' already
+   :map dirvish-mode-map
    ;; ("h" . dired-up-directory)
    ;; ("j" . dired-next-line)
    ;; ("k" . dired-previous-line)
@@ -364,7 +365,6 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ("^"   . dirvish-history-last)
    ("h"   . dirvish-history-jump) ; remapped `describe-mode'
    ("s"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
-   ("?"   . dirvish-dispatch)     ; remapped `dired-summary'
    ("TAB" . dirvish-subtree-toggle)
    ("M-n" . dirvish-history-go-forward)
    ("M-p" . dirvish-history-go-backward)

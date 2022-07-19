@@ -219,6 +219,7 @@ The command run is essentially:
                                dirvish-fd-ls-program ls-switches)
                        buffer)
         (dired-mode dir ls-switches)
+        (dirvish-mode)
         (setq-local revert-buffer-function
                     (lambda (_ignore-auto _noconfirm)
                       (dirvish-fd default-directory dirvish-fd-last-input)))

@@ -1430,6 +1430,12 @@ If VEC, the attributes are retrieved by parsing the output of
         (dirvish--print-directory vec (current-buffer) default-directory)
         (dirvish-prop :cached t)))))
 
+(defvar dirvish-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "?") 'dirvish-dispatch)
+    map)
+  "Keymap used in a dirvish buffer.")
+
 (define-derived-mode dirvish-mode dired-mode "Dirvish"
   "Convert Dired buffer to a Dirvish buffer."
   :group 'dirvish :interactive nil)
