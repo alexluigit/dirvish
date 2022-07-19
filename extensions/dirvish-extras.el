@@ -121,7 +121,10 @@ This value is passed to function `format-time-string'."
 (defun dirvish--get-file-size-or-count (name attrs)
   "Get file size of file NAME from ATTRS."
   (let ((type (file-attribute-type attrs)))
-    (cond ((dirvish-prop :tramp) (or (file-attribute-size attrs) "?"))
+    (cond ((and (dirvish-prop :tramp)
+                (not (tramp-local-host-p (dirvish-prop :tramp)))
+                (not dirvish-tramp-file-info))
+           (dirvish--file-size-add-spaces "?"))
           ((stringp type)
            (let ((count
                   (dirvish-attribute-cache name :f-count

@@ -195,6 +195,10 @@ sessions can be reused in the future by command `dirvish' or
   "Regexp of host names that always enable extra features."
   :group 'dirvish :type 'string)
 
+(defcustom dirvish-tramp-file-info nil
+  "Enable file attributes over remote tramp hosts."
+  :group 'dirvish :type 'boolean)
+
 (defvar dirvish-activation-hook nil)
 (defvar dirvish-deactivation-hook nil)
 (defvar dirvish-after-revert-hook nil)
@@ -712,9 +716,16 @@ See `dirvish--available-preview-dispatchers' for details."
         (setq f-str (buffer-substring f-beg f-end))
         (setq f-wid (string-width f-str))
         (setq f-dir (dired-current-directory))
-        (setq f-name (file-local-name (expand-file-name f-str f-dir)))
+        (setq f-name (if tramp
+                         (expand-file-name f-str f-dir)
+                       (file-local-name (expand-file-name f-str f-dir))))
         (setq f-attrs (dirvish-attribute-cache f-name :builtin
-                        (unless tramp (file-attributes f-name))))
+                        (cond
+                         ((and tramp (tramp-local-host-p tramp))
+                          (file-attributes f-name))
+                         ((and tramp (not dirvish-tramp-file-info))
+                           nil)
+                         (t (file-attributes f-name)))))
         (setq f-type (dirvish-attribute-cache f-name :type
                        (let ((ch (progn (back-to-indentation) (char-after))))
                          `(,(if (eq ch 100) 'dir 'file) . nil))))
