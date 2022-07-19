@@ -1366,11 +1366,9 @@ If VEC, the attributes are retrieved by parsing the output of
            (switches "-1la --human-readable --time-style=long-iso --inode")
            (entry (file-local-name entry))
            (msg `(message "%s" ,(dirvish--directory-printer entry)))
-           (cmd (if vec (format "ls %s %s &" switches entry) (format "%S" msg)))
-           (async-shell-command-buffer nil) ; it's a hack for buffer reuse
-           (display-buffer-alist
-            '(("\\*Dirvish-print-dir.*\\*" (display-buffer-no-window))))
-           (proc (if vec (tramp-handle-shell-command cmd outbuf)
+           (cmd (if vec (format "ls %s %s" switches entry) (format "%S" msg)))
+           (proc (if vec (start-file-process-shell-command
+                          (buffer-name outbuf) outbuf cmd)
                    (start-process (buffer-name outbuf) outbuf
                                   "emacs" "-q" "-batch" "--eval" cmd))))
       (process-put proc 'entry entry)
