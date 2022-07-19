@@ -1280,7 +1280,6 @@ If the buffer is not available, create it with `dired-noselect'."
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
   (with-current-buffer (dirvish--util-buffer 'preview dv)
-    (setq cursor-type nil)
     (normal-mode)
     (setq mode-line-format nil)
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
