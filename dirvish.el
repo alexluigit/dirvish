@@ -1341,7 +1341,8 @@ If the buffer is not available, create it with `dired-noselect'."
                 (state (and bk (vc-state-refresh file bk)))
                 (git (and (eq bk 'Git) ; TODO: refactor this
                           (shell-command-to-string
-                           (format "git log -1 --pretty=%%s %s" file))))
+                           (format "git log -1 --pretty=%%s %s"
+                                   (shell-quote-argument file)))))
                 (tp (nth 0 attrs)))
            (cond
             ((eq t tp) (setq tp '(dir . nil)))
