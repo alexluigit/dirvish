@@ -90,7 +90,7 @@
     ("*" "  by Regexp (file name)"       dired-mark-files-regexp :transient t)
     ("c" "  by Regexp (file content)"    dired-mark-files-containing-regexp :transient t)
     ("s" "  by Subdir"                   dired-mark-subdir-files :transient t)
-    ("E" "  by Executable"               dired-mark-executables :transient t)
+    ("x" "  by Executable"               dired-mark-executables :transient t)
     ("/" "  by Directory"                dired-mark-directories :transient t)
     ("@" "  by Symlink"                  dired-mark-symlinks :transient t)
     ("&" "  by Garbage"                  dired-flag-garbage-files :transient t)

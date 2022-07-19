@@ -42,7 +42,7 @@ if you have melpa in your ~package-archives~.
 + =M-x= ~dirvish~ gives you a 3-pane (parent+current+preview) session
 + =M-x= ~dired~ | ~dired-jump~ | ... gives you a "dirvish-ish" Dired buffer/session
 + =M-x= ~dirvish-toggle-fullscreen~ enters/exits fullscreen of the current session
-+ =M-x= ~dirvish-dispatch~ will briefly tell you what Dirvish has to offer
++ Press =?= in a dirvish buffer to see the list of available commands
 
 Now enjoy your brand-new Dired, or if you will, call it Dirvish 🐱.
 
