@@ -17,7 +17,7 @@
 (declare-function selectrum--get-candidate "selectrum")
 (declare-function selectrum--get-full "selectrum")
 (defvar selectrum--current-candidate-index)
-(declare-function ivy-state-current "vertico")
+(declare-function ivy-state-current "ivy")
 (defvar ivy-last)
 (require 'dirvish)
 (require 'find-func)
