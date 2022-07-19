@@ -1300,8 +1300,10 @@ If the buffer is not available, create it with `dired-noselect'."
   "Parse the directory metadata from PROC's output STR."
   (let* ((buf (process-get proc 'dv-buf))
          (vec (process-get proc 'vec))
+         (entry (process-get proc 'entry))
          (append (process-get proc 'append))
-         (str (with-current-buffer (process-buffer proc) (buffer-string)))
+         (str (with-current-buffer (process-buffer proc)
+                (substring-no-properties (buffer-string))))
          (info (if vec (split-string str "\n") (read str))))
     (when (buffer-live-p buf)
       (with-current-buffer buf
@@ -1313,16 +1315,15 @@ If the buffer is not available, create it with `dired-noselect'."
                   (split-string file)
                 (let* ((symlinkp (cl-position "->" path :test #'equal))
                        (f-name (string-join (cl-subseq path 0 symlinkp) " "))
-                       (f-base (file-name-base f-name))
                        (f-mtime (concat date " " time))
                        (f-truename (and symlinkp (string-join (cl-subseq path (1+ symlinkp)) " ")))
                        (f-dirp (string-prefix-p "d" priv))
                        (f-attr-type (or f-truename f-dirp)))
-                  (when (equal f-base ".git") (dirvish-prop :vc-backend 'Git)) ; TODO: other backends
-                  (dirvish-attribute-cache f-name :builtin
-                    (list f-attr-type lnum user group nil f-mtime nil size priv nil inode))
-                  (dirvish-attribute-cache f-name :type
-                    (cons (if f-dirp 'dir 'file) f-truename)))))
+                  (puthash (expand-file-name f-name entry)
+                           `(:builtin
+                             ,(list f-attr-type lnum user group nil f-mtime nil size priv nil inode)
+                             :type ,(cons (if f-dirp 'dir 'file) f-truename))
+                           dirvish--attrs-hash))))
           (if append (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) (cdr info))
             (dirvish-prop :vc-backend (car info))))
         (unless append (run-hooks 'dirvish-setup-hook))
@@ -1371,6 +1372,7 @@ If VEC, the attributes are retrieved by parsing the output of
            (proc (if vec (tramp-handle-shell-command cmd outbuf)
                    (start-process (buffer-name outbuf) outbuf
                                   "emacs" "-q" "-batch" "--eval" cmd))))
+      (process-put proc 'entry entry)
       (process-put proc 'dv-buf buffer)
       (process-put proc 'vec vec)
       (process-put proc 'append append)
