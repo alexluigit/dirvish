@@ -122,7 +122,7 @@ session and fullscreen session respectively.  See
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-prop :dv))
-              (buf (alist-get (dv-index-dir dv) (dv-roots dv) nil nil #'equal))
+              (buf (cdr (dv-index-dir dv)))
               (scale ,(get-font-scale))
               (win-width (floor (/ (window-width) scale)))
               (str-l "") (str-r "") (len-r 0))
@@ -377,8 +377,7 @@ Only do it when `dirvish-reuse-session' or FULLSCREEN is non-nil."
   (when (or dirvish-reuse-session fullscreen)
     (cl-loop for dv-name in (dirvish-get-all 'name nil t)
              for dv = (gethash dv-name dirvish--hash)
-             for index-dir = (dv-index-dir dv)
-             for index-buf = (alist-get index-dir (dv-roots dv) nil nil #'equal)
+             for index-buf = (cdr (dv-index-dir dv))
              thereis (and (not (get-buffer-window index-buf))
                           (eq (dv-quit-window-fn dv) #'ignore)
                           (if fullscreen (dv-layout dv) t)
@@ -557,9 +556,9 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-window nil :documentation "is the window to display preview buffer.")
   (name (cl-gensym) :documentation "is an unique symbol for every session.")
   (window-conf nil :documentation "is the saved window configuration.")
-  (roots () :documentation "is a alist of (INDEX-DIR . CORRESPONDING-BUFFER).")
-  (parents () :documentation "is like ROOT, but for parent windows.")
-  (index-dir "" :documentation "is the `default-directory' in ROOT-WINDOW."))
+  (index-dir "" :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
+  (roots () :documentation "is the list of all INDEX-DIRs.")
+  (parents () :documentation "is like ROOT, but for parent windows."))
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
@@ -639,7 +638,7 @@ If KEEP-CURRENT, do not kill the current directory buffer."
   (if keep-current
       (progn (mapc #'dirvish--kill-buffer (seq-remove (lambda (i) (eq i (current-buffer)))
                                            (mapcar #'cdr (dv-roots dv))))
-             (setf (dv-roots dv) (list (cons (dv-index-dir dv) (current-buffer))))
+             (setf (dv-roots dv) (list (dv-index-dir dv)))
              (unless (dv-layout dv) (let (quit-window-hook) (quit-window))))
     (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-roots dv)))
     (remhash (dv-name dv) dirvish--hash))
@@ -827,7 +826,7 @@ If OTHER-WINDOW, display the parent directory in other window."
   (let ((dv (dirvish-curr))
         (bufname (buffer-name))
         buffer-read-only)
-    (setf (dv-index-dir dv) bufname)
+    (setf (dv-index-dir dv) (cons bufname (current-buffer)))
     (unless (alist-get bufname (dv-roots dv) nil nil #'equal)
       (push (cons bufname (current-buffer)) (dv-roots dv)))
     (with-current-buffer (process-buffer proc)
@@ -843,7 +842,8 @@ If OTHER-WINDOW, display the parent directory in other window."
   "Replacement for `dired-dwim-target-next'.
 If ALL-FRAMES, search target directories in all frames."
   (delete (when (derived-mode-p 'dired-mode) (dired-current-directory))
-          (dirvish-get-all 'index-dir all-frames t)))
+          (cl-loop for (dir . buf) in (dirvish-get-all 'index-dir all-frames)
+                   when (get-buffer-window buf) collect dir)))
 
 (defun dirvish-wdired-enter-ad (&rest _)
   "Advisor function for `wdired-change-to-wdired-mode'."
@@ -1198,11 +1198,9 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."
   (let* ((dir (file-name-as-directory (expand-file-name dir)))
-         (dv (dirvish-new nil)))
-    (setf (dv-index-dir dv) dir)
-    (with-current-buffer (dirvish--find-entry dv dir)
-      (dirvish--build dv)
-      (current-buffer))))
+         (dv (dirvish-new nil))
+         (buf (dirvish--find-entry dv dir)))
+    (with-current-buffer buf (dirvish--build dv) buf)))
 
 (defun dirvish--init-dired-buffer (&optional setup)
   "Turn a Dired buffer into a Dirvish buffer.
@@ -1226,7 +1224,6 @@ If the buffer is not available, create it with `dired-noselect'."
           ((file-directory-p entry)
            (setq entry (file-name-as-directory (expand-file-name entry)))
            (setq buffer (alist-get entry pairs nil nil #'equal))
-           (unless parent (setf (dv-index-dir dv) entry))
            (unless buffer
              (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
                (setq buffer (dired-noselect entry (dv-ls-switches dv))))
@@ -1238,7 +1235,8 @@ If the buffer is not available, create it with `dired-noselect'."
                  (dirvish-prop :child (or bname entry))
                  (unless trampp
                    (dirvish-prop :files (directory-files entry t nil t)))))
-             (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))))
+             (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))
+           (unless parent (setf (dv-index-dir dv) (cons entry buffer)))))
     (prog1 buffer (and buffer (run-hook-with-args
                                'dirvish-find-entry-hook dv entry buffer)))))
 

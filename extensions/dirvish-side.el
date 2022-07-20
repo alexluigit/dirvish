@@ -173,12 +173,7 @@ will visit the latest `project-root' after executing
       (when (and (eq state 'visible) (window-live-p win) dirname)
         (with-selected-window win
           (dirvish-reclaim)
-          (setf (dv-index-dir dv) dirname)
-          (dirvish-with-no-dedication
-           (switch-to-buffer (dirvish--find-entry dv dirname)))
-          (when (and filename (not (file-directory-p filename)))
-            (dirvish-prop :child filename))
-          (dirvish--build dv))))))
+          (dirvish-find-entry-ad dirname))))))
 
 ;;;###autoload (autoload 'dirvish-project-ml "dirvish-side" nil t)
 (dirvish-define-mode-line project
@@ -215,7 +210,7 @@ otherwise it defaults to `project-current'."
          (delete-window win)))
       ('exists
        (let ((followed (buffer-file-name))
-             (last (dv-index-dir dv)))
+             (last (car (dv-index-dir dv))))
          (with-selected-window (dirvish--create-root-window dv)
            (dirvish-with-no-dedication
             (switch-to-buffer (dirvish--find-entry dv last)))
