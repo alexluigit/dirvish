@@ -75,7 +75,7 @@ ARG defaults to 1."
                 (mapcar #'car (dv-roots (dirvish-curr)))))
          (len (length dirs))
          (idx (cl-position
-               (dv-index-dir (dirvish-curr)) dirs :test #'equal))
+               (car (dv-index-dir (dirvish-curr))) dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
            (dirvish-find-entry-ad (nth (- len 1) dirs))
