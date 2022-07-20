@@ -617,6 +617,7 @@ restore them after."
            (setf (dv-root-window new) (frame-selected-window frame-or-window))
            (set-frame-parameter nil 'dirvish--curr new))
           ((and old (dv-layout old) (not new)
+                (not (get-buffer-window (cdr (dv-index-dir old))))
                 (window-live-p (dv-preview-window old)))
            (set-window-configuration (dv-window-conf old))
            (switch-to-buffer bufname)
