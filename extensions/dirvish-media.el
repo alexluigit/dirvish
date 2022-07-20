@@ -50,6 +50,7 @@ max number of cache processes."
   (cl-loop for dp in '(image video epub) collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defconst dirvish-media--embedded-video-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
+(defconst dirvish-media--img-max-width 2400)
 (defconst dirvish-media--img-scale-h 0.75)
 (defconst dirvish-media--img-scale-w 0.92)
 (defconst dirvish-media--info
@@ -235,8 +236,10 @@ GROUP-TITLES is a list of group titles."
 
 (defun dirvish-media--img-size (window &optional height)
   "Get corresponding image width or HEIGHT in WINDOW."
-  (floor (* (if height dirvish-media--img-scale-h dirvish-media--img-scale-w)
-            (funcall (if height #'window-pixel-height #'window-pixel-width) window))))
+  (let ((size (if height (* dirvish-media--img-scale-h (window-pixel-height window))
+                (min (* dirvish-media--img-scale-w (window-pixel-width window))
+                     dirvish-media--img-max-width))))
+    (floor size)))
 
 (defun dirvish-media--clean-caches ()
   "Clean cache files for marked files."
