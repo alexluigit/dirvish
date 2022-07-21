@@ -233,7 +233,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (hook   tab-bar-tab-pre-close-functions   dirvish-deactivate-tab-h)
     (hook   delete-frame-functions            dirvish-deactivate-frame-h)))
 (defvar dirvish-scopes
-  '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window))
+  '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window :persp persp-curr))
 (defvar dirvish-libraries
   '((dirvish-extras   file-size)
     (dirvish-vc       vc-state git-msg vc-diff)
@@ -371,16 +371,23 @@ ALIST is window arguments passed to `window--display-buffer'."
         (and (tramp-get-method-parameter vec 'tramp-direct-async)
              (tramp-get-connection-property vec "direct-async-process" nil)))))
 
+(defun dirvish--get-scopes ()
+  "Return computed scopes according to `dirvish-scopes'."
+  (cl-loop for (key fn) on dirvish-scopes by 'cddr
+           when (functionp fn) append (list key (funcall fn))))
+
 (defun dirvish--reuse-session (file &optional fullscreen)
   "Reuse the first hidden Dirvish session and find FILE in it.
 Only do it when `dirvish-reuse-session' or FULLSCREEN is non-nil."
   (when (or dirvish-reuse-session fullscreen)
-    (cl-loop for dv-name in (dirvish-get-all 'name nil t)
+    (cl-loop with scopes = (dirvish--get-scopes)
+             for dv-name in (dirvish-get-all 'name nil t)
              for dv = (gethash dv-name dirvish--hash)
              for index-buf = (cdr (dv-index-dir dv))
              thereis (and (not (get-buffer-window index-buf))
                           (eq (dv-quit-window-fn dv) #'ignore)
                           (if fullscreen (dv-layout dv) t)
+                          (equal (cl-subseq (dv-scopes dv) 4) scopes)
                           (prog1 (switch-to-buffer index-buf)
                             (dirvish-reclaim)
                             (when fullscreen (dirvish--save-env dv))
@@ -563,11 +570,8 @@ If FLATTEN is non-nil, collect them as a flattened list."
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
   (setf (dv-window-conf dv) (current-window-configuration))
-  (setf (dv-scopes dv) (cl-loop
-                        with env = `(:dv ,dv :point ,(point))
-                        for (key value) on dirvish-scopes by 'cddr do
-                        (setq env (append env (list key (funcall value))))
-                        finally return env)))
+  (setf (dv-scopes dv)
+        (append `(:dv ,dv :point ,(point)) (dirvish--get-scopes))))
 
 (defmacro dirvish-new (kill-old &rest args)
   "Create a new dirvish struct and put it into `dirvish--hash'.
