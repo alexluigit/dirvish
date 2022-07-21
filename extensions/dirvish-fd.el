@@ -20,13 +20,16 @@
   :type 'string :group 'dirvish)
 
 (defcustom dirvish-fd-ls-program
-  (if-let ((gls (executable-find "gls"))) gls insert-directory-program)
+  (cond ((eq system-type 'darwin)
+         (if-let ((gls (executable-find "gls"))) gls
+           (when (equal insert-directory-program "ls")
+             (warn "`dirvish-fd' requires `ls' from GNU, install it with `brew install coreutils'"))
+           insert-directory-program))
+        (t (prog1 insert-directory-program
+             (unless (= 0 (shell-command (concat insert-directory-program " --version")))
+               (warn "`dirvish-fd' requires `ls' from GNU coreutils, please install it")))))
   "Listing program for `fd'."
-  :type '(string :tag "Listing program, such as `ls'") :group 'dirvish
-  :set (lambda (k v)
-         (set k v)
-         (and (eq system-type 'darwin) (not (executable-find "gls"))
-              (warn "Please install `ls' from coreutils with 'brew install coreutils'"))))
+  :type '(string :tag "Listing program, such as `ls'") :group 'dirvish)
 
 (defconst dirvish-fd-bufname "FD####%s####%s####%s")
 (defconst dirvish-fd--header
