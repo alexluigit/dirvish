@@ -1090,7 +1090,8 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
             (f-buf (dirvish--util-buffer 'footer dv t))
             (this-cmd this-command))
         (dirvish-debounce layout
-          (when (dv-layout dv)
+          (if (not (dv-layout dv))
+              (and (< emacs-major-version 28) (force-mode-line-update))
             (when (and (not (eq dirvish-mode-line-position 'disable))
                        (buffer-live-p f-buf))
               (with-current-buffer f-buf (force-mode-line-update)))
