@@ -300,7 +300,7 @@ Multiple calls under the same LABEL are ignored."
 
 (defmacro dirvish--hide-dired-header (&rest body)
   "Execute BODY then hide the Dired header."
-  `(progn
+  `(unless (eq dirvish-header-line-position 'disable)
      (remove-overlays (point-min) (point-max) 'dirvish-remove-header t)
      ,@body
      (save-excursion
@@ -1083,7 +1083,8 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-line -1))
-          ((bobp) (forward-line (if dirvish--dired-free-space 2 1))))
+          ((bobp) (unless (eq dirvish-header-line-position 'disable)
+                    (forward-line (if dirvish--dired-free-space 2 1)))))
     (dired-move-to-filename)
     (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
