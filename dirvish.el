@@ -26,7 +26,6 @@
 (require 'ansi-color)
 (require 'tramp)
 (require 'transient)
-(eval-when-compile (require 'find-dired))
 (declare-function dirvish-fd "dirvish-fd")
 (declare-function dirvish-subtree--prefix-length "dirvish-subtree")
 
@@ -218,7 +217,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice wdired-exit                       dirvish-wdired-exit-ad         :after)
     (advice wdired-finish-edit                dirvish-wdired-exit-ad         :after)
     (advice wdired-abort-changes              dirvish-wdired-exit-ad         :after)
-    (advice find-dired-sentinel               dirvish-find-dired-sentinel-ad :after)
     (advice find-file                         dirvish-find-file-ad           :around)
     (advice recentf-track-opened-file         dirvish-ignore-ad              :around)
     (advice recentf-track-closed-file         dirvish-ignore-ad              :around)
@@ -251,8 +249,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--no-update-preview-cmds
   '(ace-select-window other-window scroll-other-window scroll-other-window-down dirvish-media-properties dirvish-setup-menu))
-(defconst dirvish--search-switches
-  (dirvish--mode-line-fmt-setter '(:left (search-switches) :right (search-time pwd " ")) t))
 (defvar recentf-list)
 (defvar dirvish--hash (make-hash-table))
 (defvar dirvish--available-attrs '())
@@ -801,23 +797,6 @@ If OTHER-WINDOW, display the parent directory in other window."
         (other-window 1)
         (find-file file)))))
 
-(defun dirvish-find-dired-sentinel-ad (proc _)
-  "Advice function for process PROC of `find-dired-sentinel'."
-  (let ((dv (dirvish-curr))
-        (bufname (buffer-name))
-        buffer-read-only)
-    (setf (dv-index-dir dv) (cons bufname (current-buffer)))
-    (unless (alist-get bufname (dv-roots dv) nil nil #'equal)
-      (push (cons bufname (current-buffer)) (dv-roots dv)))
-    (with-current-buffer (process-buffer proc)
-      (setq-local dirvish--attrs-hash (make-hash-table :test #'equal))
-      (dirvish-prop :child (dired-get-filename nil t))
-      (dirvish-prop :dv dv)
-      (dirvish-prop :fd-dir bufname)
-      (delete-matching-lines "find finished at.*\\|^ +$")
-      (dirvish--hide-dired-header))
-    (dirvish--build dv)))
-
 (defun dirvish-dwim-target-next-ad (&optional all-frames)
   "Replacement for `dired-dwim-target-next'.
 If ALL-FRAMES, search target directories in all frames."
@@ -1032,13 +1011,6 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
                   (make-string (* 2 height) ?1) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
-(cl-defgeneric dirvish-search-switches-ml (_dv)
-  "Return a string showing current search options and pattern.
-The string is placed at header after a search is issued.  The
-default implementation is `find-args' with simple formatting."
-  (format " %s [%s] " (propertize "Find args:" 'face 'dired-header)
-          (propertize find-args 'face 'font-lock-string-face)))
-
 (dirvish-define-mode-line path
   "Path of file under the cursor."
   (when-let ((index (or (dirvish-prop :child) (dired-get-filename nil t))))
@@ -1105,19 +1077,6 @@ default implementation is `find-args' with simple formatting."
         (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
     (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
 
-(dirvish-define-mode-line search-time
-  "Timestamp of search finished."
-  (unless (dirvish-prop :fd-time)
-    (dirvish-prop :fd-time
-      (format " %s %s  "
-              (propertize "Finished at:" 'face 'font-lock-doc-face)
-              (propertize (current-time-string) 'face 'success))))
-  (when (dv-layout dv) (dirvish-prop :fd-time)))
-
-(dirvish-define-mode-line pwd
-  "Current working directory."
-  (propertize (abbreviate-file-name default-directory) 'face 'dired-directory))
-
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
@@ -1182,7 +1141,7 @@ Dirvish sets `revert-buffer-function' to this function."
                 (t (dv-mode-line-format dv))))
     (setq header-line-format
           (cond ((or layout (eq dirvish-header-line-position 'disable)) nil)
-                ((dirvish-prop :fd-dir) dirvish--search-switches)
+                ((dirvish-prop :fd-header) (dirvish-prop :fd-header))
                 (t (dv-header-line-format dv)))))
   (add-hook 'window-buffer-change-functions #'dirvish-focus-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
@@ -1373,7 +1332,7 @@ If VEC, the attributes are retrieved by parsing the output of
   "Build layout for Dirvish session DV."
   (let* ((layout (dv-layout dv))
          (style (intern (format "%s-%s"
-                                (if (dirvish-prop :fd-dir) "global"
+                                (if (dirvish-prop :fd-header) "global"
                                   dirvish-header-line-position)
                                 dirvish-mode-line-position)))
          (order (cl-case (if layout style 'none)
@@ -1410,17 +1369,16 @@ If VEC, the attributes are retrieved by parsing the output of
                    (push new-window maybe-abnormal)))
           (set-window-buffer new-window buf)))
       (dirvish--create-parent-windows dv))
-    (let ((h-fmt (if (dirvish-prop :fd-dir)
+    (let ((h-fmt (if-let ((sw (dirvish-prop :fd-header)))
                      `(:eval (format-mode-line
-                              dirvish--search-switches nil nil
-                              (and (buffer-live-p ,(current-buffer))
-                                   ,(current-buffer))))
+                              ,sw nil nil (and (buffer-live-p ,(current-buffer))
+                                               ,(current-buffer))))
                    (dv-header-line-format dv)))
           (vec (dirvish-prop :tramp)))
       (with-current-buffer (dirvish--util-buffer 'header dv)
         (setq header-line-format h-fmt))
       (dirvish--normalize-util-windows maybe-abnormal)
-      (unless (or (dirvish-prop :fd-dir) (dirvish-prop :cached))
+      (unless (or (dirvish-prop :fd-header) (dirvish-prop :cached))
         (dirvish--print-directory vec (current-buffer) default-directory)
         (dirvish-prop :cached t)))))
 
