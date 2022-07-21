@@ -636,17 +636,17 @@ restore them after."
 (defun dirvish-kill (dv &optional keep-current)
   "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 If KEEP-CURRENT, do not kill the current directory buffer."
-  (when (dv-layout dv)
-    (set-window-configuration (dv-window-conf dv))
-    (goto-char (plist-get (dv-scopes dv) :point))
-    (remhash (dv-name dv) dirvish--hash))
-  (if keep-current
-      (progn (mapc #'dirvish--kill-buffer (seq-remove (lambda (i) (eq i (current-buffer)))
-                                           (mapcar #'cdr (dv-roots dv))))
-             (setf (dv-roots dv) (list (dv-index-dir dv)))
-             (unless (dv-layout dv) (let (quit-window-hook) (quit-window))))
-    (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-roots dv)))
-    (remhash (dv-name dv) dirvish--hash))
+  (cond ((dv-layout dv)
+         (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-roots dv)))
+         (set-window-configuration (dv-window-conf dv))
+         (goto-char (plist-get (dv-scopes dv) :point))
+         (remhash (dv-name dv) dirvish--hash))
+        (keep-current (mapc #'dirvish--kill-buffer
+                            (seq-remove (lambda (i) (eq i (current-buffer)))
+                                        (mapcar #'cdr (dv-roots dv))))
+                      (setf (dv-roots dv) (list (dv-index-dir dv))))
+        (t (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-roots dv)))
+           (remhash (dv-name dv) dirvish--hash)))
   (dolist (type '(preview header footer))
     (dirvish--kill-buffer (dirvish--util-buffer type dv)))
   (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
@@ -868,17 +868,18 @@ FILENAME and WILDCARD are their args."
   (let* ((ext (downcase (or (file-name-extension filename) "")))
          (file (expand-file-name filename))
          (process-connection-type nil)
-         (ex-cmd (cl-loop
-                  for (exts . (cmd . args)) in dirvish-open-with-programs
-                  thereis (and (not (dirvish-prop :tramp))
-                               (executable-find cmd)
-                               (member ext exts)
-                               (append (list cmd) args)))))
-    (cond (ex-cmd
-           (and (bound-and-true-p recentf-mode) (add-to-list 'recentf-list file))
-           (apply #'start-process "" nil "nohup"
-                  (cl-substitute file "%f" ex-cmd :test 'string=)))
-          (t (when-let ((dv (dirvish-prop :dv))) (funcall (dv-on-file-open dv) dv))
+         (ex (cl-loop
+              for (exts . (cmd . args)) in dirvish-open-with-programs
+              thereis (and (not (dirvish-prop :tramp))
+                           (executable-find cmd)
+                           (member ext exts)
+                           (append (list cmd) args)))))
+    (cond (ex (and (bound-and-true-p recentf-mode)
+                   (add-to-list 'recentf-list file))
+              (apply #'start-process "" nil "nohup"
+                     (cl-substitute file "%f" ex :test 'string=)))
+          (t (when-let ((dv (dirvish-prop :dv)))
+               (funcall (dv-on-file-open dv) dv))
              (funcall fn file wildcard)))))
 
 (defun dirvish-ignore-ad (fn &rest args)
@@ -1146,11 +1147,6 @@ default implementation is `find-args' with simple formatting."
             (unless (memq this-cmd dirvish--no-update-preview-cmds)
               (dirvish-preview-update))))))))
 
-(defun dirvish-quit-window-h ()
-  "Hook function added to `quit-window' locally."
-  (dirvish-kill (dirvish-prop :dv) dirvish-reuse-session)
-  (switch-to-buffer (dirvish--util-buffer)))
-
 (defun dirvish-kill-buffer-h ()
   "Hook function added to `kill-buffer' locally."
   (let ((dv (dirvish-prop :dv)))
@@ -1195,7 +1191,6 @@ Dirvish sets `revert-buffer-function' to this function."
                 (t (dv-header-line-format dv)))))
   (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
-  (add-hook 'quit-window-hook #'dirvish-quit-window-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
   (run-hooks 'dirvish-mode-hook)
   (set-buffer-modified-p nil))
@@ -1436,6 +1431,7 @@ If VEC, the attributes are retrieved by parsing the output of
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "?") 'dirvish-dispatch)
+    (define-key map (kbd "q") 'dirvish-quit)
     map)
   "Keymap used in a dirvish buffer.")
 
@@ -1444,6 +1440,13 @@ If VEC, the attributes are retrieved by parsing the output of
   :group 'dirvish :interactive nil)
 
 ;;;; Commands
+
+(defun dirvish-quit ()
+  "Quit current Dirvish session."
+  (interactive)
+  (let ((dv (dirvish-prop :dv)))
+    (dirvish-kill dv dirvish-reuse-session)
+    (and dirvish-reuse-session (not (dv-layout dv)) (quit-window))))
 
 (defun dirvish-toggle-fullscreen ()
   "Toggle fullscreen of current Dirvish."
