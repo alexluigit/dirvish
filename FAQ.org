@@ -120,9 +120,9 @@ a visual indicator for files that has unique nested paths.
 
 ** find-dired | fd-dired
 
-It is quite hard to integrate =fd-dired.el= in Dirvish perfectly ([[https://github.com/yqrashawn/fd-dired/pull/21][my PR attempt]]),
-so I dropped the support for it and made =dirvish-fd=, which has better
-integration with the facilities of Dirvish:
+Dirvish has no plan to support =find-dired= or =fd-dired= since we have the far
+better option =dirvish-fd=.  The advantages of using =dirvish-fd= over =find/fd-dired=
+including but not limited to:
 
 1. File preview works for ~dirvish-fd~ as well.
 2. ~dirvish-fd-switches-menu~ (from =dirvish-menu.el=) allows us to change the =fd=
@@ -133,10 +133,7 @@ integration with the facilities of Dirvish:
    means commands like ~dirvish-go-forward/backward-history~ works seamlessly with
    ~dirvish-fd~.
 
-   ...and so on.
-
-If for some reason you are not able to use the =fd= program, no worries, Dirvish
-supports the built-in =find-dired.el=.
+   ...
 
 ** dired-git-info | dired-k
 

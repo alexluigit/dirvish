@@ -29,6 +29,8 @@
               (warn "Please install `ls' from coreutils with 'brew install coreutils'"))))
 
 (defconst dirvish-fd-bufname "FD####%s####%s####%s")
+(defconst dirvish-fd--header
+  (dirvish--mode-line-fmt-setter '(:left (fd-switches) :right (fd-timestamp fd-pwd " ")) t))
 (defvar dirvish-fd-program "fd" "The default fd program.")
 (defvar dirvish-fd-args-history nil "History list of fd arguments entered in the minibuffer.")
 (defvar dirvish-fd-last-input "" "Last used fd arguments.")
@@ -73,6 +75,22 @@
             (completing-read "Input search pattern: "
                              dirvish-fd-args-history nil nil dirvish-fd-last-input)))
 
+(defun dirvish-fd-sentinel (proc _)
+  "Sentinel for `dirvish-fd' processes PROC."
+  (let ((dv (dirvish-curr))
+        (bufname (buffer-name))
+        buffer-read-only)
+    (setf (dv-index-dir dv) (cons bufname (current-buffer)))
+    (unless (alist-get bufname (dv-roots dv) nil nil #'equal)
+      (push (cons bufname (current-buffer)) (dv-roots dv)))
+    (with-current-buffer (process-buffer proc)
+      (setq-local dirvish--attrs-hash (make-hash-table :test #'equal))
+      (dirvish-prop :child (dired-get-filename nil t))
+      (dirvish-prop :fd-header 'dirvish-fd--header)
+      (delete-matching-lines "find finished at.*\\|^ +$")
+      (dirvish--hide-dired-header))
+    (dirvish--build dv)))
+
 (defun dirvish-fd-proc-filter (proc string)
   "Filter for `dirvish-fd' processes PROC and output STRING."
   (let ((buf (process-buffer proc))
@@ -93,10 +111,10 @@
 		              (delete-region (point) (- (point) 2)))))))
       (delete-process proc))))
 
-(cl-defmethod dirvish-search-switches-ml (_dv &context (dirvish-fd-actual-switches string))
-  "Return a string showing the DIRVISH-FD-ACTUAL-SWITCHES."
-  (unless (dirvish-prop :fd-heading)
-    (dirvish-prop :fd-heading
+(dirvish-define-mode-line fd-switches
+  "Return a formatted string showing the DIRVISH-FD-ACTUAL-SWITCHES."
+  (unless (dirvish-prop :fd-header-string)
+    (dirvish-prop :fd-header-string
       (let* ((args (split-string dirvish-fd-actual-switches))
              (globp (member "--glob" args))
              (casep (member "--case-sensitive" args))
@@ -121,7 +139,20 @@
                 (propertize ign-range 'face 'font-lock-comment-face)
                 (propertize "exts:" 'face 'font-lock-doc-face)
                 (propertize (if (equal exts "") "all" exts) 'face 'font-lock-string-face)))))
-  (dirvish-prop :fd-heading))
+  (dirvish-prop :fd-header-string))
+
+(dirvish-define-mode-line fd-timestamp
+  "Timestamp of search finished."
+  (unless (dirvish-prop :fd-time)
+    (dirvish-prop :fd-time
+      (format " %s %s  "
+              (propertize "Finished at:" 'face 'font-lock-doc-face)
+              (propertize (current-time-string) 'face 'success))))
+  (when (dv-layout dv) (dirvish-prop :fd-time)))
+
+(dirvish-define-mode-line fd-pwd
+  "Current working directory."
+  (propertize (abbreviate-file-name default-directory) 'face 'dired-directory))
 
 ;;;###autoload (autoload 'dirvish-fd-switches-menu "dirvish-fd" nil t)
 (transient-define-prefix dirvish-fd-switches-menu ()
@@ -200,10 +231,12 @@ The command run is essentially:
     (setq dirvish-fd-actual-switches nil))
   (setq dir (file-name-as-directory (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir) (user-error "'fd' command requires a directory: %s" dir))
-  (let* ((reuse (when (dirvish-prop :fd-dir) (current-buffer)))
+  (let* ((dv (or (dirvish-prop :dv) (dirvish-new nil :layout dirvish-default-layout)))
+         (reuse (when (dirvish-prop :fd-header) (current-buffer)))
          (buf-name (format dirvish-fd-bufname dir pattern (make-temp-name "")))
          (buffer (or reuse (get-buffer-create buf-name))))
     (dirvish-with-no-dedication (pop-to-buffer-same-window buffer))
+    (dirvish-prop :dv dv)
     (with-current-buffer buffer
       (widen)
       (let ((ls-switches (or dired-actual-switches
@@ -228,7 +261,7 @@ The command run is essentially:
           (insert "  " dir ":\n" (if dirvish--dired-free-space "total used in directory\n" ""))))
       (let ((proc (get-buffer-process buffer)))
         (set-process-filter proc #'dirvish-fd-proc-filter)
-        (set-process-sentinel proc #'dirvish-find-dired-sentinel-ad)
+        (set-process-sentinel proc #'dirvish-fd-sentinel)
         ;; Initialize the process marker; it is used by the filter.
         (move-marker (process-mark proc) (point) buffer)))
     buffer))

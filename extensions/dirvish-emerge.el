@@ -365,7 +365,7 @@ When RE-READ, read groups from .dir-locals.el regardless of cache."
 (defun dirvish-emerge--readin-groups (&optional _dv _entry buffer)
   "Readin emerge groups in BUFFER for session DV."
   (with-current-buffer (or buffer (current-buffer))
-    (unless (dirvish-prop :fd-dir)
+    (unless (dirvish-prop :fd-header)
       (dirvish-emerge--readin-groups-1))))
 
 (defvar dirvish-emerge-group-heading-map
