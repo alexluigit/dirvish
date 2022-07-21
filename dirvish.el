@@ -1024,18 +1024,20 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
           (setq dir-tail (replace-regexp-in-string "\\/$\\|^\\/" "" dirname))
         (setq dir-tail (replace-regexp-in-string dirvish--dir-tail-regex "" dirname)))
       (setq tail (if (equal dir-tail "") "" (concat dir-tail " ")))
-      (format " %s%s%s%s "
-              (propertize
-               (cond ((and host user) (concat user "@" host ": "))
-                     (host (concat host ": "))
-                     (t ""))
-               'face 'font-lock-builtin-face)
-              (propertize (cond (host "")
-                                ((string-prefix-p (file-name-as-directory (getenv "HOME")) dirname) "~ ")
-                                (t ": "))
-                          'face 'dired-header)
-              (propertize tail 'face 'dired-mark)
-              (propertize base 'face 'dired-header)))))
+      (replace-regexp-in-string
+       "%" "%%%%"
+       (format " %s%s%s%s "
+               (propertize
+                (cond ((and host user) (concat user "@" host ": "))
+                      (host (concat host ": "))
+                      (t ""))
+                'face 'font-lock-builtin-face)
+               (propertize (cond (host "")
+                                 ((string-prefix-p (file-name-as-directory (getenv "HOME")) dirname) "~ ")
+                                 (t ": "))
+                           'face 'dired-header)
+               (propertize tail 'face 'dired-mark)
+               (propertize base 'face 'dired-header))))))
 
 (dirvish-define-mode-line sort
   "Current sort criteria."
