@@ -284,11 +284,11 @@ interference, which means ugly hacks is no longer needed.
 
 If you still want to use the =dired= module in Doom, here are some caveats.
 
-*** Remap/disable ~+dired/quit-all~ command (required)
+*** Remap ~+dired/quit-all~ command (required)
   
 After you enable the =dired= module, Doom remaps =q= key to a custom command
-~+dired/quit-all~, which doesn't work well with Dirvish. You can either override
-this function with ~quit-window~ or bind ~quit-window~ to =q= directly.
+~+dired/quit-all~, which doesn't work well with Dirvish. You should use
+~dirvish-quit~ instead (which is bound to =q= by default).
 
 *** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
 
@@ -313,7 +313,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
 
 #+begin_src emacs-lisp
 ;; This is *NECESSARY* for Doom users who enabled `dired' module
-;; (map! :map dired-mode-map :ng "q" #'quit-window)
+;; (map! :map dired-mode-map :ng "q" #'dirvish-quit)
 
 (use-package dirvish
   :init
