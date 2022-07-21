@@ -182,13 +182,11 @@ runtime.  Set it to nil disables this feature."
   :type '(alist :key-type ((repeat string) :tag "File mimetype or extensions")
                 :value-type ((repeat string) :tag "External command and args")))
 
-(define-obsolete-variable-alias 'dirvish-keep-alive-on-quit 'dirvish-reuse-session "Jul 04, 2022")
 (defcustom dirvish-reuse-session nil
   "Whether to reuse the hidden sessions.
-If this value is non-nil, Dirvish keeps the last buffer of
-the (single window) sessions alive on exit.  These hidden
-sessions can be reused in the future by command `dirvish' or
-`dired-jump'.  A fullscreen session is always reused."
+If non-nil, Dirvish keeps the session's last buffer alive on
+exit.  The hidden session can be reused in the future by command
+`dirvish' and friends."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-whitelist-host-regex nil
@@ -228,7 +226,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice meow--update-cursor               dirvish-ignore-ad              :around)
     (advice flycheck-buffer                   dirvish-ignore-ad              :around)
     (advice lsp-deferred                      dirvish-ignore-ad              :around)
-    (hook   window-selection-change-functions dirvish-reclaim)
+    (hook   window-selection-change-functions dirvish-focus-change-h)
     (hook   minibuffer-exit-hook              dirvish-deactivate-minibuffer-h)
     (hook   tab-bar-tab-pre-close-functions   dirvish-deactivate-tab-h)
     (hook   delete-frame-functions            dirvish-deactivate-frame-h)))
@@ -375,23 +373,6 @@ ALIST is window arguments passed to `window--display-buffer'."
   "Return computed scopes according to `dirvish-scopes'."
   (cl-loop for (key fn) on dirvish-scopes by 'cddr
            when (functionp fn) append (list key (funcall fn))))
-
-(defun dirvish--reuse-session (file &optional fullscreen)
-  "Reuse the first hidden Dirvish session and find FILE in it.
-Only do it when `dirvish-reuse-session' or FULLSCREEN is non-nil."
-  (when (or dirvish-reuse-session fullscreen)
-    (cl-loop with scopes = (dirvish--get-scopes)
-             for dv-name in (dirvish-get-all 'name nil t)
-             for dv = (gethash dv-name dirvish--hash)
-             for index-buf = (cdr (dv-index-dir dv))
-             thereis (and (not (get-buffer-window index-buf))
-                          (eq (dv-quit-window-fn dv) #'ignore)
-                          (if fullscreen (dv-layout dv) t)
-                          (equal (cl-subseq (dv-scopes dv) 4) scopes)
-                          (prog1 (switch-to-buffer index-buf)
-                            (dirvish-reclaim)
-                            (when fullscreen (dirvish--save-env dv))
-                            (dirvish-find-entry-ad file))))))
 
 (defun dirvish--format-menu-heading (title &optional note)
   "Format TITLE as a menu heading.
@@ -563,9 +544,31 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-window nil :documentation "is the window to display preview buffer.")
   (name (cl-gensym) :documentation "is an unique symbol for every session.")
   (window-conf nil :documentation "is the saved window configuration.")
-  (index-dir "" :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
+  (index-dir () :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
   (roots () :documentation "is the list of all INDEX-DIRs.")
   (parents () :documentation "is like ROOT, but for parent windows."))
+
+(defun dirvish--reuse-session (file &optional fullscreen)
+  "Reuse the first hidden Dirvish session and find FILE in it.
+If FULLSCREEN, set layout for the session."
+  (cl-loop with scopes = (dirvish--get-scopes)
+           for dv-name in (dirvish-get-all 'name nil t)
+           for dv = (gethash dv-name dirvish--hash)
+           for index-buf = (cdr (dv-index-dir dv))
+           for layout = (and fullscreen dirvish-default-layout)
+           thereis (and (not (get-buffer-window index-buf))
+                        (eq (dv-quit-window-fn dv) #'ignore)
+                        (equal (cl-subseq (dv-scopes dv) 4) scopes)
+                        (prog1 index-buf
+                          (dirvish--save-env dv)
+                          (switch-to-buffer index-buf)
+                          (setf (dv-layout dv) layout)
+                          (setf (dv-root-window dv) (frame-selected-window))
+                          (set-frame-parameter nil 'dirvish--curr dv)
+                          (dirvish-find-entry-ad file)
+                          (when fullscreen
+                            (setq other-window-scroll-buffer
+                                  (window-buffer (dv-preview-window dv))))))))
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
@@ -602,58 +605,30 @@ restore them after."
        ,(when args `(save-excursion ,@args)) ; Body form given
        new)))
 
-(defun dirvish-reclaim (&optional frame-or-window)
-  "Reclaim current Dirvish in FRAME-OR-WINDOW."
-  (let ((old (dirvish-curr))
-        (new (dirvish-prop :dv))
-        (bufname (buffer-name))
-        (fd-regex "\\(^*Find*\\)\\|\\(^FD####\\)"))
-    (when (and (not new) (string-match fd-regex bufname))
-      (setq new (or old (dirvish-new nil :layout dirvish-default-layout))))
-    (cond ((or (active-minibuffer-window)
-               (and old (eq (frame-selected-window)
-                            (dv-preview-window old)))))
-          (new
-           (setq tab-bar-new-tab-choice "*scratch*")
-           (when (dv-layout new)
-             (setq other-window-scroll-buffer
-                   (window-buffer (dv-preview-window new))))
-           (setf (dv-root-window new) (frame-selected-window frame-or-window))
-           (set-frame-parameter nil 'dirvish--curr new))
-          ((and old (dv-layout old) (not new)
-                (not (get-buffer-window (cdr (dv-index-dir old))))
-                (window-live-p (dv-preview-window old)))
-           (set-window-configuration (dv-window-conf old))
-           (switch-to-buffer bufname)
-           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
-           (setq other-window-scroll-buffer nil)
-           (set-frame-parameter nil 'dirvish--curr nil))
-          (t
-           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
-           (setq other-window-scroll-buffer nil)
-           (set-frame-parameter nil 'dirvish--curr nil)))))
-
 (defun dirvish-kill (dv &optional keep-current)
   "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 If KEEP-CURRENT, do not kill the current directory buffer."
-  (cond ((dv-layout dv)
-         (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-roots dv)))
-         (set-window-configuration (dv-window-conf dv))
-         (goto-char (plist-get (dv-scopes dv) :point))
-         (remhash (dv-name dv) dirvish--hash))
-        (keep-current (mapc #'dirvish--kill-buffer
-                            (seq-remove (lambda (i) (eq i (current-buffer)))
-                                        (mapcar #'cdr (dv-roots dv))))
-                      (setf (dv-roots dv) (list (dv-index-dir dv))))
-        (t (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-roots dv)))
-           (remhash (dv-name dv) dirvish--hash)))
+  (when (dv-layout dv)
+    (setf (dv-layout dv) nil)
+    (dirvish-setup)
+    (set-window-configuration (dv-window-conf dv))
+    (goto-char (plist-get (dv-scopes dv) :point)))
+  (let* ((index (cdr (dv-index-dir dv)))
+         (r-bufs (seq-remove (lambda (i) (when keep-current (eq i index)))
+                             (mapcar #'cdr (dv-roots dv)))))
+    (mapc #'dirvish--kill-buffer r-bufs))
+  (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv)))
+  (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
+  (if (not keep-current)
+      (remhash (dv-name dv) dirvish--hash)
+    (setf (dv-roots dv) (list (dv-index-dir dv)))
+    (setf (dv-parents dv) '()))
   (dolist (type '(preview header footer))
     (dirvish--kill-buffer (dirvish--util-buffer type dv)))
-  (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
-  (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv)))
   (funcall (dv-quit-window-fn dv) dv)
-  (dirvish-reclaim)
-  (run-hooks 'dirvish-deactivation-hook))
+  (run-hooks 'dirvish-deactivation-hook)
+  (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+  (set-frame-parameter nil 'dirvish--curr nil))
 
 (defun dirvish-on-file-open (dv)
   "Called before opening a file in Dirvish session DV."
@@ -886,6 +861,25 @@ FILENAME and WILDCARD are their args."
   "Only apply FN with ARGS outside of Dirvish."
   (when (or (not (dirvish-curr)) (derived-mode-p 'wdired-mode))
     (apply fn args)))
+
+;;;; Hooks
+
+(defun dirvish-focus-change-h (&optional _frame-or-window)
+  "Save current session to frame parameters."
+  (let ((buf (current-buffer))
+        (fr-dv (dirvish-curr))
+        (dv (dirvish-prop :dv)))
+    (cond ((active-minibuffer-window))
+          ((and fr-dv (dv-layout fr-dv) (not dv)
+                (not (get-buffer-window (cdr (dv-index-dir fr-dv))))
+                (window-live-p (dv-preview-window fr-dv)))
+           (set-window-configuration (dv-window-conf fr-dv))
+           (switch-to-buffer buf)
+           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+           (set-frame-parameter nil 'dirvish--curr nil))
+          (t (set-frame-parameter nil 'dirvish--curr dv)
+             (setq tab-bar-new-tab-choice
+                   (if dv "*scratch*" dirvish--saved-new-tab-choice))))))
 
 (defun dirvish-deactivate-tab-h (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
@@ -1149,8 +1143,9 @@ default implementation is `find-args' with simple formatting."
 
 (defun dirvish-kill-buffer-h ()
   "Hook function added to `kill-buffer' locally."
-  (let ((dv (dirvish-prop :dv)))
-    (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) (current-buffer))) (dv-roots dv)))
+  (let ((dv (dirvish-prop :dv))
+        (curr-buf (current-buffer)))
+    (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) curr-buf)) (dv-roots dv)))
     (unless (dv-roots dv)
       (remhash (dv-name dv) dirvish--hash)
       (dolist (type '(preview header footer))
@@ -1189,7 +1184,7 @@ Dirvish sets `revert-buffer-function' to this function."
           (cond ((or layout (eq dirvish-header-line-position 'disable)) nil)
                 ((dirvish-prop :fd-dir) dirvish--search-switches)
                 (t (dv-header-line-format dv)))))
-  (add-hook 'window-buffer-change-functions #'dirvish-reclaim nil t)
+  (add-hook 'window-buffer-change-functions #'dirvish-focus-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
   (run-hooks 'dirvish-mode-hook)
@@ -1399,6 +1394,7 @@ If VEC, the attributes are retrieved by parsing the output of
             (footer (side . below) (window-height . -2)
                     (window-parameters . ((no-other-window . t))))))
          maybe-abnormal)
+    (setq tab-bar-new-tab-choice "*scratch*")
     (dirvish--init-util-buffers dv)
     (if (not order)
         (dirvish--create-parent-windows dv)
@@ -1446,7 +1442,7 @@ If VEC, the attributes are retrieved by parsing the output of
   (interactive)
   (let ((dv (dirvish-prop :dv)))
     (dirvish-kill dv dirvish-reuse-session)
-    (and dirvish-reuse-session (not (dv-layout dv)) (quit-window))))
+    (and dirvish-reuse-session dirvish--props (quit-window))))
 
 (defun dirvish-toggle-fullscreen ()
   "Toggle fullscreen of current Dirvish."
@@ -1463,7 +1459,6 @@ If VEC, the attributes are retrieved by parsing the output of
     (dirvish--save-env dv)
     (with-selected-window (dirvish--create-root-window dv)
       (dirvish-with-no-dedication (switch-to-buffer buf))
-      (dirvish-reclaim)
       (dirvish--build dv)
       (dirvish-debounce layout (dirvish-preview-update)))))
 
