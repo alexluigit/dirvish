@@ -358,7 +358,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ;; ("l" . dired-find-file)
    ;; ("i" . wdired-change-to-wdired-mode)
    ;; ("." . dired-omit-mode)
-   ("b"   . dirvish-bookmark-jump)
+   ("a"   . dirvish-quick-access)
    ("f"   . dirvish-file-info-menu)
    ("y"   . dirvish-yank-menu)
    ("N"   . dirvish-narrow)
