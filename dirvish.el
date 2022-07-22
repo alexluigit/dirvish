@@ -1406,24 +1406,6 @@ If VEC, the attributes are retrieved by parsing the output of
     (dirvish-kill dv dirvish-reuse-session)
     (and dirvish-reuse-session dirvish--props (quit-window))))
 
-(defun dirvish-toggle-fullscreen ()
-  "Toggle fullscreen of current Dirvish."
-  (interactive)
-  (let* ((dv (dirvish-curr))
-         (old-layout (dv-layout dv))
-         (new-layout (unless old-layout (dv-last-fs-layout dv)))
-         (buf (current-buffer)))
-    (if old-layout
-        (set-window-configuration (dv-window-conf dv))
-      (with-selected-window (dv-root-window dv)
-        (let (quit-window-hook) (quit-window))))
-    (setf (dv-layout dv) new-layout)
-    (dirvish--save-env dv)
-    (with-selected-window (dirvish--create-root-window dv)
-      (dirvish-with-no-dedication (switch-to-buffer buf))
-      (dirvish--build dv)
-      (dirvish-debounce layout (dirvish-preview-update)))))
-
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
   "Let Dirvish take over Dired globally."
@@ -1462,7 +1444,7 @@ otherwise it defaults to variable `buffer-file-name'."
     ("g" "  Refresh buffer"         revert-buffer)
     ("M-s" "Setup Dirvish"          dirvish-setup-menu)
     ("TAB" "Toggle subtree"         dirvish-subtree-toggle)
-    ("M-f" "Toggle fullscreen"      dirvish-toggle-fullscreen)]
+    ("M-f" "Toggle fullscreen"      dirvish-layout-toggle)]
    ["File operations"
     ("a" "  Add an empty file"      dired-create-empty-file)
     ("+" "  Add a directory"        dired-create-directory)
