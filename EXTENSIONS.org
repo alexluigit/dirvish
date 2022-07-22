@@ -83,7 +83,7 @@ This extension gives Dirvish the ablity to display version-control data in
 different ways.  For now we have:
 
 + ~vc-state~: an attribute to display the VC state as a bitmap at left fringe
-+ ~git-msg~: an attribute to display git commit messages after the file name    
++ ~git-msg~: an attribute to display git commit messages after the file name
 + ~vc-diff~: a preview dispatcher which shows changes between the working tree and
   the index of selected files at preview window.
 
@@ -97,14 +97,12 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 |------------------------------------+----------------------------------------|
 | Command                            | Description                            |
 |------------------------------------+----------------------------------------|
-| ~dirvish-dwim~                       | Start a session with a "smart" layout  |
 | ~dirvish-copy-file-name~             | Copy the file name ("foo.el")          |
 | ~dirvish-copy-file-path~             | Copy the file path ("path/to/foo/bar") |
 | ~dirvish-copy-file-directory~        | Copy the parent file path              |
 | ~dirvish-find-file-true-path~        | Open the true name of symlinks         |
 | ~dirvish-total-file-size~            | Echo total file size of marked files   |
 | ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"    |
-| ~dirvish-switch-layout~              | Switch Dirvish layout                  |
 |------------------------------------+----------------------------------------|
 
 ** Mode-line segments
@@ -122,6 +120,25 @@ https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-
 | ~file-inode-number~  | File inode number                                            |
 | ~file-device-number~ | Filesystem device number                                     |
 |--------------------+--------------------------------------------------------------|
+
+* Manage Dirvish's window layouts (dirvish-layout.el)
+
+This extension provided several commands that can help with managing the window
+layout of Dirvish sessions. They are:
+
++ ~dirvish-dwim~
+
+  Open a session with a "smart" layout.  If current window is the only window of
+  the frame, open a fullscreen session, otherwise open a single window session.
+
++ ~dirvish-layout-toggle~
+
+  Toggle layout of current Dirvish session.  A session with layout means it has
+  a companion preview window and possibly one or more parent windows.
+
++ ~dirvish-layout-switch~
+
+  Cycle the layouts defined in ~dirvish-layout-recipes~
 
 * Show icons at front of file name (dirvish-icons.el)
 

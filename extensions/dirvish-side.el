@@ -201,7 +201,6 @@ otherwise it defaults to `project-current'."
   (pcase-let ((`(,dv . ,state) (dirvish-side--get-state)))
     (cl-case state
       ('visible
-       (when (dv-layout dv) (dirvish-toggle-fullscreen))
        (dirvish-side--set-state dv 'exists)
        (let ((win (dv-root-window dv)))
          (unless (window-live-p win)
