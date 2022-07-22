@@ -327,7 +327,7 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--normalize-util-windows (windows)
   "Normalize the size of utility WINDOWS, like header line window."
-  (when (> emacs-major-version 28)
+  (when (and (display-graphic-p) (> emacs-major-version 28))
     (dolist (win windows)
       (let ((window-safe-min-height 0)
             (window-resize-pixelwise t))
@@ -1094,7 +1094,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
             (this-cmd this-command))
         (dirvish-debounce layout
           (if (not (dv-layout dv))
-              (and (< emacs-major-version 28) (force-mode-line-update))
+              (and (< emacs-major-version 29) (force-mode-line-update))
             (when (and (not (eq dirvish-mode-line-position 'disable))
                        (buffer-live-p f-buf))
               (with-current-buffer f-buf (force-mode-line-update)))

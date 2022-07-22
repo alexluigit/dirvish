@@ -243,13 +243,17 @@ GROUP-TITLES is a list of group titles."
 
 (defun dirvish-media--clean-caches ()
   "Clean cache files for marked files."
-  (clear-image-cache)
-  (let ((win (dv-preview-window (dirvish-curr))) size)
-    (when (window-live-p win)
-      (setq size (dirvish-media--img-size win))
-      (dolist (file (dired-get-marked-files))
-        (mapc #'delete-file (file-expand-wildcards
-                             (dirvish-media--cache-path file (format "images/%s" size) ".*" t) t))))))
+  (when-let* ((has-gui (display-graphic-p))
+              (win (dv-preview-window (dirvish-curr)))
+              (size (and (window-live-p win)
+                         (dirvish-media--img-size win))))
+    (clear-image-cache)
+    (setq size (dirvish-media--img-size win))
+    (dolist (file (dired-get-marked-files))
+      (mapc #'delete-file (file-expand-wildcards
+                           (dirvish-media--cache-path
+                            file (format "images/%s" size) ".*" t)
+                           t)))))
 
 (add-hook 'dirvish-after-revert-hook #'dirvish-media--clean-caches)
 (add-hook 'dirvish-setup-hook #'dirvish-media--cache-imgs)
