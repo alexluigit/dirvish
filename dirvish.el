@@ -807,7 +807,9 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish-wdired-enter-ad (&rest _)
   "Advisor function for `wdired-change-to-wdired-mode'."
   (dired-move-to-end-of-filename t)
-  (setq-local cursor-type '(bar 4))
+  (setq-local cursor-type '(bar . 4))
+  (when (boundp 'evil-normal-state-cursor)
+    (setq-local evil-normal-state-cursor 'hollow))
   (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
