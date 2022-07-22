@@ -1325,7 +1325,7 @@ If VEC, the attributes are retrieved by parsing the output of
            (proc (if vec (start-file-process-shell-command
                           (buffer-name outbuf) outbuf cmd)
                    (start-process (buffer-name outbuf) outbuf
-                                  "emacs" "-q" "-batch" "--eval" cmd))))
+                                  "emacs" "-Q" "-batch" "--eval" cmd))))
       (process-put proc 'entry entry)
       (process-put proc 'dv-buf buffer)
       (process-put proc 'vec vec)
