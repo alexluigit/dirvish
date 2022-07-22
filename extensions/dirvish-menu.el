@@ -169,7 +169,7 @@ C-u p: separate PATHs into different lines "))
     ("c"  collapse       attr     "Collapse unique nested paths"
      (or (not (dirvish-prop :tramp)) (tramp-local-host-p (dirvish-prop :tramp))))
     ("v"  vc-state       attr     "Version control state"
-     (dirvish-prop :vc-backend))
+     (and (display-graphic-p) (dirvish-prop :vc-backend)))
     ("m"  git-msg        attr     "Git commit messages"
      (and (dirvish-prop :vc-backend) (not (dirvish-prop :tramp))))
     ("d"  vc-diff        preview  "Version control diff")
