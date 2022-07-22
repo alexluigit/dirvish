@@ -20,14 +20,21 @@
   :type 'string :group 'dirvish)
 
 (defcustom dirvish-fd-ls-program
-  (cond ((eq system-type 'darwin)
-         (if-let ((gls (executable-find "gls"))) gls
-           (when (equal insert-directory-program "ls")
-             (warn "`dirvish-fd' requires `ls' from GNU, install it with `brew install coreutils'"))
-           insert-directory-program))
-        (t (prog1 insert-directory-program
-             (unless (= 0 (shell-command (concat insert-directory-program " --version")))
-               (warn "`dirvish-fd' requires `ls' from GNU coreutils, please install it")))))
+  (let* ((ls (executable-find "ls"))
+         (gls (executable-find "gls"))
+         (idp (executable-find insert-directory-program))
+         (ls-is-gnu? (and ls (= 0 (call-process ls nil nil nil "--version"))))
+         (idp-is-gnu-ls? (and idp (= 0 (call-process idp nil nil nil "--version")))))
+    (cond
+     ;; just use GNU ls if found
+     (ls-is-gnu? ls)
+     ;; use insert-directory-program if it points to GNU ls
+     (idp-is-gnu-ls? insert-directory-program)
+     ;; heuristic: GNU ls is often installed as gls by Homebrew on Mac
+     ((and (eq system-type 'darwin) gls) gls)
+     ;; fallback: use insert-directory-program, but warn the user that it may not be compatible
+     (t (warn "`dirvish-fd' requires `ls' from GNU coreutils, please install it")
+        insert-directory-program)))
   "Listing program for `fd'."
   :type '(string :tag "Listing program, such as `ls'") :group 'dirvish)
 
