@@ -92,26 +92,27 @@ A new directory is created unless NO-MKDIR."
           (process-put proc 'path path)
           (set-process-sentinel proc #'dirvish-media--cache-sentinel))))))
 
-(defun dirvish-media--cache-imgs (&optional dv)
-  "Cache image/video-thumbnail for index directory in DV."
-  (setq dv (or dv (dirvish-curr)))
-  (with-current-buffer (window-buffer (dv-root-window dv))
-    (when (and (< (length (dirvish-prop :files))
-                  (car dirvish-media-auto-cache-threshold))
-               (dv-layout dv)
-               (not (dirvish-prop :tramp)))
-      (cl-loop
-       with win = (dv-preview-window dv)
-       with width = (window-width win)
-       for file in (dirvish-prop :files)
-       for ext = (downcase (or (file-name-extension file) ""))
-       for (cmd . args) = (cl-loop
-                           for fn in dirvish-media--cache-img-fns
-                           for (type . payload) = (funcall fn file ext win dv)
-                           thereis (and (eq type 'media-cache) payload))
-       when cmd do (push (cons (format "%s-%s-img-cache" file width)
-                               (list file width cmd args))
-                         dirvish-media--cache-pool)))))
+(defun dirvish-media--cache-imgs ()
+  "Cache image/video-thumbnail for index directory."
+  (when-let* ((dv (dirvish-curr))
+              (buf (window-buffer (dv-root-window dv))))
+    (with-current-buffer buf
+      (when (and (< (length (dirvish-prop :files))
+                    (car dirvish-media-auto-cache-threshold))
+                 (dv-layout dv)
+                 (not (dirvish-prop :tramp)))
+        (cl-loop
+         with win = (dv-preview-window dv)
+         with width = (window-width win)
+         for file in (dirvish-prop :files)
+         for ext = (downcase (or (file-name-extension file) ""))
+         for (cmd . args) = (cl-loop
+                             for fn in dirvish-media--cache-img-fns
+                             for (type . payload) = (funcall fn file ext win dv)
+                             thereis (and (eq type 'media-cache) payload))
+         when cmd do (push (cons (format "%s-%s-img-cache" file width)
+                                 (list file width cmd args))
+                           dirvish-media--cache-pool))))))
 
 (defun dirvish-media--group-heading (group-titles)
   "Format media group heading in Dirvish preview buffer.
