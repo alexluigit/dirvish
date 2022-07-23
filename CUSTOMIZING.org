@@ -319,8 +319,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   :init
   (dirvish-override-dired-mode)
   :custom
-  ;; Go back home? Just press `bh'
-  (dirvish-bookmark-entries
+  (dirvish-quick-access-entries
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
