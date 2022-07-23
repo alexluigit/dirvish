@@ -7,24 +7,6 @@ want further customizations.
 
 -----
 
-* Prerequisites
-
-|-------------------+----------------------------+----------|
-| Package           | Description                | Required |
-|-------------------+----------------------------+----------|
-| =Emacs 27.1=        | Support Emacs 27.1 onward  | Required |
-| =all-the-icons.el=  | Icon support               | Optional |
-| =vscode-icon.el=    | Icon support               | Optional |
-| =pdf-tools=         | Preview pdf documents      | Optional |
-| =imagemagick=       | Generate image cache       | Optional |
-| =ffmpegthumbnailer= | Generate video thumbnailer | Optional |
-| =epub-thumbnailer=  | Generate epub thumbnailer  | Optional |
-| =zipinfo=           | Preview zip files          | Optional |
-| =mediainfo=         | Display media metadata     | Optional |
-|-------------------+----------------------------+----------|
-
-It is recommended to use the latest version of these packages/applications.
-
 * In relation to Dired
 
 A Dirvish session holds a set of buffers with ~dirvish-mode~ as its
@@ -183,7 +165,7 @@ Each dispatcher in this list handles the validation and preview content
 generation for the corresponding filetype. Consult ~dirvish-define-preview~ and
 ~dirvish-preview-dispatch~ for details.
 
-Here are two customization samples.
+Here are several customization samples.
 
 *** Sample 1: preview PDF files with generated thumbnail
 
@@ -232,6 +214,17 @@ the coloring in the preview window.
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 [screenshot from the ~doom-one~ theme]
+
+*** Sample 3: remove the epub preview method
+
+Dirvish has inbuilt preview support for epub documents through the ~epub~ preview
+dispatcher, which requires the [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]] executable.  If for some reason
+you are not able to install this dependency or want to display preview for epub
+files, just remove it from the preview dispatcher list.
+
+#+begin_src emacs-lisp
+(setq dirvish-preview-dispatchers (remove 'epub dirvish-preview-dispatchers))
+#+end_src
 
 ** Auto caching
 
@@ -319,8 +312,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   :init
   (dirvish-override-dired-mode)
   :custom
-  ;; Go back home? Just press `bh'
-  (dirvish-bookmark-entries
+  (dirvish-quick-access-entries
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")

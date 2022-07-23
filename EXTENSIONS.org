@@ -211,11 +211,11 @@ whether the directory is expanded or not.
 | ~dirvish-history-last~        | Go to most recent used Dirvish buffer |
 |-----------------------------+---------------------------------------|
 
-* Bookmarks (dirvish-bookmark.el)
+* Quick keys for frequently visited places (dirvish-quick-access.el)
 
 This extension gives you the ability of jumping to anywhere in the filesystem
-with minimal (2 usually) keystrokes.  Just define the bookmarks in
-~dirvish-bookmark-entries~ and access them by calling ~dirvish-bookmark-jump~.
+with minimal (2 usually) keystrokes.  Just define the entries in
+~dirvish-quick-access-entries~ and access them by calling ~dirvish-quick-access~.
 
 * Collapse unique nested paths (dirvish-collapse.el)
 

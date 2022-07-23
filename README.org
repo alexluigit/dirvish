@@ -7,11 +7,6 @@
 
 * Introduction
 
-Dirvish is an improved version of the Emacs inbuilt package [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Dired.html][Dired]].  It not only
-gives Dired an appealing and highly customizable user interface, but also comes
-together with almost all possible parts required for full usability as a modern
-file manager.
-
 #+begin_quote
 The experience of dirvish is surreal and even bizarre after all these years of
 trying to use dired. Like how professionals make their craft look easy, dirvish
@@ -22,22 +17,43 @@ being dired at its core.
 -- @noctuid ([[https://github.com/alexluigit/dirvish/issues/34][source]])
 #+end_quote
 
+Dirvish is an improved version of the Emacs inbuilt package [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Dired.html][Dired]].  It not only
+gives Dired an appealing and highly customizable user interface, but also comes
+together with almost all possible parts required for full usability as a modern
+file manager.
+
 [[https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png][https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png]]
 
 * Installation
 
-Dirvish is available on [[https://melpa.org][Melpa]], you can install it directly via ~package-install~
-if you have melpa in your ~package-archives~.
+Dirvish is available on [[https://melpa.org/#/dirvish][Melpa]].  Just type =M-x package-install RET dirvish RET=
+into Emacs 27.1+.  =el-get= users can get the recipe from [[https://github.com/alexluigit/dirvish/issues/90][here]].
 
-#+begin_src emacs-lisp
-(use-package dirvish
-  :ensure t
-  :init
-  ;; Let Dirvish take over Dired globally
-  (dirvish-override-dired-mode))
-#+end_src
+It is highly recommended to install these dependencies to get the best preview experience:
+
+- *macOS*
+
+  ~brew install coreutils poppler ffmpegthumbnailer mediainfo imagemagick gnu-tar unzip~
+
+- *Debian*
+
+  ~apt-get install poppler-utils ffmpegthumbnailer mediainfo imagemagick tar unzip~
+
+- *Arch*
+
+  ~pacman -S poppler ffmpegthumbnailer mediainfo imagemagick tar unzip~
+
+- ... (help us to improving the list)
+
+You may also want to check out the *File preview* section in [[file:CUSTOMIZING.org][Customizing.org]].
 
 * Quickstart
+
+After installation, let Dirvish take over Dired globally:
+
+#+begin_src emacs-lisp
+(dirvish-override-dired-mode)
+#+end_src
 
 + =M-x= ~dirvish~ gives you a 3-pane (parent+current+preview) session
 + =M-x= ~dired~ | ~dired-jump~ | ... gives you a "dirvish-ish" Dired buffer/session
@@ -51,7 +67,7 @@ Now enjoy your brand-new Dired, or if you will, call it Dirvish 🐱.
 + [[file:EXTENSIONS.org][Useful extensions]]
 + [[file:FAQ.org][FAQ | Related projects]]
 + [[file:CHANGELOG.org][Changelog]]
-  
+
 * Acknowledgements
 
 Thanks Fox Kiester (@noctuid) for the awesome [[https://github.com/alexluigit/dirvish/issues/34][summary]] of Dirvish.
