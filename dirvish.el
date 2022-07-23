@@ -217,6 +217,8 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice wdired-exit                       dirvish-wdired-exit-ad         :after)
     (advice wdired-finish-edit                dirvish-wdired-exit-ad         :after)
     (advice wdired-abort-changes              dirvish-wdired-exit-ad         :after)
+    (advice burly-bookmark-windows            dirvish-burly-save-ad          :before)
+    (advice burly-open-bookmark               dirvish-burly-open-ad          :around)
     (advice find-file                         dirvish-find-file-ad           :around)
     (advice recentf-track-opened-file         dirvish-ignore-ad              :around)
     (advice recentf-track-closed-file         dirvish-ignore-ad              :around)
@@ -254,6 +256,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-mode-line-segments '())
 (defvar dirvish--available-preview-dispatchers '())
+(defvar dirvish--allow-overlapping nil)
 (defvar-local dirvish--props '())
 (defvar-local dirvish--attrs-hash nil)
 (put 'dirvish--props 'permanent-local t)
@@ -805,7 +808,7 @@ If ALL-FRAMES, search target directories in all frames."
                    when (get-buffer-window buf) collect dir)))
 
 (defun dirvish-wdired-enter-ad (&rest _)
-  "Advisor function for `wdired-change-to-wdired-mode'."
+  "Advice for `wdired-change-to-wdired-mode'."
   (dired-move-to-end-of-filename t)
   (setq-local cursor-type '(bar . 4))
   (when (boundp 'evil-normal-state-cursor)
@@ -815,8 +818,21 @@ If ALL-FRAMES, search target directories in all frames."
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
 
 (defun dirvish-wdired-exit-ad (&rest _)
-  "Advise function for exiting `wdired-mode'."
+  "Advice for exiting `wdired-mode'."
   (dirvish--init-dired-buffer t))
+
+(defun dirvish-burly-save-ad (&rest _)
+  "Advice for `burly-bookmark-windows'."
+  (when-let* ((dv (dirvish-curr)) (fullscreen? (dv-layout dv)))
+    (user-error "Dirvish: fullscreen sessions can not be saved as bookmark")))
+
+(defun dirvish-burly-open-ad (fn &rest args)
+  "Advice for FN `burly-open-bookmark' and its ARGS."
+  (when-let* ((dv (dirvish-curr)) (fullscreen? (dv-layout dv)))
+    (dirvish-quit))
+  ;; one or more `bookmark-jump' calls happens in the same window,
+  ;; so we have to allow overlapping sessions here.
+  (let ((dirvish--allow-overlapping t)) (apply fn args)))
 
 (defun dirvish-find-file-ad (fn filename &optional wildcard)
   "Advice for FN `find-file' and `find-file-other-window'.
@@ -1158,7 +1174,8 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."
   (let* ((dir (file-name-as-directory (expand-file-name dir)))
-         (dv (dirvish-new nil))
+         (dv (or (and dirvish--allow-overlapping (dirvish-new nil))
+                 (dirvish-curr) (dirvish-new nil)))
          (buf (dirvish--find-entry dv dir)))
     (with-current-buffer buf (dirvish--build dv) buf)))
 
