@@ -221,6 +221,21 @@ When CLEAR, remove all subtrees in the buffer."
       (add-face-text-property 0 1 hl-face t state-str))
     (overlay-put ov 'after-string state-str) ov))
 
+;;;###autoload
+(defun dirvish-subtree-up ()
+  "Jump to beginning of current subtree."
+  (interactive)
+  (when-let ((ov (dirvish-subtree--parent)))
+    (goto-char (overlay-start ov))
+    (dired-previous-line 1)))
+
+;;;###autoload
+(defun dirvish-subtree-clear ()
+  "Clear all subtrees in the buffer."
+  (interactive)
+  (dirvish-subtree--revert t)
+  (goto-char (point-min)))
+
 (defalias 'dirvish-toggle-subtree #'dirvish-subtree-toggle
   "Insert subtree at point or remove it if it was not present.")
 ;;;###autoload
