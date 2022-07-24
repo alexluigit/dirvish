@@ -166,22 +166,6 @@ LOCALP is the arg for `dired-current-directory', which see."
       (overlay-put ov 'evaporate t)
       (push ov dirvish-subtree--overlays))))
 
-(defun dirvish-subtree--remove ()
-  "Remove subtree at point."
-  (when-let* ((ov (dirvish-subtree--parent))
-              (beg (overlay-start ov))
-              (end (overlay-end ov)))
-    (goto-char beg)
-    (dired-previous-line 1)
-    (cl-loop for o in (overlays-in (point-min) (point-max))
-             when (and (overlay-get o 'dired-subtree-depth)
-                       (>= (overlay-start o) beg)
-                       (<= (overlay-end o) end))
-             do (setq dirvish-subtree--overlays
-                      (delq o dirvish-subtree--overlays)))
-    (with-silent-modifications
-      (delete-region (overlay-start ov) (overlay-end ov)))))
-
 (defun dirvish-subtree--revert (&optional clear)
   "Put the `dired-subtree-overlays' again after buffer reverting.
 When CLEAR, remove all subtrees in the buffer."
@@ -198,7 +182,7 @@ When CLEAR, remove all subtrees in the buffer."
               (when (dirvish-subtree--goto-file name)
                 (cond (clear
                        (dired-next-line 1)
-                       (dirvish-subtree--remove))
+                       (dirvish-subtree-remove))
                       ((not (dirvish-subtree--expanded-p))
                        (dirvish-subtree--insert))))))
    (dirvish-subtree--goto-file (dirvish-prop :child))))
@@ -230,6 +214,24 @@ When CLEAR, remove all subtrees in the buffer."
     (dired-previous-line 1)))
 
 ;;;###autoload
+(defun dirvish-subtree-remove ()
+  "Remove subtree at point."
+  (interactive)
+  (when-let* ((ov (dirvish-subtree--parent))
+              (beg (overlay-start ov))
+              (end (overlay-end ov)))
+    (goto-char beg)
+    (dired-previous-line 1)
+    (cl-loop for o in (overlays-in (point-min) (point-max))
+             when (and (overlay-get o 'dired-subtree-depth)
+                       (>= (overlay-start o) beg)
+                       (<= (overlay-end o) end))
+             do (setq dirvish-subtree--overlays
+                      (delq o dirvish-subtree--overlays)))
+    (with-silent-modifications
+      (delete-region (overlay-start ov) (overlay-end ov)))))
+
+;;;###autoload
 (defun dirvish-subtree-clear ()
   "Clear all subtrees in the buffer."
   (interactive)
@@ -243,7 +245,7 @@ When CLEAR, remove all subtrees in the buffer."
   "Insert subtree at point or remove it if it was not present."
   (interactive)
   (if (dirvish-subtree--expanded-p)
-      (progn (dired-next-line 1) (dirvish-subtree--remove))
+      (progn (dired-next-line 1) (dirvish-subtree-remove))
     (dirvish-subtree--insert)))
 
 (provide 'dirvish-subtree)
