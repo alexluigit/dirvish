@@ -17,6 +17,10 @@
 
 (require 'dirvish)
 
+(defconst dirvish-media-exts
+  (append dirvish-image-exts dirvish-video-exts
+          dirvish-audio-exts '("pdf" "epub" "gif")))
+
 (defvar dirvish-media--cache-pool '())
 (defvar dirvish-media--auto-cache-timer nil)
 (defcustom dirvish-media-auto-cache-threshold '(500 . 4)
@@ -347,6 +351,11 @@ Require: `tar' (executable)"
   :require ("zipinfo" "tar")
   (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
         ((member ext '("tar" "zst")) `(shell . ("tar" "-tvf" ,file)))))
+
+(dirvish-define-preview no-media (ext)
+  "Disable preview for media files."
+  (when (member ext dirvish-media-exts)
+    '(info . "Preview disabled for media files")))
 
 (provide 'dirvish-media)
 ;;; dirvish-media.el ends here

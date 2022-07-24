@@ -235,7 +235,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defvar dirvish-libraries
   '((dirvish-extras   file-size)
     (dirvish-vc       vc-state git-msg vc-diff)
-    (dirvish-media    audio image gif video epub pdf pdf-preface archive)
+    (dirvish-media    audio image gif video epub pdf pdf-preface archive no-media)
     (dirvish-collapse collapse)
     (dirvish-icons    all-the-icons vscode-icon)
     (dirvish-subtree  subtree-state)))
@@ -900,8 +900,7 @@ FILENAME and WILDCARD are their args."
 
 (defun dirvish--preview-inhibit-long-line (file)
   "Preview FILE unless it contains long lines."
-  (let* ((enable-local-variables nil)
-         (vc-follow-symlinks t)
+  (let* ((vc-follow-symlinks t)
          (buf (find-file-noselect file t)))
     (with-current-buffer buf
       (if (funcall so-long-predicate)
