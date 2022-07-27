@@ -142,13 +142,7 @@ LOCALP is the arg for `dired-current-directory', which see."
 
 (defun dirvish-subtree--insert ()
   "Insert subtree under this directory."
-  (let* ((filename (dired-get-filename))
-         (dirname (pcase (progn (back-to-indentation) (char-after)) ; first char in priv
-                    (108 (let ((true (file-truename filename))) ; "l" = 108 = symlink
-                           (prog1 true (unless (file-directory-p true)
-                                         (user-error "Not a directory")))))
-                    (100 filename) ; "d" = 100 = directory
-                    (_ (user-error "Not a directory"))))
+  (let* ((dirname (dired-get-filename))
          (listing (dirvish-subtree--readin dirname))
          buffer-read-only beg end)
     (dirvish--print-directory (dirvish-prop :tramp) (current-buffer) dirname t)
