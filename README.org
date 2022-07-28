@@ -67,6 +67,7 @@ Now enjoy your brand-new Dired, or if you will, call it Dirvish 🐱.
 + [[file:EXTENSIONS.org][Useful extensions]]
 + [[file:FAQ.org][FAQ | Related projects]]
 + [[file:CHANGELOG.org][Changelog]]
++ [[https://github.com/alexluigit/dirvish/discussions][Discussions]]
 
 * Acknowledgements
 

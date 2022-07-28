@@ -221,7 +221,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice burly-open-bookmark               dirvish-burly-open-ad          :around)
     (advice find-file                         dirvish-find-file-ad           :around)
     (advice recentf-track-opened-file         dirvish-ignore-ad              :around)
-    (advice recentf-track-closed-file         dirvish-ignore-ad              :around)
     (advice winner-save-old-configurations    dirvish-ignore-ad              :around)
     (advice meow--update-cursor               dirvish-ignore-ad              :around)
     (advice flycheck-buffer                   dirvish-ignore-ad              :around)
@@ -338,7 +337,10 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--kill-buffer (buffer)
   "Kill BUFFER when it is a live one."
-  (and (buffer-live-p buffer) (kill-buffer buffer)))
+  (and (buffer-live-p buffer)
+       (cl-letf (((symbol-function 'undo-tree-save-history-from-hook) #'ignore)
+                 ((symbol-function 'recentf-track-closed-file) #'ignore))
+         (kill-buffer buffer))))
 
 (defun dirvish--get-project-root ()
   "Get root path of current project."
@@ -900,14 +902,15 @@ FILENAME and WILDCARD are their args."
 
 (defun dirvish--preview-inhibit-long-line (file)
   "Preview FILE unless it contains long lines."
-  (let* ((vc-follow-symlinks t)
-         (buf (find-file-noselect file t)))
-    (with-current-buffer buf
-      (if (funcall so-long-predicate)
-          (progn
-            (kill-buffer buf)
-            `(info . ,(format "File %s contains very long lines, preview skipped." file)))
-        `(buffer . ,buf)))))
+  (cl-letf (((symbol-function 'undo-tree-save-history-from-hook) #'ignore))
+    (let* ((vc-follow-symlinks t)
+           (buf (find-file-noselect file t)))
+      (with-current-buffer buf
+        (if (funcall so-long-predicate)
+            (let ((fmt "File %s contains very long lines, preview skipped."))
+              (kill-buffer buf)
+              `(info . ,(format fmt file)))
+          `(buffer . ,buf))))))
 
 (defun dirvish--preview-fill-string-sentinel (proc _exitcode)
   "A sentinel for dirvish preview process.
