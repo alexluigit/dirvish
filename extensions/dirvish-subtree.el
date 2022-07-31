@@ -20,6 +20,12 @@
 (defvar dirvish-subtree--prefix-unit-len 2)
 (defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
 
+(defcustom dirvish-subtree-listing-switches nil
+  "Listing SWITCHES used in subtrees.
+The value may be a string of options or nil which means the
+working switches of current buffer will be used."
+  :type '(choice symbol string) :group 'dirvish)
+
 (defcustom dirvish-subtree-line-prefix "  "
   "A string put into each nested subtree.
 The prefix is repeated \"depth\" times."
@@ -132,13 +138,15 @@ LOCALP is the arg for `dired-current-directory', which see."
 
 (defun dirvish-subtree--readin (dirname)
   "Readin the directory DIRNAME as a string."
-  (let ((switches (or dired-actual-switches dired-listing-switches)))
+  (let* ((switches (or dirvish-subtree-listing-switches
+                      dired-actual-switches
+                      dired-listing-switches))
+         (trim (if (member "--all" (split-string switches)) 3 1)))
     (with-temp-buffer
-      (insert-directory (file-name-as-directory dirname)
-                        (concat switches " -A") nil t)
+      (insert-directory (file-name-as-directory dirname) switches nil t)
       (delete-char -1)
       (goto-char (point-min))
-      (delete-region (point) (progn (forward-line 1) (point)))
+      (delete-region (point) (progn (forward-line trim) (point)))
       (goto-char (point-min))
       (unless (looking-at-p "  ")
         (let ((indent-tabs-mode nil))
