@@ -3,15 +3,85 @@
 #+startup: content
 
 Several small extension packages to Dirvish are maintained in the subdirectory
-extensions/. They are installed together with Dirvish if you pull the package
-from MELPA, Dirvish can work properly with or without them though.
+/extensions/.  They are installed together with Dirvish if you pull the package
+from MELPA.  Apart from =dirvish-media.el=, all of them are inactive by default.
 
-=dirvish-media= is the extension that handles the preview of media files (image,
-video, etc.), it is enabled by default.  Apart from that, all extensions are
-inactive by default and can be enabled manually if desired.
+These extensions can augment Dirvish through different ways such as providing
+extra commands/attributes/preview methods, improving UI by the help of
+=transient.el=, integration with external tools, among other things.  With them it
+is possible to adapt Dirvish such that it matches your preference or behaves
+similar to other familiar file explorers.
 
-With these extensions it is possible to adapt Dirvish such that it matches your
-preference or behaves similar to other familiar file explorers.
+* Prerequisites
+
+Some extensions provide extra preview methods or commands that require external
+tools to work properly.
+
+** macOS
+#+BEGIN_SRC bash
+brew install fd poppler ffmpegthumbnailer mediainfo imagemagick gnu-tar unzip
+#+END_SRC
+
+** Ubuntu (and other Debian-based distros)
+#+BEGIN_SRC bash
+apt install fd-find poppler-utils ffmpegthumbnailer mediainfo imagemagick tar unzip
+#+END_SRC
+
+** Arch Linux
+#+BEGIN_SRC bash
+pacman -S fd poppler ffmpegthumbnailer mediainfo imagemagick tar unzip
+#+END_SRC
+
+** Windows
+
+I have no idea on how to install these dependencies or whether will they work on
+Windows, feel free to send over a PR if you have a working example.
+
+* Preview media files (dirvish-media.el)
+
+This is the extension that handles the preview of media files.  Currently, these
+preview methods are included in this extension:
+
++ ~image~: preview image files
++ ~gif~: preview GIF image files with animation
++ ~video~: preview videos files with thumbnail
++ ~audio~: preview audio files with metadata
++ ~epub~: preview epub documents, requires [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]] executable
++ ~pdf~: preview pdf documents via =pdf-tools=
++ ~archive~: preview archive files such as =.tar=, =.zip=
+
+All of them are enabled by default.  To enable/disable certain preview methods,
+just set ~dirvish-preview-dispatchers~ to your preferences.
+
+For example, if for some reason you are not able to install [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]] or
+want to display preview for epub files via packages like =nov=, just remove the
+~epub~ dispatcher like this:
+
+#+begin_src emacs-lisp
+(setq dirvish-preview-dispatchers (remove 'epub dirvish-preview-dispatchers))
+#+end_src
+
+Perhaps you only want the very basic preview functionalities, namely, disable
+preview for all media files.  To do that you can place ~no-media~ as the last
+entry in the ~dirvish-preview-dispatchers~.
+
+#+begin_src emacs-lisp
+(setq dirvish-preview-dispatchers '(archive no-media))
+#+end_src
+
+Some of preview dispatchers, such as ~image~, generate cache images to improve the
+preview experience.  Everytime you enter a directory, Dirvish scans the the
+content of that directory and computes the fileset of the directory that
+requires cache image generation, the corresponding caches are generated later
+when Emacs is idle.
+
+You can tweak the behavior of auto caching or turn off this feature completely
+by customizing the ~dirvish-media-auto-cache-threshold~ option.  Here is how to
+disable the auto caching completely.
+
+#+begin_src emacs-lisp
+(customize-set-variable 'dirvish-media-auto-cache-threshold '(0))
+#+end_src
 
 * Transient based help menu (dirvish-menu.el)
 
@@ -60,7 +130,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
 To copy/move/symlink/hardlink files from A to B, just mark the files in A, go to
 B, and paste them with ~dirvish-yank/move/symlink/hardlink~.
 
-See also: [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#dired-ranger][comparison with dired-ranger]]
+See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#dired-ranger][comparison with dired-ranger]]
 
 * Minibuffer file preview (dirvish-peek.el)
 
@@ -233,7 +303,7 @@ directories they have to quite needlessly drill-down through varying number of
                                                    -- from [[https://github.com/Fuco1/dired-hacks][dired-collapse]]
 #+end_quote
 
-See also: [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#dired-collapse][comparison with dired-collapse]]
+See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#dired-collapse][comparison with dired-collapse]]
 
 * Live-narrowing of Dirvish buffer (dirvish-narrow.el)
 
