@@ -139,8 +139,8 @@ LOCALP is the arg for `dired-current-directory', which see."
 (defun dirvish-subtree--readin (dirname)
   "Readin the directory DIRNAME as a string."
   (let* ((switches (or dirvish-subtree-listing-switches
-                      dired-actual-switches
-                      dired-listing-switches))
+                       dired-actual-switches
+                       dired-listing-switches))
          (trim (if (member "--all" (split-string switches)) 3 1)))
     (with-temp-buffer
       (insert-directory (file-name-as-directory dirname) switches nil t)

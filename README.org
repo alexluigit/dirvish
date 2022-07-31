@@ -24,49 +24,44 @@ file manager.
 
 [[https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png][https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png]]
 
+* Prerequisites
+
+This package requires =GNU ls= (~gls~) *on BSDs* for it to work properly, as an
+example, one can install it via ~brew install coreutils~ on macOS.
+
+Some extensions comes with Dirvish provide extra preview methods or commands
+that require external tools to work properly, as a result, it's highly
+recommended to install [[https://github.com/alexluigit/dirvish/blob/main/docs/EXTENSIONS.org#prerequisites][dependencies]] for them too.
+
 * Installation
 
 Dirvish is available on [[https://melpa.org/#/dirvish][Melpa]].  Just type =M-x package-install RET dirvish RET=
 into Emacs 27.1+.  =el-get= users can get the recipe from [[https://github.com/alexluigit/dirvish/issues/90][here]].
 
-It is highly recommended to install these dependencies to get the best preview experience:
-
-- *macOS*
-
-  ~brew install coreutils poppler ffmpegthumbnailer mediainfo imagemagick gnu-tar unzip~
-
-- *Debian*
-
-  ~apt-get install poppler-utils ffmpegthumbnailer mediainfo imagemagick tar unzip~
-
-- *Arch*
-
-  ~pacman -S poppler ffmpegthumbnailer mediainfo imagemagick tar unzip~
-
-- ... (help us to improving the list)
-
-You may also want to check out the *File preview* section in [[file:CUSTOMIZING.org][Customizing.org]].
+For straight.el users, it is simply:
+#+begin_src emacs-lisp
+(straight-use-package 'dirvish)
+#+end_src
 
 * Quickstart
 
 After installation, let Dirvish take over Dired globally:
-
 #+begin_src emacs-lisp
 (dirvish-override-dired-mode)
 #+end_src
 
-+ =M-x= ~dirvish~ gives you a 3-pane (parent+current+preview) session
 + =M-x= ~dired~ | ~dired-jump~ | ... gives you a "dirvish-ish" Dired buffer/session
++ =M-x= ~dirvish~ gives you a 3-pane (parent+current+preview) session
 + Press =?= in a dirvish buffer to see the list of available commands
 
 Now enjoy your brand-new Dired, or if you will, call it Dirvish 🐱.
 
 * Resources
 
-+ [[file:CUSTOMIZING.org][Customizing Dirvish]]
-+ [[file:EXTENSIONS.org][Useful extensions]]
-+ [[file:FAQ.org][FAQ | Related projects]]
-+ [[file:CHANGELOG.org][Changelog]]
++ [[file:docs/CUSTOMIZING.org][Customizing Dirvish]]
++ [[file:docs/EXTENSIONS.org][Useful extensions]]
++ [[file:docs/FAQ.org][FAQ | Related projects]]
++ [[file:docs/CHANGELOG.org][Changelog]]
 + [[https://github.com/alexluigit/dirvish/discussions][Discussions]]
 
 * Acknowledgements

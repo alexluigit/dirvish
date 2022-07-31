@@ -147,7 +147,6 @@ Dirvish also allows you to customize the header line in the same way of
 customizing mode line. Check out ~dirvish-header-line-format/position/height~.
 
 * File preview
-** Preview strategies
 
 Dirvish uses different strategies towards various filetypes.  You may want to
 turn off preview for certain file extensions, ~dirvish-preview-disabled-exts~
@@ -162,16 +161,15 @@ dispatchers, has the default value looks like:
 #+end_src
 
 Each dispatcher in this list handles the validation and preview content
-generation for the corresponding filetype. Consult ~dirvish-define-preview~ and
-~dirvish-preview-dispatch~ for details.
+generation for the corresponding filetype.  See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/EXTENSIONS.org#preview-media-files-dirvish-mediael][Preview media files]].
 
-Here are several customization samples.
+Here are several examples to extend the preview capabilities of Dirvish.
 
-*** Preview PDF files with generated thumbnail
+** Preview PDF files with generated thumbnail
 
-The default ~pdf~ preview method in Dirvish uses =pdf-tools= to open the document,
-which works fine for most of the pdf documents, but it feels sluggish for some
-documents especially those big ones.
+The default ~pdf~ preview method uses =pdf-tools= to open the document, which works
+fine for most of the pdf documents, but it feels sluggish for some documents
+especially those big ones.
 
 Dirvish provided an alternative PDF preview dispatcher ~pdf-preface~ which
 generates preface image for pdf files and use those preface images as the
@@ -185,7 +183,7 @@ Note: this dispatcher requires the =pdftoppm= executable.
       (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers))
 #+end_src
 
-*** Preview directory using ~exa~ command
+** Preview directory using ~exa~ command
 
 Let's assume you don't like the default directory preview results provided by
 Dired, you can create a directory previewer that utilizes the ~exa~ command:
@@ -214,39 +212,6 @@ the coloring in the preview window.
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 [screenshot from the ~doom-one~ theme]
-
-*** Disable the epub preview method
-
-Dirvish has inbuilt preview support for epub documents through the ~epub~ preview
-dispatcher, which requires the [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]] executable.  If for some reason
-you are not able to install this dependency or want to display preview for epub
-files, just remove it from the preview dispatcher list.
-
-#+begin_src emacs-lisp
-(setq dirvish-preview-dispatchers (remove 'epub dirvish-preview-dispatchers))
-#+end_src
-
-*** Disable preview for all media files
-
-To do that you'll have to turn off the auto caching and place ~no-media~ as the
-last entry in the ~dirvish-preview-dispatchers~.
-
-#+begin_src emacs-lisp
-(customize-set-variable 'dirvish-media-auto-cache-threshold '(0))
-
-(setq dirvish-preview-dispatchers '(archive no-media))
-#+end_src
-
-** Auto caching
-
-By default, Dirvish enabled all dispatchers defined in ~dirvish-media.el~.  Some
-of them generate cache images to improve the preview experience.  Everytime you
-enter a directory, Dirvish scans the the content of that directory and
-determines the subset of the directory that requires cache image generation, the
-corresponding caches are generated later when Emacs is idle.
-
-You can tweak the behavior of auto caching or turn off this feature completely
-by customizing the ~dirvish-media-auto-cache-threshold~ option.
 
 * Working with Doom Emacs
 ** Using dired module with ~+dirvish~ flag
@@ -304,7 +269,7 @@ sacrificing performance. Meanwhile, ~diff-hl-dired-mode~ doesn't mesh well with
 
 *** Use =dirvish-fd= instead of =fd-dired=
 
-See [[https://github.com/alexluigit/dirvish/blob/main/FAQ.org#find-dired--fd-dired][FAQ]].
+See [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#find-dired--fd-dired][FAQ]].
 
 *** Use =dirvish-yank= instead of =dired-rsync=
 
