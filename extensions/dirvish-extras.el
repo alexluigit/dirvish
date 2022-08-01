@@ -270,8 +270,9 @@ If MULTI-LINE, make every name occupy a separate line."
 If MULTI-LINE, make every path occupy a separate line."
   (interactive "P")
   (let* ((files (dired-get-marked-files))
-         (names (mapconcat #'concat files (if multi-line "\n" " "))))
-    (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
+         (names (mapconcat #'concat files (if multi-line "\n" " ")))
+         (cleannames (if (file-remote-p default-directory) (replace-regexp-in-string (concat "/" tramp-default-method ":") "" names) names)))
+    (dirvish--kill-and-echo (if multi-line (concat "\n" cleannames) cleannames))))
 
 ;;;###autoload
 (defun dirvish-copy-file-directory ()
