@@ -241,7 +241,7 @@ The command run is essentially:
     (setq dirvish-fd-actual-switches nil))
   (setq dir (file-name-as-directory (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir) (user-error "'fd' command requires a directory: %s" dir))
-  (let* ((dv (or (dirvish-prop :dv) (dirvish-new nil :layout dirvish-default-layout)))
+  (let* ((dv (or (dirvish-prop :dv) (dirvish-new :layout dirvish-default-layout)))
          (reuse (when (dirvish-prop :fd-header) (current-buffer)))
          (buf-name (format dirvish-fd-bufname dir pattern (make-temp-name "")))
          (buffer (or reuse (get-buffer-create buf-name))))
