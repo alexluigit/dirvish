@@ -149,8 +149,7 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-attribute file-size
   "Show file size or directories file count at right fringe."
-  (:if (and (eq (dv-root-window dv) (selected-window))
-            dired-hide-details-mode)
+  (:if (and (dirvish-prop :root) dired-hide-details-mode)
        :width (1+ dirvish--file-size-str-len))
   (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
          (ov-pos (if (> remain f-wid) l-end (+ f-beg remain)))

@@ -86,7 +86,7 @@ The session takes the whole frame when `one-window-p'."
   (let ((path (expand-file-name (or path default-directory)))
         (fullscreen (one-window-p)))
     (or (dirvish--reuse-session path fullscreen)
-        (dirvish-new t :path path
+        (dirvish-new :path path
           :layout (and fullscreen dirvish-default-layout)))))
 
 (provide 'dirvish-layout)
