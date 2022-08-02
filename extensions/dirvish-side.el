@@ -220,7 +220,7 @@ otherwise it defaults to `project-current'."
              (dirvish--build dv)))
          (dirvish-side--set-state dv 'visible)))
       ('uninitialized
-       (dirvish-new t
+       (dirvish-new
          :path (or (and path (file-name-directory path))
                    (dirvish--get-project-root)
                    default-directory)
