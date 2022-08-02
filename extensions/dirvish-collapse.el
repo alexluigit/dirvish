@@ -55,7 +55,7 @@
 
 (dirvish-define-attribute collapse
   "Collapse unique nested paths."
-  (:if (and (eq (dv-root-window dv) (selected-window))
+  (:if (and (dirvish-prop :root)
             (not (dirvish-prop :fd-header))
             (or (not (dirvish-prop :tramp))
                 (tramp-local-host-p (dirvish-prop :tramp)))))
