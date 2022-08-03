@@ -809,7 +809,8 @@ If ALL-FRAMES, search target directories in all frames."
 
 (defun dirvish-wdired-exit-ad (&rest _)
   "Advice for exiting `wdired-mode'."
-  (dirvish--init-dired-buffer t))
+  (dirvish--init-dired-buffer t)
+  (revert-buffer))
 
 (defun dirvish-burly-save-ad (&rest _)
   "Advice for `burly-bookmark-windows'."
