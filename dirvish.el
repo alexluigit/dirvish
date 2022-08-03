@@ -1456,8 +1456,11 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to variable `buffer-file-name'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
   (setq path (or path default-directory))
-  (or (dirvish--reuse-session path 'full)
-      (dirvish-new t :path path :layout dirvish-default-layout)))
+  (let ((dv (dirvish-prop :dv)))
+    (if (and dv (dv-layout dv))
+        (dirvish-find-entry-ad path)
+      (or (dirvish--reuse-session path 'full)
+          (dirvish-new :path path :layout dirvish-default-layout)))))
 
 ;;;###autoload (autoload 'dirvish-dispatch "dirvish" nil t)
 (transient-define-prefix dirvish-dispatch ()
