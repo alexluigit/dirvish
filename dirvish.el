@@ -233,7 +233,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
   '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window :persp persp-curr))
 (defvar dirvish-libraries
   '((dirvish-extras   file-size)
-    (dirvish-vc       vc-state git-msg vc-diff)
+    (dirvish-vc       vc-state git-msg vc-diff vc-blame vc-log)
     (dirvish-media    audio image gif video epub pdf pdf-preface archive no-media)
     (dirvish-collapse collapse)
     (dirvish-icons    all-the-icons vscode-icon)

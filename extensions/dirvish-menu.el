@@ -16,46 +16,41 @@
 
 (require 'dirvish)
 
-(defclass dirvish-menu-toggles (transient-infix)
-  ((variable  :initarg :variable)
-   (scope     :initarg :scope nil))
-  "[Experimental] Class for Dirvish toggles.")
+(defclass dirvish-attribute (transient-infix)
+  ((variable  :initarg :variable))
+  "Class for dirvish attributes.")
 
-(cl-defmethod transient-format-description ((obj dirvish-menu-toggles))
-  "Format description for DIRVISH-MENU-TOGGLES instance OBJ."
+(cl-defmethod transient-format-description ((obj dirvish-attribute))
+  "Format description for DIRVISH-ATTRIBUTE instance OBJ."
   (format "%s%s" (oref obj description)
           (propertize " " 'display '(space :align-to (- right 5)))))
 
-(cl-defmethod transient-format-value ((obj dirvish-menu-toggles))
-  "Format value for DIRVISH-MENU-TOGGLES instance OBJ."
+(cl-defmethod transient-format-value ((obj dirvish-attribute))
+  "Format value for DIRVISH-ATTRIBUTE instance OBJ."
   (let* ((val (oref obj value))
          (face (if (equal val "+") 'transient-argument 'transient-inactive-value)))
     (propertize val 'face face)))
 
-(cl-defmethod transient-init-value ((obj dirvish-menu-toggles))
-  "Initialize value for DIRVISH-MENU-TOGGLES instance OBJ."
-  (let ((sym (oref obj variable))
-        (scope (funcall (oref obj scope) (dirvish-curr))))
-    (oset obj value (if (memq sym scope) "+" "-"))))
+(cl-defmethod transient-init-value ((obj dirvish-attribute))
+  "Initialize value for DIRVISH-ATTRIBUTE instance OBJ."
+  (let ((sym (oref obj variable)))
+    (oset obj value (if (memq sym (dv-attributes (dirvish-curr))) "+" "-"))))
 
-(cl-defmethod transient-infix-read ((obj dirvish-menu-toggles))
-  "Read value from DIRVISH-MENU-TOGGLES instance OBJ."
+(cl-defmethod transient-infix-read ((obj dirvish-attribute))
+  "Read value from DIRVISH-ATTRIBUTE instance OBJ."
   (oset obj value (if (equal (oref obj value) "+") "-" "+")))
 
-(cl-defmethod transient-infix-set ((obj dirvish-menu-toggles) value)
-  "Set relevant value in DIRVISH-MENU-TOGGLES instance OBJ to VALUE."
+(cl-defmethod transient-infix-set ((obj dirvish-attribute) value)
+  "Set relevant value in DIRVISH-ATTRIBUTE instance OBJ to VALUE."
   (let* ((dv (dirvish-curr))
          (item (oref obj variable))
-         (slot-name (oref obj scope))
-         (curr-val (funcall slot-name dv))
+         (curr-val (dv-attributes dv))
          (new-val (if (equal value "+") (push item curr-val) (remq item curr-val))))
     (cl-loop for buf in (mapcar #'cdr (dv-roots dv)) do
              (with-current-buffer buf
                (dolist (ov (mapcar #'car (dv-attribute-fns dv)))
                  (remove-overlays (point-min) (point-max) ov t))))
-    (cl-case slot-name
-      ('dv-attributes (setf (dv-attributes dv) new-val))
-      ('dv-preview-dispatchers (setf (dv-preview-dispatchers dv) new-val)))
+    (setf (dv-attributes dv) new-val)
     (dirvish--refresh-slots dv)
     (dirvish-update-body-h)))
 
@@ -172,7 +167,6 @@ C-u p: separate PATHs into different lines "))
      (and (display-graphic-p) (dirvish-prop :vc-backend)))
     ("m"  git-msg        attr     "Git commit messages"
      (and (dirvish-prop :vc-backend) (not (dirvish-prop :tramp))))
-    ("d"  vc-diff        preview  "Version control diff")
     ("1" '(0 nil  0.4)   layout   "     -       | current (60%) | preview (40%)")
     ("2" '(0 nil  0.8)   layout   "     -       | current (20%) | preview (80%)")
     ("3" '(1 0.08 0.8)   layout   "parent (8%)  | current (12%) | preview (80%)")
@@ -180,31 +174,24 @@ C-u p: separate PATHs into different lines "))
   "ITEMs for `dirvish-setup-menu'.
 A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
 where KEY is the keybinding for the item, VAR can be valid
-attribute (as in `dirvish-attributes') or preview dispatcher (as
-in `dirvish-preview-dispatchers') or a layout recipe (see
-`dirvish-layout-recipes'), SCOPE can be `attr', `preview' or
-`layout'.  DESCRIPTION is the documentation for the VAR.  PRED,
-when present, is wrapped with a lambda and being put into the
-`:if' keyword in that prefix or infix."
+attribute (as in `dirvish-attributes') or a layout recipe (see
+`dirvish-layout-recipes'), SCOPE can be `attr' or `layout'.
+DESCRIPTION is the documentation for the VAR.  PRED, when
+present, is wrapped with a lambda and being put into the `:if'
+keyword in that prefix or infix."
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
     (set k v)
     (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attr)) v))
-          (preview-alist (seq-filter (lambda (i) (eq (nth 2 i) 'preview)) v))
           (layout-alist (seq-filter (lambda (i) (eq (nth 2 i) 'layout)) v)))
       (cl-labels ((new-infix (i)
                     (let* ((infix-var (nth 1 i))
                            (infix-name (intern (format "dirvish-%s-infix" (nth 1 i))))
-                           (slot-name (pcase (nth 2 i)
-                                        ('attr "attributes")
-                                        ('preview "preview-dispatchers")))
-                           (infix-scope (intern (format "dv-%s" slot-name)))
                            (infix-pred (nth 4 i)))
                       (eval `(transient-define-infix ,infix-name ()
-                               :class 'dirvish-menu-toggles
+                               :class 'dirvish-attribute
                                :variable ',infix-var
-                               :scope ',infix-scope
                                :description ,(nth 3 i)
                                :if (lambda () ,(if infix-pred `,@infix-pred t))))))
                   (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
@@ -212,7 +199,6 @@ when present, is wrapped with a lambda and being put into the
                                            (propertize (nth 3 i) 'face 'font-lock-doc-face)
                                            `(lambda () (interactive) (dirvish-switch-layout ,(nth 1 i))))))
         (mapc #'new-infix attr-alist)
-        (mapc #'new-infix preview-alist)
         (eval
          `(transient-define-prefix dirvish-setup-menu ()
             "Configure current Dirvish session."
@@ -220,9 +206,6 @@ when present, is wrapped with a lambda and being put into the
              (lambda () (dirvish--format-menu-heading "Setup Dirvish UI"))
              ["Attributes:"
               ,@(mapcar #'expand-infix attr-alist)]]
-            ["Preview:"
-             :if (lambda () (and (not (dirvish-prop :tramp)) (dv-layout (dirvish-curr))))
-             ,@(mapcar #'expand-infix preview-alist)]
             ["Switch layouts:"
              :if (lambda () (dv-layout (dirvish-curr)))
              ,@(mapcar #'layout-option layout-alist)]

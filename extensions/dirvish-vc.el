@@ -54,6 +54,10 @@ vc-hooks.el) for detail explanation of these states."
   "Face for commit message overlays."
   :group 'dirvish)
 
+(defconst dirvish-vc-inhibit-exts
+  (append dirvish-image-exts dirvish-video-exts
+          dirvish-audio-exts '("pdf" "epub" "gif")))
+
 (dirvish-define-attribute vc-state
   "The version control state at left fringe."
   (:if (and (dirvish-prop :root)
@@ -83,13 +87,46 @@ vc-hooks.el) for detail explanation of these states."
     (add-face-text-property 0 (if overflow remain len) face t str)
     (overlay-put ov 'after-string str) ov))
 
-(dirvish-define-preview vc-diff ()
-  "Show output of `vc-diff' as preview."
+(dirvish-define-preview vc-diff (ext)
+  "Use output of `vc-diff' as preview."
   (when (and (dirvish-prop :vc-backend)
+             (not (member ext dirvish-vc-inhibit-exts))
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
                        ((symbol-function 'message) #'ignore))
                (vc-diff)))
     '(buffer . "*vc-diff*")))
+
+(dirvish-define-preview vc-log ()
+  "Use output of `vc-print-log' as preview."
+  (when (and (dirvish-prop :vc-backend)
+             (cl-letf (((symbol-function 'pop-to-buffer) #'ignore))
+               (prog1 t (vc-print-log))))
+    '(buffer . "*vc-change-log*")))
+
+(dirvish-define-preview vc-blame (file ext preview-window dv)
+  "Use output of `vc-annotate' (file) or `vc-dir' (dir) as preview."
+  (when-let* ((bk (dirvish-prop :vc-backend))
+              (orig-buflist (buffer-list))
+              (display-buffer-alist
+               '(("\\*\\(Annotate \\|vc-dir\\).*\\*"
+                  (display-buffer-same-window)))))
+    (if (file-directory-p file)
+        (with-selected-window preview-window
+          (vc-dir file bk)
+          (cl-pushnew vc-dir-process-buffer (dv-preview-buffers dv))
+          `(buffer . ,(current-buffer)))
+      (when-let* ((file (and (not (member ext dirvish-vc-inhibit-exts))
+                             (not (memq (vc-state file bk)
+                                        '(unregistered ignored)))
+                             file))
+                  (f-buf (find-file-noselect file)))
+        (unless (memq f-buf orig-buflist)
+          (push f-buf (dv-preview-buffers dv)))
+        (with-selected-window preview-window
+          (with-current-buffer f-buf
+            (vc-annotate file nil 'fullscale nil nil bk)
+            (cl-pushnew (window-buffer) (dv-preview-buffers dv))
+            `(buffer . ,(window-buffer))))))))
 
 ;;;###autoload (autoload 'dirvish-vc-info-ml "dirvish-vc" nil t)
 (dirvish-define-mode-line vc-info
