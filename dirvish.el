@@ -591,7 +591,7 @@ The keyword arguments set the fields of the dirvish struct."
          (dirvish-kill old))
        (set-frame-parameter nil 'dirvish--curr new)
        (when-let ((path (dv-path new)))
-         (dirvish-find-entry-ad (expand-file-name (file-name-directory path))))
+         (dirvish-find-entry-ad (file-name-directory (expand-file-name path))))
        (run-hooks 'dirvish-activation-hook)
        ,(when args `(save-excursion ,@args)) ; Body form given
        new)))
