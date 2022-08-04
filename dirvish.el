@@ -756,11 +756,10 @@ buffer, it defaults to filename under the cursor when it is nil."
   (let* ((entry (or entry (dired-get-filename nil t)))
          (dv (or (dirvish-curr) (user-error "Not in a dirvish session")))
          (buffer (dirvish--find-entry dv entry)))
-    (if buffer
-        (dirvish-with-no-dedication
-         (switch-to-buffer buffer)
-         (dirvish--build dv))
-      (find-file entry))))
+    (if (not buffer)
+        (find-file entry)
+      (dirvish-with-no-dedication (switch-to-buffer buffer))
+      (dirvish--build dv))))
 
 (defun dirvish-up-directory-ad (&optional other-window)
   "Override `dired-up-directory' command.
@@ -1156,9 +1155,12 @@ Dirvish sets `revert-buffer-function' to this function."
   (when (boundp 'evil-normal-state-cursor)
     (setq-local evil-normal-state-cursor '(bar . 0)))
   (set-window-fringes nil 1 1)
+  (when (window-parameter (selected-window) 'window-side)
+    (setq-local window-size-fixed 'width))
   (when-let ((child (dirvish-prop :child))) (dired-goto-file child))
   (let* ((dv (dirvish-curr))
          (layout (dv-layout dv)))
+    (set-window-dedicated-p win (or layout (window-parameter win 'window-side)))
     (cond ((functionp dirvish-hide-details)
            (funcall dirvish-hide-details dv))
           (dirvish-hide-details
@@ -1234,8 +1236,6 @@ If the buffer is not available, create it with `dired-noselect'."
          (depth (or (car (dv-layout dv)) 0))
          (i 0))
     (dirvish-setup)
-    (when (window-parameter (selected-window) 'window-side)
-      (setq-local window-size-fixed 'width))
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)

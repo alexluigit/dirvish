@@ -161,7 +161,6 @@ will visit the latest `project-root' after executing
                 (dirvish--util-buffer) dirvish-side-display-alist)))
       (cl-loop for (key . value) in dirvish-side-window-parameters
                do (set-window-parameter win key value))
-      (set-window-dedicated-p win t)
       (select-window win))))
 
 (defun dirvish-side-find-file (&optional filename)
