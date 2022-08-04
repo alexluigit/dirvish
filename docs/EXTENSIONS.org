@@ -154,12 +154,26 @@ different ways.  For now we have:
 
 + ~vc-state~: an attribute to display the VC state as a bitmap at left fringe
 + ~git-msg~: an attribute to display git commit messages after the file name
-+ ~vc-diff~: a preview dispatcher which shows changes between the working tree and
-  the index of selected files at preview window.
++ ~vc-[log|diff|blame]~: VC info preview dispatchers
 
-https://user-images.githubusercontent.com/16313743/159040645-530e6f8c-e17f-49b0-ad5d-ae4a088a69b4.mp4
+Besure to put the ~vc-**~ preview dispatcher at the *beginning* of
+~dirvish-preview-dispatchers~ if you want to enable them by default, otherwise the
+preview content might be intercepted by other preview dispatchers.
 
-*Figure 2*. Toggle =vc-state= (attribute), =git-msg= (attribute) and =vc-diff= (preview dispatcher).
+These 3 ~vc-*~ preview dispatchers are mutually exclusive, which means you should
+/not/ set ~dirvish-preview-dispatchers~ like this:
+
+#+begin_src emacs-lisp
+;; `vc-diff' will be ignored
+(vc-log vc-diff ...)
+#+end_src
+
+The ~dirvish-vc-menu~ (bound to =? v= by default) allows you to call all available
+VC commands, it also provides a way to cycle through the ~vc-*~ preview methods.
+
+[[https://user-images.githubusercontent.com/16313743/182787337-92222d67-c57c-4037-ac11-7280be92ce78.mp4][https://user-images.githubusercontent.com/16313743/182787337-92222d67-c57c-4037-ac11-7280be92ce78.mp4]]
+
+*Figure 2*. Toggle ~vc-state~ and ~git-msg~ (attribute), cycle through ~vc-[log|diff|blame]~.
 
 * Extra commands and mode-line segments (dirvish-extras.el)
 ** Commands

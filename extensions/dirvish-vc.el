@@ -19,6 +19,9 @@
 (require 'dirvish)
 (define-fringe-bitmap 'dirvish-vc-gutter [250] nil nil '(center repeated))
 
+(defclass dirvish-vc-preview (transient-switches) ()
+  "Class for dirvish vc-* preview dispatchers.")
+
 (defcustom dirvish-vc-state-face-alist
   '((up-to-date       . nil)
     (edited           . vc-edited-state)
@@ -57,6 +60,39 @@ vc-hooks.el) for detail explanation of these states."
 (defconst dirvish-vc-inhibit-exts
   (append dirvish-image-exts dirvish-video-exts
           dirvish-audio-exts '("pdf" "epub" "gif")))
+(defvar vc-dir-process-buffer)
+
+(cl-defmethod transient-infix-set ((obj dirvish-vc-preview) value)
+  "Set relevant value in DIRVISH-VC-PREVIEW instance OBJ to VALUE."
+  (oset obj value value)
+  (let* ((dv (dirvish-curr))
+         (buf (current-buffer))
+         (old-layout (dv-layout dv))
+         (new-layout (unless old-layout (dv-last-fs-layout dv)))
+         (dv-dps (dv-preview-dispatchers dv))
+         (new-dps (seq-difference dv-dps '(vc-diff vc-log vc-blame vc-dir))))
+    (when value (push (intern (format "%s" value)) new-dps))
+    (setf (dv-preview-dispatchers dv) new-dps)
+    (if new-layout
+        (progn
+          (with-selected-window (dv-root-window dv) (quit-window))
+          (setf (dv-layout dv) new-layout)
+          (delete-window transient--window)
+          (dirvish--save-env dv)
+          (with-selected-window (dirvish--create-root-window dv)
+            (dirvish-with-no-dedication (switch-to-buffer buf))
+            (dirvish--build dv)
+            (dirvish-debounce layout (dirvish-preview-update)))
+          (transient-setup 'dirvish-vc-menu))
+      (dirvish--refresh-slots dv)
+      (dirvish-update-body-h))))
+
+(transient-define-infix dirvish-vc-preview-ifx ()
+  :description "Preview style"
+  :class 'dirvish-vc-preview
+  :argument-format "vc-%s"
+  :argument-regexp "\\(vc-\\(log\\|diff\\|blame\\)\\)"
+  :choices '("log" "diff" "blame"))
 
 (dirvish-define-attribute vc-state
   "The version control state at left fringe."
@@ -157,6 +193,20 @@ vc-hooks.el) for detail explanation of these states."
   "Unstage vc diffs of FILESET using `magit-unstage-file'."
   (interactive)
   (dirvish--magit-on-files #'magit-unstage-file fileset))
+
+;;;###autoload (autoload 'dirvish-vc-menu "dirvish-vc" nil t)
+(transient-define-prefix dirvish-vc-menu ()
+  "Help menu for features in `dirvish-vc'."
+  :init-value
+  (lambda (o) (oset o value (mapcar (lambda (d) (format "%s" d))
+                               (dv-preview-dispatchers (dirvish-curr)))))
+  [:description
+   (lambda () (dirvish--format-menu-heading "Version control commands"))
+   ("v" dirvish-vc-preview-ifx
+    :if (lambda () (dirvish-prop :vc-backend)))
+   ("n" "Do the next action" dired-vc-next-action
+    :if (lambda () (dirvish-prop :vc-backend)))
+   ("c" "Create repo" vc-create-repo)])
 
 (provide 'dirvish-vc)
 ;;; dirvish-vc.el ends here
