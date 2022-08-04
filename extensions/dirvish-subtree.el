@@ -255,5 +255,15 @@ When CLEAR, remove all subtrees in the buffer."
       (progn (dired-next-line 1) (dirvish-subtree-remove))
     (dirvish-subtree--insert)))
 
+;;;###autoload (autoload 'dirvish-subtree-menu "dirvish-subtree" nil t)
+(transient-define-prefix dirvish-subtree-menu ()
+  "Help menu for `dirvish-subtree-*' commands."
+  [:description
+   (lambda () (dirvish--format-menu-heading "Manage subtrees"))
+   ("TAB" "Toggle subtree"             dirvish-subtree-toggle :transient t)
+   ("u" "  Move up 1 depth level"      dirvish-subtree-up)
+   ("r" "  Remove current subtree"     dirvish-subtree-remove)
+   ("c" "  Remove all subtrees"        dirvish-subtree-clear)])
+
 (provide 'dirvish-subtree)
 ;;; dirvish-subtree.el ends here

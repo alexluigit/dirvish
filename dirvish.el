@@ -1464,49 +1464,34 @@ otherwise it defaults to variable `buffer-file-name'."
 
 ;;;###autoload (autoload 'dirvish-dispatch "dirvish" nil t)
 (transient-define-prefix dirvish-dispatch ()
-  "Main help menu for Dired/Dirvish."
+  "Main menu for Dired/Dirvish."
   [:description
-   (lambda () (dirvish--format-menu-heading "Dirvish Help Menu"))
-   ["Essential commands"
-    ("e" "  Open file"              dired-find-file)
-    ("o" "  Open file other window" dired-find-file-other-window)
-    ("/" "  Perform a fd search"    dirvish-fd)
-    ("s" "  Sort current buffer"    dirvish-quicksort)
-    ("g" "  Refresh buffer"         revert-buffer)
-    ("M-s" "Setup Dirvish"          dirvish-setup-menu)
-    ("TAB" "Toggle subtree"         dirvish-subtree-toggle)
-    ("M-f" "Toggle fullscreen"      dirvish-layout-toggle)]
-   ["File operations"
-    ("." "  Add an empty file"      dired-create-empty-file)
-    ("+" "  Add a directory"        dired-create-directory)
-    ("@" "  Rename files"           dirvish-renaming-menu)
-    ("X" "  Delete files"           dired-do-delete)
-    ("v" "  View this file"         dired-view-file)
-    ("y" "  Yank marked files"      dirvish-yank-menu)
-    ("P" "  Manage pinned groups"   dirvish-emerge-menu)
-    ("*" "  Manage marks"           dirvish-mark-menu)]]
-  [["Navigation"
-    ("a" "  Quick access"           dirvish-quick-access)
-    ("j" "  Go to line for file"    dired-goto-file)
-    ("^" "  Go to parent directory" dired-up-directory)
-    ("m" "  Go to the MRU buffer"   dirvish-history-last)
-    ("r" "  Roam the file system"   dirvish-fd-jump)
-    ("n" "  Forward history"        dirvish-history-go-forward :transient t)
-    ("p" "  Backward history"       dirvish-history-go-backward :transient t)
-    ("SPC" "Recently visited"       dirvish-history-jump)]
-   ["Others"
-    ("l" "  Setup listing switches" dirvish-ls-switches-menu)
-    ("f" "  Setup fd switches"      dirvish-fd-switches-menu :if (lambda () dirvish-fd-actual-switches))
-    ("i" "  Get file information"   dirvish-file-info-menu)
-    ("d" "  Manage subdirs"         dirvish-subdir-menu)
-    ("(" "  Toggle details"         dired-hide-details-mode)
-    ("=" "  Compare files"          dired-diff)
-    (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
-    ("N" "  Live narrowing"         dirvish-narrow)]]
+   (lambda () (dirvish--format-menu-heading
+          "Dirvish main menu"
+          "Press ? to see more info for the current menu"))
+   "Transient commands"
+   ("a" "Quick access"           dirvish-quick-access)
+   ("h" "Go to history entries"  dirvish-history-menu)
+   ("s" "Sort current buffer"    dirvish-quicksort)
+   ("l" "Setup listing switches" dirvish-ls-switches-menu)
+   ("f" "Setup fd-find switches" dirvish-fd-switches-menu
+    :if (lambda () dirvish-fd-actual-switches))
+   ("m" "Manage marks"           dirvish-mark-menu)
+   ("e" "Manage emerged groups"  dirvish-emerge-menu)
+   ("t" "Manage subtrees"        dirvish-subtree-menu)
+   ("r" "Rename files"           dirvish-renaming-menu)
+   ("v" "Version control system" dirvish-vc-menu)
+   ("y" "Yank marked files"      dirvish-yank-menu)
+   ("i" "Get file information"   dirvish-file-info-menu)
+   "" "Actions | Essential commands"
+   ("/" "Perform fd search"      dirvish-fd)
+   ("@" "Find all dirs by fd"    dirvish-fd-jump)
+   ("n" "Live narrowing"         dirvish-narrow)
+   ("u" "User interface setup"   dirvish-setup-menu)
+   ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)]
   (interactive)
-  (if dirvish--props
-      (transient-setup 'dirvish-dispatch)
-    (message "Not in a Dirvish buffer.")))
+  (if dirvish--props (transient-setup 'dirvish-dispatch)
+    (user-error "Not in a Dirvish buffer")))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here

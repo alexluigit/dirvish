@@ -92,5 +92,15 @@ ARG defaults to 1."
   (interactive "^p")
   (dirvish-history-go-forward (- 0 arg)))
 
+;;;###autoload (autoload 'dirvish-history-menu "dirvish-history" nil t)
+(transient-define-prefix dirvish-history-menu ()
+  "Help menu for `dirvish-history-*' commands."
+  [:description
+   (lambda () (dirvish--format-menu-heading "Go to history entries"))
+   ("f" "Forward history"        dirvish-history-go-forward :transient t)
+   ("b" "Backward history"       dirvish-history-go-backward :transient t)
+   ("l" "Go to most recent used" dirvish-history-last)
+   ("a" "Access history entries" dirvish-history-jump)])
+
 (provide 'dirvish-history)
 ;;; dirvish-history.el ends here

@@ -29,9 +29,8 @@ file manager.
 This package requires =GNU ls= (~gls~) *on BSDs* for it to work properly, as an
 example, one can install it via ~brew install coreutils~ on macOS.
 
-Some extensions comes with Dirvish provide extra preview methods or commands
-that require external tools to work properly, as a result, it's highly
-recommended to install [[https://github.com/alexluigit/dirvish/blob/main/docs/EXTENSIONS.org#prerequisites][dependencies]] for them too.
+Some [[file:docs/EXTENSIONS.org][extensions]] provide extra preview methods or commands that use external
+tools, so it's highly recommended to install [[https://github.com/alexluigit/dirvish/blob/main/docs/EXTENSIONS.org#prerequisites][dependencies]] for them too.
 
 * Installation
 

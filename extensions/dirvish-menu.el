@@ -158,6 +158,31 @@ C-u p: separate PATHs into different lines "))
    ("v" "Verify"  epa-dired-do-verify)
    ("s" "Sign"    epa-dired-do-sign)])
 
+;;;###autoload (autoload 'dirvish-dired-cheatsheet "dirvish-menu" nil t)
+(transient-define-prefix dirvish-dired-cheatsheet ()
+  "A collection of most frequently used Dired commands."
+  [:description
+   (lambda () (dirvish--format-menu-heading
+          "Dired cheatsheet"
+          "The keys listed here may be different from the actual bindings"))
+   ("n" "  Move to next line"      dired-next-line :transient t)
+   ("p" "  Move to prev line"      dired-previous-line :transient t)
+   ("." "  Add an empty file"      dired-create-empty-file)
+   ("+" "  Add a directory"        dired-create-directory)
+   ("X" "  Delete files"           dired-do-delete)
+   ("v" "  View this file"         dired-view-file)
+   ("g" "  Refresh buffer"         revert-buffer)
+   ("f" "  Find file"              dired-find-file)
+   ("o" "  Find file other window" dired-find-file-other-window)
+   ("j" "  Go to line for file"    dired-goto-file)
+   ("^" "  Go to parent directory" dired-up-directory)
+   ("=" "  Compare files"          dired-diff)
+   ("(" "  Toggle details"         dired-hide-details-mode)
+   ("d" "  Display this file"      dired-display-file)
+   ("s" "  Manage subdirs"         dirvish-subdir-menu)
+   (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
+   ("h" "  More info about Dired"  describe-mode)])
+
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-menu" nil t)
 (defcustom dirvish-menu-setup-items
   '(("s"  file-size      attr     "File size")
@@ -210,6 +235,7 @@ keyword in that prefix or infix."
              :if (lambda () (dv-layout (dirvish-curr)))
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
+             ("M-f" "Toggle fullscreen" dirvish-layout-toggle)
              ("RET" "Quit and revert buffer"
               (lambda () (interactive) (dirvish--build (dirvish-curr)) (revert-buffer)))]
             (interactive)
