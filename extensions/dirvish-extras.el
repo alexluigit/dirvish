@@ -234,7 +234,6 @@ This value is passed to function `format-time-string'."
   "Filesystem device number, as an integer."
   (dirvish--format-file-attr 'device-number))
 
-;;;###autoload
 (defun dirvish-find-file-true-path ()
   "Open truename of (maybe) symlink file under the cursor."
   (interactive)
@@ -247,39 +246,50 @@ This value is passed to function `format-time-string'."
                "Copied: " 'face 'font-lock-builtin-face)))
     (message "%s" (format "%s%s" hint string))))
 
-;;;###autoload
 (defun dirvish-copy-file-true-path ()
   "Copy truename of (maybe) symlink file under the cursor."
   (interactive)
   (dirvish--kill-and-echo
    (file-truename (dired-get-filename nil t))))
 
-;;;###autoload
 (defun dirvish-copy-file-name (&optional multi-line)
   "Copy filename of marked files.
-If MULTI-LINE, make every name occupy a separate line."
+If MULTI-LINE, make every name occupy a new line."
   (interactive "P")
   (let* ((files (dired-get-marked-files t))
          (names (mapconcat #'concat files (if multi-line "\n" " "))))
     (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
 
-;;;###autoload
 (defun dirvish-copy-file-path (&optional multi-line)
   "Copy filepath of marked files.
-If MULTI-LINE, make every path occupy a separate line."
+If MULTI-LINE, make every path occupy a new line."
   (interactive "P")
-  (let* ((files (dired-get-marked-files))
+  (let* ((files (mapcar #'file-local-name (dired-get-marked-files)))
          (names (mapconcat #'concat files (if multi-line "\n" " "))))
     (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
 
-;;;###autoload
+(defun dirvish-copy-remote-path (&optional multi-line)
+  "Copy remote path of marked files.
+If MULTI-LINE, make every path occupy a new line."
+  (interactive "P")
+  (unless (dirvish-prop :tramp) (user-error "Not in a remote directory"))
+  (let* ((files
+          (cl-loop for file in (dired-get-marked-files)
+                   for tramp-struct = (tramp-dissect-file-name file)
+                   for user = (tramp-file-name-user tramp-struct)
+                   for host = (tramp-file-name-host tramp-struct)
+                   for localname = (tramp-file-local-name file)
+                   collect (format "%s%s%s:%s" (or user "")
+                                   (if user "@" "") host localname)))
+         (names (mapconcat #'concat files (if multi-line "\n" " "))))
+    (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
+
 (defun dirvish-copy-file-directory ()
   "Copy directory name of file under the cursor."
   (interactive)
   (dirvish--kill-and-echo
    (expand-file-name default-directory)))
 
-;;;###autoload
 (defun dirvish-total-file-size (&optional fileset)
   "Echo total file size of FILESET.
 FILESET defaults to `dired-get-marked-files'."
@@ -290,7 +300,6 @@ FILESET defaults to `dired-get-marked-files'."
          (size (file-size-human-readable (dirvish--count-file-size fileset))))
     (message "%s" (format "Total size of %s entries: %s" count size))))
 
-;;;###autoload
 (defun dirvish-rename-space-to-underscore ()
   "Rename marked files by replacing space to underscore."
   (interactive)
@@ -303,6 +312,38 @@ FILESET defaults to `dired-get-marked-files'."
               markedFiles)
         (revert-buffer))
     (user-error "Not in a Dired buffer")))
+
+(defun dirvish--marked-files-as-info-string ()
+  "Return all marked files as a string."
+  (let* ((files (dired-get-marked-files t))
+         (count (length files)))
+    (cond ((<= count 1)
+           (format "current file: %s" (dired-get-filename t t)))
+          ((<= count 10)
+           (format "marked files:\n  %s" (mapconcat #'concat files "\n  ")))
+          (t (format "marked files:\n  %s\n  ... and %s more (%s in total)"
+                     (mapconcat #'concat (seq-take files 10) "\n  ")
+                     (- count 10) count)))))
+
+;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-extras" nil t)
+(transient-define-prefix dirvish-file-info-menu ()
+  "Gather file information."
+  [:description
+   (lambda () (dirvish--format-menu-heading
+          "Get File Information"
+          (dirvish--marked-files-as-info-string)))
+   ("n"   "Copy file NAMEs in 1 <n> / multiple lines <C-u n>"   dirvish-copy-file-name)
+   ("p"   "Copy file PATHs in 1 <p> / multiple lines <C-u p>"   dirvish-copy-file-path)
+   ("P"   "Copy remote PATHs in 1 <P> / multiple lines <C-u P>" dirvish-copy-remote-path
+    :if (lambda () (dirvish-prop :tramp)))
+   ("d"   "Copy file DIRECTORY"                                 dirvish-copy-file-directory)
+   ("l"   "Copy symlink's truename"                             dirvish-copy-file-true-path
+    :if (lambda () (file-symlink-p (dired-get-filename nil t))))
+   ("L"   "Go to symlink's truename"           dirvish-find-file-true-path
+    :if (lambda () (file-symlink-p (dired-get-filename nil t))))
+   ("s"   "Get total size of marked files"     dirvish-total-file-size)
+   ("t"   "Show file TYPE"                     dired-show-file-type)
+   ("m"   "Show media properties"              dirvish-media-properties)])
 
 (provide 'dirvish-extras)
 ;;; dirvish-extras.el ends here

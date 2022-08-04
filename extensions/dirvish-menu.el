@@ -121,25 +121,6 @@
   (require 'dired-aux)
   (transient-setup 'dirvish-mark-menu))
 
-;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-menu" nil t)
-(transient-define-prefix dirvish-file-info-menu ()
-  "Gather file information."
-  [:description
-   (lambda () (dirvish--format-menu-heading
-          "Get File Information"
-          "C-u n: separate NAMEs into different lines
-C-u p: separate PATHs into different lines "))
-   ("n"   "Copy file NAMEs"                dirvish-copy-file-name)
-   ("p"   "Copy file PATHs"                dirvish-copy-file-path)
-   ("d"   "Copy file DIRECTORY"            dirvish-copy-file-directory)
-   ("l"   "Copy symlink's truename"        dirvish-copy-file-true-path
-    :if (lambda () (file-symlink-p (dired-get-filename nil t))))
-   ("L"   "Go to symlink's truename"       dirvish-find-file-true-path
-    :if (lambda () (file-symlink-p (dired-get-filename nil t))))
-   ("s"   "Get total size of marked files" dirvish-total-file-size)
-   ("t"   "Show file TYPE"                 dired-show-file-type)
-   ("m"   "Show media properties"          dirvish-media-properties)])
-
 (transient-define-prefix dirvish-renaming-menu ()
   "Help Menu for file renaming in Dired."
   [:description
