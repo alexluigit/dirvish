@@ -339,7 +339,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
    ("M-b" . dirvish-history-go-backward)
    ("M-l" . dirvish-ls-switches-menu)
    ("M-m" . dirvish-mark-menu)
-   ("M-f" . dirvish-layout-toggle)
+   ("M-t" . dirvish-layout-toggle)
    ("M-s" . dirvish-setup-menu)
    ("M-e" . dirvish-emerge-menu)
    ("M-j" . dirvish-fd-jump)))
