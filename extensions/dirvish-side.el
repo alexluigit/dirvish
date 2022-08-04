@@ -146,6 +146,14 @@ will visit the latest `project-root' after executing
   (dirvish-focus-change-h)
   (when-let ((dv (dirvish-curr))) (dirvish-kill dv)))
 
+(defun dirvish-side-winconf-change-h ()
+  "Adjust width of side window on window configuration change."
+  (let ((dv (dirvish-curr))
+        window-size-fixed window-configuration-change-hook)
+    (unless (dv-layout dv)
+      (window--display-buffer (window-buffer) (get-buffer-window)
+                              'reuse dirvish-side-display-alist))))
+
 (defun dirvish-side-quit-window-fn (dv)
   "Quit window action for `dirvish-side' session DV."
   (let (kill-buffer-hook)
@@ -229,6 +237,7 @@ otherwise it defaults to `project-current'."
          :header-line-format dirvish-side-header-line-format
          :root-window-fn #'dirvish-side-root-window-fn
          :on-file-open #'dirvish-side-on-file-open
+         :on-winconf-change #'dirvish-side-winconf-change-h
          :quit-window-fn #'dirvish-side-quit-window-fn)
        (dirvish-side--set-state (dirvish-curr) 'visible)))))
 

@@ -534,6 +534,8 @@ If FLATTEN is non-nil, collect them as a flattened list."
                   :documentation "is the function to create the ROOT-WINDOW.")
   (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
   (on-file-open #'dirvish-on-file-open :documentation "Function to run before opening a file.")
+  (on-winconf-change #'dirvish-winconf-change-h
+                     :documentation "Local `window-configration-change-hook'.")
   (quit-window-fn #'ignore :documentation "is the function being called on `quit-window'.")
   (scopes () :documentation "are the \"environments\" such as init frame of this session.")
   (preview-buffers () :documentation "holds all file preview buffers in this session.")
@@ -601,7 +603,7 @@ The keyword arguments set the fields of the dirvish struct."
 If KEEP-CURRENT, do not kill the current directory buffer."
   (when (dv-layout dv)
     (setf (dv-layout dv) nil)
-    (dirvish-setup)
+    (dirvish--init-dired-window)
     (set-window-configuration (dv-window-conf dv))
     (goto-char (plist-get (dv-scopes dv) :point)))
   (let* ((index (cdr (dv-index-dir dv)))
@@ -1149,7 +1151,7 @@ Dirvish sets `revert-buffer-function' to this function."
    (dirvish-prop :tramp) (current-buffer) default-directory)
   (run-hooks 'dirvish-after-revert-hook))
 
-(defun dirvish-setup ()
+(defun dirvish--init-dired-window ()
   "Configurations for dirvish parent windows."
   (setq-local cursor-type nil)
   (when (boundp 'evil-normal-state-cursor)
@@ -1158,7 +1160,8 @@ Dirvish sets `revert-buffer-function' to this function."
   (when (window-parameter (selected-window) 'window-side)
     (setq-local window-size-fixed 'width))
   (when-let ((child (dirvish-prop :child))) (dired-goto-file child))
-  (let* ((dv (dirvish-curr))
+  (let* ((win (selected-window))
+         (dv (dirvish-curr))
          (layout (dv-layout dv)))
     (set-window-dedicated-p win (or layout (window-parameter win 'window-side)))
     (cond ((functionp dirvish-hide-details)
@@ -1173,10 +1176,10 @@ Dirvish sets `revert-buffer-function' to this function."
     (setq header-line-format
           (cond ((or layout (eq dirvish-header-line-position 'disable)) nil)
                 ((dirvish-prop :fd-header) (dirvish-prop :fd-header))
-                (t (dv-header-line-format dv)))))
-  (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
-  (add-hook 'window-configuration-change-hook #'dirvish-winconf-change-h nil t)
-  (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
+                (t (dv-header-line-format dv))))
+    (add-hook 'window-configuration-change-hook (dv-on-winconf-change dv) nil t)
+    (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
+    (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t))
   (run-hooks 'dirvish-mode-hook)
   (set-buffer-modified-p nil))
 
@@ -1188,14 +1191,14 @@ Dirvish sets `revert-buffer-function' to this function."
          (buf (dirvish--find-entry dv dir)))
     (with-current-buffer buf (dirvish--build dv) buf)))
 
-(defun dirvish--init-dired-buffer (&optional setup)
+(defun dirvish--init-dired-buffer (&optional init)
   "Turn a Dired buffer into a Dirvish buffer.
-With non-nil SETUP, also run `dirvish-setup' in the buffer."
+With non-nil INIT, also run `dirvish--init-dired-window' in the buffer."
   (dirvish-mode)
   (setq dirvish--attrs-hash (make-hash-table :test #'equal))
   (setq-local revert-buffer-function #'dirvish-revert)
   (setq-local dired-hide-details-hide-symlink-targets nil)
-  (dirvish--hide-dired-header (and setup (dirvish-setup))))
+  (dirvish--hide-dired-header (and init (dirvish--init-dired-window))))
 
 (defun dirvish--find-entry (dv entry &optional parent)
   "Return the root or PARENT buffer in DV for ENTRY.
@@ -1235,7 +1238,7 @@ If the buffer is not available, create it with `dired-noselect'."
          (parent-dirs ())
          (depth (or (car (dv-layout dv)) 0))
          (i 0))
-    (dirvish-setup)
+    (dirvish--init-dired-window)
     (while (and (< i depth) (not (string= current parent)))
       (setq i (1+ i))
       (push (cons current parent) parent-dirs)
@@ -1257,7 +1260,7 @@ If the buffer is not available, create it with `dired-noselect'."
                  (window (display-buffer buffer `(dirvish--display-buffer . ,win-alist))))
             (with-selected-window window
               (dirvish-prop :child current)
-              (dirvish-setup)
+              (dirvish--init-dired-window)
               ;; always hide details in parent windows
               (let (dired-hide-details-mode-hook) (dired-hide-details-mode t)))))))))
 
@@ -1360,47 +1363,41 @@ If VEC, the attributes are retrieved by parsing the output of
       (process-put proc 'append append)
       (set-process-sentinel proc #'dirvish--print-directory-sentinel))))
 
+(defun dirvish--window-split-order (layout)
+  "Compute the window split order according to LAYOUT."
+  (let* ((ord '((none            . nil)              (default-default . (preview header footer))
+                (default-disable . (preview header)) (default-global  . (footer preview header))
+                (disable-default . (preview footer)) (disable-disable . (preview))
+                (disable-global  . (footer preview)) (global-default  . (header preview footer))
+                (global-disable  . (header preview)) (global-global   . (footer header preview))))
+         (h-pos (if (dirvish-prop :fd-header) "global" dirvish-header-line-position))
+         (pos (intern (format "%s-%s" h-pos dirvish-mode-line-position))))
+    (cdr (assq (if layout pos 'none) ord))))
+
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
   (let* ((layout (dv-layout dv))
-         (style (intern (format "%s-%s"
-                                (if (dirvish-prop :fd-header) "global"
-                                  dirvish-header-line-position)
-                                dirvish-mode-line-position)))
-         (order (cl-case (if layout style 'none)
-                  ('none            '())
-                  ('default-default '(preview header footer))
-                  ('default-disable '(preview header))
-                  ('default-global  '(footer preview header))
-                  ('disable-default '(preview footer))
-                  ('disable-disable '(preview))
-                  ('disable-global  '(footer preview))
-                  ('global-default  '(header preview footer))
-                  ('global-disable  '(header preview))
-                  ('global-global   '(footer header preview))))
-         (w-actions
-          `((preview (side . right) (window-width . ,(nth 2 layout)))
-            (header (side . above) (window-height . -2)
-                    (window-parameters . ((no-other-window . t))))
-            (footer (side . below) (window-height . -2)
-                    (window-parameters . ((no-other-window . t))))))
+         (w-order (dirvish--window-split-order layout))
+         (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
+                   (header (side . above) (window-height . -2)
+                           (window-parameters . ((no-other-window . t))))
+                   (footer (side . below) (window-height . -2)
+                           (window-parameters . ((no-other-window . t))))))
          maybe-abnormal)
     (setq tab-bar-new-tab-choice "*scratch*")
     (dirvish--init-util-buffers dv)
-    (if (not order)
-        (dirvish--create-parent-windows dv)
-      (let ((ignore-window-parameters t)) (delete-other-windows))
-      (dolist (pane order)
-        (let* ((inhibit-modification-hooks t)
-               (buf (dirvish--util-buffer pane dv))
-               (win-alist (alist-get pane w-actions))
-               (new-window (display-buffer
-                            buf `(dirvish--display-buffer . ,win-alist))))
-          (cond ((eq pane 'preview) (setf (dv-preview-window dv) new-window))
-                (t (set-window-dedicated-p new-window t)
-                   (push new-window maybe-abnormal)))
-          (set-window-buffer new-window buf)))
-      (dirvish--create-parent-windows dv))
+    (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
+    (dolist (pane w-order)
+      (let* ((inhibit-modification-hooks t)
+             (buf (dirvish--util-buffer pane dv))
+             (win-alist (alist-get pane w-args))
+             (win (display-buffer
+                          buf `(dirvish--display-buffer . ,win-alist))))
+        (cond ((eq pane 'preview) (setf (dv-preview-window dv) win))
+              (t (set-window-dedicated-p win t)
+                 (push win maybe-abnormal)))
+        (set-window-buffer win buf)))
+    (dirvish--create-parent-windows dv)
     (let ((h-fmt (if-let ((sw (dirvish-prop :fd-header)))
                      `(:eval (format-mode-line
                               ,sw nil nil (and (buffer-live-p ,(current-buffer))
