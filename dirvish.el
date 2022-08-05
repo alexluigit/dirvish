@@ -79,33 +79,35 @@ Also see `dirvish-layout-recipes' in `dirvish-extras.el'."
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
-(defcustom dirvish-mode-line-position 'default
-  "The way to place the mode line in fullscreen Dirvish sessions.
+(define-obsolete-variable-alias 'dirvish-mode-line-position 'dirvish-use-mode-line "Aug 5, 2022")
+(defcustom dirvish-use-mode-line t
+  "Whether to display mode line in dirvish buffers.
 The valid value are:
-- disable: Do not show the mode line
-- default: Display the mode line across directory panes.
-- global:  Make the mode-line span all panes."
-  :group 'dirvish :type '(choice (const :tag "Do not show the mode line" disable)
-                                 (const :tag "Display the mode line across directory panes" default)
+- nil: hide mode line in dirvish sessions
+- global: display the mode line across all panes
+- t (and others): Display the mode line across directory panes"
+  :group 'dirvish :type '(choice (const :tag "Do not show the mode line" nil)
+                                 (const :tag "Display the mode line across directory panes" t)
                                  (const :tag "Make the mode line span all panes" global)))
 
-(defcustom dirvish-header-line-position 'default
-  "Like `dirvish-mode-line-position', but for header line."
+(define-obsolete-variable-alias 'dirvish-header-line-position 'dirvish-use-header-line "Aug 5, 2022")
+(defcustom dirvish-use-header-line t
+  "Like `dirvish-use-mode-line', but for header line."
   :group 'dirvish :type 'symbol)
 
 (defcustom dirvish-mode-line-height '(25 . 30)
   "Height of Dirvish's mode line.
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
 H-DIRED and H-DIRVISH represent the height in single window
-session and fullscreen session respectively.  See
-`dirvish--bar-image' for details."
+session and fullscreen session respectively."
   :group 'dirvish
-  :type '(cons (integer :tag "Mode line height in fullscreen sessions.")
-               (integer :tag "Mode line height in single window sessions.")))
+  :type '(choice (interger :tag "Mode line height in all sessions.")
+                 (cons (integer :tag "Mode line height in fullscreen sessions.")
+                                (integer :tag "Mode line height in single window sessions."))))
 
 (defcustom dirvish-header-line-height '(25 . 35)
   "Like `dirvish-mode-line-height', but for header line."
-  :group 'dirvish :type 'cons)
+  :type '(choice interger (cons integer integer)))
 
 (defun dirvish--mode-line-fmt-setter (fmt &optional header)
   "Compose the `mode-line-format' or header-line (if HEADER) from FMT."
@@ -296,7 +298,7 @@ Multiple calls under the same LABEL are ignored."
 
 (defun dirvish--hide-dired-header ()
   "Hide the Dired header."
-  (unless (eq dirvish-header-line-position 'disable)
+  (when dirvish-use-header-line
     (remove-overlays (point-min) (point-max) 'dirvish-remove-header t)
     (save-excursion
       (goto-char (point-min))
@@ -896,7 +898,7 @@ FILENAME and WILDCARD are their args."
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-line -1))
-          ((bobp) (unless (eq dirvish-header-line-position 'disable)
+          ((bobp) (when dirvish-use-header-line
                     (forward-line (if dirvish--dired-free-space 2 1)))))
     (dired-move-to-filename)
     (dirvish--render-attributes dv)
@@ -908,11 +910,9 @@ FILENAME and WILDCARD are their args."
         (dirvish-debounce layout
           (if (not (dv-layout dv))
               (and (< emacs-major-version 29) (force-mode-line-update))
-            (when (and (not (eq dirvish-mode-line-position 'disable))
-                       (buffer-live-p f-buf))
+            (when (and dirvish-use-mode-line (buffer-live-p f-buf))
               (with-current-buffer f-buf (force-mode-line-update)))
-            (when (and (not (eq dirvish-header-line-position 'disable))
-                       (buffer-live-p h-buf))
+            (when (and dirvish-use-header-line (buffer-live-p h-buf))
               (with-current-buffer h-buf (force-mode-line-update)))
             (unless (memq this-cmd dirvish--no-update-preview-cmds)
               (dirvish-preview-update))))))))
@@ -1061,15 +1061,13 @@ When PROC finishes, fill preview buffer with process result."
 If FULLSCREENP, use the `cdr' of the value as height, otherwise
 use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   (when (and (display-graphic-p) (image-type-available-p 'pbm))
-    (let* ((height-vals
-            (if header dirvish-header-line-height dirvish-mode-line-height))
-           (height (if fullscreenp (cdr height-vals) (car height-vals))))
+    (let* ((hv (if header dirvish-header-line-height dirvish-mode-line-height))
+           (ht (cond ((numberp hv) hv) (fullscreenp (cdr hv)) (t (car hv)))))
       (propertize
        " " 'display
        (ignore-errors
          (create-image
-          (concat (format "P1\n%i %i\n" 2 height)
-                  (make-string (* 2 height) ?1) "\n")
+          (concat (format "P1\n%i %i\n" 2 ht) (make-string (* 2 ht) ?1) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
 (dirvish-define-mode-line path
@@ -1172,10 +1170,9 @@ Dirvish sets `revert-buffer-function' to this function."
              (dired-hide-details-mode t))))
     (dirvish--render-attributes dv)
     (setq mode-line-format
-          (cond ((or layout (eq dirvish-mode-line-position 'disable)) nil)
-                (t (dv-mode-line-format dv))))
-    (setq header-line-format
-          (cond ((or layout (eq dirvish-header-line-position 'disable)) nil)
+          (unless (or layout (not dirvish-use-mode-line)) (dv-mode-line-format dv))
+          header-line-format
+          (cond ((or layout (not dirvish-use-header-line)) nil)
                 ((dirvish-prop :fd-header) (dirvish-prop :fd-header))
                 (t (dv-header-line-format dv))))
     (add-hook 'window-configuration-change-hook (dv-on-winconf-change dv) nil t)
@@ -1366,21 +1363,21 @@ If VEC, the attributes are retrieved by parsing the output of
       (process-put proc 'append append)
       (set-process-sentinel proc #'dirvish--print-directory-sentinel))))
 
-(defun dirvish--window-split-order (layout)
-  "Compute the window split order according to LAYOUT."
-  (let* ((ord '((none            . nil)              (default-default . (preview header footer))
-                (default-disable . (preview header)) (default-global  . (footer preview header))
-                (disable-default . (preview footer)) (disable-disable . (preview))
-                (disable-global  . (footer preview)) (global-default  . (header preview footer))
-                (global-disable  . (header preview)) (global-global   . (footer header preview))))
-         (h-pos (if (dirvish-prop :fd-header) "global" dirvish-header-line-position))
-         (pos (intern (format "%s-%s" h-pos dirvish-mode-line-position))))
-    (cdr (assq (if layout pos 'none) ord))))
+(defun dirvish--window-split-order ()
+  "Compute the window split order."
+  (let* ((weights '((nil . 0) (t . 1) (global . 2)))
+         (ord '((00 preview) (12 footer preview header) (21 header preview footer)
+                (20 header preview) (11 preview header footer) (10 preview header)
+                (01 preview footer) (02 footer preview) (22 footer header preview)))
+         (h-pos (if (dirvish-prop :fd-header) 2 (alist-get dirvish-use-header-line weights)))
+         (m-pos (alist-get dirvish-use-mode-line weights))
+         (key (string-to-number (format "%s%s" (or h-pos 1) (or m-pos 1)))))
+    (cdr (assq key ord))))
 
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
   (let* ((layout (dv-layout dv))
-         (w-order (dirvish--window-split-order layout))
+         (w-order (and layout (dirvish--window-split-order)))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
                    (header (side . above) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))

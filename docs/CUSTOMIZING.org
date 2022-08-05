@@ -138,13 +138,39 @@ To achieve this, the only thing you need to do is put these symbols into
 
 * Mode line | Header line
 
-Put the segments you wanted into ~dirvish-mode-line-format~.
+Dirvish uses mode line and header line to display additional information for the
+current directory or session.  The mode line only span the directory panes by
+default, to make them span all panes, just set ~dirvish-use-mode-line~ to ~global~.
+Set the same option to /nil/ hides the mode line in dirvish buffers.
 
-For those want to tweak the appearance of mode-line, just
-customize the ~dirvish-mode-line-position~ and ~dirvish-mode-line-height~ option.
+To configure the content in the mode line, put the segments you wanted into
+~dirvish-mode-line-format~.  There is also ~dirvish-mode-line-height~ for you to set
+the height of the mode line.  Type =C-h v dirvish--available-mode-line-segments
+RET= to see all available mode line segments.
 
-Dirvish also allows you to customize the header line in the same way of
-customizing mode line. Check out ~dirvish-header-line-format/position/height~.
+The header line can be customized in the same way with ~dirvish-use-header-line~,
+~dirvish-header-line-format~ and ~dirvish-header-line-height~.
+
+#+begin_src emacs-lisp
+;; Placement
+;; (setq dirvish-use-header-line nil)     ; hide header line (show the classic dired header)
+;; (setq dirvish-use-mode-line nil)       ; hide mode line
+(setq dirvish-use-header-line 'global)    ; make header line span all panes
+
+;; Height
+;;; '(25 . 35) means
+;;;   - height in single window sessions is 25
+;;;   - height in full-frame sessions is 35
+(setq dirvish-header-line-height '(25 . 35))
+(setq dirvish-mode-line-height 25) ; shorthand for '(25 . 25)
+
+;; Segments
+;;; unlike `dirvish-attributes', the order of segments *matters* here
+(setopt dirvish-header-line-format
+        '(:left (path) :right (free-space)))
+(setopt dirvish-mode-line-format ; it's ok to place raw string inside
+        '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
+#+end_src
 
 * File preview
 
@@ -294,7 +320,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
      ("m" "/mnt/"                       "Drives")
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
-  (dirvish-mode-line-format ; it's ok to place string inside
+  (dirvish-mode-line-format
    '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
   ;; Don't worry, Dirvish is still performant even you enable all these attributes
   (dirvish-attributes '(all-the-icons file-size collapse subtree-state vc-state git-msg))
@@ -303,7 +329,7 @@ same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
   ;; In case you want the details at startup like `dired'
   ;; (dirvish-hide-details nil)
   :config
-  (dirvish-peek-mode)
+  ;; (dirvish-peek-mode)
   ;; Dired options are respected except a few exceptions, see *In relation to Dired* section above
   (setq dired-dwim-target t)
   (setq delete-by-moving-to-trash t)
