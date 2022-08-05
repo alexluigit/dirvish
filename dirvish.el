@@ -222,7 +222,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice find-file                         dirvish-find-file-ad           :around)
     (advice recentf-track-opened-file         dirvish-ignore-ad              :around)
     (advice winner-save-old-configurations    dirvish-ignore-ad              :around)
-    (advice meow--update-cursor               dirvish-ignore-ad              :around)
     (advice flycheck-buffer                   dirvish-ignore-ad              :around)
     (advice lsp-deferred                      dirvish-ignore-ad              :around)
     (hook   window-selection-change-functions dirvish-focus-change-h)
@@ -801,9 +800,11 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish-wdired-enter-ad (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
   (dired-move-to-end-of-filename t)
-  (setq-local cursor-type '(bar . 4))
-  (when (boundp 'evil-normal-state-cursor)
-    (setq-local evil-normal-state-cursor 'hollow))
+  (cond ((boundp 'evil-normal-state-cursor)
+         (setq-local evil-normal-state-cursor 'hollow))
+        ((boundp 'meow-cursor-type-normal)
+         (setq-local cursor-type 'hollow))
+        (t (setq-local cursor-type '(bar . 4))))
   (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
@@ -846,10 +847,9 @@ FILENAME and WILDCARD are their args."
                (funcall (dv-on-file-open dv) dv))
              (funcall fn file wildcard)))))
 
-(defun dirvish-ignore-ad (fn &rest args)
-  "Only apply FN with ARGS outside of Dirvish."
-  (when (or (not (dirvish-curr)) (derived-mode-p 'wdired-mode))
-    (apply fn args)))
+(defun dirvish-ignore-ad (&rest orig-fn)
+  "Only apply ORIG-FN outside of Dirvish."
+  (unless (dirvish-curr) (apply orig-fn)))
 
 ;;;; Hooks
 
@@ -1153,9 +1153,11 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (defun dirvish--init-dired-window ()
   "Configurations for dirvish parent windows."
-  (setq-local cursor-type nil)
-  (when (boundp 'evil-normal-state-cursor)
-    (setq-local evil-normal-state-cursor '(bar . 0)))
+  (cond ((boundp 'evil-normal-state-cursor)
+         (setq-local evil-normal-state-cursor '(bar . 0)))
+        ((boundp 'meow-cursor-type-default)
+         (setq-local meow-cursor-type-motion nil meow-cursor-type-default nil))
+        (t (setq-local cursor-type nil)))
   (set-window-fringes nil 1 1)
   (when (window-parameter (selected-window) 'window-side)
     (setq-local window-size-fixed 'width))
