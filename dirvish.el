@@ -701,7 +701,7 @@ See `dirvish--available-preview-dispatchers' for details."
   (cl-loop with tramp = (dirvish-prop :tramp)
            with subtrees = (bound-and-true-p dirvish-subtree--overlays)
            with height = (frame-height) ; use `window-height' here breaks `dirvish-narrow'
-           with width = (window-width) with fns = ()
+           with width = (- (window-width) (if (dirvish-prop :gui) 0 2)) with fns = ()
            for (ov pred fn wd) in (dv-attribute-fns dv)
            do (remove-overlays (point-min) (point-max) ov t)
            when (funcall pred dv) do
@@ -1226,6 +1226,7 @@ If the buffer is not available, create it with `dired-noselect'."
                  (dirvish-prop :dv dv)
                  (dirvish-prop :tramp vec)
                  (dirvish-prop :child (or bname entry))
+                 (dirvish-prop :gui (display-graphic-p))
                  (unless trampp
                    (dirvish-prop :files (directory-files entry t nil t)))))
              (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))
