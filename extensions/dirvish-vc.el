@@ -78,6 +78,7 @@ vc-hooks.el) for detail explanation of these states."
           (with-selected-window (dv-root-window dv) (quit-window))
           (setf (dv-layout dv) new-layout)
           (delete-window transient--window)
+          (dirvish--refresh-slots dv)
           (dirvish--save-env dv)
           (with-selected-window (dirvish--create-root-window dv)
             (dirvish-with-no-dedication (switch-to-buffer buf))
@@ -85,7 +86,7 @@ vc-hooks.el) for detail explanation of these states."
             (dirvish-debounce layout (dirvish-preview-update)))
           (transient-setup 'dirvish-vc-menu))
       (dirvish--refresh-slots dv)
-      (dirvish-update-body-h))))
+      (dirvish-preview-update))))
 
 (transient-define-infix dirvish-vc-preview-ifx ()
   :description "Preview style"
@@ -160,7 +161,8 @@ vc-hooks.el) for detail explanation of these states."
           (push f-buf (dv-preview-buffers dv)))
         (with-selected-window preview-window
           (with-current-buffer f-buf
-            (vc-annotate file nil 'fullscale nil nil bk)
+            (cl-letf (((symbol-function 'message) #'ignore))
+              (vc-annotate file nil 'fullscale nil nil bk))
             (cl-pushnew (window-buffer) (dv-preview-buffers dv))
             `(buffer . ,(window-buffer))))))))
 
