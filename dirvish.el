@@ -294,17 +294,16 @@ Multiple calls under the same LABEL are ignored."
        ,@body
        (set-window-dedicated-p window dedicated))))
 
-(defmacro dirvish--hide-dired-header (&rest body)
-  "Execute BODY then hide the Dired header."
-  `(unless (eq dirvish-header-line-position 'disable)
-     (remove-overlays (point-min) (point-max) 'dirvish-remove-header t)
-     ,@body
-     (save-excursion
-       (goto-char (point-min))
-       (let ((o (make-overlay
-                 (point) (progn (forward-line (if dirvish--dired-free-space 2 1)) (point)))))
-         (overlay-put o 'dirvish-remove-header t)
-         (overlay-put o 'invisible t)))))
+(defun dirvish--hide-dired-header ()
+  "Hide the Dired header."
+  (unless (eq dirvish-header-line-position 'disable)
+    (remove-overlays (point-min) (point-max) 'dirvish-remove-header t)
+    (save-excursion
+      (goto-char (point-min))
+      (let ((o (make-overlay
+                (point) (progn (forward-line (if dirvish--dired-free-space 2 1)) (point)))))
+        (overlay-put o 'dirvish-remove-header t)
+        (overlay-put o 'invisible t)))))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER with ALIST.
@@ -1153,11 +1152,11 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (defun dirvish--init-dired-window ()
   "Configurations for dirvish parent windows."
+  (setq-local cursor-type nil)
   (cond ((boundp 'evil-normal-state-cursor)
          (setq-local evil-normal-state-cursor '(bar . 0)))
         ((boundp 'meow-cursor-type-default)
-         (setq-local meow-cursor-type-motion nil meow-cursor-type-default nil))
-        (t (setq-local cursor-type nil)))
+         (setq-local meow-cursor-type-motion nil meow-cursor-type-default nil)))
   (set-window-fringes nil 1 1)
   (when (window-parameter (selected-window) 'window-side)
     (setq-local window-size-fixed 'width))
@@ -1193,14 +1192,15 @@ Dirvish sets `revert-buffer-function' to this function."
          (buf (dirvish--find-entry dv dir)))
     (with-current-buffer buf (dirvish--build dv) buf)))
 
-(defun dirvish--init-dired-buffer (&optional init)
+(defun dirvish--init-dired-buffer (&optional init-window)
   "Turn a Dired buffer into a Dirvish buffer.
-With non-nil INIT, also run `dirvish--init-dired-window' in the buffer."
+With INIT-WINDOW, also run `dirvish--init-dired-window' in the buffer."
   (dirvish-mode)
   (setq dirvish--attrs-hash (make-hash-table :test #'equal))
   (setq-local revert-buffer-function #'dirvish-revert)
   (setq-local dired-hide-details-hide-symlink-targets nil)
-  (dirvish--hide-dired-header (and init (dirvish--init-dired-window))))
+  (dirvish--hide-dired-header)
+  (and init-window (dirvish--init-dired-window)))
 
 (defun dirvish--find-entry (dv entry &optional parent)
   "Return the root or PARENT buffer in DV for ENTRY.
