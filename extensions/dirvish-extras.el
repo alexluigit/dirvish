@@ -89,6 +89,8 @@ This value is passed to function `format-time-string'."
 
 ;; A small value (< 7) would cause line skipping on Emacs 28-, see #77
 (defconst dirvish--file-size-str-len 8)
+;; See #115
+(defconst dirvish--attr-align-offset (if (display-graphic-p) 0 2))
 
 (defun dirvish--count-file-size (fileset)
   "Return file size of FILESET in bytes."
@@ -154,10 +156,10 @@ This value is passed to function `format-time-string'."
   (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
          (ov-pos (if (> remain f-wid) l-end (+ f-beg remain)))
          (face (or hl-face 'dirvish-file-size))
-         (spc (propertize " " 'display
-                          `(space :align-to (- right-fringe
-                                               ,dirvish--file-size-str-len))
-                          'face face))
+         (dp-spec `(space :align-to (- right-fringe
+                                       ,dirvish--file-size-str-len
+                                       ,dirvish--attr-align-offset)))
+         (spc (propertize " " 'display dp-spec 'face face))
          (ov (make-overlay ov-pos ov-pos)))
     (setq str (concat spc str))
     (add-face-text-property 0 (1+ dirvish--file-size-str-len) face t str)
