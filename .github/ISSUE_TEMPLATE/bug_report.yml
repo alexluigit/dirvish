@@ -11,7 +11,7 @@ body:
     options:
       - label: I am using the latest version of `dirvish` related packages.
         required: true
-      - label: I checked [FAQ|CUSTOMIZING|EXTENSIONS](https://github.com/alexluigit/dirvish#resources).
+      - label: I checked [CUSTOMIZING|EXTENSIONS](https://github.com/alexluigit/dirvish#resources).
         required: true
       - label: |
           You may also try reproduce the issue using clean environment and minimal configurations with

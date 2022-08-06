@@ -49,17 +49,22 @@ After installation, let Dirvish take over Dired globally:
 (dirvish-override-dired-mode)
 #+end_src
 
-+ =M-x= ~dired~ | ~dired-jump~ | ... gives you a "dirvish-ish" Dired buffer/session
-+ =M-x= ~dirvish~ gives you a 3-pane (parent+current+preview) session
-+ Press =?= in a dirvish buffer to see the list of available commands
++ =M-x= ~dirvish~
 
-Now enjoy your brand-new Dired, or if you will, call it Dirvish 🐱.
+  Welcome to Dirvish 🐱!  It looks very different from Dired, but all Dired
+  commands works here.  Press =?= if you need help.
+
++ =M-x= ~dired~ | ~dired-jump~ | ... (all dired entry commands)
+
+  You should see a "dirv-ish" Dired.
+
+Now use Dirvish to build your brand-new file management workflow!
 
 * Resources
 
-+ [[file:docs/CUSTOMIZING.org][Customizing Dirvish]]
-+ [[file:docs/EXTENSIONS.org][Useful extensions]]
-+ [[file:docs/FAQ.org][FAQ | Related projects]]
++ [[file:docs/CUSTOMIZING.org][Customizing]]
++ [[file:docs/EXTENSIONS.org][Extensions]]
++ [[file:docs/COMPARISON.org][Related projects]]
 + [[file:docs/CHANGELOG.org][Changelog]]
 + [[https://github.com/alexluigit/dirvish/discussions][Discussions]]
 

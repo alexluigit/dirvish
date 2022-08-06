@@ -166,10 +166,12 @@ The header line can be customized in the same way with ~dirvish-use-header-line~
 
 ;; Segments
 ;;; unlike `dirvish-attributes', the order of segments *matters* here
-(setopt dirvish-header-line-format
-        '(:left (path) :right (free-space)))
-(setopt dirvish-mode-line-format ; it's ok to place raw string inside
-        '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
+;;; it's ok to place raw string inside
+(customize-set-variable ; or use `setopt' in Emacs 29+
+ 'dirvish-header-line-format
+ '(:left (path) :right (free-space))
+ 'dirvish-mode-line-format
+ '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
 #+end_src
 
 * File preview
@@ -238,70 +240,6 @@ the coloring in the preview window.
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 [screenshot from the ~doom-one~ theme]
-
-* Working with Doom Emacs
-** Using dired module with ~+dirvish~ flag
-
-Doom provides a ~+dirvish~ flag in its dired module which can be enabled like this.
-
-#+begin_src emacs-lisp
-;; .doom.d/init.el
-:emacs
-(dired +dirvish)
-#+end_src
-
-It is recommended to use the latest version the package.
-
-#+begin_src emacs-lisp
-;; .doom.d/packages.el
-(unpin! dirvish)
-#+end_src
-
-** Using dired module w/o ~+dirvish~ flag
-
-The =dired= module in Doom Emacs provides a lot of features by the help of various
-third-party Dired packages, which works fine for users who just want a OOTB
-Dired experience.  But, alas, there are downsides to this.
-
-1. To make these utilities work together inside of Doom, it applied some hacks
-   to eliminate the conflicts among them (FWIW, this actully happened to many
-   people's Dired config), which may cause troubles when users want to tweak the
-   behaviors of these packages.
-
-2. Adopting a new functionality to Dired becomes very difficult since there are
-   too many moving parts involve with it.
-
-Dirvish not only includes almost every feature that this module provides, but
-also implemented them under the same architecture powered by =dirvish.el= in the
-form of separate extensions. As a result, all of them are modular tools that are
-independent of each other yet can operate in tandem without any user
-interference, which means ugly hacks is no longer needed.
-
-If you still want to use the =dired= module in Doom, here are some caveats.
-
-*** Remap ~+dired/quit-all~ command (required)
-  
-After you enable the =dired= module, Doom remaps =q= key to a custom command
-~+dired/quit-all~, which doesn't work well with Dirvish. You should use
-~dirvish-quit~ instead (which is bound to =q= by default).
-
-*** Use ~vc-state~ attribute instead of ~diff-hl-dired-mode~
-
-The ~vc-state~ attribute in Dirvish can achieve the same functionality without
-sacrificing performance. Meanwhile, ~diff-hl-dired-mode~ doesn't mesh well with
-=dirvish-subtree= nor =dired-subtree=.
-
-=dired-git-info= can be mirrored by the ~git-msg~ attribute.
-
-*** Use =dirvish-fd= instead of =fd-dired=
-
-See [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#find-dired--fd-dired][FAQ]].
-
-*** Use =dirvish-yank= instead of =dired-rsync=
-
-Multi-stage copy/paste, asynchronous I/O (whenever applicable), work with TRAMP,
-=dirvish-yank= has all of them. =dirvish-yank= also handles file operations on the
-same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
 
 * Sample config
 ** Dired | Dirvish
@@ -409,3 +347,35 @@ These packages are only listed here for discoverability.
 ;;   :config
 ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 #+end_src
+
+** Working with Doom Emacs
+
+Doom provides a ~+dirvish~ flag in its dired module which can be enabled like this.
+
+#+begin_src emacs-lisp
+;; .doom.d/init.el
+:emacs
+(dired +dirvish)
+#+end_src
+
+It is recommended to use the latest version the package.
+
+#+begin_src emacs-lisp
+;; .doom.d/packages.el
+(unpin! dirvish)
+#+end_src
+
+Also see: https://github.com/doomemacs/doomemacs/pull/6568
+
+* FAQ
+** How to prevent Dirvish from killing current buffer on session quit?
+
+Set ~dirvish-reuse-session~ to t.
+
+** Dirvish does not respect listing switches?
+
+See [[#Parsing-switches][Parsing switches]] and [[#Sample-config][the sample config]].
+
+** Why do I have duplicate icon columns?
+
+Disable =all-the-icons-dired= and =treemacs-icons-dired=.

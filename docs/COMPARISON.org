@@ -2,21 +2,6 @@
 #+EMAIL: alexluigit@gmail.com
 #+startup: content
 
-* FAQ
-** How to prevent Dirvish from killing current buffer on session quit?
-
-Set ~dirvish-reuse-session~ to t.
-
-** Incorrect sort information on the mode-line
-
-See [[https://github.com/alexluigit/dirvish/blob/main/docs/CUSTOMIZING.org#in-relation-to-dired][Parsing switches]] and [[https://github.com/alexluigit/dirvish/blob/main/CUSTOMIZING.org#dired--dirvish][the sample config]].
-
-** Duplicate icon columns / icons breaks line highlight
-
-See [[#all-the-icons-dired.el][all-the-icons-dired]] and [[#treemacs-icons-dired.el][treemacs-icons-dired]].
-
-* Related projects
-
 Generally speaking, Dirvish should be able to handle most of the file
 exploring/managing tasks, after all it is backed by the superb Dired.  Besides,
 choose Dirvish over packages listed below gives you:
@@ -24,21 +9,21 @@ choose Dirvish over packages listed below gives you:
 2. File preview at your disposal.
 3. Less package configs to maintain or worry about.
 
-** neotree
+* neotree
 
 =neotree= works pretty well as a simple project explorer. But sadly, compare to
 =dirvish[-side]=, this package is not built on top of Dired, which means you have
 to learn or configure a different set of commands, meanwhile, it is way less
 powerful as Dired/Dirvish in terms of file managing.
 
-** treemacs
+* treemacs
 
 Same as =neotree=, but =treemacs= is a much more mature yet complex package. It can
 even be used as a general rendering backend of any tree-like structures, you may
 find this package useful when you have related needs. It might be an overkill
 for simple project exploring tasks due to its complexity and huge codebase.
 
-** dired-sidebar
+* dired-sidebar
 
 =dired-sidebar=, which is also a file explorer at side window that leveraging the
 power of Dired, is a promising alternative to =dirvish-side=.  The problem with
@@ -46,11 +31,11 @@ power of Dired, is a promising alternative to =dirvish-side=.  The problem with
 to the side Dired instance, one needs to do some extra works to make the regular
 Dired and =dired-sidebar= look consistent.
 
-** ranger.el
+* ranger.el
 
 See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]].
 
-** all-the-icons-dired
+* all-the-icons-dired
 
 I'd advise *against* using this package ([[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]]) along with
 Dirvish. The reason is that it trys to retrive icons for all the files in a
@@ -58,25 +43,14 @@ directory /eagerly/, which hangs up Emacs on large directories. Dirvish, on the
 contrary, renders UI elements (including icons of course) *lazily* whenever
 applicable.
 
-You'll end up with two icon columns if you insist on using this package. Here's a
-workaround (you'll still get stuck at large directories though):
-
-#+begin_src emacs-lisp
-(defun turn-off-all-the-icons-dired ()
-  (all-the-icons-dired-mode -1)
-  (setq-local tab-width 2))
-
-(add-hook 'dirvish-mode-hook #'turn-off-all-the-icons-dired)
-#+end_src
-
-** treemacs-icons-dired
+* treemacs-icons-dired
 
 Apart from similar concerns mentioned in the above =all-the-icons-dired.el=
 section, this package ([[https://melpa.org/#/treemacs-icons-dired][treemacs-icons-dired]]) also introduces duplicate icon
 columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.com/alexluigit/dirvish/issues/16][here]].
 
-** dired-hacks
-*** dired-ranger
+* dired-hacks
+** dired-ranger
 
 The ~dirvish-yank~ command can do similar things as ~dired-ranger-move/paste~,
 meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
@@ -86,7 +60,7 @@ meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
 - It's much simpler than ~dired-ranger~ because you mark files using built-in
   Dired commands such as ~dired-mark~, ~dired-mark-extension~.
 
-*** dired-subtree
+** dired-subtree
 
 Comparing with =dired-subtree=, =dirvish-subtree= has several advantages:
 
@@ -94,15 +68,15 @@ Comparing with =dired-subtree=, =dirvish-subtree= has several advantages:
 - Way Faster: expands a directory with 50000+ entries almost instantly
 - Consistency: respects ~dired-actual-switches~
 
-*** dired-filter
+** dired-filter
 
 TODO
 
-*** dired-narrow
+** dired-narrow
 
 TODO
 
-*** dired-collapse
+** dired-collapse
 
 In short, the =collapse= attribute in Dirvish does it much faster and less invasive.
 
@@ -118,7 +92,7 @@ file name replace approach also leads to this [[https://github.com/Fuco1/dired-h
 The ~collapse~ attribute in Dirvish never touch the buffer content, it only act as
 a visual indicator for files that has unique nested paths.
 
-** find-dired | fd-dired
+* find-dired | fd-dired
 
 Dirvish has no plan to support =find-dired= or =fd-dired= since we have the far
 better option =dirvish-fd=.  The advantages of using =dirvish-fd= over =find/fd-dired=
@@ -135,7 +109,7 @@ including but not limited to:
 
    ...
 
-** dired-git-info | dired-k
+* dired-git-info | dired-k
 
 The ~vc-state~ and ~git-msg~ attributes in Dirvish can achieve the same
 functionality without sacrificing performance. Meanwhile, these packages doesn't
