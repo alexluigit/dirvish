@@ -166,6 +166,10 @@ Dirvish session as its argument."
                                  (const :tag "Never hide details" nil)
                                  (function :tag "Custom function")))
 
+(defcustom dirvish-hide-cursor t
+  "Whether to hide cursor in dirvish buffers."
+  :group 'dirvish :type 'boolean)
+
 (defconst dirvish-image-exts '("webp" "wmf" "pcx" "xif" "wbmp" "vtf" "tap" "s1j" "sjp" "sjpg" "s1g" "sgi" "sgif" "s1n" "spn" "spng" "xyze" "rgbe" "hdr" "b16" "mdi" "apng" "ico" "pgb" "rlc" "mmr" "fst" "fpx" "fbs" "dxf" "dwg" "djv" "uvvg" "uvg" "uvvi" "uvi" "azv" "psd" "tfx" "t38" "svgz" "svg" "pti" "btf" "btif" "ktx2" "ktx" "jxss" "jxsi" "jxsc" "jxs" "jxrs" "jxra" "jxr" "jxl" "jpf" "jpx" "jpgm" "jpm" "jfif" "jhc" "jph" "jpg2" "jp2" "jls" "hsj2" "hej2" "heifs" "heif" "heics" "heic" "fts" "fit" "fits" "emf" "drle" "cgm" "dib" "bmp" "hif" "avif" "avcs" "avci" "exr" "fax" "icon" "ief" "jpg" "macp" "pbm" "pgm" "pict" "png" "pnm" "ppm" "ras" "rgb" "tga" "tif" "tiff" "xbm" "xpm" "xwd" "jpe" "jpeg"))
 (defconst dirvish-audio-exts '("ape" "stm" "s3m" "ra" "rm" "ram" "wma" "wax" "m3u" "med" "669" "mtm" "m15" "uni" "ult" "mka" "flac" "axa" "kar" "midi" "mid" "s1m" "smp" "smp3" "rip" "multitrack" "ecelp9600" "ecelp7470" "ecelp4800" "vbk" "pya" "lvp" "plj" "dtshd" "dts" "mlp" "eol" "uvva" "uva" "koz" "xhe" "loas" "sofa" "smv" "qcp" "psid" "sid" "spx" "opus" "ogg" "oga" "mp1" "mpga" "m4a" "mxmf" "mhas" "l16" "lbc" "evw" "enw" "evb" "evc" "dls" "omg" "aa3" "at3" "atx" "aal" "acn" "awb" "amr" "ac3" "ass" "aac" "adts" "726" "abs" "aif" "aifc" "aiff" "au" "mp2" "mp3" "mp2a" "mpa" "mpa2" "mpega" "snd" "vox" "wav"))
 (defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
@@ -805,7 +809,8 @@ If ALL-FRAMES, search target directories in all frames."
          (setq-local evil-normal-state-cursor 'hollow))
         ((boundp 'meow-cursor-type-normal)
          (setq-local cursor-type 'hollow))
-        (t (setq-local cursor-type '(bar . 4))))
+        (dirvish-hide-cursor
+         (setq-local cursor-type '(bar . 4))))
   (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
@@ -900,7 +905,7 @@ FILENAME and WILDCARD are their args."
     (cond ((eobp) (forward-line -1))
           ((bobp) (when dirvish-use-header-line
                     (forward-line (if dirvish--dired-free-space 2 1)))))
-    (dired-move-to-filename)
+    (when dirvish-hide-cursor (dired-move-to-filename))
     (dirvish--render-attributes dv)
     (when-let ((filename (dired-get-filename nil t)))
       (dirvish-prop :child filename)
@@ -1150,11 +1155,13 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (defun dirvish--init-dired-window ()
   "Configurations for dirvish parent windows."
-  (setq-local cursor-type nil)
-  (cond ((boundp 'evil-normal-state-cursor)
-         (setq-local evil-normal-state-cursor '(bar . 0)))
-        ((boundp 'meow-cursor-type-default)
-         (setq-local meow-cursor-type-motion nil meow-cursor-type-default nil)))
+  (when dirvish-hide-cursor
+    (setq-local cursor-type nil)
+    (cond ((boundp 'evil-normal-state-cursor)
+           (setq-local evil-normal-state-cursor '(bar . 0)))
+          ((boundp 'meow-cursor-type-default)
+           (setq-local meow-cursor-type-motion nil
+                       meow-cursor-type-default nil))))
   (set-window-fringes nil 1 1)
   (when (window-parameter (selected-window) 'window-side)
     (setq-local window-size-fixed 'width))
