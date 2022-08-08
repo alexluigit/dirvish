@@ -39,7 +39,8 @@
                   (= 3 (length files)))
         (setq should-collapse t
               path (expand-file-name
-                    (car (remove ".." (remove "." files))) path)))
+                    (thread-last files (remove ".") (remove "..") car)
+                    path)))
       (cond
        ((and (eq (length files) 2) (not should-collapse)) (cons 'empty t))
        (should-collapse
