@@ -778,7 +778,8 @@ If OTHER-WINDOW, display the parent directory in other window."
           (progn
             (switch-to-buffer-other-window (dirvish--util-buffer))
             (dirvish-new :path parent))
-        (dirvish-find-entry-ad parent)))))
+        (dirvish-find-entry-ad parent))
+      (dired-goto-file current))))
 
 (defun dirvish-find-file-other-win-ad (&rest _)
   "Override `dired-find-file-other-window' command."
@@ -1081,7 +1082,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
 
 (dirvish-define-mode-line path
   "Path of file under the cursor."
-  (when-let ((index (or (dirvish-prop :child) (dired-get-filename nil t))))
+  (when-let ((index (or (dirvish-prop :child) (dired-current-directory))))
     (let* ((localname (file-local-name index))
            (host (file-remote-p index 'host))
            (user (file-remote-p index 'user))
