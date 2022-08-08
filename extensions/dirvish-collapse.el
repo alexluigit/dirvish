@@ -35,9 +35,11 @@
   (dirvish-attribute-cache f-name :collapse
     (let ((path f-name) should-collapse files dirp)
       (while (and (setq dirp (file-directory-p path))
-                  (setq files (ignore-errors (directory-files path t)))
+                  (setq files (ignore-errors (directory-files path)))
                   (= 3 (length files)))
-        (setq should-collapse t path (nth 2 files)))
+        (setq should-collapse t
+              path (expand-file-name
+                    (car (remove ".." (remove "." files))) path)))
       (cond
        ((and (eq (length files) 2) (not should-collapse)) (cons 'empty t))
        (should-collapse
