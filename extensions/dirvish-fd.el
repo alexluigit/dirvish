@@ -94,31 +94,35 @@
     (unless (alist-get bufname (dv-roots dv) nil nil #'equal)
       (push (cons bufname (current-buffer)) (dv-roots dv)))
     (with-current-buffer (process-buffer proc)
-      (setq-local dirvish--attrs-hash (make-hash-table :test #'equal))
+      (let (buffer-read-only) (delete-matching-lines "find finished at.*\\|^ +$"))
+      (dirvish--init-dired-buffer dv)
       (dirvish-prop :child (dired-get-filename nil t))
       (dirvish-prop :fd-header 'dirvish-fd--header)
-      (delete-matching-lines "find finished at.*\\|^ +$")
-      (dirvish--hide-dired-header))
+      (dirvish-prop :root t)
+      (dirvish-prop :gui (display-graphic-p))
+      (setq-local revert-buffer-function
+                  (lambda (_ignore-auto _noconfirm)
+                    (dirvish-fd default-directory dirvish-fd-last-input))))
     (dirvish--build dv)))
 
 (defun dirvish-fd-proc-filter (proc string)
   "Filter for `dirvish-fd' processes PROC and output STRING."
   (let ((buf (process-buffer proc))
-	      (inhibit-read-only t))
+	(inhibit-read-only t))
     (if (buffer-name buf)
-	      (with-current-buffer buf
-	        (save-excursion
-	          (save-restriction
-	            (widen)
-	            (let ((beg (point-max)))
-		            (goto-char beg)
-		            (insert string)
-		            (goto-char beg)
-		            (or (looking-at "^") (forward-line 1))
-		            (while (looking-at "^") (insert "  ") (forward-line 1))
-		            (goto-char (- beg 3))	; no error if < 0
-		            (while (search-forward " ./" nil t)
-		              (delete-region (point) (- (point) 2)))))))
+	(with-current-buffer buf
+	  (save-excursion
+	    (save-restriction
+	      (widen)
+	      (let ((beg (point-max)))
+		(goto-char beg)
+		(insert string)
+		(goto-char beg)
+		(or (looking-at "^") (forward-line 1))
+		(while (looking-at "^") (insert "  ") (forward-line 1))
+		(goto-char (- beg 3))	; no error if < 0
+		(while (search-forward " ./" nil t)
+		  (delete-region (point) (- (point) 2)))))))
       (delete-process proc))))
 
 (dirvish-define-mode-line fd-switches
@@ -262,10 +266,6 @@ The command run is essentially:
                                dirvish-fd-ls-program ls-switches)
                        buffer)
         (dired-mode dir ls-switches)
-        (dirvish-mode)
-        (setq-local revert-buffer-function
-                    (lambda (_ignore-auto _noconfirm)
-                      (dirvish-fd default-directory dirvish-fd-last-input)))
         (setq-local dired-subdir-alist (list (cons default-directory (point-min-marker))))
         (let (buffer-read-only)
           (insert "  " dir ":\n" (if dirvish--dired-free-space "total used in directory\n" ""))))
