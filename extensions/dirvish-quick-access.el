@@ -20,7 +20,6 @@
 
 ;;; Code:
 
-(require 'transient)
 (require 'dirvish)
 
 ;;;###autoload
