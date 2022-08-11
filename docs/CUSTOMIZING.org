@@ -133,6 +133,7 @@ To achieve this, the only thing you need to do is put these symbols into
 ~dirvish-attributes~ like this (order doesn't matter):
 
 #+begin_src emacs-lisp
+;; Don't worry, Dirvish is still performant even you enable all these attributes
 (setq dirvish-attributes '(vc-state subtree-state all-the-icons collapse git-msg file-size))
 #+end_src
 
@@ -244,10 +245,9 @@ the coloring in the preview window.
 * Sample config
 ** Dired | Dirvish
 
-#+begin_src emacs-lisp
-;; This is *NECESSARY* for Doom users who enabled `dired' module
-;; (map! :map dired-mode-map :ng "q" #'dirvish-quit)
+The extra commands in this sample config are documented at [[file:docs/EXTENSIONS.org][Extensions]].
 
+#+begin_src emacs-lisp
 (use-package dirvish
   :init
   (dirvish-override-dired-mode)
@@ -260,23 +260,20 @@ the coloring in the preview window.
   ;; (dirvish-header-line-format '(:left (path) :right (free-space)))
   (dirvish-mode-line-format
    '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
-  ;; Don't worry, Dirvish is still performant even you enable all these attributes
   (dirvish-attributes '(all-the-icons file-size collapse subtree-state vc-state git-msg))
   ;; Maybe the icons are too big to your eyes
   ;; (dirvish-all-the-icons-height 0.8)
   ;; In case you want the details at startup like `dired'
   ;; (dirvish-hide-details nil)
   :config
-  ;; (dirvish-peek-mode)
+  ;; (dirvish-peek-mode) ; Preview files in minibuffer
   ;; Dired options are respected except a few exceptions, see *In relation to Dired* section above
   (setq dired-dwim-target t)
   (setq delete-by-moving-to-trash t)
   ;; Enable mouse drag-and-drop files to other applications
   (setq dired-mouse-drag-files t)                   ; added in Emacs 29
   (setq mouse-drag-and-drop-region-cross-program t) ; added in Emacs 29
-  ;; Make sure to use the long name of flags when exists
-  ;; eg. use "--almost-all" instead of "-A"
-  ;; Otherwise some commands won't work properly
+  ;; See *Parsing switches*
   (setq dired-listing-switches
         "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
   :bind
@@ -365,7 +362,11 @@ It is recommended to use the latest version the package.
 (unpin! dirvish)
 #+end_src
 
-Also see: https://github.com/doomemacs/doomemacs/pull/6568
+Once [[https://github.com/doomemacs/doomemacs/pull/6568][this PR]] is merged, the following fix is not required anymore:
+
+#+begin_src emacs-lisp
+(map! :map dired-mode-map :ng "q" #'dirvish-quit)
+#+end_src
 
 * FAQ
 ** How to prevent Dirvish from killing current buffer on session quit?

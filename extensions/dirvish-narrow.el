@@ -39,7 +39,7 @@ should return a list of regular expressions."
                       (forward-line (if dirvish--dired-free-space 2 1))
                       (dirvish-narrow--index-subdir dir (dired-subdir-max))))))
 
-(defun dirvish-narrow-dirvish-update-h ()
+(defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
   (dirvish-debounce 'narrow
     (let* ((input (minibuffer-contents-no-properties))
@@ -97,7 +97,7 @@ IDX the index of DIR in `dired-subdir-alist'."
         (goto-char (window-start))
       (dired-goto-file (dirvish-prop :child)))
     (dirvish-update-body-h))
-  (add-hook 'post-command-hook #'dirvish-narrow-dirvish-update-h nil t))
+  (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
 
 ;;;###autoload
 (defun dirvish-narrow ()

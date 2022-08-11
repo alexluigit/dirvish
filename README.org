@@ -3,7 +3,7 @@
 #+startup: content
 #+html: <img src="https://user-images.githubusercontent.com/16313743/159204052-c8caf89d-c44f-42c7-a177-4cd2491eaab6.svg" align="center" width="100%">
 -----
-#+html: <p align="center"><i>A polished </i> <b>Dired</b> with batteries included</p>
+#+html: <p align="center">A <i>polished</i> <b>Dired</b> with batteries included</p>
 
 * Introduction
 
@@ -51,14 +51,11 @@ After installation, let Dirvish take over Dired globally:
 
 + =M-x= ~dirvish~
 
-  Welcome to Dirvish 🐱!  It looks very different from Dired, but all Dired
-  commands works here.  Press =?= if you need help.
+  Welcome to Dirvish 🐱!  Press =?= for help.
 
-+ =M-x= ~dired~ | ~dired-jump~ | ... (all dired entry commands)
++ =M-x= ~dired~ (=C-x d=) | ~dired-jump~ (=C-x C-j=) | ... and all dired entry commands
 
   You should see a "dirv-ish" Dired.
-
-Now use Dirvish to build your brand-new file management workflow!
 
 * Resources
 

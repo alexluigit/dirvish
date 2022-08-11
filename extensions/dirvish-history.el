@@ -24,7 +24,7 @@
 (defvar dirvish-history--ring nil)
 (defun dirvish-history-insert-entry-h (_dv entry buffer)
   "Add ENTRY name for BUFFER to `dirvish-history--ring'."
-  (let ((entry (if (string-prefix-p "FD####" entry)
+  (let ((entry (if (string-prefix-p "🔍" entry)
                    (buffer-name buffer) entry)))
     (ring-insert dirvish-history--ring entry)))
 (defcustom dirvish-history-length 50
