@@ -14,11 +14,6 @@
 ;;; Code:
 
 (require 'dirvish)
-(declare-function get-current-persp "persp-mode")
-(declare-function persp-curr "perspective")
-
-(defvar dirvish-side--state-alist '())
-(defvar dirvish-side-scope-fn nil)
 
 (defcustom dirvish-side-attributes dirvish-attributes
   "Same as `dirvish-attributes', but for side sessions."
@@ -39,44 +34,6 @@
   "Same as `dirvish-mode-line-format', but for side sessions."
   :group 'dirvish :type 'plist
   :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
-
-(defcustom dirvish-side-scope 'tab
-  "SCOPE for Dirvish side window.
-Every SCOPE only have one (toggleable) side Dirvish session.  For
-example, set it to `perspective' will make every `perspective'
-have an unique `dirvish-side' session.  SCOPE can be `emacs',
-`tab', `frame', `persp', or `perspective'."
-  :group 'dirvish :type 'symbol
-  :options '(emacs tab frame persp)
-  :set
-  (lambda (k v)
-    (set k v)
-    (cl-case v
-      ('tab
-       (add-hook 'tab-bar-tab-pre-close-functions #'dirvish-side--remove-state)
-       (setq dirvish-side-scope-fn #'tab-bar--current-tab-index))
-      ('frame
-       (add-hook 'delete-frame-functions #'dirvish-side--remove-state)
-       (setq dirvish-side-scope-fn #'selected-frame))
-      ('persp
-       (if (require 'persp-mode nil t)
-           (progn
-             (add-hook 'persp-before-kill-functions #'dirvish-side--remove-state)
-             (add-hook 'persp-activated-functions
-                       (lambda (_scope) (when (car (dirvish-side--get-state)) (dotimes (_ 2) (dirvish-side)))))
-             (setq dirvish-side-scope-fn (lambda () (or (get-current-persp) 'none))))
-         (set k 'tab)
-         (user-error "Unable to find package `persp-mode'")))
-      ('perspective
-       (if (require 'perspective nil t)
-           (progn
-             (add-hook 'persp-killed-hook #'dirvish-side--remove-state)
-             (setq dirvish-side-scope-fn #'persp-curr))
-         (set k 'tab)
-         (user-error "Unable to find package `perspective'"))))
-    (cl-loop for (_scope . (dv . state)) in dirvish-side--state-alist
-             do (when dv (dirvish-kill dv)))
-    (setq dirvish-side--state-alist '())))
 
 (defcustom dirvish-side-display-alist
   '((side . left) (slot . -1) (window-width . 0.2))
@@ -122,23 +79,6 @@ will visit the latest `project-root' after executing
            (advice-remove 'project-switch-project #'dirvish-side-find-file))
       (remove-hook 'projectile-after-switch-project-hook #'dirvish-side-find-file))))
 
-(defun dirvish-side--get-state ()
-  "Get state of side session for current scope."
-  (or (alist-get (funcall dirvish-side-scope-fn) dirvish-side--state-alist)
-      (cons nil 'uninitialized)))
-
-(defun dirvish-side--set-state (dv state)
-  "Set state of current scope to DV and its STATE."
-  (setf (alist-get (funcall dirvish-side-scope-fn) dirvish-side--state-alist) (cons dv state)))
-
-(defun dirvish-side--remove-state (scope &rest _)
-  "Remove invalid state info within SCOPE."
-  (let* ((dv-w/state (alist-get scope dirvish-side--state-alist))
-         (dv (car-safe dv-w/state)))
-    (when dv (dirvish-kill dv))
-    (setq dirvish-side--state-alist
-          (delq (assoc scope dirvish-side--state-alist) dirvish-side--state-alist))))
-
 (defun dirvish-side-on-file-open (dv)
   "Called before opening a file in Dirvish-side session DV."
   (unless (dv-layout dv)
@@ -154,33 +94,28 @@ will visit the latest `project-root' after executing
       (window--display-buffer (window-buffer) (get-buffer-window)
                               'reuse dirvish-side-display-alist))))
 
-(defun dirvish-side-quit-window-fn (dv)
-  "Quit window action for `dirvish-side' session DV."
-  (let (kill-buffer-hook)
-    (mapc #'kill-buffer (mapcar #'cdr (dv-roots dv))))
-  (remhash (dv-name dv) dirvish--hash)
-  (dirvish-side--set-state nil 'uninitialized))
+(defun dirvish-side-root-window-fn ()
+  "Create root window according to `dirvish-side-display-alist'."
+  (let ((win (display-buffer-in-side-window
+              (dirvish--util-buffer) dirvish-side-display-alist)))
+    (cl-loop for (key . value) in dirvish-side-window-parameters
+             do (set-window-parameter win key value))
+    (select-window win)))
 
-(defun dirvish-side-root-window-fn (dv)
-  "Display DV's window according to `dirvish-side-display-alist'."
-  (if (dv-layout dv)
-      (frame-selected-window)
-    (let ((win (display-buffer-in-side-window
-                (dirvish--util-buffer) dirvish-side-display-alist)))
-      (cl-loop for (key . value) in dirvish-side-window-parameters
-               do (set-window-parameter win key value))
-      (select-window win))))
+(defun dirvish-side--session-visible-p ()
+  "Return the root window of visible side session."
+  (cl-loop
+   for w in (window-list)
+   for b = (window-buffer w)
+   for dv = (with-current-buffer b (dirvish-prop :dv))
+   thereis (and dv (eq 'dirvish-side-root-window-fn (dv-root-window-fn dv)) w)))
 
 (defun dirvish-side-find-file (&optional filename)
   "Visit FILENAME in current visible `dirvish-side' session."
-  (pcase-let ((`(,dv . ,state) (dirvish-side--get-state)))
-    (let ((win (and dv (dv-root-window dv)))
-          (dirname (or (and filename (file-name-directory filename))
-                       (dirvish--get-project-root))))
-      (when (and (eq state 'visible) (window-live-p win) dirname)
-        (with-selected-window win
-          (dirvish-focus-change-h)
-          (dirvish-find-entry-ad dirname))))))
+  (when-let ((win (dirvish-side--session-visible-p))
+             (dirname (or (and filename (file-name-directory filename))
+                          (dirvish--get-project-root))))
+    (with-selected-window win (dirvish-find-entry-ad dirname))))
 
 ;;;###autoload (autoload 'dirvish-project-ml "dirvish-side" nil t)
 (dirvish-define-mode-line project
@@ -194,52 +129,42 @@ will visit the latest `project-root' after executing
             (propertize project 'face 'font-lock-string-face))))
 
 ;;;###autoload
-(defun dirvish-side (&optional path)
+(cl-defun dirvish-side (&optional path)
   "Toggle a Dirvish session at the side window.
 - If the side window is visible hide it.
-- If a side session within the current `dirvish-side-scope'
-  exists but is not visible, show it.
+- If a side session exists but is not visible, show it.
 - If there is no session exists within the scope,
   create the session with PATH and display it.
 
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish side: "))))
-  (pcase-let ((`(,dv . ,state) (dirvish-side--get-state)))
-    (cl-case state
-      ('visible
-       (dirvish-side--set-state dv 'exists)
-       (let ((win (dv-root-window dv)))
-         (unless (window-live-p win)
-           (user-error
-            "Session closed unexpectedly, call `%s' again to reset" this-command))
-         (delete-window win)))
-      ('exists
-       (let ((followed (buffer-file-name)))
-         (with-selected-window (dirvish--create-root-window dv)
-           (dirvish-with-no-dedication
-            (switch-to-buffer (cdr (dv-index-dir dv))))
-           (if (and dirvish-side-follow-buffer-file followed)
-               (progn
-                 (dirvish-find-entry-ad (file-name-directory followed))
-                 (dired-goto-file followed)
-                 (dirvish-update-body-h))
-             (dirvish--build dv)))
-         (dirvish-side--set-state dv 'visible)))
-      ('uninitialized
-       (dirvish-new
-         :path (or (and path (file-name-directory path))
-                   (dirvish--get-project-root)
-                   default-directory)
-         :attributes dirvish-side-attributes
-         :preview-dispatchers dirvish-side-preview-dispatchers
-         :mode-line-format dirvish-side-mode-line-format
-         :header-line-format dirvish-side-header-line-format
-         :root-window-fn #'dirvish-side-root-window-fn
-         :on-file-open #'dirvish-side-on-file-open
-         :on-winconf-change #'dirvish-side-winconf-change-h
-         :quit-window-fn #'dirvish-side-quit-window-fn)
-       (dirvish-side--set-state (dirvish-curr) 'visible)))))
+  (let* ((dv (dirvish-prop :dv))
+         (visible-side-win (dirvish-side--session-visible-p))
+         (followed (buffer-file-name)))
+    (cond ((and dv (dv-layout dv))
+           (user-error "Can not create side session here"))
+          (visible-side-win
+           (with-selected-window visible-side-win
+             (let ((dirvish-reuse-session t))
+               (dirvish-quit)
+               (cl-return-from dirvish-side)))))
+    (dirvish--reuse-session)
+    (when (and (dirvish-prop :dv) dirvish-side-follow-buffer-file followed)
+      (dirvish-find-entry-ad (file-name-directory followed))
+      (dired-goto-file followed))
+    (unless (dirvish-prop :dv)
+      (dirvish-new
+        :path (or (and path (file-name-directory path))
+                  (dirvish--get-project-root)
+                  default-directory)
+        :attributes dirvish-side-attributes
+        :preview-dispatchers dirvish-side-preview-dispatchers
+        :mode-line-format dirvish-side-mode-line-format
+        :header-line-format dirvish-side-header-line-format
+        :root-window-fn #'dirvish-side-root-window-fn
+        :on-file-open #'dirvish-side-on-file-open
+        :on-winconf-change #'dirvish-side-winconf-change-h))))
 
 (provide 'dirvish-side)
 ;;; dirvish-side.el ends here

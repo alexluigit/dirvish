@@ -71,11 +71,10 @@
   "Navigate to next ARG directory in history.
 ARG defaults to 1."
   (interactive "^p")
-  (let* ((dirs (reverse
-                (mapcar #'car (dv-roots (dirvish-curr)))))
+  (let* ((dv (or (dirvish-curr) (user-error "Not in a dirvish session")))
+         (dirs (reverse (mapcar #'car (dv-roots dv))))
          (len (length dirs))
-         (idx (cl-position
-               (car (dv-index-dir (dirvish-curr))) dirs :test #'equal))
+         (idx (cl-position (car (dv-index-dir dv)) dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
            (dirvish-find-entry-ad (nth (- len 1) dirs))
