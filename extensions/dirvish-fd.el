@@ -47,12 +47,17 @@ The function takes the input string as its sole argument and
 should return a list of regular expressions."
   :group 'dirvish :type 'function)
 
+(defcustom dirvish-fd-debounce 0.2
+  "Like `dirvish-redisplay-debounce', but used for fd input."
+  :group 'dirvish :type 'float)
+
 (defconst dirvish-fd-proc-buffer "*Dirvih-fd*")
 (defconst dirvish-fd-bufname "🔍%s📁%s📁%s")
 (defconst dirvish-fd--header
   (dirvish--mode-line-fmt-setter '(:left (fd-switches) :right (fd-timestamp fd-pwd " ")) t))
 (defvar dirvish-fd-program "fd" "The default fd program.")
 (defvar dirvish-fd-input-history nil "History list of fd input in the minibuffer.")
+(defvar dirvish-fd-debounce-timer nil)
 (defvar-local dirvish-fd--output nil)
 (defvar-local dirvish-fd-last-input "" "Last used fd user input.")
 
@@ -287,7 +292,7 @@ When GLOB, convert the regexs using `dired-glob-regexp'."
 
 (defun dirvish-fd-minibuffer-update-h ()
   "Minibuffer update function for `dirvish-fd'."
-  (dirvish-debounce 'fd
+  (dirvish-debounce fd
     (let* ((buf (window-buffer (minibuffer-selected-window)))
            (input (minibuffer-contents-no-properties)))
       (with-current-buffer buf

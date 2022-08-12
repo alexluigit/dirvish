@@ -198,6 +198,12 @@ exit.  The hidden session can be reused in the future by command
   "Regexp of host names that always enable extra features."
   :group 'dirvish :type 'string)
 
+(defcustom dirvish-redisplay-debounce 0.02
+  "Input debounce for dirvish UI redisplay.
+The UI of dirvish is refreshed only when there has not been new
+input for `dirvish-redisplay-debounce' seconds."
+  :group 'dirvish :type 'float)
+
 (defvar dirvish-activation-hook nil)
 (defvar dirvish-deactivation-hook nil)
 (defvar dirvish-after-revert-hook nil)
@@ -248,7 +254,6 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defvar dirvish-allow-overlap nil)
 (defconst dirvish--dired-free-space
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
-(defconst dirvish--debouncing-delay 0.02)
 (defconst dirvish--dir-tail-regex (concat (file-name-as-directory (getenv "HOME")) "\\|\\/$\\|^\\/"))
 (defconst dirvish--tramp-preview-cmd
   "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &")
@@ -259,6 +264,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defconst dirvish--no-update-preview-cmds
   '(ace-select-window other-window scroll-other-window scroll-other-window-down dirvish-media-properties dirvish-setup-menu))
 (defvar recentf-list)
+(defvar dirvish-redisplay-debounce-timer nil)
 (defvar dirvish--hash (make-hash-table))
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-mode-line-segments '())
@@ -281,16 +287,17 @@ Set the PROP with BODY if given."
         `val)))
 
 (defmacro dirvish-debounce (label &rest body)
-  "Debouncing the execution of BODY.
-The BODY runs after the idle time `dirvish--debouncing-delay'.
-Multiple calls under the same LABEL are ignored."
+  "Debouncing the execution of BODY under LABEL.
+The BODY runs only when there has not been new input for DEBOUNCE
+seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
   (declare (indent defun))
-  (let* ((timer (intern (format "dirvish-%s-debouncing-timer" label)))
-         (do-once `(lambda () (unwind-protect ,@body (setq ,timer nil)))))
+  (setq label (or label "redisplay"))
+  (let* ((debounce (intern (format "dirvish-%s-debounce" label)))
+         (timer (intern (format "dirvish-%s-debounce-timer" label)))
+         (fn `(lambda () (ignore-errors ,@body))))
     `(progn
-       (defvar ,timer nil)
-       (unless (timerp ,timer)
-         (setq ,timer (run-with-idle-timer dirvish--debouncing-delay nil ,do-once))))))
+       (and (timerp ,timer) (cancel-timer ,timer))
+       (setq ,timer (run-with-idle-timer ,debounce nil ,fn)))))
 
 (defmacro dirvish-with-no-dedication (&rest body)
   "Run BODY after undedicating window."
@@ -908,7 +915,7 @@ FILENAME and WILDCARD are their args."
       (let ((h-buf (dirvish--util-buffer 'header dv t))
             (f-buf (dirvish--util-buffer 'footer dv t))
             (this-cmd this-command))
-        (dirvish-debounce layout
+        (dirvish-debounce nil
           (if (not (dv-layout dv))
               (and (< emacs-major-version 29) (force-mode-line-update))
             (when (and dirvish-use-mode-line (buffer-live-p f-buf))

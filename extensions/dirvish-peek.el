@@ -100,7 +100,7 @@ one of categories in `dirvish-peek-categories'."
       ('library
        (setq cand (file-truename (or (ignore-errors (find-library-name cand)) "")))))
     (dirvish-prop :child cand)
-    (dirvish-debounce layout (dirvish-preview-update))))
+    (dirvish-debounce nil (dirvish-preview-update))))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode

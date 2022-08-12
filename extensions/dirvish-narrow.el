@@ -26,6 +26,11 @@ The function takes the input string as its sole argument and
 should return a list of regular expressions."
   :group 'dirvish :type 'function)
 
+(defcustom dirvish-narrow-debounce 0.2
+  "Like `dirvish-redisplay-debounce', but used for narrowing."
+  :group 'dirvish :type 'float)
+
+(defvar dirvish-narrow-debounce-timer nil)
 (defvar-local dirvish-narrow--subdir-alist '())
 
 (defun dirvish-narrow--build-indices ()
@@ -41,7 +46,7 @@ should return a list of regular expressions."
 
 (defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
-  (dirvish-debounce 'narrow
+  (dirvish-debounce narrow
     (let* ((input (minibuffer-contents-no-properties))
            (regex-list (funcall dirvish-narrow-regex-builder input)))
       (with-current-buffer (window-buffer (minibuffer-selected-window))

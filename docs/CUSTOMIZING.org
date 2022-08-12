@@ -2,8 +2,8 @@
 #+EMAIL: alexluigit@gmail.com
 #+startup: content
 
-*TL;DR*: Grab the config from [[#Sample-config][Sample config]]. Read following docs in-depth if you
-want further customizations.
+*TL;DR*: Grab the [[#Sample-config][sample config]].  Read following docs in-depth if you want further
+customizations.
 
 -----
 

@@ -48,7 +48,7 @@ possibly one or more parent windows."
     (with-selected-window (dirvish--create-root-window dv)
       (dirvish-with-no-dedication (switch-to-buffer buf))
       (dirvish--build dv)
-      (dirvish-debounce layout (dirvish-preview-update)))))
+      (dirvish-debounce nil (dirvish-preview-update)))))
 
 ;;;###autoload
 (define-obsolete-function-alias 'dirvish-switch-layout #'dirvish-layout-switch "Jul 22, 2022")

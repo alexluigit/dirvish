@@ -80,7 +80,7 @@ A new directory is created unless NO-MKDIR."
   (when-let* ((dv (dirvish-curr))
               (path (dirvish-prop :child)))
     (and (equal path (process-get proc 'path))
-         (dirvish-debounce layout (dirvish-preview-update dv)))))
+         (dirvish-debounce nil (dirvish-preview-update dv)))))
 
 (defun dirvish-media--autocache ()
   "Pop and run the cache tasks in `dirvish-media--cache-pool'."
