@@ -952,12 +952,10 @@ FILENAME and WILDCARD are their args."
       (dirvish-new :path path)
       (dirvish-prop :child child))))
 
-(defun dirvish-on-winbuf-change-h (_frame-or-window)
-  "Rebuild layout after `dirvish--noselect'."
-  (when-let ((dv (dirvish-prop :dv)))
-    (setf (dv-index-dir dv)
-          (cons (expand-file-name default-directory) (current-buffer)))
-    (dirvish--build dv)))
+(defun dirvish-on-winbuf-change-h (frame-or-window)
+  "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
+  (with-current-buffer (window-buffer (frame-selected-window frame-or-window))
+    (when-let ((dv (dirvish-prop :dv))) (dirvish--build dv))))
 
 ;;;; Preview
 
@@ -1227,8 +1225,7 @@ When IDX, select that file."
            (setq buffer (or (alist-get entry pairs nil nil #'equal)
                             (pcase-let ((`(,pattern ,dir ,_)
                                          (split-string (substring entry 1) "📁")))
-                              (dirvish-fd dir pattern))))
-           (setf (dv-index-dir dv) (cons entry buffer)))
+                              (dirvish-fd dir pattern)))))
           ((file-directory-p entry)
            (setq entry (file-name-as-directory (expand-file-name entry)))
            (setq buffer (alist-get entry pairs nil nil #'equal))
@@ -1238,14 +1235,13 @@ When IDX, select that file."
              (with-current-buffer buffer (dirvish--init-dired-buffer dv))
              (push (cons entry buffer) (if parent (dv-parents dv) (dv-roots dv))))
            (with-current-buffer buffer
-             (unless parent (dirvish-prop :root t))
+             (unless parent (dirvish-prop :root entry))
              (dirvish-prop :dv dv)
              (dirvish-prop :tramp
                (and (tramp-tramp-file-p entry) (tramp-dissect-file-name entry)))
              (dirvish-prop :gui (display-graphic-p))
              (dired-goto-file (or idx bname entry))
-             (dirvish--render-attributes dv))
-           (unless parent (setf (dv-index-dir dv) (cons entry buffer)))))
+             (dirvish--render-attributes dv))))
     (prog1 buffer (and buffer (run-hook-with-args
                                'dirvish-find-entry-hook dv entry buffer)))))
 
@@ -1393,6 +1389,7 @@ If VEC, the attributes are retrieved by parsing the output of
 
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
+  (setf (dv-index-dir dv) (cons (dirvish-prop :root) (current-buffer)))
   (let* ((layout (dv-layout dv))
          (w-order (and layout (dirvish--window-split-order)))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
