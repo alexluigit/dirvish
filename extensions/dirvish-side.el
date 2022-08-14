@@ -15,14 +15,6 @@
 
 (require 'dirvish)
 
-(defcustom dirvish-side-attributes dirvish-attributes
-  "Same as `dirvish-attributes', but for side sessions."
-  :group 'dirvish :type '(repeat dirvish-attribute))
-
-(defcustom dirvish-side-preview-dispatchers dirvish-preview-dispatchers
-  "Same as `dirvish-preview-dispatchers', but for side sessions."
-  :group 'dirvish :type 'list)
-
 (defcustom dirvish-side-header-line-format
   '(:left (project) :right ())
   "Same as `dirvish-header-line-format', but for side sessions."
@@ -141,7 +133,7 @@ otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg (read-file-name "Dirvish side: "))))
   (let* ((dv (dirvish-prop :dv))
          (visible-side-win (dirvish-side--session-visible-p))
-         (followed (buffer-file-name)))
+         (curr (buffer-file-name)))
     (cond ((and dv (dv-layout dv))
            (user-error "Can not create side session here"))
           (visible-side-win
@@ -150,16 +142,14 @@ otherwise it defaults to `project-current'."
                (dirvish-quit)
                (cl-return-from dirvish-side)))))
     (dirvish--reuse-session)
-    (when (and (dirvish-prop :dv) dirvish-side-follow-buffer-file followed)
-      (dirvish-find-entry-ad (file-name-directory followed))
-      (dired-goto-file followed))
+    (when (and (dirvish-prop :dv) dirvish-side-follow-buffer-file curr)
+      (dirvish-find-entry-ad (file-name-directory curr))
+      (dired-goto-file curr))
     (unless (dirvish-prop :dv)
       (dirvish-new
         :path (or (and path (file-name-directory path))
                   (dirvish--get-project-root)
                   default-directory)
-        :attributes dirvish-side-attributes
-        :preview-dispatchers dirvish-side-preview-dispatchers
         :mode-line-format dirvish-side-mode-line-format
         :header-line-format dirvish-side-header-line-format
         :root-window-fn #'dirvish-side-root-window-fn
