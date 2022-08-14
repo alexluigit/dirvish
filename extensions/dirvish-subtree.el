@@ -42,8 +42,8 @@ The prefix is repeated \"depth\" times."
   :type 'boolean :group 'dirvish
   :set (lambda (k v)
          (set k v)
-         (if v (add-hook 'dirvish-setup-hook #'dirvish-subtree--revert 10)
-           (remove-hook 'dirvish-setup-hook #'dirvish-subtree--revert))))
+         (if v (add-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert 10)
+           (remove-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert))))
 
 (defcustom dirvish-subtree-always-show-state nil
   "Non-nil means always show the subtree state indicator."
@@ -80,7 +80,7 @@ The value can be one of: `plus', `arrow', `chevron'."
   "Face used for `expanded-state' attribute."
   :group 'dirvish)
 
-(defun dirvish-curr-dir-ad (fn &optional localp)
+(defun dirvish-curr-dir-a (fn &optional localp)
   "Advice for FN `dired-current-directory'.
 LOCALP is the arg for `dired-current-directory', which see."
   (if-let* ((parent (dirvish-subtree--parent))
@@ -88,14 +88,27 @@ LOCALP is the arg for `dired-current-directory', which see."
       (if localp (dired-make-relative dir default-directory) dir)
     (funcall fn localp)))
 
-(defun dirvish-get-subdir-ad (&rest fn-args)
+(defun dirvish-get-subdir-a (&rest fn-args)
   "Advice for FN-ARGS `dired-get-subdir'."
   (unless (dirvish-subtree--parent) (apply fn-args)))
 
+(defun dirvish-subdir-index-a (fn dir)
+  "Advice for FN `dired-subdir-index'.
+Ensure correct DIR when inside of a subtree."
+  (save-excursion
+    (let ((count 0) ov)
+      (while (and (setq ov (dirvish-subtree--parent))
+                  (setq count (1+ count)))
+        (goto-char (overlay-start ov))
+        (dired-previous-line 1))
+      (unless (eq count 0) (setq dir (dired-current-directory))))
+    (funcall fn dir)))
+
 (setq dirvish-advice-alist
       (append dirvish-advice-alist
-              '((advice dired-current-directory dirvish-curr-dir-ad   :around)
-                (advice dired-get-subdir        dirvish-get-subdir-ad :around))))
+              '((advice dired-current-directory dirvish-curr-dir-a     :around)
+                (advice dired-subdir-index      dirvish-subdir-index-a :around)
+                (advice dired-get-subdir        dirvish-get-subdir-a   :around))))
 (when dirvish-override-dired-mode
   (dirvish-override-dired-mode -1)
   (dirvish-override-dired-mode 1))
@@ -194,12 +207,47 @@ When CLEAR, remove all subtrees in the buffer."
                        (dirvish-subtree--insert))))))
    (dirvish-subtree--goto-file (dirvish-prop :child))))
 
+(defun dirvish-subtree--move-to-file (file depth)
+  "Move to FILE at subtree DEPTH."
+  (let (stop f-beg)
+    (while (and (not stop)
+                (= (forward-line) 0)
+                (setq f-beg (dired-move-to-filename)))
+      (and (eq depth (dirvish-subtree--depth))
+           (equal file (buffer-substring
+                        (dired-move-to-filename)
+                        (dired-move-to-end-of-filename)))
+           (setq stop t)))))
+
+(defun dirvish-subtree-expand-to (target)
+  "Go to line describing TARGET and expand its parent directories."
+  (let ((file (dired-get-filename))
+        (dir (dired-current-directory)))
+    (cond ((equal file target) target)
+          ((string-prefix-p file target)
+           (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
+           (dirvish-subtree--move-to-file
+            (car (split-string (substring target (1+ (length file))) "/"))
+            (1+ (dirvish-subtree--depth)))
+           (dirvish-subtree-expand-to target))
+          ((string-prefix-p dir target)
+           (goto-char (dired-subdir-min))
+           (and dirvish--dired-free-space (forward-line))
+           (dirvish-subtree--move-to-file
+            (car (split-string (substring target (length dir)) "/"))
+            (dirvish-subtree--depth))
+           (dirvish-subtree-expand-to target))
+          ((string-prefix-p (expand-file-name default-directory) dir)
+           (goto-char (dired-subdir-min))
+           (forward-line (if dirvish--dired-free-space 2 1))
+           (dirvish-subtree-expand-to target))
+          ('invalid-target nil))))
+
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
   (:if (and (dirvish-prop :root)
             (or dirvish-subtree-always-show-state
-                dirvish-subtree--overlays
-                (bound-and-true-p dired-subtree-overlays)))
+                dirvish-subtree--overlays))
        :width 1)
   (let ((state-str
          (propertize (if (eq (car f-type) 'dir)

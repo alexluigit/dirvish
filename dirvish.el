@@ -349,10 +349,11 @@ ALIST is window arguments passed to `window--display-buffer'."
                  ((symbol-function 'recentf-track-closed-file) #'ignore))
          (kill-buffer buffer))))
 
-(defun dirvish--get-project-root ()
-  "Get root path of current project."
-  (when-let ((pj (project-current)))
-    (car (with-no-warnings (project-roots pj)))))
+(defun dirvish--get-project-root (&optional directory)
+  "Get project root path of DIRECTORY."
+  (when-let* ((pj (project-current nil directory))
+              (pj-root (car (with-no-warnings (project-roots pj)))))
+    (expand-file-name pj-root)))
 
 (defun dirvish--get-parent-path (path)
   "Get parent directory of PATH."
@@ -762,7 +763,7 @@ OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
 ENTRY can be a filename or a string with format of
 `dirvish-fd-bufname' used to query or create a `fd' result
 buffer, it defaults to filename under the cursor when it is nil."
-  (let* ((entry (or entry (dired-get-filename nil t)))
+  (let* ((entry (or entry (dired-get-filename)))
          (dv (or (dirvish-curr) (user-error "Not in a dirvish session")))
          (buffer (dirvish--find-entry dv entry)))
     (if buffer
