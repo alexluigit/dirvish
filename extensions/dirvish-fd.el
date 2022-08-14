@@ -19,6 +19,15 @@
   "Fd arguments inserted before user input."
   :type 'string :group 'dirvish)
 
+(defcustom dirvish-fd-program
+  (let ((fd (executable-find "fd"))
+        (fdfind (executable-find "fdfind")))
+    (cond (fd fd)
+          (fdfind fdfind)
+          (t (warn "`dirvish-fd' requires `fd', please install it") nil)))
+  "The default fd program."
+  :type 'string :group 'dirvish)
+
 (defcustom dirvish-fd-ls-program
   (let* ((ls (executable-find "ls"))
          (gls (executable-find "gls"))
@@ -55,7 +64,6 @@ should return a list of regular expressions."
 (defconst dirvish-fd-bufname "🔍%s📁%s📁")
 (defconst dirvish-fd--header
   (dirvish--mode-line-fmt-setter '(:left (fd-switches) :right (fd-timestamp fd-pwd " ")) t))
-(defvar dirvish-fd-program "fd" "The default fd program.")
 (defvar dirvish-fd-input-history nil "History list of fd input in the minibuffer.")
 (defvar dirvish-fd-debounce-timer nil)
 (defvar-local dirvish-fd--output nil)
@@ -105,9 +113,10 @@ should return a list of regular expressions."
   "Setup fd switches."
   :init-value
   (lambda (o) (oset o value (split-string (or (dirvish-prop :fd-switches) ""))))
-  [:description (lambda () (dirvish--format-menu-heading
-                       "Setup FD Switches"
-                       "Ignore Range (by default ignore ALL)
+  [:description
+   (lambda () (dirvish--format-menu-heading
+          "Setup FD Switches"
+          "Ignore Range [by default ignore ALL]
   VCS: .gitignore + .git/info/exclude + $HOME/.config/git/ignore
   ALL: VCS + .ignore + .fdignore + $HOME/.config/fd/ignore"))
    ["File types (multiple types can be included)"
@@ -215,9 +224,9 @@ should return a list of regular expressions."
 This command takes a while to index all the directories the first
 time you run it.  After the indexing, it fires up instantly."
   (interactive)
-  (unless (executable-find "fd")
+  (unless (executable-find dirvish-fd-program)
     (user-error "Dirvish: install `fd' to use this command"))
-  (let* ((command "fd -H -td -0 . /")
+  (let* ((command (concat dirvish-fd-program " -H -td -0 . /"))
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))
          (files (dirvish--append-metadata 'file files-raw))

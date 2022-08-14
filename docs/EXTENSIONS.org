@@ -268,8 +268,13 @@ Too fast? Let's break it down:
 6. Press =-E=, input "/Emacs/", exclude the glob in the results
 7. Press =RET=, refresh the results
 
-Wait, there's more: ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works
-for this buffer.
+Feel free to experiment with other switches.  A bonus tip: ~dirvish-quicksort~ and
+~dirvish-ls-switches-menu~ also works in this buffer.
+
+If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have input string looks like /test
+~Emacs .\(py\|yaml\)$/, by doing this you can skip the =-e= and =-E= steps in the
+above example.  The actual matching styles being applied are determined by your
+orderless config.  Also see ~dirvish-fd-regex-builder~.
 
 This extension also provides the ~dirvish-fd-jump~ command which allows you to go
 to any directory in the file system using results from =fd= command as completions.
@@ -329,11 +334,15 @@ state.  Typing =C-g= will cancel the narrowing and restore the original view.  T
 bring it back to the original view after the narrowing, just call ~revert-buffer~
 (usually bound to =g=).
 
-After invoking the ~dirvish-narrow~ command, the user input in the minibuffer is
-converted to regexps by a compiler function.  You can customize the
-~dirvish-narrow-regex-builder~ option to specify this function.  For example, set
-this option to ~orderless-pattern-compiler~ enables orderless style pattern
-matching while narrowing the Dirvish buffer.
+If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have input string looks like /test
+~Emacs .\(py\|yaml\)$/,  meaning:
+
+- match /test/
+- match /.py/ or /.yaml/ files
+- exclude results containing /Emacs/
+
+The actual matching styles being applied are determined by your orderless
+config.  Also see ~dirvish-narrow-regex-builder~.
 
 * Pin files you are interested in at top (dirvish-emerge.el)
 
