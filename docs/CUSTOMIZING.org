@@ -273,6 +273,7 @@ The extra commands in this sample config are documented at [[file:docs/EXTENSION
   ;; Enable mouse drag-and-drop files to other applications
   (setq dired-mouse-drag-files t)                   ; added in Emacs 29
   (setq mouse-drag-and-drop-region-cross-program t) ; added in Emacs 29
+  (setq mouse-1-click-follows-link nil)             ; recommended if you use mouse
   ;; See *Parsing switches*
   (setq dired-listing-switches
         "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
@@ -281,6 +282,10 @@ The extra commands in this sample config are documented at [[file:docs/EXTENSION
   (("C-c f" . dirvish-fd)
    ;; Dirvish has all the keybindings in `dired-mode-map' already
    :map dirvish-mode-map
+   ;; See `mouse-1-click-follows-link'
+   ("<mouse-1>" . dirvish-subtree-toggle) ; left click for expand/collapse subtree
+   ("<mouse-2>" . dired-mouse-find-file)  ; middle click for opening file / entering dir
+   ("<mouse-3>" . dired-up-directory)     ; right click up a directory
    ;; ("h" . dired-up-directory)
    ;; ("j" . dired-next-line)
    ;; ("k" . dired-previous-line)

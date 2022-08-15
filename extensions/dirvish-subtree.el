@@ -303,6 +303,21 @@ When CLEAR, remove all subtrees in the buffer."
       (progn (dired-next-line 1) (dirvish-subtree-remove))
     (dirvish-subtree--insert)))
 
+(defun dirvish-subtree-toggle-or-open (ev)
+  "Toggle the subtree if in a dirline, otherwise open the file.
+This command takes a mouse event EV as its argment."
+  (interactive "e")
+  (let ((win (posn-window (event-end ev)))
+        (pos (posn-point (event-end ev))))
+    (unless (windowp win) (error "No file chosen"))
+    (select-window win)
+    (with-current-buffer (window-buffer win)
+      (goto-char pos)
+      (condition-case nil
+          (dirvish-subtree-toggle)
+        (error (find-file (dired-get-file-for-visit)))))
+    (when (window-live-p win) (select-window win))))
+
 ;;;###autoload (autoload 'dirvish-subtree-menu "dirvish-subtree" nil t)
 (transient-define-prefix dirvish-subtree-menu ()
   "Help menu for `dirvish-subtree-*' commands."

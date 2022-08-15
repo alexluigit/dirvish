@@ -219,6 +219,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice dired-jump                        dirvish-dired-jump-ad          :override)
     (advice dired-find-file                   dirvish-find-entry-ad          :override)
     (advice dired-find-alternate-file         dirvish-find-entry-ad          :override)
+    (advice dired-mouse-find-file             dirvish-mouse-find-entry-ad    :override)
     (advice dired-find-file-other-window      dirvish-find-file-other-win-ad :override)
     (advice dired-other-window                dirvish-dired-other-window-ad  :override)
     (advice dired-other-tab                   dirvish-dired-other-tab-ad     :override)
@@ -769,6 +770,22 @@ buffer, it defaults to filename under the cursor when it is nil."
     (if buffer
         (dirvish-with-no-dedication (switch-to-buffer buffer))
       (find-file entry))))
+
+(defun dirvish-mouse-find-entry-ad (ev &optional find-file-fn find-dir-fn)
+  "Find file via mouse event EV in dirvish buffer.
+The optional arguments FIND-FILE-FN and FIND-DIR-FN specify
+functions to visit the file and directory, respectively."
+  (let ((win (posn-window (event-end ev)))
+        (pos (posn-point (event-end ev))) file)
+    (unless (windowp win) (error "No file chosen"))
+    (select-window win)
+    (with-current-buffer (window-buffer win)
+      (goto-char pos)
+      (setq file (dired-get-file-for-visit))
+      (cond ((not find-file-fn) (dirvish-find-entry-ad file))
+            ((file-directory-p file) (funcall find-dir-fn file))
+            (t (funcall find-file-fn file))))
+    (when (window-live-p win) (select-window win))))
 
 (defun dirvish-up-directory-ad (&optional other-window)
   "Override `dired-up-directory' command.

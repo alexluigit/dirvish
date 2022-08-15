@@ -150,7 +150,7 @@ will visit the latest `project-root' after executing
     (if project
         (setq project (file-name-base (directory-file-name project)))
       (setq project "-"))
-    (format " %s [%s]"
+    (format " %s %s"
             (propertize "Project:" 'face 'bold)
             (propertize project 'face 'font-lock-string-face))))
 
