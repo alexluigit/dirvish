@@ -283,9 +283,9 @@ The extra commands in this sample config are documented at [[file:docs/EXTENSION
    ;; Dirvish has all the keybindings in `dired-mode-map' already
    :map dirvish-mode-map
    ;; See `mouse-1-click-follows-link'
-   ("<mouse-1>" . dirvish-subtree-toggle) ; left click for expand/collapse subtree
-   ("<mouse-2>" . dired-mouse-find-file)  ; middle click for opening file / entering dir
-   ("<mouse-3>" . dired-up-directory)     ; right click up a directory
+   ("<mouse-1>" . dirvish-subtree-toggle-or-open) ; left click for expand/collapse dir or open file
+   ("<mouse-2>" . dired-mouse-find-file)          ; middle click for opening file / entering dir
+   ("<mouse-3>" . dired-up-directory)             ; right click up a directory
    ;; ("h" . dired-up-directory)
    ;; ("j" . dired-next-line)
    ;; ("k" . dired-previous-line)

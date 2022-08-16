@@ -214,9 +214,7 @@ When CLEAR, remove all subtrees in the buffer."
                 (= (forward-line) 0)
                 (setq f-beg (dired-move-to-filename)))
       (and (eq depth (dirvish-subtree--depth))
-           (equal file (buffer-substring
-                        (dired-move-to-filename)
-                        (dired-move-to-end-of-filename)))
+           (equal file (buffer-substring f-beg (dired-move-to-end-of-filename)))
            (setq stop t)))))
 
 (defun dirvish-subtree-expand-to (target)
@@ -231,12 +229,12 @@ When CLEAR, remove all subtrees in the buffer."
             (1+ (dirvish-subtree--depth)))
            (dirvish-subtree-expand-to target))
           ((string-prefix-p dir target)
-           (goto-char (dired-subdir-min))
-           (and dirvish--dired-free-space (forward-line))
-           (dirvish-subtree--move-to-file
-            (car (split-string (substring target (length dir)) "/"))
-            (dirvish-subtree--depth))
-           (dirvish-subtree-expand-to target))
+           (let ((depth (dirvish-subtree--depth)))
+             (goto-char (dired-subdir-min))
+             (and dirvish--dired-free-space (forward-line))
+             (dirvish-subtree--move-to-file
+              (car (split-string (substring target (length dir)) "/")) depth)
+             (dirvish-subtree-expand-to target)))
           ((string-prefix-p (expand-file-name default-directory) dir)
            (goto-char (dired-subdir-min))
            (forward-line (if dirvish--dired-free-space 2 1))
