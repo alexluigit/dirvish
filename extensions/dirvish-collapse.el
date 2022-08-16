@@ -59,7 +59,7 @@
 (dirvish-define-attribute collapse
   "Collapse unique nested paths."
   (:if (and (dirvish-prop :root)
-            (not (dirvish-prop :fd-header))
+            (not (dirvish-prop :fd-arglist))
             (or (not (dirvish-prop :tramp))
                 (tramp-local-host-p (dirvish-prop :tramp)))))
   (when-let* ((cache (dirvish-collapse--cache f-name))

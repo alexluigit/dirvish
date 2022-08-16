@@ -175,36 +175,6 @@ VC commands, it also provides a way to cycle through the ~vc-*~ preview methods.
 
 *Figure 2*. Toggle ~vc-state~ and ~git-msg~ (attribute), cycle through ~vc-[log|diff|blame]~.
 
-* Extra commands and mode-line segments (dirvish-extras.el)
-** Commands
-
-|------------------------------------+----------------------------------------|
-| Command                            | Description                            |
-|------------------------------------+----------------------------------------|
-| ~dirvish-copy-file-name~             | Copy the file name ("foo.el")          |
-| ~dirvish-copy-file-path~             | Copy the file path ("path/to/foo/bar") |
-| ~dirvish-copy-file-directory~        | Copy the parent file path              |
-| ~dirvish-find-file-true-path~        | Open the true name of symlinks         |
-| ~dirvish-total-file-size~            | Echo total file size of marked files   |
-| ~dirvish-rename-space-to-underscore~ | Rename "foo bar.el" to "foo_bar.el"    |
-|------------------------------------+----------------------------------------|
-
-** Mode-line segments
-
-|--------------------+--------------------------------------------------------------|
-| Segment            | Description                                                  |
-|--------------------+--------------------------------------------------------------|
-| ~free-space~         | Disk free space                                              |
-| ~file-link-number~   | Number of links to file                                      |
-| ~file-user~          | User name of file                                            |
-| ~file-group~         | Group name of file                                           |
-| ~file-time~          | Last access/modification/status change time                  |
-| ~file-size~          | File size of files or file count of directories              |
-| ~file-modes~         | File modes, as a string of ten letters or dashes as in ls -l |
-| ~file-inode-number~  | File inode number                                            |
-| ~file-device-number~ | Filesystem device number                                     |
-|--------------------+--------------------------------------------------------------|
-
 * Manage Dirvish's window layouts (dirvish-layout.el)
 
 This extension provided several commands that can help with managing the window

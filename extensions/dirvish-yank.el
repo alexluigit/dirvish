@@ -299,7 +299,6 @@ This command sync SRCS on SHOST to DEST on DHOST."
      (t
       (dirvish-yank--l2fr-handler srcs dest)))))
 
-;;;###autoload (autoload 'dirvish-yank-ml "dirvish-yank" nil t)
 (dirvish-define-mode-line yank
   "Number of running yank tasks."
   (when (> dirvish-yank-task-counter 0)

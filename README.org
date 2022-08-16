@@ -49,13 +49,13 @@ After installation, let Dirvish take over Dired globally:
 (dirvish-override-dired-mode)
 #+end_src
 
-+ =M-x= ~dirvish~
++ =M-x dirvish RET=
 
-  Welcome to Dirvish 🐱!  Press =?= for help.
+  Welcome to Dirvish!  Press =?= for help.
 
-+ =M-x= ~dired~ (=C-x d=) | ~dired-jump~ (=C-x C-j=) | ... and all dired entry commands
++ =M-x dired RET= (=C-x d=) | =M-x dired-jump RET= (=C-x C-j=) | ...
 
-  You should see a "dirv-ish" Dired.
+  Dirvish takes care all of your Dired entries.
 
 * Resources
 

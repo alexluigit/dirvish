@@ -15,18 +15,6 @@
 
 (require 'dirvish-subtree)
 
-(defcustom dirvish-side-header-line-format
-  '(:left (project) :right ())
-  "Same as `dirvish-header-line-format', but for side sessions."
-  :group 'dirvish :type 'plist
-  :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v t))))
-
-(defcustom dirvish-side-mode-line-format
-  '(:left (sort omit) :right (index))
-  "Same as `dirvish-mode-line-format', but for side sessions."
-  :group 'dirvish :type 'plist
-  :set (lambda (k v) (set k (dirvish--mode-line-fmt-setter v))))
-
 (defcustom dirvish-side-display-alist
   '((side . left) (slot . -1) (window-width . 0.2))
   "Display alist for `dirvish-side' window."
@@ -74,6 +62,8 @@ will visit the latest `project-root' after executing
       (and (fboundp 'project-switch-project)
            (advice-remove 'project-switch-project #'dirvish-side--auto-jump))
       (remove-hook 'projectile-after-switch-project-hook #'dirvish-side--auto-jump))))
+
+(defconst dirvish-side-header (dirvish--mode-line-fmt-setter '(project) nil t))
 
 (defun dirvish-side-on-file-open (dv)
   "Called before opening a file in Dirvish-side session DV."
@@ -135,15 +125,13 @@ will visit the latest `project-root' after executing
     :path (or (and path (file-name-directory path))
               (dirvish--get-project-root)
               default-directory)
-    :mode-line-format dirvish-side-mode-line-format
-    :header-line-format dirvish-side-header-line-format
     :root-window-fn #'dirvish-side-root-window-fn
     :on-file-open #'dirvish-side-on-file-open
     :on-winconf-change #'dirvish-side-winconf-change-h)
   (when (and current (eq dirvish-side-follow-buffer-file 'expand))
-    (dirvish-subtree-expand-to current)))
+    (dirvish-subtree-expand-to current))
+  (dirvish-prop :cus-header 'dirvish-side-header))
 
-;;;###autoload (autoload 'dirvish-project-ml "dirvish-side" nil t)
 (dirvish-define-mode-line project
   "Return a string showing current project."
   (let ((project (dirvish--get-project-root)))
