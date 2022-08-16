@@ -26,7 +26,7 @@ file manager.
 
 * Prerequisites
 
-This package requires =GNU ls= (~gls~) *on BSDs* for it to work properly, as an
+This package requires =GNU ls= (~gls~ on some OSs) for it to work properly.  As an
 example, one can install it via ~brew install coreutils~ on macOS.
 
 Some [[file:docs/EXTENSIONS.org][extensions]] provide extra preview methods or commands that use external

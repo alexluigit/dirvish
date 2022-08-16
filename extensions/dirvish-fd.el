@@ -224,8 +224,6 @@ should return a list of regular expressions."
 This command takes a while to index all the directories the first
 time you run it.  After the indexing, it fires up instantly."
   (interactive)
-  (unless (executable-find dirvish-fd-program)
-    (user-error "Dirvish: install `fd' to use this command"))
   (let* ((command (concat dirvish-fd-program " -H -td -0 . /"))
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))

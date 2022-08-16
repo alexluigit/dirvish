@@ -781,11 +781,10 @@ functions to visit the file and directory, respectively."
     (select-window win)
     (with-current-buffer (window-buffer win)
       (goto-char pos)
-      (setq file (dired-get-file-for-visit))
-      (cond ((not find-file-fn) (dirvish-find-entry-ad file))
-            ((file-directory-p file) (funcall find-dir-fn file))
-            (t (funcall find-file-fn file))))
-    (when (window-live-p win) (select-window win))))
+      (setq file (dired-get-file-for-visit)))
+    (cond ((not find-file-fn) (dirvish-find-entry-ad file))
+          ((file-directory-p file) (funcall find-dir-fn file))
+          (t (funcall find-file-fn file)))))
 
 (defun dirvish-up-directory-ad (&optional other-window)
   "Override `dired-up-directory' command.
