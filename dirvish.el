@@ -996,10 +996,13 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-preview disable (file)
   "Disable preview in some cases."
-  (when (or (not (file-exists-p file))
-            (not (file-readable-p file))
-            (member (downcase (or (file-name-extension file) "")) dirvish-preview-disabled-exts))
-    `(info . ,(format "Preview for %s has been disabled" file))))
+  (cond
+   ((not (file-exists-p file))
+    `(info . ,(format "%s does not exist" file)))
+   ((not (file-readable-p file))
+    `(info . ,(format "%s is not readable" file)))
+   ((member (downcase (or (file-name-extension file) "")) dirvish-preview-disabled-exts)
+    `(info . ,(format "Preview for %s has been disabled" file)))))
 
 (dirvish-define-preview default (file ext)
   "Default preview dispatcher for FILE."
