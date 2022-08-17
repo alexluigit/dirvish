@@ -29,27 +29,23 @@ file manager.
 This package requires =GNU ls= (~gls~ on some OSs).
 Optionally, =imagemagick= for image preview, =fd= as a faster alternative to =find=, etc.
 
-** macOS
+**** macOS
 #+BEGIN_SRC bash
 brew install coreutils fd poppler ffmpegthumbnailer mediainfo imagemagick gnu-tar unzip
 #+END_SRC
-
-** Ubuntu (and other Debian-based distros)
+**** Ubuntu (and other Debian-based distros)
 #+BEGIN_SRC bash
 apt install fd-find poppler-utils ffmpegthumbnailer mediainfo imagemagick tar unzip
 #+END_SRC
-
-** Arch Linux
+**** Arch Linux
 #+BEGIN_SRC bash
 pacman -S fd poppler ffmpegthumbnailer mediainfo imagemagick tar unzip
 #+END_SRC
-
-** FreeBSD
+**** FreeBSD
 #+BEGIN_SRC bash
 pkg install gnuls fd-find poppler ffmpegthumbnailer ImageMagick7 gtar unzip
 #+END_SRC
-
-** Windows (untested)
+**** Windows (untested)
 #+BEGIN_SRC bash
 # install via Scoop: https://scoop.sh/
 scoop install coreutils fd poppler imagemagick unzip

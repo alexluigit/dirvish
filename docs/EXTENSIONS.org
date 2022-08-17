@@ -12,26 +12,6 @@ extra commands/attributes/preview methods, improving UI by the help of
 is possible to adapt Dirvish such that it matches your preference or behaves
 similar to other familiar file explorers.
 
-* Transient based help menu (dirvish-menu.el)
-
-This extension provides help menu powered by =transient.el= for Dirvish.
-
-~dirvish-dispatch~ is the prefix to invoke the top-level help menu, just like
-~magit-dispatch~ as to =magit=. The menu contains most of the built-in Dired
-commands and all of the Dirvish commands. Some sub-level prefix commands such as
-~dirvish-mark-menu~ were created because it makes sense to group together the
-Dired/Dirvish commands that serve similar purposes.
-
-Here is a list of all prefixes provided by this extension:
-
-+ ~dirvish-setup-menu~: change the session UI/layout/preview setup on the fly
-+ ~dirvish-mark-menu~: a collection of ~dired-mark/do-*~ commands
-+ ~dirvish-file-info-menu~: gather file information such as path
-+ ~dirvish-chxxx-menu~: modify file attributes
-+ ~dirvish-subdir-menu~: manage subdirs in the buffer
-+ ~dirvish-renaming-menu~: different ways to rename files
-+ ~dirvish-epa-dired-menu~: a collection of ~epa-dired-do-*~ commands
-
 * Multi-stage copy/pasting of files (dirvish-yank.el)
 
 Here is a quote from [[https://github.com/Fuco1/dired-hacks][dired-ranger]] that justified the ~dired-ranger-move/paste~ commands:
