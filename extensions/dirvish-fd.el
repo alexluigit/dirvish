@@ -187,20 +187,21 @@ should return a list of regular expressions."
 (dirvish-define-mode-line fd-switches
   "Return a formatted string showing the DIRVISH-FD-ACTUAL-SWITCHES."
   (pcase-let ((`(,globp ,casep ,ign-range ,types ,exts ,excludes)
-               (dirvish-prop :fd-arglist)))
+               (dirvish-prop :fd-arglist))
+              (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow)))
     (format " %s | %s \"%s\" | %s %s | %s %s | %s %s | %s %s | %s %s |"
-            (propertize "FD" 'face 'dired-header)
-            (propertize (if globp "glob:" "regex:") 'face 'font-lock-doc-face)
+            (propertize "FD" 'face face)
+            (propertize (if globp "glob:" "regex:") 'face face)
             (propertize (or dirvish-fd--input "") 'face 'font-lock-regexp-grouping-construct)
-            (propertize "type:" 'face 'font-lock-doc-face)
+            (propertize "type:" 'face face)
             (propertize (if (equal types "") "all" types) 'face 'font-lock-variable-name-face)
-            (propertize "case:" 'face 'font-lock-doc-face)
+            (propertize "case:" 'face face)
             (propertize (if casep "sensitive" "smart") 'face 'font-lock-type-face)
-            (propertize "ignore:" 'face 'font-lock-doc-face)
+            (propertize "ignore:" 'face face)
             (propertize ign-range 'face 'font-lock-comment-face)
-            (propertize "exts:" 'face 'font-lock-doc-face)
+            (propertize "exts:" 'face face)
             (propertize (if (equal exts "") "all" exts) 'face 'font-lock-string-face)
-            (propertize "excludes:" 'face 'font-lock-doc-face)
+            (propertize "excludes:" 'face face)
             (propertize (if (equal excludes "") "none" excludes) 'face 'font-lock-string-face))))
 
 (dirvish-define-mode-line fd-timestamp
@@ -344,7 +345,7 @@ The command run is essentially:
       (dired-mode dir ls-switches)
       (dirvish-prop :dv dv)
       (dirvish-prop :gui (display-graphic-p))
-      (dirvish-prop :root default-directory)
+      (dirvish-prop :root bufname)
       (dirvish-prop :fd-switches fd-switches)
       (dirvish-prop :cus-header 'dirvish-fd-header)
       (dirvish-prop :global-header t)

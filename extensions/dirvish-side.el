@@ -109,7 +109,7 @@ will visit the latest `project-root' after executing
 
 (defun dirvish-side--reuse (filename)
   "Try to reuse any side session and select FILENAME."
-  (dirvish--reuse-session)
+  (dirvish--reuse-session nil nil 'side)
   (let ((dir (and filename (file-name-directory filename))))
     (cond ((or (not filename) (not (dirvish-prop :dv))) nil)
           ((eq dirvish-side-follow-buffer-file 'expand)
@@ -122,6 +122,7 @@ will visit the latest `project-root' after executing
 (defun dirvish-side--new (path current)
   "Open a side session selecting CURRENT as index in PATH."
   (dirvish-new
+    :type 'side
     :path (or (and path (file-name-directory path))
               (dirvish--get-project-root)
               default-directory)
@@ -134,12 +135,13 @@ will visit the latest `project-root' after executing
 
 (dirvish-define-mode-line project
   "Return a string showing current project."
-  (let ((project (dirvish--get-project-root)))
+  (let ((project (dirvish--get-project-root))
+        (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow)))
     (if project
         (setq project (file-name-base (directory-file-name project)))
       (setq project "-"))
     (format " %s %s"
-            (propertize "Project:" 'face 'bold)
+            (propertize "Project:" 'face face)
             (propertize project 'face 'font-lock-string-face))))
 
 ;;;###autoload

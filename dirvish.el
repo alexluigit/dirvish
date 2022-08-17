@@ -35,12 +35,14 @@
 
 (defcustom dirvish-attributes '(file-size)
   "File attributes such as `file-size' showing in Dirvish file lines.
+
 You can get all available attributes in `dirvish--available-attrs'.
 See `dirvish-define-attribute'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
 (defcustom dirvish-preview-dispatchers '(image gif video audio epub archive pdf)
   "List of preview dispatchers.
+
 Preview dispatchers are defined by `dirvish-define-preview'.  It
 holds a function that takes current filename and preview window
 as arguments and gets called at runtime.  It controls how the
@@ -62,6 +64,7 @@ the fallback dispatcher named `default' is used.  For details see
 
 (defcustom dirvish-default-layout '(1 0.11 0.55)
   "Default layout recipe for fullscreen Dirvish sessions.
+
 The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH).
 DEPTH controls the number of windows displaying parent directories.
   It can be 0 if you don't need the parent directories.
@@ -82,6 +85,7 @@ Also see `dirvish-layout-recipes' in `dirvish-extras.el'."
 (define-obsolete-variable-alias 'dirvish-mode-line-position 'dirvish-use-mode-line "Aug 5, 2022")
 (defcustom dirvish-use-mode-line t
   "Whether to display mode line in dirvish buffers.
+
 The valid value are:
 - nil: hide mode line in dirvish sessions
 - global: display the mode line across all panes
@@ -97,6 +101,7 @@ The valid value are:
 
 (defcustom dirvish-mode-line-height '(25 . 30)
   "Height of Dirvish's mode line.
+
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
 H-DIRED and H-DIRVISH represent the height in single window
 session and fullscreen session respectively."
@@ -112,6 +117,7 @@ session and fullscreen session respectively."
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
+
 Set it to nil to use the default `mode-line-format'.  SEGMENT is
 a mode line segment defined by `dirvish-define-mode-line' or a
 string.  See `dirvish--available-mode-line-segments'."
@@ -124,6 +130,7 @@ string.  See `dirvish--available-mode-line-segments'."
 
 (defcustom dirvish-hide-details t
   "Whether to hide detailed information on session startup.
+
 The value can be a boolean or a function that takes current
 Dirvish session as its argument."
   :group 'dirvish :type '(choice (const :tag "Always hide details" t)
@@ -142,6 +149,7 @@ Dirvish session as its argument."
   `((,dirvish-audio-exts . ("mpv" "%f"))
     (,dirvish-video-exts . ("mpv" "%f")))
   "Association list of mimetype and external program for `find-file'.
+
 Each element is of the form (EXTS . (CMD . ARGS)).  EXTS is a
 list of file name extensions.  Once the EXTS is matched with
 FILENAME in `find-file', a subprocess according to CMD and its
@@ -152,12 +160,17 @@ runtime.  Set it to nil disables this feature."
   :type '(alist :key-type ((repeat string) :tag "File mimetype or extensions")
                 :value-type ((repeat string) :tag "External command and args")))
 
-(defcustom dirvish-reuse-session nil
+(defcustom dirvish-reuse-session t
   "Whether to reuse the hidden sessions.
+
 If non-nil, Dirvish keeps the session's last buffer alive on
 exit.  The hidden session can be reused in the future by command
-`dirvish' and friends."
-  :group 'dirvish :type 'boolean)
+`dirvish' and friends.  If the value is \\='resume, dirvish
+exhibits the last entry of the hidden session unless the PATH
+argument is specified via prompt."
+  :group 'dirvish :type '(choice (const :tag "Do not reuse the session, quit it completely" nil)
+                                 (const :tag "Reuse the session and open new path when reusing" t)
+                                 (const :tag "Reuse the session and resume its last entry when reusing" resume)))
 
 (defcustom dirvish-whitelist-host-regex nil
   "Regexp of host names that always enable extra features."
@@ -165,6 +178,7 @@ exit.  The hidden session can be reused in the future by command
 
 (defcustom dirvish-redisplay-debounce 0.02
   "Input debounce for dirvish UI redisplay.
+
 The UI of dirvish is refreshed only when there has not been new
 input for `dirvish-redisplay-debounce' seconds."
   :group 'dirvish :type 'float)
@@ -208,8 +222,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (hook   tab-bar-tab-pre-close-functions   dirvish-deactivate-tab-h)
     (hook   delete-frame-functions            dirvish-deactivate-frame-h)))
 (defvar dirvish-scopes
-  '(:tab tab-bar--current-tab-index :frame selected-frame :mini active-minibuffer-window
-         :persp get-current-persp :perspective persp-curr :this-cmd this-command))
+  '(:tab tab-bar--current-tab-index :mini active-minibuffer-window :persp get-current-persp :perspective persp-curr))
 (defvar dirvish-libraries
   '((dirvish-widgets  path symlink omit index free-space file-link-number
                       file-user file-group file-time file-size file-modes
@@ -233,6 +246,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
   '(ace-select-window other-window scroll-other-window scroll-other-window-down dirvish-media-properties dirvish-setup-menu))
 (defvar recentf-list)
 (defvar dirvish-redisplay-debounce-timer nil)
+(defvar dirvish--selected-window nil)
 (defvar dirvish--mode-line-fmt nil)
 (defvar dirvish--header-line-fmt nil)
 (defvar dirvish--hash (make-hash-table))
@@ -339,6 +353,10 @@ ALIST is window arguments passed to `window--display-buffer'."
           entry
         (complete-with-action action completions string pred)))))
 
+(defun dirvish--window-selected-p (dv)
+  "Return t if session DV is selected."
+  (eq (dv-root-window dv) dirvish--selected-window))
+
 (defun dirvish--host-in-whitelist-p (&optional vec)
   "Check if the TRAMP connection VEC should be dominated by Dirvish."
   (when-let ((vec (or vec (dirvish-prop :tramp))))
@@ -351,9 +369,7 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--get-scopes ()
   "Return computed scopes according to `dirvish-scopes'."
   (cl-loop for (k v) on dirvish-scopes by 'cddr
-           append (list k (cond ((functionp v) (funcall v))
-                                ((boundp v) (symbol-value v))
-                                (t nil)))))
+           append (list k (and (functionp v) (funcall v)))))
 
 (defun dirvish--format-menu-heading (title &optional note)
   "Format TITLE as a menu heading.
@@ -504,6 +520,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
 
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
+  (type nil :documentation "is the session type, such as \\='side.")
   (path nil :documentation "is the initial directory.")
   (layout () :documentation "is the working layout.")
   (last-fs-layout dirvish-default-layout :documentation "is the last fullscreen layout.")
@@ -525,32 +542,41 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (roots () :documentation "is the list of all INDEX-DIRs.")
   (parents () :documentation "is like ROOT, but for parent windows."))
 
-(defun dirvish--reuse-session (&optional file fullscreen)
-  "Reuse the first hidden Dirvish session and find FILE in it.
+(defun dirvish--reuse-session (&optional file fullscreen type)
+  "Reuse some hidden Dirvish session with TYPE and find FILE in it.
 If FULLSCREEN, set layout for the session."
-  (cl-loop with scopes = (dirvish--get-scopes)
-           for dv-name in (dirvish-get-all 'name nil t)
-           for dv = (gethash dv-name dirvish--hash)
-           for (index-fname . index-buf) = (dv-index-dir dv)
-           for layout = (and fullscreen dirvish-default-layout)
-           thereis (and (not (get-buffer-window index-buf))
-                        (equal (cl-subseq (dv-scopes dv) 4) scopes)
-                        (prog1 index-buf
-                          (dirvish--save-env dv)
-                          (setf (dv-root-window dv) (funcall (dv-root-window-fn dv)))
-                          (switch-to-buffer index-buf)
-                          (setf (dv-layout dv) layout)
-                          (set-frame-parameter nil 'dirvish--curr dv)
-                          (dirvish-find-entry-ad (or file index-fname))
-                          (when fullscreen
-                            (setq other-window-scroll-buffer
-                                  (window-buffer (dv-preview-window dv))))))))
+  (and file (setq file (if (file-directory-p file) file
+                         (file-name-directory file))))
+  (cl-loop
+   with file = (cond (current-prefix-arg file)
+                     ((eq dirvish-reuse-session 'resume) nil)
+                     (t file))
+   with scopes = (dirvish--get-scopes)
+   for dv-name in (dirvish-get-all 'name t t)
+   for dv = (gethash dv-name dirvish--hash)
+   for (index-fname . index-buf) = (dv-index-dir dv)
+   for layout = (and fullscreen dirvish-default-layout)
+   thereis (and (not (get-buffer-window index-buf))
+                (eq type (dv-type dv))
+                (equal (cl-subseq (dv-scopes dv) 8) scopes)
+                (prog1 dv
+                  (dirvish--save-env dv)
+                  (setf (dv-root-window dv) (funcall (dv-root-window-fn dv)))
+                  (switch-to-buffer index-buf)
+                  (setf (dv-layout dv) layout)
+                  (set-frame-parameter nil 'dirvish--curr dv)
+                  (dirvish-find-entry-ad (or file index-fname))
+                  (when fullscreen
+                    (setq other-window-scroll-buffer
+                          (window-buffer (dv-preview-window dv))))))))
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
   (setf (dv-window-conf dv) (current-window-configuration))
   (setf (dv-scopes dv)
-        (append `(:dv ,dv :point ,(point)) (dirvish--get-scopes))))
+        (append `(:dv ,dv :point ,(point) :frame ,(selected-frame)
+                      :bname ,buffer-file-name)
+                (dirvish--get-scopes))))
 
 (defmacro dirvish-new (&rest args)
   "Create a new dirvish struct and put it into `dirvish--hash'.
@@ -571,7 +597,8 @@ The keyword arguments set the fields of the dirvish struct."
          (dirvish-kill old))
        (set-frame-parameter nil 'dirvish--curr new)
        (when-let ((path (dv-path new)))
-         (dirvish-find-entry-ad (file-name-directory (expand-file-name path))))
+         (dirvish-find-entry-ad
+          (if (file-directory-p path) path (file-name-directory path))))
        (run-hooks 'dirvish-activation-hook)
        ,(when args `(save-excursion ,@args)) ; Body form given
        new)))
@@ -579,12 +606,13 @@ The keyword arguments set the fields of the dirvish struct."
 (defun dirvish-kill (dv &optional keep-current)
   "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 If KEEP-CURRENT, do not kill the current directory buffer."
+  (setq keep-current (and keep-current (not (eq (dv-type dv) 'split))))
   (let* ((index (cdr (dv-index-dir dv)))
          (r-bufs (seq-remove (lambda (i) (when keep-current (eq i index)))
                              (mapcar #'cdr (dv-roots dv)))))
     (when (dv-layout dv)
       (setf (dv-layout dv) nil)
-      (with-current-buffer index (dirvish--init-dired-buffer dv))
+      (with-current-buffer index (dirvish--setup-mode-line nil))
       (set-window-configuration (dv-window-conf dv))
       (goto-char (plist-get (dv-scopes dv) :point)))
     (mapc #'dirvish--kill-buffer r-bufs))
@@ -701,7 +729,8 @@ See `dirvish--available-preview-dispatchers' for details."
 DIRNAME and SWITCHES are same with command `dired'."
   (if (dirvish-curr)
       (dirvish-find-entry-ad dirname)
-    (dirvish-new :path dirname :ls-switches switches)))
+    (or (dirvish--reuse-session dirname)
+        (dirvish-new :path dirname :ls-switches switches))))
 
 (defun dirvish-dired-other-window-ad (dirname &optional switches)
   "Override `dired-other-window' command.
@@ -709,14 +738,15 @@ DIRNAME and SWITCHES are same with command `dired'."
   (when-let ((dv (dirvish-curr)))
     (when (dv-layout dv) (dirvish-kill dv)))
   (switch-to-buffer-other-window (dirvish--util-buffer))
-  (dirvish-new :path dirname :ls-switches switches))
+  (dirvish-new :type 'split :path dirname :ls-switches switches))
 
 (defun dirvish-dired-other-tab-ad (dirname &optional switches)
   "Override `dired-other-tab' command.
 DIRNAME and SWITCHES are the same args in `dired'."
   (switch-to-buffer-other-tab "*scratch*")
   (with-current-buffer "*scratch*" ; why do we need this?
-    (dirvish-new :path dirname :ls-switches switches :layout dirvish-default-layout)))
+    (dirvish-new :type 'split :path dirname
+      :ls-switches switches :layout dirvish-default-layout)))
 
 (defun dirvish-dired-other-frame-ad (dirname &optional switches)
   "Override `dired-other-frame' command.
@@ -864,7 +894,8 @@ FILENAME and WILDCARD are their args."
         (fr-dv (dirvish-curr))
         (dv (dirvish-prop :dv)))
     (cond ((active-minibuffer-window))
-          ((and fr-dv (dv-layout fr-dv) (not dv)
+          (dv (setf (dv-root-window dv) (selected-window)))
+          ((and fr-dv (dv-layout fr-dv)
                 (not (get-buffer-window (cdr (dv-index-dir fr-dv))))
                 (window-live-p (dv-preview-window fr-dv)))
            (set-window-configuration (dv-window-conf fr-dv))
@@ -873,7 +904,8 @@ FILENAME and WILDCARD are their args."
            (set-frame-parameter nil 'dirvish--curr nil))
           (t (set-frame-parameter nil 'dirvish--curr dv)
              (setq tab-bar-new-tab-choice
-                   (if dv "*scratch*" dirvish--saved-new-tab-choice))))))
+                   (if dv "*scratch*" dirvish--saved-new-tab-choice))))
+    (setq dirvish--selected-window (selected-window))))
 
 (defun dirvish-deactivate-tab-h (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
@@ -934,19 +966,27 @@ FILENAME and WILDCARD are their args."
 (defun dirvish-winconf-change-h ()
   "Create new session on window split."
   (let ((winlist (get-buffer-window-list))
-        (path default-directory)
+        (path (dirvish-prop :root))
         (child (dirvish-prop :child))
         (dv (dirvish-prop :dv)))
-    (when (and (not (dv-layout dv))
-               (> (length winlist) 1))
+    ;; when split new window in single window dirvish
+    (when (and (not (dv-layout dv)) (> (length winlist) 1))
       (switch-to-buffer "*scratch*")
-      (dirvish-new :path path)
-      (dirvish-prop :child child))))
+      (let ((new (dirvish-new :type 'split :path path)))
+        (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))
+        (setf (dv-index-dir new) (cons (dirvish-prop :root) (current-buffer)))
+        (when child (run-with-timer ;; XXX hack
+                     0 nil (lambda ()
+                             (dired-goto-file child)
+                             (dirvish--render-attributes new))))))))
 
 (defun dirvish-on-winbuf-change-h (frame-or-window)
   "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
-  (with-current-buffer (window-buffer (frame-selected-window frame-or-window))
-    (when-let ((dv (dirvish-prop :dv))) (dirvish--build dv))))
+  (let ((win (frame-selected-window frame-or-window)))
+    (with-current-buffer (window-buffer win)
+      (when-let ((dv (dirvish-prop :dv)))
+        (setf (dv-root-window dv) win)
+        (dirvish--build dv)))))
 
 ;;;; Preview
 
@@ -1188,7 +1228,7 @@ Dirvish sets `revert-buffer-function' to this function."
   "Return the root or PARENT buffer in DV for ENTRY.
 When IDX, select that file."
   (let ((pairs (if parent (dv-parents dv) (dv-roots dv)))
-        (bname (buffer-file-name)) buffer)
+        (bname (plist-get (dv-scopes dv) :bname)) buffer)
     (cond ((string-prefix-p "🔍" entry)
            (setq buffer (or (alist-get entry pairs nil nil #'equal)
                             (pcase-let ((`(,pattern ,dir ,_)
@@ -1370,6 +1410,7 @@ If VEC, the attributes are retrieved by parsing the output of
                            (window-parameters . ((no-other-window . t))))))
          maybe-abnormal)
     (setq tab-bar-new-tab-choice "*scratch*")
+    (setq dirvish--selected-window (selected-window))
     (dirvish--init-util-buffers dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dolist (pane w-order)
