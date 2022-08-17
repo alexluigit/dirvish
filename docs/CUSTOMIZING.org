@@ -6,7 +6,6 @@
 customizations.
 
 -----
-
 * In relation to Dired
 
 A Dirvish session holds a set of buffers with ~dirvish-mode~ as its
@@ -189,8 +188,39 @@ dispatchers, has the default value looks like:
 (image gif video audio epub pdf archive)
 #+end_src
 
++ ~image~: preview image files, requires =imagemagick=
++ ~gif~: preview GIF image files with animation
++ ~video~: preview videos files with thumbnail, requires =ffmpegthumbnailer=
++ ~audio~: preview audio files with metadata, requires =mediainfo=
++ ~epub~: preview epub documents, requires [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]]
++ ~pdf~: preview pdf documents via =pdf-tools=
++ ~archive~: preview archive files such as =.tar=, =.zip=, requires =tar= / =unzip=
+
 Each dispatcher in this list handles the validation and preview content
-generation for the corresponding filetype.  See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/EXTENSIONS.org#preview-media-files-dirvish-mediael][Preview media files]].
+generation for the corresponding filetype.  To enable/disable certain preview
+methods, just modify this list to your preferences.
+
+For example, if for some reason you are not able to install [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]] or
+want to display preview for epub files via packages like =nov=, just remove the
+~epub~ dispatcher like this:
+
+#+begin_src emacs-lisp
+(setq dirvish-preview-dispatchers (remove 'epub dirvish-preview-dispatchers))
+#+end_src
+
+Some of preview dispatchers, such as ~image~, generate cache images to improve the
+preview experience.  Everytime you enter a directory, Dirvish scans the the
+content of that directory and computes the fileset of the directory that
+requires cache image generation, the corresponding caches are generated later
+when Emacs is idle.
+
+You can tweak the behavior of auto caching or turn off this feature completely
+by customizing the ~dirvish-media-auto-cache-threshold~ option.  Here is how to
+disable the auto caching completely.
+
+#+begin_src emacs-lisp
+(customize-set-variable 'dirvish-media-auto-cache-threshold '(0))
+#+end_src
 
 Here are several examples to extend the preview capabilities of Dirvish.
 

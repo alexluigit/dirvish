@@ -17,10 +17,6 @@
 
 (require 'dirvish)
 
-(defconst dirvish-media-exts
-  (append dirvish-image-exts dirvish-video-exts
-          dirvish-audio-exts '("pdf" "epub" "gif")))
-
 (defvar dirvish-media--cache-pool '())
 (defvar dirvish-media--auto-cache-timer nil)
 (defcustom dirvish-media-auto-cache-threshold '(500 . 4)
@@ -273,8 +269,6 @@ Require: `mediainfo' (executable)"
 
 (dirvish-define-preview image (file ext preview-window)
   "Preview image files.
-Note: you can preview images without this dispatcher,
-      but that would be very slow, almost unusable.
 Require: `convert' (executable from `imagemagick' suite)"
   :require ("convert")
   (when (member ext dirvish-image-exts)
@@ -325,8 +319,6 @@ Require: `epub-thumbnailer' (executable)"
 
 (dirvish-define-preview pdf (file ext)
   "Preview pdf files.
-Note: you can preview pdf files without this dispatcher,
-      but that would be very slow, almost unusable.
 Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
     (if (featurep 'pdf-tools) `(buffer . ,(find-file-noselect file t nil))
@@ -346,18 +338,11 @@ Require: `pdf-tools' (Emacs package)"
 
 (dirvish-define-preview archive (file ext)
   "Preview archive files.
-Note: you can preview archive files without this dispatcher,
-      but that would be very slow, almost unusable.
 Require: `zipinfo' (executable)
 Require: `tar' (executable)"
   :require ("zipinfo" "tar")
   (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
         ((member ext '("tar" "zst")) `(shell . ("tar" "-tvf" ,file)))))
-
-(dirvish-define-preview no-media (ext)
-  "Disable preview for media files."
-  (when (member ext dirvish-media-exts)
-    '(info . "Preview disabled for media files")))
 
 (provide 'dirvish-media)
 ;;; dirvish-media.el ends here
