@@ -606,7 +606,9 @@ The keyword arguments set the fields of the dirvish struct."
 (defun dirvish-kill (dv &optional keep-current)
   "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 If KEEP-CURRENT, do not kill the current directory buffer."
-  (setq keep-current (and keep-current (not (eq (dv-type dv) 'split))))
+  (setq keep-current
+        (and keep-current (not (eq (dv-type dv) 'split))
+             (not (dirvish-prop :tramp))))
   (let* ((index (cdr (dv-index-dir dv)))
          (r-bufs (seq-remove (lambda (i) (when keep-current (eq i index)))
                              (mapcar #'cdr (dv-roots dv)))))
