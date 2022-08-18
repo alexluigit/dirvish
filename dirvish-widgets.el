@@ -85,7 +85,6 @@ This value is passed to function `format-time-string'."
 
 ;; A small value (< 7) would cause line skipping on Emacs 28-, see #77
 (defconst dirvish--file-size-str-len 8)
-(defconst dirvish--dir-tail-regex (concat (file-name-as-directory (getenv "HOME")) "\\|\\/$\\|^\\/"))
 
 (defun dirvish--count-file-size (fileset)
   "Return file size of FILESET in bytes."
@@ -165,33 +164,39 @@ This value is passed to function `format-time-string'."
 
 ;;;; Mode line segments
 
+(defun dirvish--register-path-seg (segment path face)
+  "Register mode line path SEGMENT with target PATH and FACE."
+  (propertize
+   segment 'face face 'mouse-face 'highlight
+   'help-echo "mouse-1: visit this directory"
+   'keymap `(header-line keymap
+                         (mouse-1 . (lambda (_ev)
+                                      (interactive "e")
+                                      (dirvish-find-entry-ad ,path))))))
+
 (dirvish-define-mode-line path
   "Path of file under the cursor."
-  (when-let ((index (or (dirvish-prop :child) (dired-current-directory))))
-    (let* ((localname (file-local-name index))
-           (host (file-remote-p index 'host))
-           (user (file-remote-p index 'user))
-           (dirname (file-name-directory localname))
-           (base (file-name-nondirectory index))
-           dir-tail tail)
-      (if host
-          (setq dir-tail (replace-regexp-in-string "\\/$\\|^\\/" "" dirname))
-        (setq dir-tail (replace-regexp-in-string dirvish--dir-tail-regex "" dirname)))
-      (setq tail (if (equal dir-tail "") "" (concat dir-tail " ")))
-      (replace-regexp-in-string
-       "%" "%%%%"
-       (format " %s%s%s%s "
-               (propertize
-                (cond ((and host user) (concat user "@" host ": "))
-                      (host (concat host ": "))
-                      (t ""))
-                'face 'font-lock-builtin-face)
-               (propertize (cond (host "")
-                                 ((string-prefix-p (file-name-as-directory (getenv "HOME")) dirname) "~ ")
-                                 (t ": "))
-                           'face 'dired-header)
-               (propertize tail 'face 'dired-mark)
-               (propertize base 'face 'dired-header))))))
+  (let* ((index (dired-current-directory))
+         (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow))
+         (abvname (abbreviate-file-name (file-local-name index)))
+         (rmt (and (dirvish-prop :tramp)
+                   (tramp-file-name-handler 'file-remote-p index)))
+         (host (propertize (if rmt (concat " " (substring rmt 1)) "")
+                           'face 'font-lock-builtin-face))
+         (segs (nbutlast (split-string abvname "/")))
+         (scope (pcase (car segs)
+                  ("~" (dirvish--register-path-seg
+                        " ⌂ " (concat rmt "~/") face))
+                  ("" (dirvish--register-path-seg
+                       " ∀ " (concat rmt "/") face))))
+         (path (cl-loop for idx from 2
+                        for sp = (format
+                                  "%s%s" (or rmt "")
+                                  (mapconcat #'concat (seq-take segs idx) "/"))
+                        for s in (cdr segs) concat
+                        (format "%s%s" (if (eq idx 2) "" " ⋗ ")
+                                (dirvish--register-path-seg s sp face)))))
+    (replace-regexp-in-string "%" "%%%%" (format "%s%s%s " host scope path))))
 
 (dirvish-define-mode-line sort
   "Current sort criteria."

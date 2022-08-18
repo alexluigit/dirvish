@@ -984,9 +984,7 @@ FILENAME and WILDCARD are their args."
   "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
   (let ((win (frame-selected-window frame-or-window)))
     (with-current-buffer (window-buffer win)
-      (when-let ((dv (dirvish-prop :dv)))
-        (setf (dv-root-window dv) win)
-        (dirvish--build dv)))))
+      (when-let ((dv (dirvish-prop :dv))) (dirvish--build dv)))))
 
 ;;;; Preview
 

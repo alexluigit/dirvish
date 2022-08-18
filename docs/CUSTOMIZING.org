@@ -409,9 +409,9 @@ Once [[https://github.com/doomemacs/doomemacs/pull/6568][this PR]] is merged, th
 #+end_src
 
 * FAQ
-** How to prevent Dirvish from killing current buffer on session quit?
+** How to clean session buffers automatically on quit?
 
-Set ~dirvish-reuse-session~ to t.
+Set ~dirvish-reuse-session~ to nil.
 
 ** Dirvish does not respect listing switches?
 
