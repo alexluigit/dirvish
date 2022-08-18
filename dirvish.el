@@ -697,7 +697,7 @@ See `dirvish--available-preview-dispatchers' for details."
         (setq f-str (buffer-substring f-beg f-end))
         (setq f-wid (string-width f-str))
         (setq f-dir (dired-current-directory))
-        (setq f-name (file-local-name (expand-file-name f-str f-dir)))
+        (setq f-name (expand-file-name f-str f-dir))
         (setq f-attrs (dirvish-attribute-cache f-name :builtin
                         (unless tramp (file-attributes f-name))))
         (setq f-type (dirvish-attribute-cache f-name :type
@@ -1372,9 +1372,9 @@ If VEC, the attributes are retrieved by parsing the output of
     (let* ((process-connection-type nil)
            (outbuf (dirvish--util-buffer (make-temp-name "print-dir-")))
            (switches "-1la --human-readable --time-style=long-iso --inode")
-           (entry (file-local-name entry))
            (msg `(message "%s" ,(dirvish--directory-printer entry)))
-           (cmd (if vec (format "ls %s %s" switches entry) (format "%S" msg)))
+           (cmd (if vec (format "ls %s %s" switches (file-local-name entry))
+                  (format "%S" msg)))
            (proc (if vec (start-file-process-shell-command
                           (buffer-name outbuf) outbuf cmd)
                    (start-process (buffer-name outbuf) outbuf
