@@ -90,6 +90,7 @@
   (dirvish--kill-and-echo
    (file-truename (dired-get-filename nil t))))
 
+;;;###autoload
 (defun dirvish-copy-file-name (&optional multi-line)
   "Copy filename of marked files.
 If MULTI-LINE, make every name occupy a new line."
@@ -98,6 +99,7 @@ If MULTI-LINE, make every name occupy a new line."
          (names (mapconcat #'concat files (if multi-line "\n" " "))))
     (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
 
+;;;###autoload
 (defun dirvish-copy-file-path (&optional multi-line)
   "Copy filepath of marked files.
 If MULTI-LINE, make every path occupy a new line."
@@ -128,6 +130,7 @@ If MULTI-LINE, make every path occupy a new line."
   (dirvish--kill-and-echo
    (expand-file-name default-directory)))
 
+;;;###autoload
 (defun dirvish-total-file-size (&optional fileset)
   "Echo total file size of FILESET.
 FILESET defaults to `dired-get-marked-files'."
@@ -171,12 +174,15 @@ FILESET defaults to `dired-get-marked-files'."
    (lambda () (dirvish--format-menu-heading
           "Get File Information"
           (dirvish--marked-files-as-info-string)))
-   ("n"   "Copy file NAMEs in 1 <n> / multiple lines <C-u n>"   dirvish-copy-file-name)
-   ("p"   "Copy file PATHs in 1 <p> / multiple lines <C-u p>"   dirvish-copy-file-path)
-   ("P"   "Copy remote PATHs in 1 <P> / multiple lines <C-u P>" dirvish-copy-remote-path
+   ("n"   "Copy file NAMEs in one line <n> / multiple lines <C-u n>"
+    dirvish-copy-file-name)
+   ("p"   "Copy file PATHs in one line <p> / multiple lines <C-u p>"
+    dirvish-copy-file-path)
+   ("P"   "Copy remote PATHs in one line <P> / multiple lines <C-u P>"
+    dirvish-copy-remote-path
     :if (lambda () (dirvish-prop :tramp)))
-   ("d"   "Copy file DIRECTORY"                                 dirvish-copy-file-directory)
-   ("l"   "Copy symlink's truename"                             dirvish-copy-file-true-path
+   ("d"   "Copy file DIRECTORY"                dirvish-copy-file-directory)
+   ("l"   "Copy symlink's truename"            dirvish-copy-file-true-path
     :if (lambda () (file-symlink-p (dired-get-filename nil t))))
    ("L"   "Go to symlink's truename"           dirvish-find-file-true-path
     :if (lambda () (file-symlink-p (dired-get-filename nil t))))
