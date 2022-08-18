@@ -147,10 +147,11 @@ will visit the latest `project-root' after executing
 ;;;###autoload
 (defun dirvish-side (&optional path)
   "Toggle a Dirvish session at the side window.
-- If the side window is visible hide it.
+
+- If the current window is a side session window, hide it.
+- If a side session is visible, select it.
 - If a side session exists but is not visible, show it.
-- If there is no session exists within the scope,
-  create the session with PATH and display it.
+- If there is no side session exists,create a new one with PATH.
 
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
@@ -159,8 +160,9 @@ otherwise it defaults to `project-current'."
   (let ((fullframep (when-let ((dv (dirvish-prop :dv))) (dv-layout dv)))
         (visible (dirvish-side--session-visible-p)))
     (cond (fullframep (user-error "Can not create side session here"))
-          (visible (with-selected-window visible
-                     (let ((dirvish-reuse-session t)) (dirvish-quit))))
+          ((eq visible (selected-window))
+           (let ((dirvish-reuse-session t)) (dirvish-quit)))
+          (visible (select-window visible))
           (t (or (dirvish-side--reuse buffer-file-name)
                  (dirvish-side--new path buffer-file-name))))))
 
