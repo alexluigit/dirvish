@@ -68,9 +68,7 @@ will visit the latest `project-root' after executing
 (defun dirvish-side-on-file-open (dv)
   "Called before opening a file in Dirvish-side session DV."
   (unless (dv-layout dv)
-    (select-window (funcall dirvish-side-open-file-window-function)))
-  (dirvish-focus-change-h)
-  (when-let ((dv (dirvish-curr))) (dirvish-kill dv)))
+    (select-window (funcall dirvish-side-open-file-window-function))))
 
 (defun dirvish-side-winconf-change-h ()
   "Adjust width of side window on window configuration change."
@@ -107,31 +105,23 @@ will visit the latest `project-root' after executing
           (dirvish-subtree-expand-to file)
         (dired-goto-file file)))))
 
-(defun dirvish-side--reuse (filename)
-  "Try to reuse any side session and select FILENAME."
-  (dirvish--reuse-session nil nil 'side)
-  (let ((dir (and filename (file-name-directory filename))))
-    (cond ((or (not filename) (not (dirvish-prop :dv))) nil)
-          ((eq dirvish-side-follow-buffer-file 'expand)
-           (dirvish-find-entry-ad (or (dirvish--get-project-root dir) dir))
-           (dirvish-subtree-expand-to filename))
-          (dirvish-side-follow-buffer-file
-           (dirvish-find-entry-ad dir)
-           (dired-goto-file filename)))))
-
-(defun dirvish-side--new (path current)
-  "Open a side session selecting CURRENT as index in PATH."
-  (dirvish-new
-    :type 'side
-    :path (or (and path (file-name-directory path))
-              (dirvish--get-project-root)
-              default-directory)
-    :root-window-fn #'dirvish-side-root-window-fn
-    :on-file-open #'dirvish-side-on-file-open
-    :on-winconf-change #'dirvish-side-winconf-change-h)
-  (when (and current (eq dirvish-side-follow-buffer-file 'expand))
-    (dirvish-subtree-expand-to current))
-  (dirvish-prop :cus-header 'dirvish-side-header))
+(defun dirvish-side--new (path)
+  "Open a side session in PATH."
+  (let ((bname buffer-file-name)
+        (dv (or (dirvish--reuse-session path nil 'side)
+                (dirvish-new
+                  :type 'side :path path
+                  :root-window-fn #'dirvish-side-root-window-fn
+                  :on-file-open #'dirvish-side-on-file-open
+                  :on-winconf-change #'dirvish-side-winconf-change-h))))
+    (with-selected-window (dv-root-window dv)
+      (cond ((not bname) nil)
+            ((eq dirvish-side-follow-buffer-file 'expand)
+             (dirvish-subtree-expand-to bname))
+            (dirvish-side-follow-buffer-file
+             (dired-goto-file bname)))
+      (dirvish-prop :cus-header 'dirvish-side-header)
+      (dirvish-update-body-h))))
 
 (dirvish-define-mode-line project
   "Return a string showing current project."
@@ -156,15 +146,15 @@ will visit the latest `project-root' after executing
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg
-                          (read-file-name "Target of side session: "))))
+                          (read-directory-name "Open sidetree: "))))
   (let ((fullframep (when-let ((dv (dirvish-prop :dv))) (dv-layout dv)))
-        (visible (dirvish-side--session-visible-p)))
+        (visible (dirvish-side--session-visible-p))
+        (path (or path (dirvish--get-project-root) default-directory)))
     (cond (fullframep (user-error "Can not create side session here"))
           ((eq visible (selected-window))
            (let ((dirvish-reuse-session t)) (dirvish-quit)))
           (visible (select-window visible))
-          (t (or (dirvish-side--reuse buffer-file-name)
-                 (dirvish-side--new path buffer-file-name))))))
+          (t (dirvish-side--new path)))))
 
 (provide 'dirvish-side)
 ;;; dirvish-side.el ends here

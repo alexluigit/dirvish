@@ -332,6 +332,12 @@ ALIST is window arguments passed to `window--display-buffer'."
                  ((symbol-function 'recentf-track-closed-file) #'ignore))
          (kill-buffer buffer))))
 
+(defun dirvish--remove-session (dv)
+  "Remove DV from `dirvish--hash' and kill its index buffer."
+  (when (or (not dirvish-reuse-session) (eq (dv-type dv) 'split))
+    (dirvish--kill-buffer (cdr (dv-index-dir dv)))
+    (remhash (dv-name dv) dirvish--hash)))
+
 (defun dirvish--get-project-root (&optional directory)
   "Get project root path of DIRECTORY."
   (when-let* ((pj (project-current nil directory))
@@ -563,10 +569,11 @@ Set layout for the session with LAYOUT."
         (setq dir (and dir (if (file-directory-p dir) dir
                              (file-name-directory dir)))))
       (dirvish--save-env dv)
-      (setf (dv-root-window dv) (funcall (dv-root-window-fn dv)))
-      (switch-to-buffer (cdr (dv-index-dir dv)))
-      (setf (dv-layout dv) layout)
-      (dirvish-find-entry-ad (or dir (dirvish-prop :root))))))
+      (with-selected-window (dirvish--create-root-window dv)
+        (dirvish-with-no-dedication (switch-to-buffer (cdr (dv-index-dir dv))))
+        (setf (dv-layout dv) layout)
+        (set-frame-parameter nil 'dirvish--curr dv)
+        (dirvish-find-entry-ad (or dir (dirvish-prop :root)))))))
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
@@ -601,34 +608,31 @@ The keyword arguments set the fields of the dirvish struct."
        ,(when args `(save-excursion ,@args)) ; Body form given
        new)))
 
-(defun dirvish-kill (dv &optional keep-current)
-  "Kill a dirvish instance DV and remove it from `dirvish--hash'.
-If KEEP-CURRENT, do not kill the current directory buffer."
-  (setq keep-current (and keep-current (not (eq (dv-type dv) 'split))))
-  (let* ((index (cdr (dv-index-dir dv)))
-         (r-bufs (seq-remove (lambda (i) (when keep-current (eq i index)))
-                             (mapcar #'cdr (dv-roots dv)))))
+(defun dirvish-kill (dv)
+  "Kill the dirvish instance DV."
+  (let ((index (cdr (dv-index-dir dv))))
     (when (dv-layout dv)
-      (setf (dv-layout dv) nil)
-      (with-current-buffer index (dirvish--setup-mode-line nil))
+      (with-current-buffer index
+        (setq header-line-format dirvish--header-line-fmt))
       (set-window-configuration (dv-window-conf dv))
-      (goto-char (plist-get (dv-scopes dv) :point)))
-    (mapc #'dirvish--kill-buffer r-bufs))
-  (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv)))
-  (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
-  (if (not keep-current)
-      (remhash (dv-name dv) dirvish--hash)
+      (goto-char (plist-get (dv-scopes dv) :point))
+      (dirvish-with-no-dedication (switch-to-buffer index))
+      (dirvish-prop :minimized t))
+    (mapc #'dirvish--kill-buffer (remove index (mapcar #'cdr (dv-roots dv))))
+    (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv)))
+    (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
     (setf (dv-roots dv) (list (dv-index-dir dv)))
-    (setf (dv-parents dv) '()))
-  (dolist (type '(preview header footer))
-    (dirvish--kill-buffer (dirvish--util-buffer type dv)))
-  (run-hooks 'dirvish-deactivation-hook)
-  (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
-  (set-frame-parameter nil 'dirvish--curr nil))
+    (setf (dv-parents dv) '())
+    (dolist (type '(preview header footer))
+      (dirvish--kill-buffer (dirvish--util-buffer type dv)))
+    (run-hooks 'dirvish-deactivation-hook)
+    (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+    (set-frame-parameter nil 'dirvish--curr nil)))
 
 (defun dirvish-on-file-open (dv)
   "Called before opening a file in Dirvish session DV."
-  (dirvish-kill dv dirvish-reuse-session))
+  (dirvish-kill dv)
+  (dirvish--remove-session dv))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -886,25 +890,6 @@ FILENAME and WILDCARD are their args."
   (ansi-color-apply-on-region
    pos (save-excursion (goto-char pos) (forward-line (frame-height)) (point))))
 
-(defun dirvish-focus-change-h (&optional _frame-or-window)
-  "Save current session to frame parameters."
-  (let ((buf (current-buffer))
-        (fr-dv (dirvish-curr))
-        (dv (dirvish-prop :dv)))
-    (cond ((active-minibuffer-window))
-          (dv (setf (dv-root-window dv) (selected-window)))
-          ((and fr-dv (dv-layout fr-dv)
-                (not (get-buffer-window (cdr (dv-index-dir fr-dv))))
-                (window-live-p (dv-preview-window fr-dv)))
-           (set-window-configuration (dv-window-conf fr-dv))
-           (switch-to-buffer buf)
-           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
-           (set-frame-parameter nil 'dirvish--curr nil))
-          (t (set-frame-parameter nil 'dirvish--curr dv)
-             (setq tab-bar-new-tab-choice
-                   (if dv "*scratch*" dirvish--saved-new-tab-choice))))
-    (setq dirvish--selected-window (selected-window))))
-
 (defun dirvish-deactivate-tab-h (tab _only-tab)
   "Deactivate all Dirvish sessions in TAB."
   (dolist (scope (dirvish-get-all 'scopes))
@@ -961,22 +946,39 @@ FILENAME and WILDCARD are their args."
       (dolist (type '(preview header footer))
         (dirvish--kill-buffer (dirvish--util-buffer type dv))))))
 
+(defun dirvish-focus-change-h (&optional _frame-or-window)
+  "Save current session to frame parameters."
+  (let ((buf (current-buffer))
+        (fr-dv (dirvish-curr))
+        (dv (dirvish-prop :dv)))
+    (cond ((active-minibuffer-window))
+          ((and fr-dv (dv-layout fr-dv)
+                (not (get-buffer-window (cdr (dv-index-dir fr-dv))))
+                (window-live-p (dv-preview-window fr-dv)))
+           (set-window-configuration (dv-window-conf fr-dv))
+           (switch-to-buffer buf)
+           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
+           (set-frame-parameter nil 'dirvish--curr nil))
+          (t (set-frame-parameter nil 'dirvish--curr dv)
+             (setq tab-bar-new-tab-choice
+                   (if dv "*scratch*" dirvish--saved-new-tab-choice))))
+    (setq dirvish--selected-window (selected-window))))
+
 (defun dirvish-winconf-change-h ()
   "Create new session on window split."
-  (let ((winlist (get-buffer-window-list))
+  (let ((dv (dirvish-prop :dv))
         (path (dirvish-prop :root))
-        (child (dirvish-prop :child))
-        (dv (dirvish-prop :dv)))
+        (child (dirvish-prop :child)))
+    (when (and (not (active-minibuffer-window)) (dirvish-prop :minimized))
+      (dirvish--build dv))
     ;; when split new window in single window dirvish
-    (when (and (not (dv-layout dv)) (> (length winlist) 1))
+    (when (and (not (dv-layout dv)) (> (length (get-buffer-window-list)) 1))
       (switch-to-buffer "*scratch*")
       (let ((new (dirvish-new :type 'split :path path)))
         (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))
-        (setf (dv-index-dir new) (cons (dirvish-prop :root) (current-buffer)))
-        (when child (run-with-timer ;; XXX hack
-                     0 nil (lambda ()
-                             (dired-goto-file child)
-                             (dirvish--render-attributes new))))))))
+        (setf (dv-index-dir new) (cons path (current-buffer)))
+        (dired-goto-file child)
+        (dirvish--render-attributes new)))))
 
 (defun dirvish-on-winbuf-change-h (frame-or-window)
   "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
@@ -1399,6 +1401,7 @@ If VEC, the attributes are retrieved by parsing the output of
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
   (setf (dv-index-dir dv) (cons (dirvish-prop :root) (current-buffer)))
+  (dirvish-prop :minimized nil)
   (let* ((layout (dv-layout dv))
          (w-order (and layout (dirvish--window-split-order)))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
@@ -1448,8 +1451,9 @@ If VEC, the attributes are retrieved by parsing the output of
   "Quit current Dirvish session."
   (interactive)
   (let ((dv (dirvish-prop :dv)))
-    (dirvish-kill dv dirvish-reuse-session)
-    (and dirvish-reuse-session dirvish--props (quit-window))))
+    (dirvish-kill dv)
+    (quit-window)
+    (dirvish--remove-session dv)))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
