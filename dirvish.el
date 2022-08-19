@@ -221,8 +221,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (hook   minibuffer-exit-hook              dirvish-deactivate-minibuffer-h)
     (hook   tab-bar-tab-pre-close-functions   dirvish-deactivate-tab-h)
     (hook   delete-frame-functions            dirvish-deactivate-frame-h)))
-(defvar dirvish-scopes
-  '(:tab tab-bar--current-tab-index :mini active-minibuffer-window :persp get-current-persp :perspective persp-curr))
+(defvar dirvish-scopes '(:tab tab-bar--current-tab-index :persp get-current-persp :perspective persp-curr))
 (defvar dirvish-libraries
   '((dirvish-widgets  path symlink omit index free-space file-link-number
                       file-user file-group file-time file-size file-modes
@@ -542,40 +541,39 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (roots () :documentation "is the list of all INDEX-DIRs.")
   (parents () :documentation "is like ROOT, but for parent windows."))
 
-(defun dirvish--reuse-session (&optional file fullscreen type)
-  "Reuse some hidden Dirvish session with TYPE and find FILE in it.
-If FULLSCREEN, set layout for the session."
-  (and file (setq file (if (file-directory-p file) file
-                         (file-name-directory file))))
+(defun dirvish--find-reusable-session (type)
+  "Return the first matched reusable session with TYPE."
   (cl-loop
-   with file = (cond (current-prefix-arg file)
-                     ((eq dirvish-reuse-session 'resume) nil)
-                     (t file))
    with scopes = (dirvish--get-scopes)
    for dv-name in (dirvish-get-all 'name t t)
    for dv = (gethash dv-name dirvish--hash)
-   for (index-fname . index-buf) = (dv-index-dir dv)
-   for layout = (and fullscreen dirvish-default-layout)
+   for (_ . index-buf) = (dv-index-dir dv)
    thereis (and (not (get-buffer-window index-buf))
                 (eq type (dv-type dv))
-                (equal (cl-subseq (dv-scopes dv) 8) scopes)
-                (prog1 dv
-                  (dirvish--save-env dv)
-                  (setf (dv-root-window dv) (funcall (dv-root-window-fn dv)))
-                  (switch-to-buffer index-buf)
-                  (setf (dv-layout dv) layout)
-                  (set-frame-parameter nil 'dirvish--curr dv)
-                  (dirvish-find-entry-ad (or file index-fname))
-                  (when fullscreen
-                    (setq other-window-scroll-buffer
-                          (window-buffer (dv-preview-window dv))))))))
+                (equal (cl-subseq (dv-scopes dv) 10) scopes)
+                dv)))
+
+(defun dirvish--reuse-session (&optional dir layout type)
+  "Reuse some hidden Dirvish session with TYPE and find DIR in it.
+Set layout for the session with LAYOUT."
+  (when-let ((dv (dirvish--find-reusable-session type)))
+    (prog1 dv
+      (if (and (not current-prefix-arg) (eq dirvish-reuse-session 'resume))
+          (setq dir nil)
+        (setq dir (and dir (if (file-directory-p dir) dir
+                             (file-name-directory dir)))))
+      (dirvish--save-env dv)
+      (setf (dv-root-window dv) (funcall (dv-root-window-fn dv)))
+      (switch-to-buffer (cdr (dv-index-dir dv)))
+      (setf (dv-layout dv) layout)
+      (dirvish-find-entry-ad (or dir (dirvish-prop :root))))))
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
   (setf (dv-window-conf dv) (current-window-configuration))
   (setf (dv-scopes dv)
-        (append `(:dv ,dv :point ,(point) :frame ,(selected-frame)
-                      :bname ,buffer-file-name)
+        (append `(:dv ,dv :point ,(point) :mini ,(active-minibuffer-window)
+                      :frame ,(selected-frame) :bname ,buffer-file-name)
                 (dirvish--get-scopes))))
 
 (defmacro dirvish-new (&rest args)
@@ -606,9 +604,7 @@ The keyword arguments set the fields of the dirvish struct."
 (defun dirvish-kill (dv &optional keep-current)
   "Kill a dirvish instance DV and remove it from `dirvish--hash'.
 If KEEP-CURRENT, do not kill the current directory buffer."
-  (setq keep-current
-        (and keep-current (not (eq (dv-type dv) 'split))
-             (not (dirvish-prop :tramp))))
+  (setq keep-current (and keep-current (not (eq (dv-type dv) 'split))))
   (let* ((index (cdr (dv-index-dir dv)))
          (r-bufs (seq-remove (lambda (i) (when keep-current (eq i index)))
                              (mapcar #'cdr (dv-roots dv)))))
@@ -1188,7 +1184,9 @@ Dirvish sets `revert-buffer-function' to this function."
   (when (dirvish-curr) (set-window-dedicated-p (selected-window) nil))
   (let ((dir (file-name-as-directory (expand-file-name dir)))
         (dv (or (and dirvish-allow-overlap (dirvish-new))
-                (dirvish-curr) (dirvish-new))))
+                (dirvish--find-reusable-session nil)
+                (dirvish-curr)
+                (dirvish-new))))
     (dirvish--find-entry dv dir)))
 
 (defun dirvish--init-dired-window (dv window)
@@ -1471,14 +1469,16 @@ If VEC, the attributes are retrieved by parsing the output of
 ;;;###autoload
 (defun dirvish (&optional path)
   "Start a full frame Dirvish session with optional PATH.
+
 If called with \\[universal-arguments], prompt for PATH,
-otherwise it defaults to variable `buffer-file-name'."
-  (interactive (list (and current-prefix-arg (read-file-name "Dirvish: "))))
+otherwise it defaults to `default-directory'."
+  (interactive (list (and current-prefix-arg
+                          (read-directory-name "Dirvish: "))))
   (setq path (or path default-directory))
   (let ((dv (dirvish-prop :dv)))
     (if (and dv (dv-layout dv))
         (dirvish-find-entry-ad path)
-      (or (dirvish--reuse-session path 'full)
+      (or (dirvish--reuse-session path dirvish-default-layout)
           (dirvish-new :path path :layout dirvish-default-layout)))))
 
 (transient-define-prefix dirvish-dispatch ()
