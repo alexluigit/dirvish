@@ -1173,6 +1173,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
 (defun dirvish-revert (&optional _arg _noconfirm)
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
+  (dirvish-prop :old-index (dired-get-filename nil t))
   (dired-revert)
   (dirvish--hide-dired-header)
   (setq dirvish--attrs-hash (make-hash-table :test #'equal))

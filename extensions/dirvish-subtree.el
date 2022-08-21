@@ -42,8 +42,8 @@ The prefix is repeated \"depth\" times."
   :type 'boolean :group 'dirvish
   :set (lambda (k v)
          (set k v)
-         (if v (add-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert 10)
-           (remove-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert))))
+         (if v (add-hook 'dirvish-setup-hook #'dirvish-subtree--revert 10)
+           (remove-hook 'dirvish-setup-hook #'dirvish-subtree--revert))))
 
 (defcustom dirvish-subtree-always-show-state nil
   "Non-nil means always show the subtree state indicator."
@@ -190,22 +190,21 @@ Ensure correct DIR when inside of a subtree."
   "Put the `dired-subtree-overlays' again after buffer reverting.
 When CLEAR, remove all subtrees in the buffer."
   (cl-loop
-   with st-alist = ()
+   with maps = () with index = (dirvish-prop :old-index)
    for ov in dirvish-subtree--overlays
    for depth = (overlay-get ov 'dired-subtree-depth)
    for name = (overlay-get ov 'dired-subtree-name) do
-   (push (cons depth name) st-alist)
+   (push (cons depth name) maps)
    finally do
-   (let ((sorted (sort st-alist (lambda (a b) (< (car a) (car b))))))
-     (setq dirvish-subtree--overlays nil)
-     (cl-loop for (_depth . name) in sorted do
-              (when (dirvish-subtree--goto-file name)
-                (cond (clear
-                       (dired-next-line 1)
-                       (dirvish-subtree-remove))
-                      ((not (dirvish-subtree--expanded-p))
-                       (dirvish-subtree--insert))))))
-   (dirvish-subtree--goto-file (dirvish-prop :child))))
+   (setq dirvish-subtree--overlays nil)
+   (cl-loop for (_ . name) in (sort maps (lambda (a b) (< (car a) (car b))))
+            when (dirvish-subtree--goto-file name) do
+            (cond (clear
+                   (dired-next-line 1)
+                   (dirvish-subtree-remove))
+                  ((not (dirvish-subtree--expanded-p))
+                   (dirvish-subtree--insert))))
+   (when (and (not clear) index) (dirvish-subtree--goto-file index))))
 
 (defun dirvish-subtree--move-to-file (file depth)
   "Move to FILE at subtree DEPTH."
