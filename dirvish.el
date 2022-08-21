@@ -1083,17 +1083,16 @@ When PROC finishes, fill preview buffer with process result."
   "Update preview content of DV."
   (when-let* ((dv (or dv (dirvish-curr)))
               (window (dv-preview-window dv))
+              ((window-live-p window))
               (index (dirvish-prop :child)))
-    (when (window-live-p window)
-      (let* ((orig-buffer-list (buffer-list))
-             (ext (downcase (or (file-name-extension index) "")))
-             (buffer (cl-loop for dp-fn in (dv-preview-fns dv)
-                              for match = (funcall dp-fn index ext window dv)
-                              thereis (and match (dirvish-preview-dispatch match dv)))))
-        (setq other-window-scroll-buffer buffer)
-        (set-window-buffer window buffer)
-        (unless (memq buffer orig-buffer-list)
-          (push buffer (dv-preview-buffers dv)))))))
+    (let* ((orig-bufs (buffer-list))
+           (ext (downcase (or (file-name-extension index) "")))
+           (buf (cl-loop for dp-fn in (dv-preview-fns dv)
+                         for rcp = (funcall dp-fn index ext window dv)
+                         thereis (and rcp (dirvish-preview-dispatch rcp dv)))))
+      (setq-local other-window-scroll-buffer buf)
+      (set-window-buffer window buf)
+      (unless (memq buf orig-bufs) (push buf (dv-preview-buffers dv))))))
 
 ;;;; Builder
 
