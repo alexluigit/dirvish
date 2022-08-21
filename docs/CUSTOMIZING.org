@@ -219,6 +219,9 @@ disable the auto caching completely.
 (customize-set-variable 'dirvish-media-auto-cache-threshold '(0))
 #+end_src
 
+If you don't want the media properties displayed in the preview buffer, you can
+turn it off by setting ~dirvish-media-auto-properties~ to ~nil~.
+
 Here are several examples to extend the preview capabilities of Dirvish.
 
 ** Preview PDF files with generated thumbnail
@@ -389,17 +392,12 @@ Doom provides a ~+dirvish~ flag in its dired module which can be enabled like th
 (dired +dirvish)
 #+end_src
 
-It is recommended to use the latest version the package.
+For now, you should follow the instructions in [[https://github.com/doomemacs/doomemacs/pull/6568][this PR]] and pin the package to
+the latest version.
 
 #+begin_src emacs-lisp
 ;; .doom.d/packages.el
 (unpin! dirvish)
-#+end_src
-
-Once [[https://github.com/doomemacs/doomemacs/pull/6568][this PR]] is merged, the following fix is not required anymore:
-
-#+begin_src emacs-lisp
-(map! :map dired-mode-map :ng "q" #'dirvish-quit)
 #+end_src
 
 * FAQ

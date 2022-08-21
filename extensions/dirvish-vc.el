@@ -75,7 +75,7 @@ vc-hooks.el) for detail explanation of these states."
     (setf (dv-preview-dispatchers dv) new-dps)
     (dirvish--refresh-slots dv)
     (if (not new-layout)
-        (dirvish-preview-update)
+        (dirvish-preview-update dv)
       (quit-window nil (dv-root-window dv))
       (delete-window transient--window)
       (dirvish--save-env dv)

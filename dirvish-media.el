@@ -19,6 +19,8 @@
 
 (defvar dirvish-media--cache-pool '())
 (defvar dirvish-media--auto-cache-timer nil)
+(add-to-list 'dirvish--no-update-preview-cmds 'dirvish-media-properties)
+
 (defcustom dirvish-media-auto-cache-threshold '(500 . 4)
   "Generate cache images automatically.
 The value should be a cons cell (FILES . PROCS).  Directories
@@ -35,6 +37,11 @@ max number of cache processes."
          (unless (eq (car v) 0)
            (setq dirvish-media--auto-cache-timer
                  (run-with-timer 0 0.25 #'dirvish-media--autocache)))))
+
+(defcustom dirvish-media-auto-properties
+  (and (executable-find "mediainfo") (executable-find "pdfinfo"))
+  "Show media properties automatically in preview window."
+  :group 'dirvish :type 'boolean)
 
 (defface dirvish-media-info-heading
   '((t :inherit (dired-header bold)))
@@ -113,6 +120,17 @@ GROUP-TITLES is a list of group titles."
                                 dirvish-media--info
                                 (shell-quote-argument file))))))
 
+(defun dirvish-media--metadata-from-pdfinfo (file)
+  "Return result string from command `pdfinfo' for FILE."
+  (cl-loop with out = (shell-command-to-string
+                       (format "pdfinfo %s" (shell-quote-argument file)))
+           with lines = (remove "" (split-string out "\n"))
+           for line in lines
+           for (title content) = (split-string line ":\s+")
+           concat (format "       %s:\t%s\n"
+                          (propertize title 'face 'dirvish-media-info-property-key)
+                          content)))
+
 (defun dirvish-media--format-metadata (mediainfo properties)
   "Return a formatted string of PROPERTIES from MEDIAINFO."
   (cl-loop for prop in properties
@@ -150,17 +168,22 @@ GROUP-TITLES is a list of group titles."
             (dirvish-media--format-metadata
              minfo '(Audio-codec Audio-bitrate Audio-sampling-rate Audio-channels)))))
 
+(cl-defmethod dirvish-media-metadata ((file (head pdf)))
+  "Get metadata for pdf FILE."
+  (format "%s%s" (dirvish-media--group-heading '("PDF info"))
+          (dirvish-media--metadata-from-pdfinfo (cdr file))))
+
 (defun dirvish-media--type (ext)
   "Return media file type from file name extension EXT."
   (cond ((member ext dirvish-image-exts) 'image)
         ((member ext dirvish-video-exts) 'video)
+        ((and (memq 'pdf-preface dirvish-preview-dispatchers)
+              (equal ext "pdf") 'pdf))
         (t (user-error "Not a media file"))))
 
 (defun dirvish-media-properties ()
   "Display media file's metadata in preview window."
   (interactive)
-  (unless (executable-find "mediainfo")
-    (user-error "`dirvish-media-properties' command requires `mediainfo' executable"))
   (let* ((file (or (dirvish-prop :child)
                    (user-error "No file under the cursor")))
          (ext (downcase (or (file-name-extension file) "")))
@@ -189,10 +212,22 @@ GROUP-TITLES is a list of group titles."
         (let* ((p-window (dv-preview-window dv))
                (w-offset (max (round (/ (- (window-width p-window) iw) 2)) 0))
                (h-offset (max (round (/ (- (window-height p-window) ih) 2)) 0)))
+          (and dirvish-media-auto-properties (setq h-offset 3))
           (goto-char 1)
           (insert (make-string h-offset ?\n))
-          (dirvish-prop :mediainfo-pivot (point-marker))
-          (insert (make-string w-offset ?\s))))
+          (dirvish-prop :mediainfo-pivot
+            (if dirvish-media-auto-properties 0 (point-marker)))
+          (insert (make-string w-offset ?\s))
+          (when dirvish-media-auto-properties
+            (let* ((beg (progn (goto-char (point-max)) (point)))
+                   (file (with-current-buffer (cdr(dv-index-dir dv))
+                           (dirvish-prop :child)))
+                   (type (dirvish-media--type
+                          (downcase (or (file-name-extension file) "")))))
+              (insert "\n\n\n")
+              (insert (dirvish-media-metadata (cons type file)))
+              (align-regexp beg (point) "\\(\\\t\\)[^\\\t\\\n]+" 1 4 t))
+            (goto-char 1))))
       buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head media-cache)) dv)

@@ -242,7 +242,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defconst dirvish--builtin-dps '(tramp disable default))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--no-update-preview-cmds
-  '(ace-select-window other-window scroll-other-window scroll-other-window-down dirvish-media-properties dirvish-setup-menu))
+  '(ace-select-window other-window scroll-other-window scroll-other-window-down))
 (defvar recentf-list)
 (defvar dirvish-redisplay-debounce-timer nil)
 (defvar dirvish--selected-window nil)
@@ -929,7 +929,7 @@ FILENAME and WILDCARD are their args."
             (when (and dirvish-use-header-line (buffer-live-p h-buf))
               (with-current-buffer h-buf (force-mode-line-update)))
             (unless (memq this-cmd dirvish--no-update-preview-cmds)
-              (dirvish-preview-update))))))))
+              (dirvish-preview-update dv))))))))
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
@@ -1079,20 +1079,19 @@ When PROC finishes, fill preview buffer with process result."
     (set-process-sentinel proc 'dirvish--preview-fill-string-sentinel)
     (with-current-buffer p-buf (erase-buffer) (remove-overlays) p-buf)))
 
-(defun dirvish-preview-update (&optional dv)
+(defun dirvish-preview-update (dv)
   "Update preview content of DV."
-  (when-let* ((dv (or dv (dirvish-curr)))
-              (window (dv-preview-window dv))
+  (when-let* ((window (dv-preview-window dv))
               ((window-live-p window))
-              (index (dirvish-prop :child)))
-    (let* ((orig-bufs (buffer-list))
-           (ext (downcase (or (file-name-extension index) "")))
-           (buf (cl-loop for dp-fn in (dv-preview-fns dv)
-                         for rcp = (funcall dp-fn index ext window dv)
-                         thereis (and rcp (dirvish-preview-dispatch rcp dv)))))
-      (setq-local other-window-scroll-buffer buf)
-      (set-window-buffer window buf)
-      (unless (memq buf orig-bufs) (push buf (dv-preview-buffers dv))))))
+              (index (dirvish-prop :child))
+              (orig-bufs (buffer-list))
+              (ext (downcase (or (file-name-extension index) "")))
+              (buf (cl-loop for fn in (dv-preview-fns dv)
+                            for rcp = (funcall fn index ext window dv) thereis
+                            (and rcp (dirvish-preview-dispatch rcp dv)))))
+    (setq-local other-window-scroll-buffer buf)
+    (set-window-buffer window buf)
+    (unless (memq buf orig-bufs) (push buf (dv-preview-buffers dv)))))
 
 ;;;; Builder
 
