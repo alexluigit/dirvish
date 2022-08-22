@@ -157,15 +157,13 @@ RANGE can be `buffer', `session', `frame', `all'."
 
 (defun dirvish-yank--execute (cmd &optional remotep)
   "Run yank CMD in the same host.
-If REMOTEP, the CMD is passed to `tramp-handle-shell-command',
-otherwise it is passed to `start-process-shell-command'."
+If REMOTEP, run CMD with `start-file-process-shell-command',
+otherwise it is executed by `start-process-shell-command'."
   (let* ((process-connection-type nil)
          (buffer (dirvish--util-buffer "yank-log"))
-         (display-buffer-alist
-          '(("\\*Dirvish-yank-log\\*" (display-buffer-no-window))))
-         (async-shell-command-buffer nil) ; it's a hack for buffer reuse
          (proc (if remotep
-                   (tramp-handle-shell-command cmd buffer)
+                   (start-file-process-shell-command
+                    (buffer-name buffer) buffer cmd)
                  (start-process-shell-command "Dirvish-yank" buffer cmd))))
     (process-put proc 'dv (dirvish-curr))
     (set-process-sentinel proc #'dirvish-yank--sentinel)
@@ -311,8 +309,9 @@ This command sync SRCS on SHOST to DEST on DHOST."
 
 ;;;###autoload
 (defun dirvish-yank (&optional dest)
-  "Paste marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument].
+  "Paste marked files to DEST.
+Prompt for DEST when prefixed with \\[universal-argument], it
+defaults to `dired-current-directory.'
 
 If you want to use this command and friends (such as
 `dirvish-move') for file transfer involving remote hosts, you'll
@@ -332,33 +331,37 @@ node `(tramp)Frequently Asked Questions' to speed it up."
 
 ;;;###autoload
 (defun dirvish-move (&optional dest)
-  "Move marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument].  Also
-see `dirvish-yank' for additional information."
+  "Move marked files to DEST.
+Prompt for DEST when prefixed with \\[universal-argument], it
+defaults to `dired-current-directory'.  See `dirvish-yank' for
+additional information."
   (interactive (dirvish-yank--read-dest 'move))
   (dirvish-yank--apply 'move dest))
 
 ;;;###autoload
 (defun dirvish-symlink (&optional dest)
-  "Symlink marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument].  Also
-see `dirvish-yank' for additional information."
+  "Symlink marked files to DEST.
+Prompt for DEST when prefixed with \\[universal-argument], it
+defaults to `dired-current-directory'.  See `dirvish-yank' for
+additional information."
   (interactive (dirvish-yank--read-dest 'symlink))
   (dirvish-yank--apply 'symlink dest))
 
 ;;;###autoload
 (defun dirvish-relative-symlink (&optional dest)
   "Similar to `dirvish-symlink', but link files relatively.
-Prompt for DEST when prefixed with \\[universal-argument].  Also
-see `dirvish-yank' for additional information."
+Prompt for DEST when prefixed with \\[universal-argument], it
+defaults to `dired-current-directory'.  See `dirvish-yank' for
+additional information."
   (interactive (dirvish-yank--read-dest 'relalink))
   (dirvish-yank--apply 'relalink dest))
 
 ;;;###autoload
 (defun dirvish-hardlink (&optional dest)
-  "Hardlink marked files to DEST (which defaults to `dired-current-directory').
-Prompt for DEST when prefixed with \\[universal-argument].  Also
-see `dirvish-yank' for additional information."
+  "Hardlink marked files to DEST.
+Prompt for DEST when prefixed with \\[universal-argument], it
+defaults to `dired-current-directory'.  See `dirvish-yank' for
+additional information."
   (interactive (dirvish-yank--read-dest 'hardlink))
   (dirvish-yank--apply 'hardlink dest))
 

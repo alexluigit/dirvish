@@ -35,14 +35,12 @@
 
 (defcustom dirvish-attributes '(file-size)
   "File attributes such as `file-size' showing in Dirvish file lines.
-
 You can get all available attributes in `dirvish--available-attrs'.
 See `dirvish-define-attribute'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
 (defcustom dirvish-preview-dispatchers '(image gif video audio epub archive pdf)
   "List of preview dispatchers.
-
 Preview dispatchers are defined by `dirvish-define-preview'.  It
 holds a function that takes current filename and preview window
 as arguments and gets called at runtime.  It controls how the
@@ -64,7 +62,6 @@ the fallback dispatcher named `default' is used.  For details see
 
 (defcustom dirvish-default-layout '(1 0.11 0.55)
   "Default layout recipe for fullscreen Dirvish sessions.
-
 The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH).
 DEPTH controls the number of windows displaying parent directories.
   It can be 0 if you don't need the parent directories.
@@ -85,7 +82,6 @@ Also see `dirvish-layout-recipes' in `dirvish-extras.el'."
 (define-obsolete-variable-alias 'dirvish-mode-line-position 'dirvish-use-mode-line "Aug 5, 2022")
 (defcustom dirvish-use-mode-line t
   "Whether to display mode line in dirvish buffers.
-
 The valid value are:
 - nil: hide mode line in dirvish sessions
 - global: display the mode line across all panes
@@ -101,7 +97,6 @@ The valid value are:
 
 (defcustom dirvish-mode-line-height '(25 . 30)
   "Height of Dirvish's mode line.
-
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
 H-DIRED and H-DIRVISH represent the height in single window
 session and fullscreen session respectively."
@@ -117,7 +112,6 @@ session and fullscreen session respectively."
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
-
 Set it to nil to use the default `mode-line-format'.  SEGMENT is
 a mode line segment defined by `dirvish-define-mode-line' or a
 string.  See `dirvish--available-mode-line-segments'."
@@ -130,7 +124,6 @@ string.  See `dirvish--available-mode-line-segments'."
 
 (defcustom dirvish-hide-details t
   "Whether to hide detailed information on session startup.
-
 The value can be a boolean or a function that takes current
 Dirvish session as its argument."
   :group 'dirvish :type '(choice (const :tag "Always hide details" t)
@@ -149,7 +142,6 @@ Dirvish session as its argument."
   `((,dirvish-audio-exts . ("mpv" "%f"))
     (,dirvish-video-exts . ("mpv" "%f")))
   "Association list of mimetype and external program for `find-file'.
-
 Each element is of the form (EXTS . (CMD . ARGS)).  EXTS is a
 list of file name extensions.  Once the EXTS is matched with
 FILENAME in `find-file', a subprocess according to CMD and its
@@ -162,7 +154,6 @@ runtime.  Set it to nil disables this feature."
 
 (defcustom dirvish-reuse-session t
   "Whether to reuse the hidden sessions.
-
 If non-nil, Dirvish keeps the session's last buffer alive on
 exit.  The hidden session can be reused in the future by command
 `dirvish' and friends.  If the value is \\='resume, dirvish
@@ -236,7 +227,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
 (defconst dirvish--dired-free-space
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--tramp-preview-cmd
-  "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null &")
+  "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null")
 (defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--builtin-dps '(tramp disable default))
@@ -1021,8 +1012,8 @@ When PROC finishes, fill preview buffer with process result."
               (localname (file-remote-p file 'localname))
               (buf (dirvish--util-buffer 'preview dv)) proc)
           (when-let ((proc (get-buffer-process buf))) (delete-process proc))
-          (setq proc (tramp-handle-shell-command
-                      (format dirvish--tramp-preview-cmd localname localname) buf))
+          (setq proc (start-file-process-shell-command (buffer-name buf) buf
+                      (format dirvish--tramp-preview-cmd localname localname)))
           (set-process-sentinel
            proc (lambda (proc _sig)
                   (when (memq (process-status proc) '(exit signal))
@@ -1472,7 +1463,6 @@ If VEC, the attributes are retrieved by parsing the output of
 ;;;###autoload
 (defun dirvish (&optional path)
   "Start a full frame Dirvish session with optional PATH.
-
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `default-directory'."
   (interactive (list (and current-prefix-arg
