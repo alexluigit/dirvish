@@ -66,6 +66,31 @@ The value can be a symbol or a function that returns a fileset."
   "Yank methods and their flags."
   :group 'dirvish :type 'alist)
 
+;;;###autoload (autoload 'dirvish-yank-menu "dirvish-yank" nil t)
+(defcustom dirvish-yank-keys
+  '(("y" "Yank (paste) here"           dirvish-yank)
+    ("m" "Move here"                   dirvish-move)
+    ("s" "Make symlinks here"          dirvish-symlink)
+    ("r" "Make relative symlinks here" dirvish-relative-symlink)
+    ("h" "Make hardlinks here"         dirvish-hardlink))
+  "YANK-KEYs for command `dirvish-yank-menu'.
+A YANK-KEY is a (KEY DOC CMD) alist where KEY is the key to
+invoke the CMD, DOC is the documentation string."
+  :group 'dirvish :type 'alist
+  :set
+  (lambda (k v)
+    (set k v)
+    (eval
+     `(transient-define-prefix dirvish-yank-menu ()
+        "Yank commands menu."
+        [:description
+         (lambda () (dirvish--format-menu-heading "Select yank operation on marked files:"))
+         ,@v]
+        (interactive)
+        (if (derived-mode-p 'dirvish-mode)
+            (transient-setup 'dirvish-yank-menu)
+          (user-error "Not in a Dirvish buffer"))))))
+
 (defconst dirvish-yank-fallback-methods '((yank . dired-copy-file) (move . dired-rename-file)))
 (defvar dirvish-yank-task-counter 0)
 (defvar dirvish-yank--link-methods '(symlink relalink hardlink))
@@ -155,16 +180,12 @@ RANGE can be `buffer', `session', `frame', `all'."
                           (dirvish-prop :tramp)))))
       (with-current-buffer dv-buf (revert-buffer)))))
 
-(defun dirvish-yank--execute (cmd &optional remotep)
-  "Run yank CMD in the same host.
-If REMOTEP, run CMD with `start-file-process-shell-command',
-otherwise it is executed by `start-process-shell-command'."
+(defun dirvish-yank--execute (cmd)
+  "Run yank CMD in the same host."
   (let* ((process-connection-type nil)
          (buffer (dirvish--util-buffer "yank-log"))
-         (proc (if remotep
-                   (start-file-process-shell-command
-                    (buffer-name buffer) buffer cmd)
-                 (start-process-shell-command "Dirvish-yank" buffer cmd))))
+         (proc (start-file-process-shell-command
+                (buffer-name buffer) buffer cmd)))
     (process-put proc 'dv (dirvish-curr))
     (set-process-sentinel proc #'dirvish-yank--sentinel)
     (when dirvish-yank-auto-unmark
@@ -172,74 +193,64 @@ otherwise it is executed by `start-process-shell-command'."
                do (with-current-buffer buf (dired-unmark-all-marks))))
     (setq dirvish-yank-task-counter (1+ dirvish-yank-task-counter))))
 
-(defun dirvish-yank--ensure-newname (file base-name fileset dest)
-  "Ensure an unique filename for FILE at DEST with FILESET.
-BASE-NAME is the filename of file without directory."
+(defun dirvish-yank--newbase (base-name fileset dest)
+  "Ensure an unique filename for BASE-NAME at DEST with FILESET."
   (let ((bname~ base-name) (idx 1))
     (while (member bname~ fileset)
       (setq bname~
-            (shell-quote-argument
-             (pcase dirvish-yank-new-name-style
-               ('append-to-ext (format "%s%s~" base-name idx))
-               ('append-to-filename
-                (format "%s%s~.%s"
-                        (file-name-sans-extension base-name)
-                        idx (file-name-extension base-name)))
-               ('prepend-to-filename (format "%s~%s" idx base-name)))))
-      (setq idx (1+ idx)))
-    (cons file (concat dest bname~))))
+            (pcase dirvish-yank-new-name-style
+              ('append-to-ext (format "%s%s~" base-name idx))
+              ('append-to-filename
+               (format "%s%s~.%s"
+                       (file-name-sans-extension base-name)
+                       idx (file-name-extension base-name)))
+              ('prepend-to-filename (format "%s~%s" idx base-name)))
+            idx (1+ idx)))
+    (cons (expand-file-name base-name dest) (expand-file-name bname~ dest))))
 
 (defun dirvish-yank--prepare-dest-names (srcs dest)
   "Generate new unique file name pairs from SRCS and DEST."
   (cl-loop
    with overwrite = (eq dirvish-yank-overwrite-existing-files 'always)
    with never = (eq dirvish-yank-overwrite-existing-files 'never)
-   with dest-local = (shell-quote-argument (file-local-name dest))
-   with old-files = (mapcar #'shell-quote-argument
-                            (directory-files dest nil nil t))
-   with prompt-str = "%s exists, overwrite? (y)es (n)o (q)uit (Y)es-for-all (N)o-for-all"
+   with dfiles = (directory-files dest nil nil t)
+   with fmt = "%s exists, overwrite? (y)es (n)o (q)uit (Y)es-to-all (N)o-to-all"
+   with to-rename = ()
    for file in srcs
-   for base-name = (file-name-nondirectory file)
-   for paste-name = (concat dest-local base-name)
-   for collision = (member base-name old-files)
-   for prompt = (format prompt-str base-name) collect
-   (cond
-    (overwrite (cons file (if (file-directory-p file) dest-local paste-name)))
-    ((and never collision)
-     (dirvish-yank--ensure-newname file base-name old-files dest-local))
-    (collision
-     (cl-case (read-char-choice prompt '(?y ?Y ?n ?N ?q))
-       (?y (cons file (if (file-directory-p file) dest-local paste-name)))
-       (?n (dirvish-yank--ensure-newname file base-name old-files dest-local))
-       (?Y (setq overwrite t)
-           (cons file (if (file-directory-p file) dest-local paste-name)))
-       (?N (setq never t)
-           (dirvish-yank--ensure-newname file base-name old-files dest-local))
-       (?q (user-error "Dirvish[info]: yank task aborted"))))
-    (t (cons file (if (file-directory-p file) dest-local paste-name))))))
+   for base = (file-name-nondirectory file)
+   for collision = (member base dfiles) do
+   (cond (overwrite nil)
+         ((and never collision)
+          (push (dirvish-yank--newbase base dfiles dest) to-rename))
+         (collision
+          (cl-case (read-char-choice (format fmt base) '(?y ?Y ?n ?N ?q))
+            (?y nil)
+            (?n (push (dirvish-yank--newbase base dfiles dest) to-rename))
+            (?Y (setq overwrite t))
+            (?N (setq never t)
+                (push (dirvish-yank--newbase base dfiles dest) to-rename))
+            (?q (user-error "Dirvish[info]: yank task aborted")))))
+   finally do (cl-loop for (from . to) in to-rename do (rename-file from to))))
 
 (defun dirvish-yank--fallback-handler (method srcs dest)
   "Execute a fallback yank command with type of METHOD.
 SRCS and DEST are source files and destination."
-  (cl-loop
-   with newnames = (dirvish-yank--prepare-dest-names srcs dest)
-   with fn = (alist-get method dirvish-yank-fallback-methods)
-   for (from . to) in newnames
-   do (apply fn from to t)))
+  (dirvish-yank--prepare-dest-names srcs dest)
+  (cl-loop with fn = (alist-get method dirvish-yank-fallback-methods)
+           for src in srcs do (apply fn src dest t)))
 
 (defun dirvish-yank--l2l-handler (method srcs dest host)
   "Execute a local yank command with type of METHOD.
 SRCS and DEST have to be in the same HOST (local or remote)."
-  (let* ((srcs (mapcar
-                (lambda (f) (shell-quote-argument (file-local-name f))) srcs))
-         (fmt (format "%s %%s %%s" (alist-get method dirvish-yank-methods)))
-         (newnames (dirvish-yank--prepare-dest-names srcs dest))
-         (cmd (cl-loop
-               with pairs = ()
-               for (from . to) in newnames
-               do (setq pairs (append pairs (list (format fmt from to))))
-               finally return (format "%s &" (string-join pairs " & ")))))
-    (dirvish-yank--execute cmd (not (eq host 'local)))))
+  (let* ((method (alist-get method dirvish-yank-methods))
+         (l-files (cl-loop for f in srcs collect
+                           (shell-quote-argument (file-local-name f))))
+         (files (mapconcat #'concat l-files ","))
+         (cmd (format "%s %s %s" method
+                      (if (> (length srcs) 1) (format "{%s}" files) files)
+                      (shell-quote-argument (file-local-name dest)))))
+    (dirvish-yank--prepare-dest-names srcs dest)
+    (dirvish-yank--execute cmd)))
 
 (defun dirvish-yank--l2fr-handler (srcs dest)
   "Execute a local to/from remote rsync command for SRCS and DEST."
@@ -364,31 +375,6 @@ defaults to `dired-current-directory'.  See `dirvish-yank' for
 additional information."
   (interactive (dirvish-yank--read-dest 'hardlink))
   (dirvish-yank--apply 'hardlink dest))
-
-;;;###autoload (autoload 'dirvish-yank-menu "dirvish-yank" nil t)
-(defcustom dirvish-yank-keys
-  '(("y" "Yank (paste) here"           dirvish-yank)
-    ("m" "Move here"                   dirvish-move)
-    ("s" "Make symlinks here"          dirvish-symlink)
-    ("r" "Make relative symlinks here" dirvish-relative-symlink)
-    ("h" "Make hardlinks here"         dirvish-hardlink))
-  "YANK-KEYs for command `dirvish-yank-menu'.
-A YANK-KEY is a (KEY DOC CMD) alist where KEY is the key to
-invoke the CMD, DOC is the documentation string."
-  :group 'dirvish :type 'alist
-  :set
-  (lambda (k v)
-    (set k v)
-    (eval
-     `(transient-define-prefix dirvish-yank-menu ()
-        "Yank commands menu."
-        [:description
-         (lambda () (dirvish--format-menu-heading "Select yank operation on marked files:"))
-         ,@v]
-        (interactive)
-        (if (derived-mode-p 'dirvish-mode)
-            (transient-setup 'dirvish-yank-menu)
-          (user-error "Not in a Dirvish buffer"))))))
 
 (provide 'dirvish-yank)
 ;;; dirvish-yank.el ends here

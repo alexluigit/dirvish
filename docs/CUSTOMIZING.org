@@ -275,7 +275,7 @@ the coloring in the preview window.
 * Sample config
 ** Dired | Dirvish
 
-The extra commands in this sample config are documented at [[file:docs/EXTENSIONS.org][Extensions]].
+The extra commands in this sample config are documented at [[file:EXTENSIONS.org][Extensions]].
 
 #+begin_src emacs-lisp
 (use-package dirvish
@@ -401,7 +401,7 @@ the latest version.
 #+end_src
 
 * FAQ
-** How to clean session buffers automatically on quit?
+** How to kill all session buffers on quit?
 
 Set ~dirvish-reuse-session~ to nil.
 
