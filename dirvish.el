@@ -822,12 +822,9 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish-wdired-enter-ad (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
   (dired-move-to-end-of-filename t)
-  (cond ((boundp 'evil-normal-state-cursor)
-         (setq-local evil-normal-state-cursor 'hollow))
-        ((boundp 'meow-cursor-type-normal)
-         (setq-local cursor-type 'hollow))
-        (dirvish-hide-cursor
-         (setq-local cursor-type '(bar . 4))))
+  (setq-local cursor-type 'hollow)
+  (when (boundp 'evil-normal-state-cursor)
+    (setq-local evil-normal-state-cursor 'hollow))
   (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
