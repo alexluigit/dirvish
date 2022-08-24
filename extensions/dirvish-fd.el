@@ -259,6 +259,11 @@ time you run it.  After the indexing, it fires up instantly."
    (progn (insert f-full) (push (cons f-name f-full) res))
    finally return (prog1 (nreverse res) (goto-char (point-min)))))
 
+(defun dirvish-fd--find-entry (entry)
+  "Run fd accroring to ENTRY."
+  (pcase-let ((`(,pattern ,dir ,_) (split-string (substring entry 1) "📁")))
+    (dirvish-fd dir pattern)))
+
 (defun dirvish-fd-sentinel (proc _)
   "Sentinel for `dirvish-fd' processes PROC."
   (let* ((buf (process-buffer proc))

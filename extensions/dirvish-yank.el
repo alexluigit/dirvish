@@ -239,7 +239,7 @@ SRCS and DEST are source files and destination."
   (cl-loop with fn = (alist-get method dirvish-yank-fallback-methods)
            for src in srcs do (apply fn src dest t)))
 
-(defun dirvish-yank--l2l-handler (method srcs dest host)
+(defun dirvish-yank--l2l-handler (method srcs dest)
   "Execute a local yank command with type of METHOD.
 SRCS and DEST have to be in the same HOST (local or remote)."
   (let* ((method (alist-get method dirvish-yank-methods))
@@ -302,7 +302,7 @@ This command sync SRCS on SHOST to DEST on DHOST."
            (not (memq method dirvish-yank--link-methods)))
       (dirvish-yank--fallback-handler method srcs dest))
      ((equal shost dhost)
-      (dirvish-yank--l2l-handler method srcs dest shost))
+      (dirvish-yank--l2l-handler method srcs dest))
      ((not (or (equal shost sysname) (equal dhost sysname)))
       (dirvish-yank--r2r-handler srcs dest shost dhost))
      (t
