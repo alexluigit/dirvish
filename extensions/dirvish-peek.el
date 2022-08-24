@@ -99,7 +99,7 @@ one of categories in `dirvish-peek-categories'."
                                              (car (minibuffer-history-value))))))
       ('library
        (setq cand (file-truename (or (ignore-errors (find-library-name cand)) "")))))
-    (dirvish-prop :child cand)
+    (dirvish-prop :index cand)
     (dirvish-debounce nil (dirvish-preview-update (dirvish-curr)))))
 
 ;;;###autoload

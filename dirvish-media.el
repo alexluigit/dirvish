@@ -81,7 +81,7 @@ A new directory is created unless NO-MKDIR."
 (defun dirvish-media--cache-sentinel (proc _exitcode)
   "Sentinel for image cache process PROC."
   (when-let* ((dv (dirvish-curr))
-              (path (dirvish-prop :child)))
+              (path (dirvish-prop :index)))
     (and (equal path (process-get proc 'path))
          (dirvish-debounce nil (dirvish-preview-update dv)))))
 
@@ -184,7 +184,7 @@ GROUP-TITLES is a list of group titles."
 (defun dirvish-media-properties ()
   "Display media file's metadata in preview window."
   (interactive)
-  (let* ((file (or (dirvish-prop :child)
+  (let* ((file (or (dirvish-prop :index)
                    (user-error "No file under the cursor")))
          (ext (downcase (or (file-name-extension file) "")))
          (type (dirvish-media--type ext))
@@ -221,7 +221,7 @@ GROUP-TITLES is a list of group titles."
           (when dirvish-media-auto-properties
             (let* ((beg (progn (goto-char (point-max)) (point)))
                    (file (with-current-buffer (cdr(dv-index-dir dv))
-                           (dirvish-prop :child)))
+                           (dirvish-prop :index)))
                    (type (dirvish-media--type
                           (downcase (or (file-name-extension file) "")))))
               (insert "\n\n\n")
@@ -232,7 +232,7 @@ GROUP-TITLES is a list of group titles."
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head media-cache)) dv)
   "Generate cache image according to RECIPE and session DV."
-  (let* ((path (dirvish-prop :child))
+  (let* ((path (dirvish-prop :index))
          (buf (dirvish--util-buffer 'preview dv))
          (name (format "%s-%s-img-cache" path
                        (window-width (dv-preview-window dv)))))
@@ -258,21 +258,22 @@ GROUP-TITLES is a list of group titles."
 (defun dirvish-media-cache-imgs-h ()
   "Cache image/video-thumbnail for index directory."
   (when-let* ((dv (dirvish-curr))
-              (files (hash-table-keys dirvish--attrs-hash)))
-    (when (and (< (length files) (car dirvish-media-auto-cache-threshold))
-               (dv-layout dv))
-      (cl-loop
-       with win = (dv-preview-window dv)
-       with width = (window-width win)
-       for file in files
-       for ext = (downcase (or (file-name-extension file) ""))
-       for (cmd . args) = (cl-loop
-                           for fn in dirvish-media--cache-img-fns
-                           for (type . payload) = (funcall fn file ext win dv)
-                           thereis (and (eq type 'media-cache) payload))
-       when cmd do (push (cons (format "%s-%s-img-cache" file width)
-                               (list file width cmd args))
-                         dirvish-media--cache-pool)))))
+              ((dv-layout dv))
+              (win (dv-preview-window dv))
+              ((window-live-p win))
+              (width (window-width win))
+              (files (hash-table-keys dirvish--attrs-hash))
+              ((< (length files) (car dirvish-media-auto-cache-threshold))))
+    (cl-loop
+     for file in files
+     for ext = (downcase (or (file-name-extension file) ""))
+     for (cmd . args) = (cl-loop
+                         for fn in dirvish-media--cache-img-fns
+                         for (type . payload) = (funcall fn file ext win dv)
+                         thereis (and (eq type 'media-cache) payload))
+     when cmd do (push (cons (format "%s-%s-img-cache" file width)
+                             (list file width cmd args))
+                       dirvish-media--cache-pool))))
 
 (defun dirvish-media-clean-caches-h ()
   "Clean cache files for marked files."

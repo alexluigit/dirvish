@@ -135,9 +135,8 @@ This value is passed to function `format-time-string'."
 
 (defun dirvish--format-file-attr (attr-name)
   "Return a string of cursor file's attribute ATTR-NAME."
-  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (f-name (file-local-name name))
-              (attrs (dirvish-attribute-cache f-name :builtin))
+  (when-let* ((name (dirvish-prop :index))
+              (attrs (dirvish-attribute-cache name :builtin))
               (attr-getter (intern (format "file-attribute-%s" attr-name)))
               (attr-face (intern (format "dirvish-file-%s" attr-name)))
               (attr-val (and attrs (funcall attr-getter attrs))))
@@ -179,8 +178,7 @@ This value is passed to function `format-time-string'."
   (let* ((index (dired-current-directory))
          (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow))
          (abvname (abbreviate-file-name (file-local-name index)))
-         (rmt (and (dirvish-prop :tramp)
-                   (tramp-file-name-handler 'file-remote-p index)))
+         (rmt (dirvish-prop :tramp-handler))
          (host (propertize (if rmt (concat " " (substring rmt 1)) "")
                            'face 'font-lock-builtin-face))
          (segs (nbutlast (split-string abvname "/")))
@@ -225,9 +223,8 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-mode-line symlink
   "Show the truename of symlink file under the cursor."
-  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (f-name (file-local-name name))
-              (truename (cdr (dirvish-attribute-cache f-name :type))))
+  (when-let* ((name (dirvish-prop :index))
+              (truename (cdr (dirvish-attribute-cache name :type))))
     (format " %s %s "
             (propertize "→" 'face 'font-lock-comment-delimiter-face)
             (propertize truename 'face 'dired-symlink))))
@@ -252,27 +249,24 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-mode-line file-user
   "User name of file."
-  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (f-name (file-local-name name))
-              (attrs (dirvish-attribute-cache f-name :builtin))
+  (when-let* ((name (dirvish-prop :index))
+              (attrs (dirvish-attribute-cache name :builtin))
               (uid (and attrs (file-attribute-user-id attrs)))
               (uname (if (dirvish-prop :tramp) uid (user-login-name uid))))
     (propertize uname 'face 'dirvish-file-user-id)))
 
 (dirvish-define-mode-line file-group
   "Group name of file."
-  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (f-name (file-local-name name))
-              (attrs (dirvish-attribute-cache f-name :builtin))
+  (when-let* ((name (dirvish-prop :index))
+              (attrs (dirvish-attribute-cache name :builtin))
               (gid (and attrs (file-attribute-group-id attrs)))
               (gname (if (dirvish-prop :tramp) gid (group-name gid))))
     (propertize gname 'face 'dirvish-file-group-id)))
 
 (dirvish-define-mode-line file-time
   "Last modification time of file."
-  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (f-name (file-local-name name))
-              (attrs (dirvish-attribute-cache f-name :builtin))
+  (when-let* ((name (or (dirvish-prop :index) (dired-get-filename nil t)))
+              (attrs (dirvish-attribute-cache name :builtin))
               (f-mtime (file-attribute-modification-time attrs))
               (time-string
                (if (dirvish-prop :tramp) f-mtime
@@ -281,10 +275,9 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-mode-line file-size
   "File size of files or file count of directories."
-  (when-let* ((name (or (dirvish-prop :child) (dired-get-filename nil t)))
-              (f-name (file-local-name name))
-              (attrs (dirvish-attribute-cache f-name :builtin))
-              (size (and attrs (dirvish--get-file-size-or-count f-name attrs))))
+  (when-let* ((name (dirvish-prop :index))
+              (attrs (dirvish-attribute-cache name :builtin))
+              (size (and attrs (dirvish--get-file-size-or-count name attrs))))
     (format "%s" (propertize size 'face 'dirvish-file-size))))
 
 (dirvish-define-mode-line file-modes

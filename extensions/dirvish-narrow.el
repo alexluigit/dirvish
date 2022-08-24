@@ -56,7 +56,7 @@ should return a list of regular expressions."
                            (forward-line (if dirvish--dired-free-space 2 1))
                            (dirvish-narrow--filter-subdir dir regex-list idx)))
         (goto-char (window-start))
-        (dired-goto-file (dirvish-prop :child))
+        (dired-goto-file (dirvish-prop :index))
         (dirvish-update-body-h)))))
 
 (defun dirvish-narrow--revert ()
@@ -100,7 +100,7 @@ IDX the index of DIR in `dired-subdir-alist'."
   (with-current-buffer (window-buffer (minibuffer-selected-window))
     (if (>= (line-number-at-pos (point-max)) (frame-height))
         (goto-char (window-start))
-      (dired-goto-file (dirvish-prop :child)))
+      (dired-goto-file (dirvish-prop :index)))
     (dirvish-update-body-h))
   (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
 
@@ -110,7 +110,7 @@ IDX the index of DIR in `dired-subdir-alist'."
   (interactive)
   (dirvish-narrow--build-indices)
   (when (minibufferp) (user-error "`%s' called inside the minibuffer" this-command))
-  (let ((old-f (dirvish-prop :child)) final-input)
+  (let ((old-f (dirvish-prop :index)) final-input)
     (minibuffer-with-setup-hook #'dirvish-narrow-minibuffer-setup-h
       (unwind-protect
           (setq final-input (read-from-minibuffer "Focus on files: "))
