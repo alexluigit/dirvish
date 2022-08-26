@@ -938,6 +938,8 @@ FILENAME and WILDCARD are their args."
         (set-window-configuration (dv-window-conf dv))
         (goto-char (plist-get (dv-scopes dv) :point)))
       (remhash (dv-name dv) dirvish--hash)
+      (let (kill-buffer-hook)
+        (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv))))
       (dolist (type '(preview header footer))
         (dirvish--kill-buffer (dirvish--util-buffer type dv))))))
 

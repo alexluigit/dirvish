@@ -150,25 +150,25 @@ The header line can be customized in the same way with ~dirvish-use-header-line~
 The ~dired-switches-in-mode-line~ option is ignored in Dirvish.
 
 #+begin_src emacs-lisp
-;; Placement
-;; (setq dirvish-use-header-line nil)     ; hide header line (show the classic dired header)
-;; (setq dirvish-use-mode-line nil)       ; hide mode line
-(setq dirvish-use-header-line 'global)    ; make header line span all panes
+  ;; Placement
+  ;; (setq dirvish-use-header-line nil)     ; hide header line (show the classic dired header)
+  ;; (setq dirvish-use-mode-line nil)       ; hide mode line
+  (setq dirvish-use-header-line 'global)    ; make header line span all panes
 
-;; Height
-;;; '(25 . 35) means
-;;;   - height in single window sessions is 25
-;;;   - height in full-frame sessions is 35
-(setq dirvish-header-line-height '(25 . 35))
-(setq dirvish-mode-line-height 25) ; shorthand for '(25 . 25)
+  ;; Height
+  ;;; '(25 . 35) means
+  ;;;   - height in single window sessions is 25
+  ;;;   - height in full-frame sessions is 35
+  (setq dirvish-header-line-height '(25 . 35))
+  (setq dirvish-mode-line-height 25) ; shorthand for '(25 . 25)
 
-;; Segments
-;;; 1. the order of segments *matters* here
-;;; 2. it's ok to place raw string inside
-(setq dirvish-header-line-format
-      '(:left (path) :right (free-space))
-      dirvish-mode-line-format
-      '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
+  ;; Segments
+  ;;; 1. the order of segments *matters* here
+  ;;; 2. it's ok to place raw string inside
+  (setq dirvish-header-line-format
+        '(:left (path) :right (free-space))
+        dirvish-mode-line-format
+        '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
 #+end_src
 
 * File preview
@@ -248,13 +248,13 @@ Let's assume you don't like the default directory preview results provided by
 Dired, you can create a directory previewer that utilizes the ~exa~ command:
 
 #+begin_src emacs-lisp
-(dirvish-define-preview exa (file)
-  "Use `exa' to generate directory preview."
-  :require ("exa") ; tell Dirvish to check if we have the executable
-  (when (file-directory-p file) ; we only interest in directories here
-    `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the command output as preview
+  (dirvish-define-preview exa (file)
+    "Use `exa' to generate directory preview."
+    :require ("exa") ; tell Dirvish to check if we have the executable
+    (when (file-directory-p file) ; we only interest in directories here
+      `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the command output as preview
 
-(add-to-list 'dirvish-preview-dispatchers 'exa)
+  (add-to-list 'dirvish-preview-dispatchers 'exa)
 #+end_src
 
 This makes Dirvish use the output from ~exa~ shell command as your preview content
@@ -278,45 +278,45 @@ the coloring in the preview window.
 The extra commands in this sample config are documented at [[file:EXTENSIONS.org][Extensions]].
 
 #+begin_src emacs-lisp
-(use-package dirvish
-  :init
-  (dirvish-override-dired-mode)
-  :custom
-  (dirvish-quick-access-entries
-   '(("h" "~/"                          "Home")
-     ("d" "~/Downloads/"                "Downloads")
-     ("m" "/mnt/"                       "Drives")
-     ("t" "~/.local/share/Trash/files/" "TrashCan")))
-  :config
-  ;; (dirvish-peek-mode) ; Preview files in minibuffer
-  ;; (setq dirvish-hide-details nil) ; show details at startup like `dired'
-  (setq dirvish-mode-line-format
-        '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
-  (setq dirvish-attributes
-        '(all-the-icons file-size collapse subtree-state vc-state git-msg))
-  (setq delete-by-moving-to-trash t)
-  (setq dired-listing-switches
-        "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
-  :bind ; Bind `dirvish|dirvish-side|dirvish-dwim' as you see fit
-  (("C-c f" . dirvish-fd)
-   :map dirvish-mode-map ; Dirvish inherits `dired-mode-map'
-   ("a"   . dirvish-quick-access)
-   ("f"   . dirvish-file-info-menu)
-   ("y"   . dirvish-yank-menu)
-   ("N"   . dirvish-narrow)
-   ("^"   . dirvish-history-last)
-   ("h"   . dirvish-history-jump) ; remapped `describe-mode'
-   ("s"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
-   ("v"   . dirvish-vc-menu)      ; remapped `dired-view-file'
-   ("TAB" . dirvish-subtree-toggle)
-   ("M-f" . dirvish-history-go-forward)
-   ("M-b" . dirvish-history-go-backward)
-   ("M-l" . dirvish-ls-switches-menu)
-   ("M-m" . dirvish-mark-menu)
-   ("M-t" . dirvish-layout-toggle)
-   ("M-s" . dirvish-setup-menu)
-   ("M-e" . dirvish-emerge-menu)
-   ("M-j" . dirvish-fd-jump)))
+  (use-package dirvish
+    :init
+    (dirvish-override-dired-mode)
+    :custom
+    (dirvish-quick-access-entries
+     '(("h" "~/"                          "Home")
+       ("d" "~/Downloads/"                "Downloads")
+       ("m" "/mnt/"                       "Drives")
+       ("t" "~/.local/share/Trash/files/" "TrashCan")))
+    :config
+    ;; (dirvish-peek-mode) ; Preview files in minibuffer
+    ;; (setq dirvish-hide-details nil) ; show details at startup like `dired'
+    (setq dirvish-mode-line-format
+          '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
+    (setq dirvish-attributes
+          '(all-the-icons file-size collapse subtree-state vc-state git-msg))
+    (setq delete-by-moving-to-trash t)
+    (setq dired-listing-switches
+          "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
+    :bind ; Bind `dirvish|dirvish-side|dirvish-dwim' as you see fit
+    (("C-c f" . dirvish-fd)
+     :map dirvish-mode-map ; Dirvish inherits `dired-mode-map'
+     ("a"   . dirvish-quick-access)
+     ("f"   . dirvish-file-info-menu)
+     ("y"   . dirvish-yank-menu)
+     ("N"   . dirvish-narrow)
+     ("^"   . dirvish-history-last)
+     ("h"   . dirvish-history-jump) ; remapped `describe-mode'
+     ("s"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
+     ("v"   . dirvish-vc-menu)      ; remapped `dired-view-file'
+     ("TAB" . dirvish-subtree-toggle)
+     ("M-f" . dirvish-history-go-forward)
+     ("M-b" . dirvish-history-go-backward)
+     ("M-l" . dirvish-ls-switches-menu)
+     ("M-m" . dirvish-mark-menu)
+     ("M-t" . dirvish-layout-toggle)
+     ("M-s" . dirvish-setup-menu)
+     ("M-e" . dirvish-emerge-menu)
+     ("M-j" . dirvish-fd-jump)))
 #+end_src
 
 ** Mouse settings
@@ -348,38 +348,40 @@ Some keybindings for mouse:
 These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
-(use-package dired-x
-  ;; Enable dired-omit-mode by default
-  ;; :hook
-  ;; (dired-mode . dired-omit-mode)
-  :config
-  ;; Make dired-omit-mode hide all "dotfiles"
-  (setq dired-omit-files
-        (concat dired-omit-files "\\|^\\..*$")))
+  (use-package dired-x
+    ;; Enable dired-omit-mode by default
+    ;; :hook
+    ;; (dired-mode . dired-omit-mode)
+    :config
+    ;; Make dired-omit-mode hide all "dotfiles"
+    (setq dired-omit-files
+          (concat dired-omit-files "\\|^\\..*$")))
 
-;; Some tips to speed up Dired/Dirvish over TRAMP
-(use-package tramp
-  :config
-  (add-to-list 'tramp-connection-properties
-               (list (regexp-quote "/ssh:YOUR_HOSTNAME:")
-                     "direct-async-process" t))
-  (setq tramp-verbose 0)
-  (setq tramp-auto-save-directory (locate-user-emacs-file "tramp/"))
-  (setq tramp-chunksize 2000)
-  (setq tramp-use-ssh-controlmaster-options nil))
+  ;; Some tips to speed up Dired/Dirvish over TRAMP
+  (use-package tramp
+    :config
+    (add-to-list 'tramp-connection-properties
+                 (list (regexp-quote "/ssh:YOUR_HOSTNAME:")
+                       "direct-async-process" t))
+    (setq tramp-verbose 0)
+    (setq tramp-auto-save-directory (locate-user-emacs-file "tramp/"))
+    (setq tramp-chunksize 2000)
+    (setq tramp-use-ssh-controlmaster-options nil))
 
-;; Addtional syntax highlighting for dired
-(use-package diredfl
-  :hook
-  (dired-mode . diredfl-mode))
+  ;; Addtional syntax highlighting for dired
+  (use-package diredfl
+    :hook
+    (dired-mode . diredfl-mode)
+    :config
+    set-face-attribute 'diredfl-dir-name nil :bold t)
 
-;; Use `all-the-icons' as Dirvish's icon backend
-(use-package all-the-icons)
+  ;; Use `all-the-icons' as Dirvish's icon backend
+  (use-package all-the-icons)
 
-;; Or, use `vscode-icon' instead
-;; (use-package vscode-icon
-;;   :config
-;;   (push '("jpg" . "image") vscode-icon-file-alist))
+  ;; Or, use `vscode-icon' instead
+  ;; (use-package vscode-icon
+  ;;   :config
+  ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 #+end_src
 
 ** Working with Doom Emacs
@@ -387,17 +389,17 @@ These packages are only listed here for discoverability.
 Doom provides a ~+dirvish~ flag in its dired module which can be enabled like this.
 
 #+begin_src emacs-lisp
-;; .doom.d/init.el
-:emacs
-(dired +dirvish)
+  ;; .doom.d/init.el
+  :emacs
+  (dired +dirvish)
 #+end_src
 
 For now, you should follow the instructions in [[https://github.com/doomemacs/doomemacs/pull/6568][this PR]] and pin the package to
 the latest version.
 
 #+begin_src emacs-lisp
-;; .doom.d/packages.el
-(unpin! dirvish)
+  ;; .doom.d/packages.el
+  (unpin! dirvish)
 #+end_src
 
 * FAQ
