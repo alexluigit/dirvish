@@ -59,7 +59,7 @@ being used at runtime."
   "Create dirvish minibuffer preview window.
 The window is created only when metadata in current minibuffer is
 one of categories in `dirvish-peek-categories'."
-  (let* ((old-dv (dirvish-curr))
+  (let* ((old-dv dirvish--last)
          (meta (ignore-errors
                  (completion-metadata
                   (buffer-substring-no-properties (field-beginning) (point))
@@ -84,7 +84,7 @@ one of categories in `dirvish-peek-categories'."
   "Teardown dirvish minibuffer preview window."
   (let* ((dv-mini (frame-parameter nil 'dirvish--peek))
          (old-dv (plist-get dv-mini :old)))
-    (set-frame-parameter nil 'dirvish--curr old-dv)))
+    (setq dirvish--last old-dv)))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
@@ -100,7 +100,7 @@ one of categories in `dirvish-peek-categories'."
       ('library
        (setq cand (file-truename (or (ignore-errors (find-library-name cand)) "")))))
     (dirvish-prop :index cand)
-    (dirvish-debounce nil (dirvish-preview-update (dirvish-curr)))))
+    (dirvish-debounce nil (dirvish-preview-update dirvish--last))))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode

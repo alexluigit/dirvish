@@ -270,7 +270,7 @@ time you run it.  After the indexing, it fires up instantly."
          (bufname (process-get proc 'bufname))
          (input (process-get proc 'input)) dv output)
     (with-current-buffer buf
-      (setq dv (dirvish-prop :dv))
+      (setq dv (dirvish-curr))
       (setq output (dirvish-fd--parse-output))
       (rename-buffer bufname)
       (dirvish--init-dired-buffer dv)
@@ -336,7 +336,7 @@ The command run is essentially:
              (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir)
       (user-error "'fd' command requires a directory: %s" dir))
-  (let* ((dv (or (dirvish-prop :dv) (dirvish dir)))
+  (let* ((dv (or (dirvish-curr) (dirvish dir)))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
          (buffer (get-buffer-create dirvish-fd-proc-buffer))
@@ -348,7 +348,7 @@ The command run is essentially:
       (setq default-directory dir
             dired-subdir-alist (list (cons dir (point-min-marker))))
       (dired-mode dir ls-switches)
-      (dirvish-prop :dv dv)
+      (dirvish-prop :dv (dv-name dv))
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :root bufname)
       (dirvish-prop :fd-switches fd-switches)

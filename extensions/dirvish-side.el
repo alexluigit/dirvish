@@ -91,7 +91,7 @@ will visit the latest `project-root' after executing
   (cl-loop
    for w in (window-list)
    for b = (window-buffer w)
-   for dv = (with-current-buffer b (dirvish-prop :dv))
+   for dv = (with-current-buffer b (dirvish-curr))
    thereis (and dv (eq 'dirvish-side-root-window-fn (dv-root-window-fn dv)) w)))
 
 (defun dirvish-side--auto-jump (&optional dir)
@@ -147,7 +147,7 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Open sidetree: "))))
-  (let ((fullframep (when-let ((dv (dirvish-prop :dv))) (dv-layout dv)))
+  (let ((fullframep (when-let ((dv (dirvish-curr))) (dv-layout dv)))
         (visible (dirvish-side--session-visible-p))
         (path (or path (dirvish--get-project-root) default-directory)))
     (cond (fullframep (user-error "Can not create side session here"))

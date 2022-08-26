@@ -84,7 +84,7 @@ The session takes the whole frame when `one-window-p'."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
   (let ((path (expand-file-name (or path default-directory)))
         (layout (and (one-window-p) dirvish-default-layout))
-        (dv (dirvish-prop :dv)))
+        (dv (dirvish-curr)))
     (if (and dv (dv-layout dv))
         (dirvish-find-entry-ad path)
       (or (dirvish--reuse-session path layout)
