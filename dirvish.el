@@ -209,9 +209,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice lsp-deferred                      dirvish-ignore-ad              :around)
     (advice moody-redisplay                   dirvish-ignore-ad              :around)
     (hook   window-selection-change-functions dirvish-focus-change-h)
-    (hook   minibuffer-exit-hook              dirvish-deactivate-minibuffer-h)
-    (hook   tab-bar-tab-pre-close-functions   dirvish-deactivate-tab-h)
-    (hook   delete-frame-functions            dirvish-deactivate-frame-h)))
+    (hook   minibuffer-exit-hook              dirvish-deactivate-minibuffer-h)))
 (defvar dirvish-scopes '(:tab tab-bar--current-tab-index :persp get-current-persp :perspective persp-curr))
 (defvar dirvish-libraries
   '((dirvish-widgets  path symlink omit index free-space file-link-number
@@ -554,7 +552,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
    for (_ . index-buf) = (dv-index-dir dv)
    thereis (and (not (get-buffer-window index-buf t))
                 (eq type (dv-type dv))
-                (equal (cl-subseq (dv-scopes dv) 10) scopes)
+                (equal (seq-take (dv-scopes dv) 6) scopes)
                 dv)))
 
 (defun dirvish--reuse-session (&optional dir layout type)
@@ -575,11 +573,10 @@ Set layout for the session with LAYOUT."
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
-  (setf (dv-window-conf dv) (current-window-configuration))
-  (setf (dv-scopes dv)
-        (append `(:dv ,dv :point ,(point) :mini ,(active-minibuffer-window)
-                      :frame ,(selected-frame) :bname ,buffer-file-name)
-                (dirvish--get-scopes))))
+  (let ((envs `(:dv ,dv :point ,(point) :mini ,(active-minibuffer-window)
+                    :frame ,(selected-frame) :bname ,buffer-file-name)))
+    (setf (dv-window-conf dv) (current-window-configuration))
+    (setf (dv-scopes dv) (append (dirvish--get-scopes) envs))))
 
 (defmacro dirvish-new (&rest args)
   "Create a new dirvish struct and put it into `dirvish--hash'.
@@ -885,23 +882,12 @@ FILENAME and WILDCARD are their args."
   (ansi-color-apply-on-region
    pos (save-excursion (goto-char pos) (forward-line (frame-height)) (point))))
 
-(defun dirvish-deactivate-tab-h (tab _only-tab)
-  "Deactivate all Dirvish sessions in TAB."
-  (dolist (scope (dirvish-get-all 'scopes))
-    (when (eq (plist-get scope :tab) (tab-bar--tab-index tab))
-      (dirvish-kill (plist-get scope :dv)))))
-
-(defun dirvish-deactivate-frame-h (frame)
-  "Deactivate all dvs in FRAME."
-  (dolist (scope (dirvish-get-all 'scopes t))
-    (when (eq (plist-get scope :frame) frame)
-      (dirvish-kill (plist-get scope :dv)))))
-
 (defun dirvish-deactivate-minibuffer-h ()
   "Deactivate Dirvish session in minibuffer."
   (dolist (scope (dirvish-get-all 'scopes t))
     (when (eq (plist-get scope :mini) (active-minibuffer-window))
-      (dirvish-kill (plist-get scope :dv)))))
+      (let ((dv (plist-get scope :dv)) dirvish-reuse-session)
+        (dirvish-kill dv) (remhash (dv-name dv) dirvish--hash)))))
 
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
