@@ -754,7 +754,8 @@ DIRNAME and SWITCHES are the same args in `dired'."
 (defun dirvish-dired-jump-ad (&optional other-window file-name)
   "Override `dired-jump' command.
 OTHER-WINDOW and FILE-NAME are the same args in `dired-jump'."
-  (let ((file-name (or file-name default-directory)))
+  (let ((file-name (or file-name default-directory))
+        (current-prefix-arg '(4)))
     (and other-window (switch-to-buffer-other-window (dirvish--util-buffer)))
     (if (dirvish-curr)
         (dirvish-find-entry-ad file-name)
