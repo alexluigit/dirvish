@@ -1165,8 +1165,7 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish--noselect (dir)
   "Return the Dirvish buffer at DIR, do not select it."
   (when (dirvish-curr) (set-window-dedicated-p (selected-window) nil))
-  (let ((dir (file-name-as-directory (expand-file-name dir)))
-        (dv (or (and dirvish-allow-overlap (dirvish-new))
+  (let ((dv (or (and dirvish-allow-overlap (dirvish-new))
                 (dirvish--find-reusable-session nil)
                 (dirvish-curr) dirvish--last (dirvish-new))))
     (dirvish--find-entry dv dir)))
