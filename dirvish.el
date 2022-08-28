@@ -1417,8 +1417,7 @@ If VEC, the attributes are retrieved by parsing the output of
     (dirvish--init-util-buffers dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dolist (pane w-order)
-      (let* ((inhibit-modification-hooks t)
-             (buf (dirvish--util-buffer pane dv))
+      (let* ((buf (dirvish--util-buffer pane dv))
              (win-alist (alist-get pane w-args))
              (win (display-buffer
                           buf `(dirvish--display-buffer . ,win-alist))))

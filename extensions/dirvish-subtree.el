@@ -26,7 +26,7 @@ The value may be a string of options or nil which means the
 working switches of current buffer will be used."
   :type '(choice symbol string) :group 'dirvish)
 
-(defcustom dirvish-subtree-line-prefix "  "
+(defcustom dirvish-subtree-line-prefix " │"
   "A string put into each nested subtree.
 The prefix is repeated \"depth\" times."
   :type 'string :group 'dirvish
@@ -42,8 +42,8 @@ The prefix is repeated \"depth\" times."
   :type 'boolean :group 'dirvish
   :set (lambda (k v)
          (set k v)
-         (if v (add-hook 'dirvish-setup-hook #'dirvish-subtree--revert 10)
-           (remove-hook 'dirvish-setup-hook #'dirvish-subtree--revert))))
+         (if v (add-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert)
+           (remove-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert))))
 
 (defcustom dirvish-subtree-always-show-state nil
   "Non-nil means always show the subtree state indicator."
@@ -77,6 +77,11 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (defface dirvish-subtree-state
   '((t (:inherit font-lock-doc-face)))
+  "Face used for `expanded-state' attribute."
+  :group 'dirvish)
+
+(defface dirvish-subtree-guide
+  '((t (:inherit font-lock-comment-face)))
   "Face used for `expanded-state' attribute."
   :group 'dirvish)
 
@@ -180,7 +185,9 @@ Ensure correct DIR when inside of a subtree."
            (parent (dirvish-subtree--parent (1- beg)))
            (depth (or (and parent (1+ (overlay-get parent 'dired-subtree-depth))) 1)))
       (overlay-put ov 'line-prefix
-                   (apply #'concat (make-list depth dirvish-subtree-line-prefix)))
+                   (propertize
+                    (apply #'concat (make-list depth dirvish-subtree-line-prefix))
+                    'face 'dirvish-subtree-guide))
       (overlay-put ov 'dired-subtree-name dirname)
       (overlay-put ov 'dired-subtree-depth depth)
       (overlay-put ov 'evaporate t)
@@ -199,7 +206,7 @@ When CLEAR, remove all subtrees in the buffer."
    (setq dirvish-subtree--overlays nil)
    (cl-loop for (_ . name) in (sort maps (lambda (a b) (< (car a) (car b))))
             when (dirvish-subtree--goto-file name) do
-            (cond (clear
+            (cond ((or clear (bound-and-true-p dirvish-emerge--group-overlays))
                    (dired-next-line 1)
                    (dirvish-subtree-remove))
                   ((not (dirvish-subtree--expanded-p))
