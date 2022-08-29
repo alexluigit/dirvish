@@ -1208,8 +1208,8 @@ Dirvish sets `revert-buffer-function' to this function."
   "Return the root or PARENT BUFFER in DV for ENTRY.
 When IDX, select that file."
   (let* ((bname (plist-get (dv-scopes dv) :bname))
-         (tp (tramp-tramp-file-p entry))
-         (hdl (and tp (tramp-file-name-handler 'file-remote-p entry)))
+         (remotep (tramp-tramp-file-p entry))
+         (hdl (and remotep (tramp-file-name-handler 'file-remote-p entry)))
          (flags (cdr (assoc hdl dirvish--tramp-hosts #'equal)))
          (long-flags (dv-ls-switches dv))
          (short-flags "-alh") (gnu? t))
@@ -1217,7 +1217,7 @@ When IDX, select that file."
       (cl-letf (((symbol-function 'dired-insert-set-properties)
                  #'ignore))
         (setq buffer (dired-noselect entry (or flags long-flags))))
-      (when (and tp (not flags))
+      (when (and remotep (not flags))
         (with-current-buffer buffer
           (setq gnu? (dirvish--gnuls-available-p))
           (push (cons hdl (if gnu? long-flags short-flags))
@@ -1230,7 +1230,7 @@ When IDX, select that file."
     (with-current-buffer buffer
       (unless parent (dirvish-prop :root entry))
       (dirvish-prop :dv (dv-name dv))
-      (dirvish-prop :tramp (and tp (tramp-dissect-file-name entry)))
+      (dirvish-prop :tramp (and remotep (tramp-dissect-file-name entry)))
       (dirvish-prop :tramp-handler hdl)
       (dirvish-prop :gui (display-graphic-p))
       (dired-goto-file (or idx bname entry))

@@ -92,7 +92,7 @@ will visit the latest `project-root' after executing
    for w in (window-list)
    for b = (window-buffer w)
    for dv = (with-current-buffer b (dirvish-curr))
-   thereis (and dv (eq 'dirvish-side-root-window-fn (dv-root-window-fn dv)) w)))
+   thereis (and dv (eq 'side (dv-type dv)) w)))
 
 (defun dirvish-side--auto-jump (&optional dir)
   "Visit DIR in current visible `dirvish-side' session."
@@ -101,9 +101,12 @@ will visit the latest `project-root' after executing
              (file buffer-file-name))
     (with-selected-window win
       (when dir (dirvish-find-entry-ad dir))
+      (dirvish-prop :cus-header 'dirvish-side-header)
       (if (eq dirvish-side-follow-buffer-file 'expand)
           (dirvish-subtree-expand-to file)
-        (dired-goto-file file)))))
+        (dired-goto-file file))
+      (dirvish--setup-mode-line (dv-layout (dirvish-curr)))
+      (dirvish-update-body-h))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
