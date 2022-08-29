@@ -210,7 +210,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice moody-redisplay                   dirvish-ignore-ad              :around)
     (hook   window-selection-change-functions dirvish-focus-change-h)
     (hook   minibuffer-exit-hook              dirvish-deactivate-minibuffer-h)))
-(defvar dirvish-scopes '(:tab tab-bar--current-tab-index :persp get-current-persp :perspective persp-curr))
+(defvar dirvish-scopes '(:frame selected-frame :tab tab-bar--current-tab-index :persp get-current-persp :perspective persp-curr))
 (defvar dirvish-libraries
   '((dirvish-widgets  path symlink omit index free-space file-link-number
                       file-user file-group file-time file-size file-modes
@@ -552,7 +552,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
    for (_ . index-buf) = (dv-index-dir dv)
    thereis (and (not (get-buffer-window index-buf t))
                 (eq type (dv-type dv))
-                (equal (seq-take (dv-scopes dv) 6) scopes)
+                (equal (seq-take (dv-scopes dv) 8) scopes)
                 dv)))
 
 (defun dirvish--reuse-session (&optional dir layout type)
@@ -573,8 +573,8 @@ Set layout for the session with LAYOUT."
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
-  (let ((envs `(:dv ,dv :point ,(point) :mini ,(active-minibuffer-window)
-                    :frame ,(selected-frame) :bname ,buffer-file-name)))
+  (let ((envs `(:dv ,dv :point ,(point) :bname ,buffer-file-name
+                    :mini ,(active-minibuffer-window))))
     (setf (dv-window-conf dv) (current-window-configuration))
     (setf (dv-scopes dv) (append (dirvish--get-scopes) envs))))
 
@@ -915,10 +915,9 @@ FILENAME and WILDCARD are their args."
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
-  (let* ((dv (dirvish-curr))
-         (buf (current-buffer))
-         (win (get-buffer-window buf)))
-    (when (window-live-p win) (set-window-dedicated-p win nil))
+  (when-let ((dv (dirvish-curr)) (buf (current-buffer)))
+    (let ((win (get-buffer-window buf)))
+      (when (window-live-p win) (set-window-dedicated-p win nil)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
     (unless (dv-roots dv)
       (when-let ((layout (dv-layout dv))
@@ -936,7 +935,7 @@ FILENAME and WILDCARD are their args."
   (let ((buf (current-buffer)) (dv (dirvish-curr)))
     (cond ((active-minibuffer-window))
           ((and dirvish--last (dv-layout dirvish--last)
-                (not (get-buffer-window (cdr (dv-index-dir dirvish--last))))
+                (not (get-buffer-window (cdr (dv-index-dir dirvish--last)) t))
                 (window-live-p (dv-preview-window dirvish--last)))
            (set-window-configuration (dv-window-conf dirvish--last))
            (switch-to-buffer buf)

@@ -386,7 +386,7 @@ keyword in that prefix or infix."
              :if (lambda () (dv-layout (dirvish-curr)))
              ,@(mapcar #'layout-option layout-alist)]
             ["Actions:"
-             ("M-f" "Toggle fullscreen" dirvish-layout-toggle)
+             ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
              ("RET" "Quit and revert buffer"
               (lambda () (interactive) (dirvish--build (dirvish-curr)) (revert-buffer)))]
             (interactive)
