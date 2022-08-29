@@ -222,6 +222,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (dirvish-subtree  subtree-state)
     (dirvish-yank     yank)))
 (defvar dirvish-allow-overlap nil)
+(defvar dirvish-reset-keywords '(:free-space))
 (defconst dirvish--dired-free-space
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--tramp-preview-cmd
@@ -290,7 +291,8 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
     (save-excursion
       (goto-char (point-min))
       (let ((o (make-overlay
-                (point) (progn (forward-line (if dirvish--dired-free-space 2 1)) (point)))))
+                (point) (progn (forward-line (if dirvish--dired-free-space 2 1))
+                               (point)))))
         (overlay-put o 'dirvish-remove-header t)
         (overlay-put o 'invisible t)))))
 
@@ -639,6 +641,7 @@ The keyword arguments set the fields of the dirvish struct."
   (cl-loop with res = ()
            with fmt = "[Dirvish]: install '%s' executable to preview %s files.
 See `dirvish--available-preview-dispatchers' for details."
+           with dp-fmt = "dirvish-%s-preview-dp"
            for dp in (append '(tramp disable) dps '(default))
            for info = (alist-get dp dirvish--available-preview-dispatchers)
            for requirements = (plist-get info :require)
@@ -646,7 +649,7 @@ See `dirvish--available-preview-dispatchers' for details."
            do (progn (dolist (pkg requirements)
                        (unless (executable-find pkg)
                          (message fmt pkg dp) (setq met nil)))
-                     (when met (push (intern (format "dirvish-%s-preview-dp" dp)) res)))
+                     (when met (push (intern (format dp-fmt dp)) res)))
            finally return (reverse res)))
 
 (defun dirvish--refresh-slots (dv)
@@ -715,9 +718,10 @@ See `dirvish--available-preview-dispatchers' for details."
            do (remove-overlays (point-min) (point-max) ov t)
            when (funcall pred dv) do
            (progn (setq width (- width (or (eval wd) 0))) (push fn fns))
-           finally do (with-silent-modifications
-                        (save-excursion (dirvish--render-attributes-1
-                                         height width subtrees (point) tramp fns)))))
+           finally do
+           (with-silent-modifications
+             (save-excursion (dirvish--render-attributes-1
+                              height width subtrees (point) tramp fns)))))
 
 ;;;; Advices
 
@@ -749,7 +753,8 @@ DIRNAME and SWITCHES are the same args in `dired'."
   "Override `dired-other-frame' command.
 DIRNAME and SWITCHES are the same args in `dired'."
   (switch-to-buffer-other-frame (dirvish--util-buffer))
-  (dirvish-new :path dirname :ls-switches switches :layout dirvish-default-layout))
+  (dirvish-new :path dirname :ls-switches switches
+    :layout dirvish-default-layout))
 
 (defun dirvish-dired-jump-ad (&optional other-window file-name)
   "Override `dired-jump' command.
@@ -881,7 +886,8 @@ FILENAME and WILDCARD are their args."
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
   (ansi-color-apply-on-region
-   pos (save-excursion (goto-char pos) (forward-line (frame-height)) (point))))
+   pos (save-excursion
+         (goto-char pos) (forward-line (frame-height)) (point))))
 
 (defun dirvish-deactivate-minibuffer-h ()
   "Deactivate Dirvish session in minibuffer."
@@ -1010,7 +1016,8 @@ When PROC finishes, fill preview buffer with process result."
                   (when (memq (process-status proc) '(exit signal))
                     (shell-command-set-point-after-cmd (process-buffer proc)))))
           (set-process-filter
-           proc (lambda (proc str) (with-current-buffer (process-buffer proc) (insert str))))
+           proc (lambda (proc str)
+                  (with-current-buffer (process-buffer proc) (insert str))))
           `(buffer . ,buf))
       '(info . "File preview is not supported in current TRAMP connection"))))
 
@@ -1155,6 +1162,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
   (dirvish-prop :old-index (dired-get-filename nil t))
+  (dolist (keyword dirvish-reset-keywords) (dirvish-prop keyword nil))
   (dired-revert)
   (dirvish--hide-dired-header)
   (setq dirvish--attrs-hash (make-hash-table :test #'equal))
@@ -1464,11 +1472,13 @@ If VEC, the attributes are retrieved by parsing the output of
         (pcase-dolist (`(,type ,sym ,fn ,place) dirvish-advice-alist)
           (if (eq type 'hook) (add-hook sym fn) (advice-add sym place fn)))
         (setq find-directory-functions
-              (cl-substitute #'dirvish--noselect #'dired-noselect find-directory-functions)))
+              (cl-substitute #'dirvish--noselect
+                             #'dired-noselect find-directory-functions)))
     (pcase-dolist (`(,type ,sym ,fn) dirvish-advice-alist)
       (if (eq type 'hook) (remove-hook sym fn) (advice-remove sym fn)))
     (setq find-directory-functions
-          (cl-substitute #'dired-noselect #'dirvish--noselect find-directory-functions))))
+          (cl-substitute #'dired-noselect
+                         #'dirvish--noselect find-directory-functions))))
 
 ;;;###autoload
 (defun dirvish (&optional path)

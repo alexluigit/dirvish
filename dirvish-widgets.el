@@ -149,7 +149,10 @@ This value is passed to function `format-time-string'."
   (:if (and (dirvish-prop :root) dired-hide-details-mode)
        :width (1+ dirvish--file-size-str-len))
   (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
-         (ov-pos (if (> remain f-wid) l-end (+ f-beg remain)))
+         (ov-pos (if (> remain f-wid) l-end
+                   (let* ((end (+ f-beg remain))
+                          (offset (- f-wid (length f-str))))
+                     (- end offset))))
          (face (or hl-face 'dirvish-file-size))
          (dp-spec `(space :align-to (- right-fringe
                                        ,dirvish--file-size-str-len
@@ -219,7 +222,8 @@ This value is passed to function `format-time-string'."
 
 (dirvish-define-mode-line omit
   "A `dired-omit-mode' indicator."
-  (and (bound-and-true-p dired-omit-mode) (propertize "Omit" 'face 'font-lock-negation-char-face)))
+  (and (bound-and-true-p dired-omit-mode)
+       (propertize "Omit" 'face 'font-lock-negation-char-face)))
 
 (dirvish-define-mode-line symlink
   "Show the truename of symlink file under the cursor."
