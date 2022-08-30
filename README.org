@@ -22,7 +22,13 @@ gives Dired an appealing and highly customizable user interface, but also comes
 together with almost all possible parts required for full usability as a modern
 file manager.
 
-[[https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png][https://user-images.githubusercontent.com/16313743/179333496-9b911fee-1305-45a0-99b0-7e81297d98a0.png]]
+* Screenshots
+
+[[https://user-images.githubusercontent.com/16313743/187437510-c6f060d6-8b0c-4289-9366-771e33a1eb63.png][https://user-images.githubusercontent.com/16313743/187437510-c6f060d6-8b0c-4289-9366-771e33a1eb63.png]]
+
+[[https://user-images.githubusercontent.com/16313743/187436132-f15cdbf7-ed05-47ed-aa08-37c64baca2c0.png][https://user-images.githubusercontent.com/16313743/187436132-f15cdbf7-ed05-47ed-aa08-37c64baca2c0.png]]
+
+[[https://user-images.githubusercontent.com/16313743/187436545-76c637bb-a60e-471b-9ace-3ea0f855cfb2.png][https://user-images.githubusercontent.com/16313743/187436545-76c637bb-a60e-471b-9ace-3ea0f855cfb2.png]]
 
 * Prerequisites
 
@@ -36,32 +42,32 @@ This package requires =GNU ls= (~gls~ on some OSs), and /optionally/:
 + =tar= and =unzip= for archive files preview
 
 @@html:<details>@@
-@@html:<summary>@@ Toggle install instructions @@html:</summary>@@
+@@html:<summary>@@ @@html:<b>@@Toggle install instructions@@html:</b>@@ @@html:</summary>@@
 
 @@html:<h2>@@macOS@@html:</h2>@@
 #+begin_src bash
-brew install coreutils fd poppler ffmpegthumbnailer mediainfo imagemagick
+  brew install coreutils fd poppler ffmpegthumbnailer mediainfo imagemagick
 #+end_src
 
 @@html:<h2>@@Debian-based@@html:</h2>@@
 #+begin_src bash
-apt install fd-find poppler-utils ffmpegthumbnailer mediainfo imagemagick tar unzip
+  apt install fd-find poppler-utils ffmpegthumbnailer mediainfo imagemagick tar unzip
 #+end_src
 
 @@html:<h2>@@Arch-based@@html:</h2>@@
 #+begin_src bash
-pacman -S fd poppler ffmpegthumbnailer mediainfo imagemagick tar unzip
+  pacman -S fd poppler ffmpegthumbnailer mediainfo imagemagick tar unzip
 #+end_src
 
 @@html:<h2>@@FreeBSD@@html:</h2>@@
 #+begin_src bash
-pkg install gnuls fd-find poppler ffmpegthumbnailer ImageMagick7 gtar
+  pkg install gnuls fd-find poppler ffmpegthumbnailer ImageMagick7 gtar
 #+end_src
 
 @@html:<h2>@@Windows (untested)@@html:</h2>@@
 #+begin_src bash
-# install via Scoop: https://scoop.sh/
-scoop install coreutils fd poppler imagemagick unzip
+  # install via Scoop: https://scoop.sh/
+  scoop install coreutils fd poppler imagemagick unzip
 #+end_src
 
 @@html:</details>@@
@@ -73,7 +79,7 @@ into Emacs 27.1+.  =el-get= users can get the recipe from [[https://github.com/a
 
 For straight.el users, it is simply:
 #+begin_src emacs-lisp
-(straight-use-package 'dirvish)
+  (straight-use-package 'dirvish)
 #+end_src
 
 * Quickstart

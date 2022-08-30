@@ -192,7 +192,7 @@ GROUP-TITLES is a list of group titles."
     (with-current-buffer buf
       (let ((pivot (dirvish-prop :mediainfo-pivot)) beg)
         (when (eq pivot 0) (user-error "Media properties already displayed"))
-        (when (> pivot 3) (delete-region 3 pivot))
+        (when (> pivot 2) (delete-region 2 pivot))
         (goto-char (point-max))
         (insert "\n\n\n")
         (setq beg (point))
@@ -212,7 +212,7 @@ GROUP-TITLES is a list of group titles."
         (let* ((p-window (dv-preview-window dv))
                (w-offset (max (round (/ (- (window-width p-window) iw) 2)) 0))
                (h-offset (max (round (/ (- (window-height p-window) ih) 2)) 0)))
-          (and dirvish-media-auto-properties (setq h-offset 3))
+          (and dirvish-media-auto-properties (setq h-offset 2))
           (goto-char 1)
           (insert (make-string h-offset ?\n))
           (dirvish-prop :mediainfo-pivot

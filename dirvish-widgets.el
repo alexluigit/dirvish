@@ -64,7 +64,7 @@ This value is passed to function `format-time-string'."
   :group 'dirvish)
 
 (defface dirvish-file-size
-  '((t (:inherit completions-annotations)))
+  '((t (:inherit completions-annotations :underline nil :italic nil)))
   "Face used for display file size attributes / mode-line segment."
   :group 'dirvish)
 

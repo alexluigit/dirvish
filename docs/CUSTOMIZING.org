@@ -282,14 +282,13 @@ The extra commands in this sample config are documented at [[file:EXTENSIONS.org
     :init
     (dirvish-override-dired-mode)
     :custom
-    (dirvish-quick-access-entries
+    (dirvish-quick-access-entries ; It's a :custom option
      '(("h" "~/"                          "Home")
        ("d" "~/Downloads/"                "Downloads")
        ("m" "/mnt/"                       "Drives")
        ("t" "~/.local/share/Trash/files/" "TrashCan")))
     :config
     ;; (dirvish-peek-mode) ; Preview files in minibuffer
-    ;; (setq dirvish-hide-details nil) ; show details at startup like `dired'
     (setq dirvish-mode-line-format
           '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
     (setq dirvish-attributes
@@ -327,8 +326,8 @@ Emacs 29 added mouse drag-and-drop support for Dired, the following settings
 will enable it:
 
 #+begin_src emacs-lisp
-(setq dired-mouse-drag-files t)                   ; added in Emacs 29
-(setq mouse-drag-and-drop-region-cross-program t) ; added in Emacs 29
+  (setq dired-mouse-drag-files t)                   ; added in Emacs 29
+  (setq mouse-drag-and-drop-region-cross-program t) ; added in Emacs 29
 #+end_src
 
 Some keybindings for mouse:
@@ -337,10 +336,10 @@ Some keybindings for mouse:
 - /middle click/: opening a file/directory in new window
 
 #+begin_src emacs-lisp
-(setq mouse-1-click-follows-link nil)
-(define-key dirvish-mode-map (kbd "<mouse-1>") 'dirvish-subtree-toggle-or-open)
-(define-key dirvish-mode-map (kbd "<mouse-2>") 'dired-mouse-find-file-other-window)
-(define-key dirvish-mode-map (kbd "<mouse-3>") 'dired-mouse-find-file)
+  (setq mouse-1-click-follows-link nil)
+  (define-key dirvish-mode-map (kbd "<mouse-1>") 'dirvish-subtree-toggle-or-open)
+  (define-key dirvish-mode-map (kbd "<mouse-2>") 'dired-mouse-find-file-other-window)
+  (define-key dirvish-mode-map (kbd "<mouse-3>") 'dired-mouse-find-file)
 #+end_src
 
 ** Complementary packages
