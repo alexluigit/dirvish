@@ -24,11 +24,11 @@ file manager.
 
 * Screenshots
 
-[[https://user-images.githubusercontent.com/16313743/187437510-c6f060d6-8b0c-4289-9366-771e33a1eb63.png][https://user-images.githubusercontent.com/16313743/187437510-c6f060d6-8b0c-4289-9366-771e33a1eb63.png]]
+[[https://user-images.githubusercontent.com/16313743/187678438-18c2032c-d937-4417-aca7-c59d72dcf38b.png][https://user-images.githubusercontent.com/16313743/187678438-18c2032c-d937-4417-aca7-c59d72dcf38b.png]]
 
 [[https://user-images.githubusercontent.com/16313743/187436132-f15cdbf7-ed05-47ed-aa08-37c64baca2c0.png][https://user-images.githubusercontent.com/16313743/187436132-f15cdbf7-ed05-47ed-aa08-37c64baca2c0.png]]
 
-[[https://user-images.githubusercontent.com/16313743/187484357-267391e4-bd7f-4f8b-bc9f-ff559fd32086.png][https://user-images.githubusercontent.com/16313743/187484357-267391e4-bd7f-4f8b-bc9f-ff559fd32086.png]]
+[[https://user-images.githubusercontent.com/16313743/187674778-20aad9d6-0398-4a95-a10f-f01ab164d454.png][https://user-images.githubusercontent.com/16313743/187674778-20aad9d6-0398-4a95-a10f-f01ab164d454.png]]
 
 * Prerequisites
 

@@ -837,6 +837,7 @@ If ALL-FRAMES, search target directories in all frames."
     (setq-local evil-normal-state-cursor 'hollow))
   (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
+  (remove-hook 'isearch-mode-end-hook #'dirvish-update-body-h t)
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
 
 (defun dirvish-wdired-exit-ad (&rest _)
@@ -1195,6 +1196,7 @@ Dirvish sets `revert-buffer-function' to this function."
         (dirvish-hide-details (dired-hide-details-mode t)))
   (add-hook 'window-buffer-change-functions #'dirvish-on-winbuf-change-h nil t)
   (add-hook 'window-configuration-change-hook (dv-on-winconf-change dv) nil t)
+  (add-hook 'isearch-mode-end-hook #'dirvish-update-body-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
   (run-hooks 'dirvish-mode-hook)
