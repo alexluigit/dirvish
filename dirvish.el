@@ -353,7 +353,8 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--window-selected-p (dv)
   "Return t if session DV is selected."
-  (eq (dv-root-window dv) dirvish--selected-window))
+  (eq (if (dv-layout dv) (dv-root-window dv) (frame-selected-window))
+      dirvish--selected-window))
 
 (defun dirvish--host-in-whitelist-p (&optional vec)
   "Check if the TRAMP connection VEC should be dominated by Dirvish."
@@ -950,23 +951,14 @@ FILENAME and WILDCARD are their args."
           (t (setq dirvish--last dv
                    tab-bar-new-tab-choice
                    (if dv "*scratch*" dirvish--saved-new-tab-choice))))
-    (setq dirvish--selected-window (selected-window))))
+    (setq dirvish--selected-window (frame-selected-window))))
 
 (defun dirvish-winconf-change-h ()
   "Create new session on window split."
-  (let ((dv (dirvish-curr))
-        (path (dirvish-prop :root))
-        (child (dirvish-prop :index)))
+  (let ((dv (dirvish-curr)))
     (when (and (not (active-minibuffer-window)) (dirvish-prop :minimized))
       (dirvish--build dv))
-    (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))
-    ;; when split new window in single window dirvish
-    (when (and (not (dv-layout dv)) (> (length (get-buffer-window-list)) 1))
-      (switch-to-buffer "*scratch*")
-      (let ((new (dirvish-new :type 'split :path path)))
-        (setf (dv-index-dir new) (cons path (current-buffer)))
-        (dired-goto-file child)
-        (dirvish--render-attributes new)))))
+    (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))))
 
 (defun dirvish-on-winbuf-change-h (frame-or-window)
   "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
@@ -1111,15 +1103,13 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-curr))
-              (buf (cdr (dv-index-dir dv)))
+              (buf (and (dv-layout dv) (cdr (dv-index-dir dv))))
               (scale ,(get-font-scale))
               (win-width (floor (/ (window-width) scale)))
-              (str-l "") (str-r "") (len-r 0))
-         (when (buffer-live-p buf)
-           (setq str-l (format-mode-line
-                        ',(or (expand left) mode-line-format) nil nil buf))
-           (setq str-r (format-mode-line ',(expand right) nil nil buf))
-           (setq len-r (string-width str-r)))
+              (str-l (format-mode-line
+                      ',(or (expand left) mode-line-format) nil nil buf))
+              (str-r (format-mode-line ',(expand right) nil nil buf))
+              (len-r (string-width str-r)))
          (concat
           (dirvish--bar-image (dv-layout dv) ,header)
           (if (< (+ (string-width str-l) len-r) win-width)
