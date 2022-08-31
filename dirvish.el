@@ -615,8 +615,7 @@ The keyword arguments set the fields of the dirvish struct."
         (setq header-line-format dirvish--header-line-fmt))
       (set-window-configuration (dv-window-conf dv))
       (goto-char (plist-get (dv-scopes dv) :point))
-      (dirvish-with-no-dedication (switch-to-buffer index))
-      (dirvish-prop :minimized t))
+      (dirvish-with-no-dedication (switch-to-buffer index)))
     (mapc #'dirvish--kill-buffer (remove index (mapcar #'cdr (dv-roots dv))))
     (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv)))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
@@ -897,7 +896,13 @@ FILENAME and WILDCARD are their args."
   (dolist (scope (dirvish-get-all 'scopes t))
     (when (eq (plist-get scope :mini) (active-minibuffer-window))
       (let ((dv (plist-get scope :dv)) dirvish-reuse-session)
-        (dirvish-kill dv) (remhash (dv-name dv) dirvish--hash)))))
+        (dirvish-kill dv) (remhash (dv-name dv) dirvish--hash))))
+  ;; Resume the session that the current buffer points to
+  (run-with-timer ; without it, redisplay raises an error
+   0 nil (lambda () (when-let ((dv (dirvish-curr)) (buf (current-buffer)))
+                 (with-selected-window (dirvish--create-root-window dv)
+                   (dirvish-with-no-dedication (switch-to-buffer buf))
+                   (dirvish--build dv))))))
 
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
@@ -958,8 +963,6 @@ FILENAME and WILDCARD are their args."
 (defun dirvish-winconf-change-h ()
   "Restore hidden sessions on buffer switching."
   (let ((dv (dirvish-curr)))
-    (when (and (not (active-minibuffer-window)) (dirvish-prop :minimized))
-      (dirvish--build dv))
     (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))))
 
 (defun dirvish-on-winbuf-change-h (frame-or-window)
@@ -1403,7 +1406,6 @@ If VEC, the attributes are retrieved by parsing the output of
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
   (setf (dv-index-dir dv) (cons (dirvish-prop :root) (current-buffer)))
-  (dirvish-prop :minimized nil)
   (let* ((layout (dv-layout dv))
          (w-order (and layout (dirvish--window-split-order)))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
