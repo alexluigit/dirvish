@@ -74,8 +74,7 @@ Also see `dirvish-layout-recipes' in `dirvish-extras.el'."
                                (float :tag "width of preview windows")))
 
 (defface dirvish-hl-line
-  '((((class color) (background light)) :background "#8eecf4" :extend t)
-    (((class color) (background dark)) :background "#004065" :extend t))
+  '((t :inherit highlight :extend t))
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
