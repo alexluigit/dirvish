@@ -209,7 +209,9 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice moody-redisplay                   dirvish-ignore-ad              :around)
     (hook   window-selection-change-functions dirvish-focus-change-h)
     (hook   minibuffer-exit-hook              dirvish-deactivate-minibuffer-h)))
-(defvar dirvish-scopes '(:frame selected-frame :tab tab-bar--current-tab-index :persp get-current-persp :perspective persp-curr))
+(defvar dirvish-scopes '(:frame selected-frame :tab tab-bar--current-tab-index
+                                :persp get-current-persp :perspective persp-curr
+                                :mini active-minibuffer-window))
 (defvar dirvish-libraries
   '((dirvish-widgets  path symlink omit index free-space file-link-number
                       file-user file-group file-time file-size file-modes
@@ -549,12 +551,13 @@ If FLATTEN is non-nil, collect them as a flattened list."
   "Return the first matched reusable session with TYPE."
   (cl-loop
    with scopes = (dirvish--get-scopes)
+   with len = (length dirvish-scopes)
    for dv-name in (dirvish-get-all 'name t t)
    for dv = (gethash dv-name dirvish--hash)
    for (_ . index-buf) = (dv-index-dir dv)
    thereis (and (not (get-buffer-window index-buf t))
                 (eq type (dv-type dv))
-                (equal (seq-take (dv-scopes dv) 8) scopes)
+                (equal (seq-take (dv-scopes dv) len) scopes)
                 dv)))
 
 (defun dirvish--reuse-session (&optional dir layout type)
@@ -575,8 +578,7 @@ Set layout for the session with LAYOUT."
 
 (defun dirvish--save-env (dv)
   "Save the environment information of DV."
-  (let ((envs `(:dv ,dv :point ,(point) :bname ,buffer-file-name
-                    :mini ,(active-minibuffer-window))))
+  (let ((envs `(:dv ,dv :point ,(point) :bname ,buffer-file-name)))
     (setf (dv-window-conf dv) (current-window-configuration))
     (setf (dv-scopes dv) (append (dirvish--get-scopes) envs))))
 
@@ -954,7 +956,7 @@ FILENAME and WILDCARD are their args."
     (setq dirvish--selected-window (frame-selected-window))))
 
 (defun dirvish-winconf-change-h ()
-  "Create new session on window split."
+  "Restore hidden sessions on buffer switching."
   (let ((dv (dirvish-curr)))
     (when (and (not (active-minibuffer-window)) (dirvish-prop :minimized))
       (dirvish--build dv))
