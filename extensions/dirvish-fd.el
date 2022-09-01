@@ -24,7 +24,7 @@
         (fdfind (executable-find "fdfind")))
     (cond (fd fd)
           (fdfind fdfind)
-          (t (warn "`dirvish-fd' requires `fd', please install it") nil)))
+          (t nil)))
   "The default fd program."
   :type 'string :group 'dirvish)
 
@@ -225,6 +225,8 @@ should return a list of regular expressions."
 This command takes a while to index all the directories the first
 time you run it.  After the indexing, it fires up instantly."
   (interactive)
+  (unless dirvish-fd-program
+    (user-error "`dirvish-fd' requires `fd', please install it"))
   (let* ((command (concat dirvish-fd-program " -H -td -0 . /"))
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))
@@ -332,6 +334,8 @@ The command run is essentially:
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Fd target directory: " nil "" t))
                      nil))
+  (unless dirvish-fd-program
+    (user-error "`dirvish-fd' requires `fd', please install it"))
   (setq dir (file-name-as-directory
              (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir)

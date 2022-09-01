@@ -113,15 +113,13 @@ If MULTI-LINE, make every path occupy a new line."
   "Copy remote path of marked files.
 If MULTI-LINE, make every path occupy a new line."
   (interactive "P")
-  (unless (dirvish-prop :remote) (user-error "Not in a remote directory"))
-  (let* ((files
-          (cl-loop for file in (dired-get-marked-files)
-                   for tramp-struct = (tramp-dissect-file-name file)
-                   for user = (tramp-file-name-user tramp-struct)
-                   for host = (tramp-file-name-host tramp-struct)
-                   for localname = (tramp-file-local-name file)
-                   collect (format "%s%s%s:%s" (or user "")
-                                   (if user "@" "") host localname)))
+  (let* ((tramp (or (dirvish-prop :tramp) (user-error "Not a remote folder")))
+         (files (cl-loop for file in (dired-get-marked-files)
+                         for user = (tramp-file-name-user tramp)
+                         for host = (tramp-file-name-host tramp)
+                         for localname = (file-local-name file)
+                         collect (format "%s%s%s:%s" (or user "")
+                                         (if user "@" "") host localname)))
          (names (mapconcat #'concat files (if multi-line "\n" " "))))
     (dirvish--kill-and-echo (if multi-line (concat "\n" names) names))))
 
