@@ -32,6 +32,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(eval-when-compile (require 'dirvish-tramp))
 (declare-function dirvish--count-file-size "dirvish-widgets")
 
 (defclass dirvish-attribute (transient-infix)
@@ -112,7 +113,7 @@ If MULTI-LINE, make every path occupy a new line."
   "Copy remote path of marked files.
 If MULTI-LINE, make every path occupy a new line."
   (interactive "P")
-  (unless (dirvish-prop :tramp) (user-error "Not in a remote directory"))
+  (unless (dirvish-prop :remote) (user-error "Not in a remote directory"))
   (let* ((files
           (cl-loop for file in (dired-get-marked-files)
                    for tramp-struct = (tramp-dissect-file-name file)
@@ -214,7 +215,7 @@ FILESET defaults to `dired-get-marked-files'."
     dirvish-copy-file-path)
    ("P"   "Copy remote PATHs in one line <P> / multiple lines <C-u P>"
     dirvish-copy-remote-path
-    :if (lambda () (dirvish-prop :tramp)))
+    :if (lambda () (dirvish-prop :remote)))
    ("d"   "Copy file DIRECTORY"                dirvish-copy-file-directory)
    ("l"   "Copy symlink's truename"            dirvish-copy-file-true-path
     :if (lambda () (file-symlink-p (dired-get-filename nil t))))
@@ -338,11 +339,11 @@ FILESET defaults to `dired-get-marked-files'."
 (defcustom dirvish-ui-setup-items
   '(("s"  file-size      attr     "File size")
     ("c"  collapse       attr     "Collapse unique nested paths"
-     (or (not (dirvish-prop :tramp)) (tramp-local-host-p (dirvish-prop :tramp))))
+     (not (dirvish-prop :remote)))
     ("v"  vc-state       attr     "Version control state"
      (and (display-graphic-p) (dirvish-prop :vc-backend)))
     ("m"  git-msg        attr     "Git commit messages"
-     (and (dirvish-prop :vc-backend) (not (dirvish-prop :tramp))))
+     (and (dirvish-prop :vc-backend) (not (dirvish-prop :remote))))
     ("1" '(0 nil  0.4)   layout   "     -       | current (60%) | preview (40%)")
     ("2" '(0 nil  0.8)   layout   "     -       | current (20%) | preview (80%)")
     ("3" '(1 0.08 0.8)   layout   "parent (8%)  | current (12%) | preview (80%)")

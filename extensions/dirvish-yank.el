@@ -27,6 +27,7 @@
 
 (require 'dired-aux)
 (require 'dirvish)
+(require 'dirvish-tramp)
 
 (defcustom dirvish-yank-sources 'all
   "The way to collect source files.
@@ -176,8 +177,7 @@ RANGE can be `buffer', `session', `frame', `all'."
               (dv-buf (window-buffer (dv-root-window dv))))
     (when (and (buffer-live-p dv-buf)
                (or (eq dv-buf (current-buffer))
-                   (not (with-current-buffer dv-buf
-                          (dirvish-prop :tramp)))))
+                   (not (with-current-buffer dv-buf (dirvish-prop :remote)))))
       (with-current-buffer dv-buf (revert-buffer)))))
 
 (defun dirvish-yank--execute (cmd)
@@ -297,8 +297,8 @@ This command sync SRCS on SHOST to DEST on DHOST."
      ((and (memq method dirvish-yank--link-methods)
            (not (equal shost dhost)))
       (user-error "Dirvish[error]: can not make links between different hosts"))
-     ((and (not (and (or (not svec) (dirvish--host-in-whitelist-p svec))
-                     (or (not dvec) (dirvish--host-in-whitelist-p dvec))))
+     ((and (not (and (or (not svec) (dirvish-tramp--async-p svec))
+                     (or (not dvec) (dirvish-tramp--async-p dvec))))
            (not (memq method dirvish-yank--link-methods)))
       (dirvish-yank--fallback-handler method srcs dest))
      ((equal shost dhost)

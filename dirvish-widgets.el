@@ -103,7 +103,7 @@ This value is passed to function `format-time-string'."
 (defun dirvish--get-file-size-or-count (name attrs)
   "Get file size of file NAME from ATTRS."
   (let ((type (file-attribute-type attrs)))
-    (cond ((dirvish-prop :tramp)
+    (cond ((dirvish-prop :remote)
            (dirvish--file-size-add-spaces
             (or (file-attribute-size attrs) "?")))
           ((stringp type)
@@ -181,7 +181,7 @@ This value is passed to function `format-time-string'."
   (let* ((index (dired-current-directory))
          (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow))
          (abvname (abbreviate-file-name (file-local-name index)))
-         (rmt (dirvish-prop :tramp-handler))
+         (rmt (dirvish-prop :remote))
          (host (propertize (if rmt (concat " " (substring rmt 1)) "")
                            'face 'font-lock-builtin-face))
          (segs (nbutlast (split-string abvname "/")))
@@ -256,7 +256,7 @@ This value is passed to function `format-time-string'."
   (when-let* ((name (dirvish-prop :index))
               (attrs (dirvish-attribute-cache name :builtin))
               (uid (and attrs (file-attribute-user-id attrs)))
-              (uname (if (dirvish-prop :tramp) uid (user-login-name uid))))
+              (uname (if (dirvish-prop :remote) uid (user-login-name uid))))
     (propertize uname 'face 'dirvish-file-user-id)))
 
 (dirvish-define-mode-line file-group
@@ -264,7 +264,7 @@ This value is passed to function `format-time-string'."
   (when-let* ((name (dirvish-prop :index))
               (attrs (dirvish-attribute-cache name :builtin))
               (gid (and attrs (file-attribute-group-id attrs)))
-              (gname (if (dirvish-prop :tramp) gid (group-name gid))))
+              (gname (if (dirvish-prop :remote) gid (group-name gid))))
     (propertize gname 'face 'dirvish-file-group-id)))
 
 (dirvish-define-mode-line file-time
@@ -273,7 +273,7 @@ This value is passed to function `format-time-string'."
               (attrs (dirvish-attribute-cache name :builtin))
               (f-mtime (file-attribute-modification-time attrs))
               (time-string
-               (if (dirvish-prop :tramp) f-mtime
+               (if (dirvish-prop :remote) f-mtime
                  (format-time-string dirvish-time-format-string f-mtime))))
     (format "%s" (propertize time-string 'face 'dirvish-file-time))))
 

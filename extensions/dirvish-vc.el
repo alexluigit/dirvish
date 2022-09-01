@@ -107,7 +107,7 @@ vc-hooks.el) for detail explanation of these states."
   "Append git commit message to filename."
   (:if (and (dirvish-prop :root)
             (eq (dirvish-prop :vc-backend) 'Git)
-            (not (dirvish-prop :tramp))))
+            (not (dirvish-prop :remote))))
   (let* ((info (dirvish-attribute-cache f-name :git-msg))
          (face (or hl-face 'dirvish-git-commit-message-face))
          (str (substring (concat "  " info) 0 -1))

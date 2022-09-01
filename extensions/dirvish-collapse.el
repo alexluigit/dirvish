@@ -60,8 +60,7 @@
   "Collapse unique nested paths."
   (:if (and (dirvish-prop :root)
             (not (dirvish-prop :fd-arglist))
-            (or (not (dirvish-prop :tramp))
-                (tramp-local-host-p (dirvish-prop :tramp)))))
+            (not (dirvish-prop :remote))))
   (when-let* ((cache (dirvish-collapse--cache f-name))
               (head (car cache))
               (tail (cdr cache)))

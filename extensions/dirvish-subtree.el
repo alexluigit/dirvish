@@ -26,16 +26,12 @@ The value may be a string of options or nil which means the
 working switches of current buffer will be used."
   :type '(choice symbol string) :group 'dirvish)
 
-(defcustom dirvish-subtree-line-prefix " │"
+(define-obsolete-variable-alias 'dirvish-subtree-line-prefix 'dirvish-subtree-prefix "Sep 1, 2022")
+(defcustom dirvish-subtree-prefix " │"
   "A string put into each nested subtree.
 The prefix is repeated \"depth\" times."
   :type 'string :group 'dirvish
-  :set (lambda (k v)
-         (set k v)
-         (setq dirvish-subtree--prefix-unit-len
-               (cond ((bound-and-true-p dired-subtree-line-prefix)
-                      (or (ignore-errors (length (bound-and-true-p dired-subtree-line-prefix))) 2))
-                     (t (length v))))))
+  :set (lambda (k v) (set k v) (setq dirvish-subtree--prefix-unit-len (length v))))
 
 (defcustom dirvish-subtree-save-on-revert t
   "Non-nil means `revert-buffer' keeps all expanded subtrees."
@@ -173,22 +169,22 @@ Ensure correct DIR when inside of a subtree."
 
 (defun dirvish-subtree--insert ()
   "Insert subtree under this directory."
-  (let* ((dirname (dired-get-filename))
-         (listing (dirvish-subtree--readin dirname))
+  (let* ((dir (dired-get-filename))
+         (listing (dirvish-subtree--readin dir))
          buffer-read-only beg end)
-    (dirvish--print-directory (dirvish-prop :tramp) (current-buffer) dirname t)
+    (dirvish-data-for-dir dir (current-buffer) nil)
     (with-silent-modifications
       (save-excursion
         (setq beg (progn (move-end-of-line 1) (insert "\n") (point)))
         (setq end (progn (insert listing) (1+ (point))))))
     (let* ((ov (make-overlay beg end))
            (parent (dirvish-subtree--parent (1- beg)))
-           (depth (or (and parent (1+ (overlay-get parent 'dired-subtree-depth))) 1)))
+           (p-depth (and parent (1+ (overlay-get parent 'dired-subtree-depth))))
+           (depth (or p-depth 1))
+           (prefix (apply #'concat (make-list depth dirvish-subtree-prefix))))
       (overlay-put ov 'line-prefix
-                   (propertize
-                    (apply #'concat (make-list depth dirvish-subtree-line-prefix))
-                    'face 'dirvish-subtree-guide))
-      (overlay-put ov 'dired-subtree-name dirname)
+                   (propertize prefix 'face 'dirvish-subtree-guide))
+      (overlay-put ov 'dired-subtree-name dir)
       (overlay-put ov 'dired-subtree-depth depth)
       (overlay-put ov 'evaporate t)
       (push ov dirvish-subtree--overlays))))
