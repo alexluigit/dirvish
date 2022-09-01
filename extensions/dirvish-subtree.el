@@ -20,6 +20,18 @@
 (defvar dirvish-subtree--prefix-unit-len 2)
 (defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
 
+(setq dirvish-advice-alist
+      (append dirvish-advice-alist
+              '((advice dired-current-directory dirvish-curr-dir-a     :around)
+                (advice dired-subdir-index      dirvish-subdir-index-a :around)
+                (advice dired-get-subdir        dirvish-get-subdir-a   :around))))
+(when dirvish-override-dired-mode
+  (pcase-dolist (`(,sym ,fn)
+                 '((dired-current-directory dirvish-curr-dir-a)
+                   (dired-subdir-index      dirvish-subdir-index-a)
+                   (dired-get-subdir        dirvish-get-subdir-a)))
+    (advice-add sym :around fn)))
+
 (defcustom dirvish-subtree-listing-switches nil
   "Listing SWITCHES used in subtrees.
 The value may be a string of options or nil which means the
@@ -104,15 +116,6 @@ Ensure correct DIR when inside of a subtree."
         (dired-previous-line 1))
       (unless (eq count 0) (setq dir (dired-current-directory))))
     (funcall fn dir)))
-
-(setq dirvish-advice-alist
-      (append dirvish-advice-alist
-              '((advice dired-current-directory dirvish-curr-dir-a     :around)
-                (advice dired-subdir-index      dirvish-subdir-index-a :around)
-                (advice dired-get-subdir        dirvish-get-subdir-a   :around))))
-(when dirvish-override-dired-mode
-  (dirvish-override-dired-mode -1)
-  (dirvish-override-dired-mode 1))
 
 (defun dirvish-subtree--goto-file (filename)
   "Go to line describing FILENAME."

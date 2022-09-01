@@ -21,6 +21,16 @@
 (defvar dirvish-media--auto-cache-timer nil)
 (add-to-list 'dirvish--no-update-preview-cmds 'dirvish-media-properties)
 
+(setq dirvish-advice-alist
+      (append dirvish-advice-alist
+              '((hook dirvish-after-revert-hook dirvish-media-clean-caches-h)
+                (hook dirvish-setup-hook        dirvish-media-cache-imgs-h))))
+(when dirvish-override-dired-mode
+  (pcase-dolist (`(,sym ,fn)
+                 '((dirvish-after-revert-hook dirvish-media-clean-caches-h)
+                   (dirvish-setup-hook        dirvish-media-cache-imgs-h)))
+    (add-hook sym fn)))
+
 (defcustom dirvish-media-auto-cache-threshold '(500 . 4)
   "Generate cache images automatically.
 The value should be a cons cell (FILES . PROCS).  Directories
@@ -288,14 +298,6 @@ GROUP-TITLES is a list of group titles."
                            (dirvish-media--cache-path
                             file (format "images/%s" size) ".*" t)
                            t)))))
-
-(setq dirvish-advice-alist
-      (append dirvish-advice-alist
-              '((hook dirvish-after-revert-hook dirvish-media-clean-caches-h)
-                (hook dirvish-setup-hook        dirvish-media-cache-imgs-h))))
-(when dirvish-override-dired-mode
-  (dirvish-override-dired-mode -1)
-  (dirvish-override-dired-mode 1))
 
 (dirvish-define-preview audio (file ext)
   "Preview audio files by printing its metadata.
