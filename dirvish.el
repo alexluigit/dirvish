@@ -208,7 +208,7 @@ Each function takes DV, ENTRY and BUFFER as its arguments.")
     (advice lsp-deferred                      dirvish-ignore-ad              :around)
     (advice moody-redisplay                   dirvish-ignore-ad              :around)
     (hook   window-selection-change-functions dirvish-focus-change-h)
-    (hook   minibuffer-exit-hook              dirvish-deactivate-minibuffer-h)))
+    (hook   minibuffer-exit-hook              dirvish-minibuffer-exit-h)))
 (defvar dirvish-scopes '(:frame selected-frame :tab tab-bar--current-tab-index
                                 :persp get-current-persp :perspective persp-curr
                                 :mini active-minibuffer-window))
@@ -891,7 +891,7 @@ FILENAME and WILDCARD are their args."
    pos (save-excursion
          (goto-char pos) (forward-line (frame-height)) (point))))
 
-(defun dirvish-deactivate-minibuffer-h ()
+(defun dirvish-minibuffer-exit-h ()
   "Deactivate Dirvish session in minibuffer."
   (dolist (scope (dirvish-get-all 'scopes t))
     (when (eq (plist-get scope :mini) (active-minibuffer-window))
@@ -900,6 +900,7 @@ FILENAME and WILDCARD are their args."
   ;; Resume the session that the current buffer points to
   (run-with-timer ; without it, redisplay raises an error
    0 nil (lambda () (when-let ((dv (dirvish-curr)) (buf (current-buffer)))
+                 (quit-window)
                  (with-selected-window (dirvish--create-root-window dv)
                    (dirvish-with-no-dedication (switch-to-buffer buf))
                    (dirvish--build dv))))))
