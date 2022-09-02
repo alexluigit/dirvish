@@ -191,7 +191,7 @@ RANGE can be `buffer', `session', `frame', `all'."
     (when dirvish-yank-auto-unmark
       (cl-loop for buf in (reverse (dirvish-get-all 'roots t t)) by 'cddr
                do (with-current-buffer buf (dired-unmark-all-marks))))
-    (setq dirvish-yank-task-counter (1+ dirvish-yank-task-counter))))
+    (cl-incf dirvish-yank-task-counter)))
 
 (defun dirvish-yank--newbase (base-name fileset dest)
   "Ensure an unique filename for BASE-NAME at DEST with FILESET."

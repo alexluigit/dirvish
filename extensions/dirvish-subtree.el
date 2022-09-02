@@ -110,8 +110,7 @@ LOCALP is the arg for `dired-current-directory', which see."
 Ensure correct DIR when inside of a subtree."
   (save-excursion
     (let ((count 0) ov)
-      (while (and (setq ov (dirvish-subtree--parent))
-                  (setq count (1+ count)))
+      (while (and (setq ov (dirvish-subtree--parent)) (cl-incf count))
         (goto-char (overlay-start ov))
         (dired-previous-line 1))
       (unless (eq count 0) (setq dir (dired-current-directory))))

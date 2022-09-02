@@ -1215,7 +1215,7 @@ When IDX, select that file."
          (i 0))
     (dirvish--init-dired-window dv (selected-window))
     (while (and (< i depth) (not (string= current parent)))
-      (setq i (1+ i))
+      (cl-incf i)
       (push (cons current parent) parent-dirs)
       (setq current (dirvish--get-parent-path current))
       (setq parent (dirvish--get-parent-path parent)))
