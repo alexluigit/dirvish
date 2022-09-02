@@ -60,6 +60,10 @@ should return a list of regular expressions."
   "Like `dirvish-redisplay-debounce', but used for fd input."
   :group 'dirvish :type 'float)
 
+(defcustom dirvish-fd-default-dir "/"
+  "Default directory for `dirvish-fd-jump'."
+  :group 'dirvish :type 'directory)
+
 (defconst dirvish-fd-proc-buffer "*Dirvish-fd*")
 (defconst dirvish-fd-bufname "🔍%s📁%s📁")
 (defconst dirvish-fd-header
@@ -115,8 +119,8 @@ should return a list of regular expressions."
   (lambda (o) (oset o value (split-string (or (dirvish-prop :fd-switches) ""))))
   [:description
    (lambda () (dirvish--format-menu-heading
-          "Setup FD Switches"
-          "Ignore Range [by default ignore ALL]
+               "Setup FD Switches"
+               "Ignore Range [by default ignore ALL]
   VCS: .gitignore + .git/info/exclude + $HOME/.config/git/ignore
   ALL: VCS + .ignore + .fdignore + $HOME/.config/fd/ignore"))
    ["File types (multiple types can be included)"
@@ -227,7 +231,7 @@ time you run it.  After the indexing, it fires up instantly."
   (interactive)
   (unless dirvish-fd-program
     (user-error "`dirvish-fd' requires `fd', please install it"))
-  (let* ((command (concat dirvish-fd-program " -H -td -0 . /"))
+  (let* ((command (concat dirvish-fd-program " -H -td -0 . " dirvish-fd-default-dir))
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))
          (files (dirvish--append-metadata 'file files-raw))
