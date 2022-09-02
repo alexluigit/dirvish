@@ -224,14 +224,19 @@ should return a list of regular expressions."
 (define-obsolete-function-alias 'dirvish-roam #'dirvish-fd-jump "Jun 08, 2022")
 (define-obsolete-function-alias 'dirvish-fd-roam #'dirvish-fd-jump "Jul 17, 2022")
 ;;;###autoload
-(defun dirvish-fd-jump ()
-  "Browse all directories using `fd' command.
+(defun dirvish-fd-jump (&optional current-dir-p)
+  "Browse directories using `fd' command.
 This command takes a while to index all the directories the first
-time you run it.  After the indexing, it fires up instantly."
-  (interactive)
+time you run it.  After the indexing, it fires up instantly.
+
+If called with \\`C-u' or if CURRENT-DIR-P holds the value 4,
+search for directories in the current directory.  Otherwise,
+search for directories in `dirvish-fd-default-dir'."
+  (interactive "p")
   (unless dirvish-fd-program
     (user-error "`dirvish-fd' requires `fd', please install it"))
-  (let* ((command (concat dirvish-fd-program " -H -td -0 . " dirvish-fd-default-dir))
+  (let* ((base-dir (if (eq current-dir-p 4) default-directory dirvish-fd-default-dir))
+         (command (concat dirvish-fd-program " -H -td -0 . " base-dir))
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))
          (files (dirvish--append-metadata 'file files-raw))
