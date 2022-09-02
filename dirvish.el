@@ -954,10 +954,10 @@ FILENAME and WILDCARD are their args."
 
 ;;;; Preview
 
-(defun dirvish--preview-fill-string-sentinel (proc _exitcode)
+(defun dirvish-shell-preview-proc-s (proc _exitcode)
   "A sentinel for dirvish preview process.
 When PROC finishes, fill preview buffer with process result."
-  (when-let ((dv (dirvish-curr)))
+  (when-let ((dv (or (dirvish-curr) dirvish--last)))
     (with-current-buffer (dirvish--util-buffer 'preview dv)
       (erase-buffer) (remove-overlays)
       (let* ((proc-buf (process-buffer proc))
@@ -1024,8 +1024,8 @@ When PROC finishes, fill preview buffer with process result."
          (r-buf (dirvish--util-buffer "shell-output"))
          (process-connection-type nil)
          (proc (apply #'start-process
-                      "dirvish-preview-proc" r-buf (cadr recipe) (cddr recipe))))
-    (set-process-sentinel proc 'dirvish--preview-fill-string-sentinel)
+                      "dirvish-shell-out" r-buf (cadr recipe) (cddr recipe))))
+    (set-process-sentinel proc 'dirvish-shell-preview-proc-s)
     (with-current-buffer p-buf (erase-buffer) (remove-overlays) p-buf)))
 
 (defun dirvish-preview-update (dv)
