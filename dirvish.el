@@ -363,11 +363,12 @@ When NOTE is non-nil, append it the next line."
   "Get selected Dirvish session."
   (gethash (dirvish-prop :dv) dirvish--hash))
 
-(defun dirvish--util-buffer (&optional type dv no-create)
+(defun dirvish--util-buffer (type &optional dv no-create inhibit-hiding)
   "Return session DV's utility buffer of TYPE (defaults to `temp').
-If NO-CREATE is non-nil, do not create the buffer."
+If NO-CREATE is non-nil, do not create the buffer.
+If INHIBIT-HIDING is non-nil, do not hide the buffer."
   (let* ((id (if dv (format "-%s*" (dv-name dv)) "*"))
-         (name (format "*Dirvish-%s%s" (or type "temp") id)))
+         (name (format "%s*Dirvish-%s%s" (if inhibit-hiding "" " ") type id)))
     (if no-create (get-buffer name) (get-buffer-create name))))
 
 (cl-defmacro dirvish-define-attribute (name docstring (&key if width) &rest body)
@@ -589,8 +590,9 @@ The keyword arguments set the fields of the dirvish struct."
     (setf (dv-roots dv) (cl-loop for (d . b) in (dv-roots dv) when
                                  (get-buffer-window b) collect (cons d b)))
     (setf (dv-parents dv) '())
-    (dolist (type '(preview header footer))
-      (dirvish--kill-buffer (dirvish--util-buffer type dv)))
+    (dirvish--kill-buffer (dirvish--util-buffer 'preview dv nil t))
+    (dirvish--kill-buffer (dirvish--util-buffer 'header dv))
+    (dirvish--kill-buffer (dirvish--util-buffer 'footer dv))
     (run-hooks 'dirvish-deactivation-hook)
     (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
     (setq dirvish--this nil)))
@@ -726,7 +728,7 @@ If OTHER-WINDOW, display the parent directory in other window."
         (user-error "Dirvish: you're in root directory")
       (if other-window
           (progn
-            (switch-to-buffer-other-window (dirvish--util-buffer))
+            (switch-to-buffer-other-window (dirvish--util-buffer "temp"))
             (dirvish-new :path parent))
         (dirvish-find-entry-ad parent))
       (dired-goto-file current))))
@@ -773,8 +775,10 @@ If ALL-FRAMES, search target directories in all frames."
 
 (defun dirvish-minibuffer-exit-h ()
   "Resume the session that the current buffer points to."
-  (run-with-timer ; without it, redisplay raises an error
-   0 nil (lambda () (when-let ((dv (dirvish-curr)) (buf (current-buffer)))
+  (run-with-timer ; without it, current buffer is not the right one
+   0 nil (lambda ()
+           (when-let ((dv (dirvish-curr))
+                      (buf (window-buffer (minibuffer-selected-window))))
                  (quit-window)
                  (with-selected-window (dirvish--create-root-window dv)
                    (dirvish-with-no-dedication (switch-to-buffer buf))
@@ -817,8 +821,9 @@ If ALL-FRAMES, search target directories in all frames."
       (remhash (dv-name dv) dirvish--hash)
       (let (kill-buffer-hook)
         (mapc #'dirvish--kill-buffer (mapcar #'cdr (dv-parents dv))))
-      (dolist (type '(preview header footer))
-        (dirvish--kill-buffer (dirvish--util-buffer type dv)))
+      (dirvish--kill-buffer (dirvish--util-buffer 'preview dv nil t))
+      (dirvish--kill-buffer (dirvish--util-buffer 'header dv))
+      (dirvish--kill-buffer (dirvish--util-buffer 'footer dv))
       (setq dirvish--this nil))))
 
 (defun dirvish-selection-change-h (&optional _frame-or-window)
@@ -871,7 +876,7 @@ If ALL-FRAMES, search target directories in all frames."
         (filesize (file-attribute-size (file-attributes file)))
         (enable-local-variables nil))
     (cond ((file-directory-p file) ; user did not specify a directory dispatcher
-           (let* ((script `(with-current-buffer (dired-noselect ,file "-alGh")
+           (let* ((script `(with-current-buffer (dired-noselect ,file "-AlGh")
                              (buffer-string)))
                   (cmd (format "%S" `(message "\n%s" ,script))))
              `(dired . ("emacs" "-Q" "-batch" "--eval" ,cmd))))
@@ -895,20 +900,20 @@ If ALL-FRAMES, search target directories in all frames."
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head info)) dv)
   "Insert info string from RECIPE into DV's preview buffer."
-  (let ((buf (dirvish--util-buffer 'preview dv)))
+  (let ((buf (dirvish--util-buffer 'preview dv nil t)))
     (with-current-buffer buf
       (erase-buffer) (remove-overlays) (insert (cdr recipe)) buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head buffer)) dv)
   "Use payload of RECIPE as preview buffer of DV directly."
-  (let ((p-buf (dirvish--util-buffer 'preview dv)))
+  (let ((p-buf (dirvish--util-buffer 'preview dv nil t)))
     (with-current-buffer p-buf (erase-buffer) (remove-overlays) (cdr recipe))))
 
 (defun dirvish-shell-preview-proc-s (proc _exitcode)
   "A sentinel for dirvish preview process.
 When PROC finishes, fill preview buffer with process result."
   (when-let ((dv (or (dirvish-curr) dirvish--this)))
-    (with-current-buffer (dirvish--util-buffer 'preview dv)
+    (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
       (erase-buffer) (remove-overlays)
       (let* ((proc-buf (process-buffer proc))
              (result-str (with-current-buffer proc-buf (buffer-string)))
@@ -921,9 +926,9 @@ When PROC finishes, fill preview buffer with process result."
 
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
-  (let ((buf (dirvish--util-buffer 'preview dv))
+  (let ((buf (dirvish--util-buffer 'preview dv nil t))
         (proc (make-process :name "sh-out" :connection-type nil
-                            :buffer "*Dirvish-temp*" :command (cdr recipe)
+                            :buffer " *Dirvish-temp*" :command (cdr recipe)
                             :sentinel 'dirvish-shell-preview-proc-s)))
     (process-put proc 'cmd-type (car recipe))
     (with-current-buffer buf (erase-buffer) (remove-overlays) buf)))
@@ -1098,7 +1103,7 @@ Dirvish sets `revert-buffer-function' to this function."
       (unless dirvish-parenting
         (dirvish-prop :root dir)
         (setf (dv-index-dir dv) (cons dir buffer)))
-      (run-hook-with-args 'dirvish-find-entry-hook dv dir buffer)
+      (run-hook-with-args 'dirvish-find-entry-hook dir buffer)
       buffer)))
 
 (defun dirvish--find-entry (entry)
@@ -1142,7 +1147,7 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
-  (with-current-buffer (dirvish--util-buffer 'preview dv)
+  (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
     (setq mode-line-format nil)
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
   (with-current-buffer (dirvish--util-buffer 'header dv)
@@ -1235,7 +1240,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
     (dirvish--init-util-buffers dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dolist (pane w-order)
-      (let* ((buf (dirvish--util-buffer pane dv))
+      (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
              (win-alist (alist-get pane w-args))
              (win (display-buffer
                           buf `(dirvish--display-buffer . ,win-alist))))

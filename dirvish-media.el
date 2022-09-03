@@ -198,7 +198,7 @@ GROUP-TITLES is a list of group titles."
                    (user-error "No file under the cursor")))
          (ext (downcase (or (file-name-extension file) "")))
          (type (dirvish-media--type ext))
-         (buf (dirvish--util-buffer 'preview (dirvish-curr) t)))
+         (buf (dirvish--util-buffer 'preview (dirvish-curr) t t)))
     (with-current-buffer buf
       (let ((pivot (dirvish-prop :mediainfo-pivot)) beg)
         (when (eq pivot 0) (user-error "Media properties already displayed"))
@@ -212,10 +212,11 @@ GROUP-TITLES is a list of group titles."
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head media-img)) dv)
   "Insert RECIPE as an image at preview window of DV."
-  (let ((buf (dirvish--util-buffer 'preview dv))
+  (let ((buf (dirvish--util-buffer 'preview dv nil t))
         (img (cdr recipe)))
     (with-current-buffer buf
       (erase-buffer) (remove-overlays)
+      (font-lock-mode -1)
       (insert " ")
       (add-text-properties 1 2 `(display ,img rear-nonsticky t keymap ,image-map))
       (pcase-let ((`(,iw . ,ih) (image-size img)))
@@ -243,7 +244,7 @@ GROUP-TITLES is a list of group titles."
 (cl-defmethod dirvish-preview-dispatch ((recipe (head media-cache)) dv)
   "Generate cache image according to RECIPE and session DV."
   (let* ((path (dirvish-prop :index))
-         (buf (dirvish--util-buffer 'preview dv))
+         (buf (dirvish--util-buffer 'preview dv nil t))
          (name (format "%s-%s-img-cache" path
                        (window-width (dv-preview-window dv)))))
     (unless (get-process name)

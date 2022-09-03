@@ -81,7 +81,7 @@ will visit the latest `project-root' after executing
 (defun dirvish-side-root-window-fn ()
   "Create root window according to `dirvish-side-display-alist'."
   (let ((win (display-buffer-in-side-window
-              (dirvish--util-buffer) dirvish-side-display-alist)))
+              (dirvish--util-buffer "temp") dirvish-side-display-alist)))
     (cl-loop for (key . value) in dirvish-side-window-parameters
              do (set-window-parameter win key value))
     (select-window win)))

@@ -106,7 +106,7 @@ results of `dirvish-yank--get-remote-port'.")
   "Return the remote port we shall use for the reverse port-forward."
   (+ 50000 (length
             (seq-filter
-             (lambda (p) (string-prefix-p "*Dirvish-yank" (process-name p)))
+             (lambda (p) (string-prefix-p " *Dirvish-yank" (process-name p)))
              (process-list)))))
 
 (defun dirvish-yank--get-srcs (&optional range)

@@ -97,7 +97,7 @@ VEC is the tramp file name structure for current directory."
   (if (dirvish-tramp--async-p vec)
       (let ((process-connection-type nil)
             (localname (file-remote-p file 'localname))
-            (buf (dirvish--util-buffer 'preview dv)) proc)
+            (buf (dirvish--util-buffer 'preview dv nil t)) proc)
         (when-let ((proc (get-buffer-process buf))) (delete-process proc))
         (setq proc (start-file-process-shell-command
                     (buffer-name buf) buf

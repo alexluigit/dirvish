@@ -77,7 +77,7 @@ one of categories in `dirvish-peek-categories'."
         (setq new-dv (dirvish-new :type 'peek))
         (setf (dv-preview-window new-dv)
               (display-buffer-in-side-window
-               (dirvish--util-buffer)
+               (dirvish--util-buffer "temp")
                dirvish-peek-display-alist))))))
 
 (defun dirvish-peek-update-h ()

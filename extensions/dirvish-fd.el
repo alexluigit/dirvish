@@ -271,8 +271,12 @@ search for directories in `dirvish-fd-default-dir'."
 
 (defun dirvish-fd--find-entry (entry)
   "Run fd accroring to ENTRY."
-  (pcase-let ((`(,pattern ,dir ,_) (split-string (substring entry 1) "📁")))
-    (dirvish-fd dir pattern)))
+  (let* ((dv (or dirvish--this (dirvish-curr)))
+         (roots (and dv (dv-roots dv)))
+         (buf (and roots (alist-get entry roots nil nil #'equal))))
+    (or buf
+        (pcase-let ((`(,pattern ,dir ,_) (split-string (substring entry 1) "📁")))
+          (dirvish-fd dir pattern)))))
 
 (defun dirvish-fd-sentinel (proc _)
   "Sentinel for `dirvish-fd' processes PROC."
@@ -351,7 +355,7 @@ The command run is essentially:
   (let* ((dv (or (dirvish-curr) (dirvish dir)))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
-         (buffer (dirvish--util-buffer 'fd))
+         (buffer (dirvish--util-buffer 'fd nil nil t))
          (bufname (format dirvish-fd-bufname (or pattern "") dir)))
     (dirvish--kill-buffer (get-buffer bufname))
     (with-current-buffer buffer
