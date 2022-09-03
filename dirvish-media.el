@@ -90,7 +90,7 @@ A new directory is created unless NO-MKDIR."
 
 (defun dirvish-media--cache-sentinel (proc _exitcode)
   "Sentinel for image cache process PROC."
-  (when-let* ((dv (or (dirvish-curr) dirvish--last))
+  (when-let* ((dv (or (dirvish-curr) dirvish--this))
               (path (dirvish-prop :index)))
     (and (equal path (process-get proc 'path))
          (dirvish-debounce nil (dirvish-preview-update dv)))))

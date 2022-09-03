@@ -57,7 +57,7 @@ being used at runtime."
                (lambda () (car completion-all-sorted-completions))))))
 
 (defvar dirvish-peek--curr-category nil)
-(defun dirvish-peek--create ()
+(defun dirvish-peek-setup-h ()
   "Create dirvish minibuffer preview window.
 The window is created only when metadata in current minibuffer is
 one of categories in `dirvish-peek-categories'."
@@ -73,8 +73,8 @@ one of categories in `dirvish-peek-categories'."
     (when p-category
       (dirvish-peek--prepare-cand-fetcher)
       (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
-      (unless (and dirvish--last (dv-preview-window dirvish--last))
-        (setq new-dv (dirvish-new))
+      (unless (and dirvish--this (dv-preview-window dirvish--this))
+        (setq new-dv (dirvish-new :type 'peek))
         (setf (dv-preview-window new-dv)
               (display-buffer-in-side-window
                (dirvish--util-buffer)
@@ -95,15 +95,25 @@ one of categories in `dirvish-peek-categories'."
        (setq cand (file-truename
                    (or (ignore-errors (find-library-name cand)) "")))))
     (dirvish-prop :index cand)
-    (dirvish-debounce nil (dirvish-preview-update dirvish--last))))
+    (dirvish-debounce nil (dirvish-preview-update dirvish--this))))
+
+(defun dirvish-peek-exit-h ()
+  "Hook for `minibuffer-exit-hook' to destroy peek session."
+  (dolist (dv (hash-table-values dirvish--hash))
+    (when (eq (dv-type dv) 'peek)
+      (dirvish-kill dv)
+      (remhash (dv-name dv) dirvish--hash))))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode
   "Show file preview when narrowing candidates using minibuffer."
   :group 'dirvish :global t
   (if dirvish-peek-mode
-      (add-hook 'minibuffer-setup-hook #'dirvish-peek--create)
-    (remove-hook 'minibuffer-setup-hook #'dirvish-peek--create)))
+      (progn
+        (add-hook 'minibuffer-setup-hook #'dirvish-peek-setup-h)
+        (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h))
+    (remove-hook 'minibuffer-setup-hook #'dirvish-peek-setup-h)
+    (remove-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h)))
 
 (provide 'dirvish-peek)
 ;;; dirvish-peek.el ends here

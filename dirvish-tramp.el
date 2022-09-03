@@ -41,13 +41,13 @@
                    :type ,(cons (if f-dirp 'dir 'file) f-truename))
                  dirvish--attrs-hash)))))
 
-(defun dirvish-tramp--noselect (dir flags remote)
+(defun dirvish-tramp--noselect (fn dir flags remote)
   "Return the Dired buffer at DIR with listing FLAGS.
 Save the REMOTE host to `dirvish-tramp-hosts'."
   (let* ((r-flags (cdr (assoc remote dirvish-tramp-hosts #'equal)))
          (short-flags "-alh")
          (gnu? t)
-         (buffer (dired-noselect dir (or r-flags flags))))
+         (buffer (apply fn (list dir (or r-flags flags)))))
     (unless flags
       (with-current-buffer buffer
         (setq gnu? (dirvish-tramp--gnuls-available-p))
@@ -55,7 +55,7 @@ Save the REMOTE host to `dirvish-tramp-hosts'."
               dirvish-tramp-hosts)))
     (unless gnu?
       (kill-buffer buffer)
-      (setq buffer (dired-noselect dir short-flags)))
+      (setq buffer (apply fn (list dir short-flags))))
     (with-current-buffer buffer
       (dirvish-prop :tramp (tramp-dissect-file-name dir))
       buffer)))

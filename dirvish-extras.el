@@ -184,8 +184,7 @@ FILESET defaults to `dired-get-marked-files'."
 
 (defun dirvish-desktop-restore-h ()
   "Restore dirvish sessions from the cache file."
-  (let* ((desktop-file (expand-file-name "desktop-sessions" dirvish-cache-dir))
-         (dirvish-allow-overlap t))
+  (let* ((desktop-file (expand-file-name "desktop-sessions" dirvish-cache-dir)))
     (when (file-readable-p desktop-file)
       (load-file desktop-file))))
 

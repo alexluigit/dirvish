@@ -64,7 +64,6 @@ should return a list of regular expressions."
   "Default directory for `dirvish-fd-jump'."
   :group 'dirvish :type 'directory)
 
-(defconst dirvish-fd-proc-buffer "*Dirvish-fd*")
 (defconst dirvish-fd-bufname "🔍%s📁%s📁")
 (defconst dirvish-fd-header
   (dirvish--mode-line-fmt-setter '(fd-switches) '(fd-timestamp fd-pwd " ") t))
@@ -352,7 +351,7 @@ The command run is essentially:
   (let* ((dv (or (dirvish-curr) (dirvish dir)))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
-         (buffer (get-buffer-create dirvish-fd-proc-buffer))
+         (buffer (dirvish--util-buffer 'fd))
          (bufname (format dirvish-fd-bufname (or pattern "") dir)))
     (dirvish--kill-buffer (get-buffer bufname))
     (with-current-buffer buffer
