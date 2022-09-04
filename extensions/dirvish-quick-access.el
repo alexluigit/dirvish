@@ -61,7 +61,9 @@ Here is a sample value for this variable.
                             (propertize path 'face 'font-lock-comment-face))
                     `(lambda ()
                        (interactive)
-                       (dired ,path))))])))))
+                       (if (dirvish-curr)
+                           (dirvish-find-entry-ad ,path)
+                         (dired ,path)))))])))))
 
 (provide 'dirvish-quick-access)
 ;;; dirvish-quick-access.el ends here

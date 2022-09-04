@@ -312,7 +312,7 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--remove-session (dv)
   "Remove DV from `dirvish--hash' and kill its index buffer."
-  (when (or (not dirvish-reuse-session) (eq (dv-type dv) 'split))
+  (unless dirvish-reuse-session
     (dirvish--kill-buffer (cdr (dv-index-dir dv)))
     (remhash (dv-name dv) dirvish--hash)))
 
