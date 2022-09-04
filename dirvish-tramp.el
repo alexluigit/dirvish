@@ -43,7 +43,8 @@
 
 (defun dirvish-tramp--noselect (fn dir flags remote)
   "Return the Dired buffer at DIR with listing FLAGS.
-Save the REMOTE host to `dirvish-tramp-hosts'."
+Save the REMOTE host to `dirvish-tramp-hosts'.
+FN is the original `dired-noselect' closure."
   (let* ((r-flags (cdr (assoc remote dirvish-tramp-hosts #'equal)))
          (short-flags "-alh")
          (gnu? t)

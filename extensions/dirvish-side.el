@@ -76,7 +76,9 @@ will visit the latest `project-root' after executing
         window-size-fixed window-configuration-change-hook)
     (unless (dv-layout dv)
       (window--display-buffer (window-buffer) (get-buffer-window)
-                              'reuse dirvish-side-display-alist))))
+                              'reuse dirvish-side-display-alist)
+      (with-current-buffer (cdr (dv-index-dir dv))
+        (dirvish--render-attributes dv)))))
 
 (defun dirvish-side-root-window-fn ()
   "Create root window according to `dirvish-side-display-alist'."
