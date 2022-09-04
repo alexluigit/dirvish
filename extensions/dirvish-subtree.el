@@ -321,7 +321,7 @@ This command takes a mouse event EV as its argment."
       (goto-char pos)
       (condition-case nil
           (dirvish-subtree-toggle)
-        (error (find-file (dired-get-file-for-visit)))))
+        (error (dirvish-find-entry-ad (dired-get-file-for-visit)))))
     (when (window-live-p win) (select-window win))))
 
 ;;;###autoload (autoload 'dirvish-subtree-menu "dirvish-subtree" nil t)

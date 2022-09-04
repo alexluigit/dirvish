@@ -508,7 +508,6 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (root-window-fn #'frame-selected-window :documentation "is the function to create the ROOT-WINDOW.")
   (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
   (on-file-open #'dirvish-on-file-open :documentation "Function to run before opening a file.")
-  (on-winconf-change #'dirvish-winconf-change-h :documentation "Called when window config changes.")
   (scopes () :documentation "are the \"environments\" such as init frame of this session.")
   (preview-buffers () :documentation "holds all file preview buffers in this session.")
   (preview-window nil :documentation "is the window to display preview buffer.")
@@ -604,8 +603,7 @@ The keyword arguments set the fields of the dirvish struct."
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
-  (let ((win (funcall (dv-root-window-fn dv))))
-    (setf (dv-root-window dv) win) win))
+  (let ((w (funcall (dv-root-window-fn dv)))) (setf (dv-root-window dv) w) w))
 
 (defun dirvish--preview-dps-validate (dps)
   "Check if the requirements of dispatchers DPS are met."
@@ -748,7 +746,7 @@ If ALL-FRAMES, search target directories in all frames."
     (setq-local evil-normal-state-cursor 'hollow))
   (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
     (remove-overlays (point-min) (point-max) ov t))
-  (remove-hook 'isearch-mode-end-hook #'dirvish-update-body-h t)
+  (remove-hook 'window-configuration-change-hook #'dirvish-winconf-change-h t)
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
 
 (defun dirvish-insert-subdir-ad (dirname &rest _)
@@ -845,9 +843,10 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish-winconf-change-h ()
   "Restore hidden sessions on buffer switching."
   (let ((dv (dirvish-curr)))
-    (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))))
+    (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))
+    (dirvish-update-body-h)))
 
-(defun dirvish-on-winbuf-change-h (frame-or-window)
+(defun dirvish-winbuf-change-h (frame-or-window)
   "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
   (let ((win (frame-selected-window frame-or-window)))
     (with-current-buffer (window-buffer win)
@@ -1066,9 +1065,8 @@ Dirvish sets `revert-buffer-function' to this function."
   (dirvish--setup-mode-line (dv-layout dv))
   (cond ((functionp dirvish-hide-details) (funcall dirvish-hide-details dv))
         (dirvish-hide-details (dired-hide-details-mode t)))
-  (add-hook 'window-buffer-change-functions #'dirvish-on-winbuf-change-h nil t)
-  (add-hook 'window-configuration-change-hook (dv-on-winconf-change dv) nil t)
-  (add-hook 'isearch-mode-end-hook #'dirvish-update-body-h nil t)
+  (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
+  (add-hook 'window-configuration-change-hook #'dirvish-winconf-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
   (run-hooks 'dirvish-mode-hook)

@@ -16,9 +16,13 @@
 (require 'dirvish-subtree)
 
 (defcustom dirvish-side-display-alist
-  '((side . left) (slot . -1) (window-width . 0.2))
+  '((side . left) (slot . -1))
   "Display alist for `dirvish-side' window."
   :group 'dirvish :type 'alist)
+
+(defcustom dirvish-side-width 35
+  "Width of the `dirvish-side' buffer."
+  :type 'integer :group 'dirvish)
 
 (defcustom dirvish-side-window-parameters '((no-delete-other-windows . t))
   "Window parameters for `dirvish-side' window."
@@ -70,22 +74,18 @@ will visit the latest `project-root' after executing
   (unless (dv-layout dv)
     (select-window (funcall dirvish-side-open-file-window-function))))
 
-(defun dirvish-side-winconf-change-h ()
-  "Adjust width of side window on window configuration change."
-  (let ((dv (dirvish-curr))
-        window-size-fixed window-configuration-change-hook)
-    (unless (dv-layout dv)
-      (window--display-buffer (window-buffer) (get-buffer-window)
-                              'reuse dirvish-side-display-alist)
-      (with-current-buffer (cdr (dv-index-dir dv))
-        (dirvish--render-attributes dv)))))
-
 (defun dirvish-side-root-window-fn ()
   "Create root window according to `dirvish-side-display-alist'."
   (let ((win (display-buffer-in-side-window
               (dirvish--util-buffer "temp") dirvish-side-display-alist)))
     (cl-loop for (key . value) in dirvish-side-window-parameters
              do (set-window-parameter win key value))
+    (with-selected-window win
+      (let ((w (max dirvish-side-width window-min-width)) window-size-fixed)
+        (cond ((> (window-width) w)
+               (shrink-window-horizontally  (- (window-width) w)))
+              ((< (window-width) w)
+               (enlarge-window-horizontally (- w (window-width)))))))
     (select-window win)))
 
 (defun dirvish-side--session-visible-p ()
@@ -117,8 +117,7 @@ will visit the latest `project-root' after executing
                 (dirvish-new
                   :type 'side :path path
                   :root-window-fn #'dirvish-side-root-window-fn
-                  :on-file-open #'dirvish-side-on-file-open
-                  :on-winconf-change #'dirvish-side-winconf-change-h))))
+                  :on-file-open #'dirvish-side-on-file-open))))
     (with-selected-window (dv-root-window dv)
       (cond ((not bname) nil)
             ((eq dirvish-side-follow-buffer-file 'expand)
