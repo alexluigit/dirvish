@@ -1368,5 +1368,13 @@ otherwise it defaults to `default-directory'."
   (if dirvish--props (transient-setup 'dirvish-dispatch)
     (user-error "Not in a Dirvish buffer")))
 
+(defun dirvish-restore-desktop-buffer (_file-name _buffer-name misc-data)
+  "Restore a Dirvish buffer with MISC-DATA ."
+  (dirvish-override-dired-mode)
+  (dired-restore-desktop-buffer nil nil misc-data))
+
+(add-to-list 'desktop-buffer-mode-handlers
+             '(dirvish-mode . dirvish-restore-desktop-buffer))
+
 (provide 'dirvish)
 ;;; dirvish.el ends here

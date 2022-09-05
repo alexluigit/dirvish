@@ -166,39 +166,6 @@ FILESET defaults to `dired-get-marked-files'."
                      (mapconcat #'concat (seq-take files 10) "\n  ")
                      (- count 10) count)))))
 
-(defun dirvish-desktop-save-h ()
-  "Save session information to the cache file."
-  (cl-loop with cache = (expand-file-name "desktop-sessions" dirvish-cache-dir)
-           with records = nil
-           for dv in (hash-table-values dirvish--session-hash)
-           for buf = (cdr (dv-index-dir dv))
-           for root = (with-current-buffer buf (dirvish-prop :root))
-           unless (with-current-buffer buf (dirvish-prop :cus-header)) do
-           (push (format "(dirvish--noselect \"%s\")" root) records)
-           finally do (with-temp-buffer
-                        (erase-buffer)
-                        (if (not records)
-                            (delete-file cache)
-                          (insert (mapconcat #'concat (nreverse records) "\n"))
-                          (write-region (point-min) (point-max) cache)))))
-
-(defun dirvish-desktop-restore-h ()
-  "Restore dirvish sessions from the cache file."
-  (let* ((desktop-file (expand-file-name "desktop-sessions" dirvish-cache-dir)))
-    (when (file-readable-p desktop-file)
-      (load-file desktop-file))))
-
-;;;###autoload
-(define-minor-mode dirvish-desktop-save-mode
-  "Save and restore dirvish sessions along with `desktop.el'."
-  :group 'dirvish :global t
-  (if dirvish-desktop-save-mode
-      (progn
-        (add-hook 'desktop-save-hook #'dirvish-desktop-save-h)
-        (add-hook 'desktop-after-read-hook #'dirvish-desktop-restore-h -90))
-    (remove-hook 'desktop-save-hook #'dirvish-desktop-save-h)
-    (remove-hook 'desktop-after-read-hook #'dirvish-desktop-restore-h)))
-
 ;;;###autoload (autoload 'dirvish-file-info-menu "dirvish-extras" nil t)
 (transient-define-prefix dirvish-file-info-menu ()
   "Gather file information."
