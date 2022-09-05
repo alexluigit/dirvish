@@ -97,8 +97,6 @@ Apart from the hooks provided by Dired, Dirvish got some additions.
 |---------------------------+-------------------------------------------|
 | Hook                      | Description                               |
 |---------------------------+-------------------------------------------|
-| ~dirvish-activation-hook~   | Executed on session activation.           |
-| ~dirvish-deactivation-hook~ | Executed on session deactivation.         |
 | ~dirvish-mode-hook~         | Executed on parent buffer initialization. |
 | ~dirvish-setup-hook~        | Executed after the root buffer is ready.  |
 | ~dirvish-after-revert-hook~ | Executed after ~dirvish-revert~.            |

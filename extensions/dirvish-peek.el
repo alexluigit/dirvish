@@ -99,10 +99,10 @@ one of categories in `dirvish-peek-categories'."
 
 (defun dirvish-peek-exit-h ()
   "Hook for `minibuffer-exit-hook' to destroy peek session."
-  (dolist (dv (hash-table-values dirvish--hash))
+  (dolist (dv (hash-table-values dirvish--session-hash))
     (when (eq (dv-type dv) 'peek)
       (dirvish-kill dv)
-      (remhash (dv-name dv) dirvish--hash))))
+      (remhash (dv-name dv) dirvish--session-hash))))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode

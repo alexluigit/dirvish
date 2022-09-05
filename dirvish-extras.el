@@ -170,7 +170,7 @@ FILESET defaults to `dired-get-marked-files'."
   "Save session information to the cache file."
   (cl-loop with cache = (expand-file-name "desktop-sessions" dirvish-cache-dir)
            with records = nil
-           for dv in (hash-table-values dirvish--hash)
+           for dv in (hash-table-values dirvish--session-hash)
            for buf = (cdr (dv-index-dir dv))
            for root = (with-current-buffer buf (dirvish-prop :root))
            unless (with-current-buffer buf (dirvish-prop :cus-header)) do
