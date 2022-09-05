@@ -184,7 +184,7 @@ The predicate is consumed by `dirvish-emerge-groups'."
          (cands
           (cl-remove-if-not (lambda (i) (and i (> (length i) 0)))
                             (mapcar #'file-name-extension
-                                    (hash-table-keys dirvish--attrs-hash))))
+                                    (directory-files default-directory))))
          (exts (completing-read-multiple
                 prompt cands nil nil (mapconcat #'concat (cdr recipe) ","))))
     (if obj (oset obj recipe `(extensions . ,@exts)) exts)))

@@ -423,11 +423,12 @@ This is a internal variable and should *NOT* be set manually."
   "Get FILE's ATTRIBUTE from `dirvish--attrs-hash'.
 When the attribute does not exist, set it with BODY."
   (declare (indent defun))
-  `(let* ((hash (gethash ,file dirvish--attrs-hash))
+  `(let* ((md5 (intern (secure-hash 'md5 ,file)))
+          (hash (gethash md5 dirvish--attrs-hash))
           (cached (plist-get hash ,attribute))
           (attr (or cached ,@body)))
      (unless cached
-       (puthash ,file (append hash (list ,attribute attr)) dirvish--attrs-hash))
+       (puthash md5 (append hash (list ,attribute attr)) dirvish--attrs-hash))
      attr))
 
 (cl-defmacro dirvish-define-preview (name &optional arglist docstring &rest body)
@@ -895,7 +896,8 @@ If ALL-FRAMES, search target directories in all frames."
   "Insert info string from RECIPE into DV's preview buffer."
   (let ((buf (dirvish--util-buffer 'preview dv nil t)))
     (with-current-buffer buf
-      (erase-buffer) (remove-overlays) (insert (cdr recipe)) buf)))
+      (erase-buffer) (remove-overlays)
+      (insert (cdr recipe)) (fundamental-mode) buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head buffer)) dv)
   "Use payload of RECIPE as preview buffer of DV directly."
@@ -912,10 +914,17 @@ When PROC finishes, fill preview buffer with process result."
              (result-str (with-current-buffer proc-buf (buffer-string)))
              (p-min (point-min)))
         (with-current-buffer proc-buf (erase-buffer))
+        (fundamental-mode)
         (insert result-str)
         (pcase (process-get proc 'cmd-type)
           ('shell (dirvish-apply-ansicolor-h nil p-min))
-          ('dired (run-hooks 'dired-mode-hook)))))))
+          ('dired
+           (setq-local dired-subdir-alist
+                       (list (cons (car (dv-index-dir dv)) (point-min-marker))))
+           (setq-local font-lock-defaults
+                       '(dired-font-lock-keywords t nil nil beginning-of-line))
+           (font-lock-mode 1)
+           (run-hooks 'dired-mode-hook)))))))
 
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
@@ -1042,7 +1051,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (dolist (keyword dirvish-reset-keywords) (dirvish-prop keyword nil))
   (dired-revert)
   (dirvish--hide-dired-header)
-  (setq dirvish--attrs-hash (make-hash-table :test #'equal))
+  (setq dirvish--attrs-hash (make-hash-table))
   (dirvish-data-for-dir default-directory (current-buffer) t)
   (run-hooks 'dirvish-after-revert-hook))
 
@@ -1058,7 +1067,7 @@ Dirvish sets `revert-buffer-function' to this function."
   "Initialize a Dired buffer for session DV."
   (dirvish-mode)
   (dirvish--hide-cursor)
-  (setq dirvish--attrs-hash (make-hash-table :test #'equal))
+  (setq dirvish--attrs-hash (make-hash-table))
   (setq-local revert-buffer-function #'dirvish-revert)
   (setq-local dired-hide-details-hide-symlink-targets nil)
   (dirvish--hide-dired-header)
@@ -1114,7 +1123,8 @@ Dirvish sets `revert-buffer-function' to this function."
       (delete-region (point) (progn (forward-line trim) (point)))
       (goto-char (point-min))
       (unless (looking-at-p "  ")
-        (let (indent-tabs-mode) (indent-rigidly (point-min) (point-max) 2)))
+        (let ((indent-tabs-mode nil))
+          (indent-rigidly (point-min) (point-max) 2)))
       (buffer-string))))
 
 (defun dirvish--create-parent-buffer (dv dir index level)
@@ -1136,7 +1146,7 @@ LEVEL is the depth of current window."
       (font-lock-mode 1)
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--hide-cursor)
-      (setq dirvish--attrs-hash (make-hash-table :test #'equal))
+      (setq dirvish--attrs-hash (make-hash-table))
       (run-hooks 'dired-mode-hook)
       (add-hook 'window-configuration-change-hook #'dirvish--render-attrs nil t)
       buf)))
@@ -1202,9 +1212,10 @@ LEVEL is the depth of current window."
             ((eq t tp) (setq tp '(dir . nil)))
             (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
             (t (setq tp '(file . nil))))
-           (puthash file `(:builtin ,attrs :type ,tp
-                                    ,@(and state (list :vc-state state))
-                                    ,@(and git (list :git-msg git)))
+           (puthash (intern (secure-hash 'md5 file))
+                    `(:builtin ,attrs :type ,tp
+                               ,@(and state (list :vc-state state))
+                               ,@(and git (list :git-msg git)))
                     hash)))
        (prin1 (cons bk hash) (current-buffer)))
      (buffer-substring-no-properties (point-min) (point-max))))

@@ -35,7 +35,7 @@
              (f-truename (and sym (string-join (cl-subseq path (1+ sym)) " ")))
              (f-dirp (string-prefix-p "d" priv))
              (f-type (or f-truename f-dirp)))
-        (puthash (expand-file-name f-name entry)
+        (puthash (intern (secure-hash 'md5 (expand-file-name f-name entry)))
                  `(:builtin ,(list f-type lnum user group nil
                                    f-mtime nil size priv nil inode)
                    :type ,(cons (if f-dirp 'dir 'file) f-truename))
@@ -70,16 +70,17 @@ FN is the original `dired-noselect' closure."
 
 (defun dirvish-tramp-dir-data-proc-s (proc _exit)
   "Sentinel for `dirvish-data-for-dir''s process PROC."
-  (pcase-let* ((`(,dir ,buf ,setup) (process-get proc 'meta))
-               (str (with-current-buffer (process-buffer proc)
-                      (substring-no-properties (buffer-string))))
-               (data (split-string str "\n")))
-    (when (buffer-live-p buf)
-      (with-current-buffer buf
-        (dirvish-tramp--ls-parser dir data)
-        (when setup (run-hooks 'dirvish-setup-hook))
-        (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
-  (dirvish--kill-buffer (process-buffer proc)))
+  (unwind-protect
+      (pcase-let* ((`(,dir ,buf ,setup) (process-get proc 'meta))
+                   (str (with-current-buffer (process-buffer proc)
+                          (substring-no-properties (buffer-string))))
+                   (data (split-string str "\n")))
+        (when (buffer-live-p buf)
+          (with-current-buffer buf
+            (dirvish-tramp--ls-parser dir data)
+            (when setup (run-hooks 'dirvish-setup-hook))
+            (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
+    (dirvish--kill-buffer (process-buffer proc))))
 
 (cl-defmethod dirvish-data-for-dir
   (dir buffer setup &context ((dirvish-prop :remote) string))
@@ -109,7 +110,9 @@ VEC is the tramp file name structure for current directory."
                   (shell-command-set-point-after-cmd (process-buffer proc)))))
         (set-process-filter
          proc (lambda (proc str)
-                (with-current-buffer (process-buffer proc) (insert str))))
+                (with-current-buffer (process-buffer proc)
+                  (fundamental-mode)
+                  (insert str))))
         `(buffer . ,buf))
     '(info . "File preview is not supported in current TRAMP connection")))
 

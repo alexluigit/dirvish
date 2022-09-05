@@ -269,14 +269,15 @@ GROUP-TITLES is a list of group titles."
 (defun dirvish-media-cache-imgs-h ()
   "Cache image/video-thumbnail for index directory."
   (when-let* ((dv (dirvish-curr))
+              ((not (dirvish-prop :remote)))
               ((dv-layout dv))
               (win (dv-preview-window dv))
               ((window-live-p win))
               (width (window-width win))
-              (files (hash-table-keys dirvish--attrs-hash))
-              ((< (length files) (car dirvish-media-auto-cache-threshold))))
+              (md5s (hash-table-keys dirvish--attrs-hash))
+              ((< (length md5s) (car dirvish-media-auto-cache-threshold))))
     (cl-loop
-     for file in files
+     for file in (directory-files default-directory t)
      for ext = (downcase (or (file-name-extension file) ""))
      for (cmd . args) = (cl-loop
                          for fn in dirvish-media--cache-img-fns
