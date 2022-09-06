@@ -22,9 +22,8 @@
 ;;; Code:
 
 (require 'dired)
-(require 'so-long)
-(require 'ansi-color)
 (require 'transient)
+(declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd--find-entry "dirvish-fd")
 (declare-function dirvish-subtree--prefix-length "dirvish-subtree")
 (declare-function dirvish-tramp--noselect "dirvish-tramp")
@@ -193,7 +192,6 @@ input for `dirvish-redisplay-debounce' seconds."
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--preview-variables ; Copied from `consult.el'
   '((inhibit-message . t) (enable-local-variables . :safe) (non-essential . t) (delay-mode-hooks . t)))
-(defconst dirvish--saved-new-tab-choice tab-bar-new-tab-choice)
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--builtin-dps '(tramp disable default))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
@@ -574,7 +572,6 @@ The keyword arguments set the fields of the dirvish struct."
              for b in (buffer-list) for bn = (buffer-name b) when
              (string-match-p (format " ?*Dirvish-.*-%s*" (dv-name dv)) bn) do
              (dirvish--kill-buffer b))
-    (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice)
     (setq dirvish--this nil)))
 
 (defun dirvish-on-file-open (dv)
@@ -588,7 +585,7 @@ The keyword arguments set the fields of the dirvish struct."
 
 (defun dirvish--preview-dps-validate (dps)
   "Check if the requirements of dispatchers DPS are met."
-  (cl-loop with res = ()
+  (cl-loop with res = (prog1 '() (require 'ansi-color))
            with fmt = "[Dirvish]: install '%s' executable to preview %s files.
 See `dirvish--available-preview-dispatchers' for details."
            with dp-fmt = "dirvish-%s-preview-dp"
@@ -731,8 +728,7 @@ If ALL-FRAMES, search target directories in all frames."
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
   (ansi-color-apply-on-region
-   pos (save-excursion
-         (goto-char pos) (forward-line (frame-height)) (point))))
+   (goto-char pos) (progn (forward-line (frame-height)) (point))))
 
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
@@ -788,13 +784,8 @@ If ALL-FRAMES, search target directories in all frames."
                 (not (get-buffer-window (cdr (dv-index-dir dirvish--this)) t))
                 (window-live-p (dv-preview-window dirvish--this)))
            (set-window-configuration (dv-window-conf dirvish--this))
-           (switch-to-buffer b)
-           (setq tab-bar-new-tab-choice dirvish--saved-new-tab-choice
-                 dirvish--this nil))
-          (t (setq dirvish--this dv
-                   tab-bar-new-tab-choice
-                   (if dv "*scratch*" dirvish--saved-new-tab-choice))))
-    (setq dirvish--selected-window w)))
+           (switch-to-buffer b)))
+    (setq dirvish--this dv dirvish--selected-window w)))
 
 (defun dirvish-winconf-change-h ()
   "Restore hidden sessions on buffer switching."
@@ -888,7 +879,9 @@ When PROC finishes, fill preview buffer with process result."
         (fundamental-mode)
         (insert result-str)
         (pcase (process-get proc 'cmd-type)
-          ('shell (dirvish-apply-ansicolor-h nil p-min))
+          ('shell (dirvish-apply-ansicolor-h nil p-min)
+                  (add-hook 'window-scroll-functions
+                            #'dirvish-apply-ansicolor-h nil t))
           ('dired
            (setq-local dired-subdir-alist
                        (list (cons (car (dv-index-dir dv)) (point-min-marker))))
@@ -1040,6 +1033,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (dirvish--hide-cursor)
   (setq dirvish--attrs-hash (make-hash-table))
   (setq-local revert-buffer-function #'dirvish-revert)
+  (setq-local tab-bar-new-tab-choice "*scratch*")
   (setq-local dired-hide-details-hide-symlink-targets nil)
   (setq-local dired-kill-when-opening-new-dired-buffer nil)
   (dirvish--hide-dired-header)
@@ -1154,8 +1148,7 @@ LEVEL is the depth of current window."
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
   (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
-    (setq mode-line-format nil)
-    (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
+    (setq mode-line-format nil))
   (with-current-buffer (dirvish--util-buffer 'header dv)
     (dirvish-prop :dv (dv-name dv))
     (setq cursor-type nil)
@@ -1243,7 +1236,6 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
                    (footer (side . below) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))))
          maybe-abnormal)
-    (setq tab-bar-new-tab-choice "*scratch*")
     (setq dirvish--selected-window (selected-window))
     (dirvish--init-util-buffers dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
