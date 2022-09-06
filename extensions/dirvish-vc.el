@@ -80,7 +80,7 @@ vc-hooks.el) for detail explanation of these states."
       (delete-window transient--window)
       (dirvish--save-env dv)
       (setf (dv-layout dv) new-layout)
-      (dirvish-with-no-dedication (switch-to-buffer buf))
+      (dirvish-save-dedication (switch-to-buffer buf))
       (dirvish--build dv))))
 
 (transient-define-infix dirvish-vc-preview-ifx ()

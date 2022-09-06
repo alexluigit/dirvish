@@ -20,17 +20,10 @@
 (defvar dirvish-subtree--prefix-unit-len 2)
 (defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
 
-(setq dirvish-advice-alist
-      (append dirvish-advice-alist
-              '((advice dired-current-directory dirvish-curr-dir-a     :around)
-                (advice dired-subdir-index      dirvish-subdir-index-a :around)
-                (advice dired-get-subdir        dirvish-get-subdir-a   :around))))
-(when dirvish-override-dired-mode
-  (pcase-dolist (`(,sym ,fn)
-                 '((dired-current-directory dirvish-curr-dir-a)
-                   (dired-subdir-index      dirvish-subdir-index-a)
-                   (dired-get-subdir        dirvish-get-subdir-a)))
-    (advice-add sym :around fn)))
+(dolist (sym-a '((dired-current-directory . dirvish-curr-dir-a)
+                 (dired-subdir-index . dirvish-subdir-index-a)
+                 (dired-get-subdir . dirvish-get-subdir-a)))
+  (advice-add (car sym-a) :around (cdr sym-a)))
 
 (defcustom dirvish-subtree-listing-switches nil
   "Listing SWITCHES used in subtrees.
@@ -304,7 +297,7 @@ This command takes a mouse event EV as its argment."
       (goto-char pos)
       (condition-case nil
           (dirvish-subtree-toggle)
-        (error (dirvish-find-entry-ad (dired-get-file-for-visit)))))
+        (error (dirvish-find-entry-a (dired-get-file-for-visit)))))
     (when (window-live-p win) (select-window win))))
 
 ;;;###autoload (autoload 'dirvish-subtree-menu "dirvish-subtree" nil t)

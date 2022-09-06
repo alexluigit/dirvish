@@ -62,7 +62,7 @@ Here is a sample value for this variable.
                     `(lambda ()
                        (interactive)
                        (if (dirvish-curr)
-                           (dirvish-find-entry-ad ,path)
+                           (dirvish-find-entry-a ,path)
                          (dired ,path)))))])))))
 
 (provide 'dirvish-quick-access)

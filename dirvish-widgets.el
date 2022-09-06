@@ -174,7 +174,7 @@ This value is passed to function `format-time-string'."
    'keymap `(header-line keymap
                          (mouse-1 . (lambda (_ev)
                                       (interactive "e")
-                                      (dirvish-find-entry-ad ,path))))))
+                                      (dirvish-find-entry-a ,path))))))
 
 (dirvish-define-mode-line path
   "Path of file under the cursor."

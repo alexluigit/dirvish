@@ -21,15 +21,9 @@
 (defvar dirvish-media--auto-cache-timer nil)
 (add-to-list 'dirvish--no-update-preview-cmds 'dirvish-media-properties)
 
-(setq dirvish-advice-alist
-      (append dirvish-advice-alist
-              '((hook dirvish-after-revert-hook dirvish-media-clean-caches-h)
-                (hook dirvish-setup-hook        dirvish-media-cache-imgs-h))))
-(when dirvish-override-dired-mode
-  (pcase-dolist (`(,sym ,fn)
-                 '((dirvish-after-revert-hook dirvish-media-clean-caches-h)
-                   (dirvish-setup-hook        dirvish-media-cache-imgs-h)))
-    (add-hook sym fn)))
+(dolist (sym-h '((dirvish-after-revert-hook . dirvish-media-clean-caches-h)
+                 (dirvish-setup-hook . dirvish-media-cache-imgs-h)))
+  (add-hook (car sym-h) (cdr sym-h)))
 
 (defcustom dirvish-media-auto-cache-threshold '(500 . 4)
   "Generate cache images automatically.

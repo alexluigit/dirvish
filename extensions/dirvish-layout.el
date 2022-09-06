@@ -46,7 +46,7 @@ possibly one or more parent windows."
     (setf (dv-layout dv) new-layout)
     (dirvish--save-env dv)
     (with-selected-window (dirvish--create-root-window dv)
-      (dirvish-with-no-dedication (switch-to-buffer buf))
+      (dirvish-save-dedication (switch-to-buffer buf))
       (dirvish--build dv)
       (dirvish-debounce nil (dirvish-preview-update dv)))))
 
@@ -86,7 +86,7 @@ The session takes the whole frame when `one-window-p'."
         (layout (and (one-window-p) dirvish-default-layout))
         (dv (dirvish-curr)))
     (if (and dv (dv-layout dv))
-        (dirvish-find-entry-ad path)
+        (dirvish-find-entry-a path)
       (or (dirvish--reuse-session path layout)
           (dirvish-new :path path :layout layout)))))
 

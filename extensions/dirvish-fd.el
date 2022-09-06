@@ -298,7 +298,7 @@ search for directories in `dirvish-fd-default-dir'."
           (dirvish-fd--narrow input (car (dirvish-prop :fd-arglist)))
         (dirvish-update-body-h)))
     (with-selected-window (dv-root-window dv)
-      (dirvish-with-no-dedication (switch-to-buffer buf))
+      (dirvish-save-dedication (switch-to-buffer buf))
       (if input
           (dirvish--build dv)
         (run-with-timer 0 nil #'dirvish-fd--read-input)))))

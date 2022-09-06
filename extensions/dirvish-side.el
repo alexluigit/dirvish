@@ -102,7 +102,7 @@ will visit the latest `project-root' after executing
   (when-let ((win (dirvish-side--session-visible-p))
              (file buffer-file-name))
     (with-selected-window win
-      (when dir (dirvish-find-entry-ad dir))
+      (when dir (dirvish-find-entry-a dir))
       (dirvish-prop :cus-header 'dirvish-side-header)
       (if (eq dirvish-side-follow-buffer-file 'expand)
           (dirvish-subtree-expand-to file)
