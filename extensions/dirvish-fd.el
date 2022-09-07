@@ -230,11 +230,21 @@ time you run it.  After the indexing, it fires up instantly.
 
 If called with \\`C-u' or if CURRENT-DIR-P holds the value 4,
 search for directories in the current directory.  Otherwise,
-search for directories in `dirvish-fd-default-dir'."
+search for directories in `dirvish-fd-default-dir'.
+
+If prefixed twice with \\`C-u' or if CURRENT-DIR-P holds the
+value 16, let the user choose the root directory of their search."
   (interactive "p")
   (unless dirvish-fd-program
     (user-error "`dirvish-fd' requires `fd', please install it"))
-  (let* ((base-dir (if (eq current-dir-p 4) default-directory dirvish-fd-default-dir))
+  (let* ((base-dir (cond
+                    ((eq current-dir-p 4) default-directory)
+                    ((eq current-dir-p 16)
+                     (let ((dir (car (find-file-read-args "Select root directory: " nil))))
+                       (if (file-directory-p dir)
+                           (file-name-as-directory dir)
+                         (file-parent-directory dir))))
+                    (t dirvish-fd-default-dir)))
          (command (concat dirvish-fd-program " -H -td -0 . " base-dir))
          (output (shell-command-to-string command))
          (files-raw (split-string output "\0" t))
