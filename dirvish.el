@@ -834,8 +834,8 @@ If ALL-FRAMES, search target directories in all frames."
   "Insert info string from RECIPE into DV's preview buffer."
   (let ((buf (dirvish--util-buffer 'preview dv nil t)))
     (with-current-buffer buf
-      (erase-buffer) (remove-overlays)
-      (insert (cdr recipe)) (fundamental-mode) buf)))
+      (erase-buffer) (remove-overlays) (font-lock-mode -1)
+      (insert (cdr recipe)) buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head buffer)) dv)
   "Use payload of RECIPE as preview buffer of DV directly."
@@ -852,12 +852,9 @@ When PROC finishes, fill preview buffer with process result."
              (result-str (with-current-buffer proc-buf (buffer-string)))
              (p-min (point-min)))
         (with-current-buffer proc-buf (erase-buffer))
-        (fundamental-mode)
         (insert result-str)
         (pcase (process-get proc 'cmd-type)
-          ('shell (dirvish-apply-ansicolor-h nil p-min)
-                  (add-hook 'window-scroll-functions
-                            #'dirvish-apply-ansicolor-h nil t))
+          ('shell (dirvish-apply-ansicolor-h nil p-min))
           ('dired
            (setq-local dired-subdir-alist
                        (list (cons (car (dv-index-dir dv)) (point-min-marker))))
@@ -1126,23 +1123,21 @@ LEVEL is the depth of current window."
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
   (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
-    (setq mode-line-format nil))
+    (fundamental-mode)
+    (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t)
+    (setq mode-line-format nil header-line-format nil))
   (with-current-buffer (dirvish--util-buffer 'header dv)
     (dirvish-prop :dv (dv-name dv))
-    (setq cursor-type nil)
-    (setq window-size-fixed 'height)
-    (setq mode-line-format nil))
+    (setq cursor-type nil window-size-fixed 'height mode-line-format nil))
   (with-current-buffer (dirvish--util-buffer 'footer dv)
     (dirvish-prop :dv (dv-name dv))
-    (setq cursor-type nil)
-    (setq window-size-fixed 'height)
-    (setq header-line-format nil)
-    (setq mode-line-format dirvish--mode-line-fmt)))
+    (setq cursor-type nil window-size-fixed 'height)
+    (setq header-line-format nil mode-line-format dirvish--mode-line-fmt)))
 
 (defsubst dirvish--dir-data-getter (dir)
   "Script for DIR data retrieving."
   `(with-temp-buffer
-     (let ((hash (make-hash-table :test #'equal))
+     (let ((hash (make-hash-table))
            (bk ,(and (featurep 'dirvish-vc)
                      `(ignore-errors (vc-responsible-backend ,dir)))))
        (dolist (file (directory-files ,dir t nil t))
