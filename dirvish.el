@@ -861,7 +861,7 @@ When PROC finishes, fill preview buffer with process result."
            (setq-local font-lock-defaults
                        '(dired-font-lock-keywords t nil nil beginning-of-line))
            (font-lock-mode 1)
-           (run-hooks 'dired-mode-hook)))))))
+           (when (fboundp 'diredfl-mode) (diredfl-mode))))))))
 
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
@@ -1090,7 +1090,7 @@ LEVEL is the depth of current window."
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--hide-cursor)
       (setq dirvish--attrs-hash (make-hash-table))
-      (run-hooks 'dired-mode-hook)
+      (when (fboundp 'diredfl-mode) (diredfl-mode))
       (add-hook 'window-configuration-change-hook #'dirvish--render-attrs nil t)
       buf)))
 
