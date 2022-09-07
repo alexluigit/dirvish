@@ -41,10 +41,9 @@ possibly one or more parent windows."
          (new-layout (unless old-layout (dv-last-fs-layout dv)))
          (buf (current-buffer)))
     (if old-layout
-        (set-window-configuration (dv-window-conf dv))
+        (set-window-configuration (dv-winconf dv))
       (with-selected-window (dv-root-window dv) (quit-window)))
     (setf (dv-layout dv) new-layout)
-    (dirvish--save-env dv)
     (with-selected-window (dirvish--create-root-window dv)
       (dirvish-save-dedication (switch-to-buffer buf))
       (dirvish--build dv)

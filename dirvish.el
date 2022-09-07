@@ -291,13 +291,6 @@ ALIST is window arguments passed to `window--display-buffer'."
            (when (or (not visible) (not (get-buffer-window buffer)))
              (kill-buffer buffer))))))
 
-(defun dirvish--remove-session (dv)
-  "Remove DV from `dirvish--session-hash' and kill its index buffer."
-  (setq dirvish--parent-hash (make-hash-table :test #'equal))
-  (unless dirvish-reuse-session
-    (dirvish--kill-buffer (cdr (dv-index-dir dv)))
-    (remhash (dv-name dv) dirvish--session-hash)))
-
 (defun dirvish--get-project-root (&optional directory)
   "Get project root path of DIRECTORY."
   (when-let* ((pj (project-current nil directory))
@@ -323,7 +316,7 @@ ALIST is window arguments passed to `window--display-buffer'."
   (eq (if (dv-layout dv) (dv-root-window dv) (frame-selected-window))
       dirvish--selected-window))
 
-(defun dirvish--get-scopes ()
+(defun dirvish--scopes ()
   "Return computed scopes according to `dirvish-scopes'."
   (cl-loop for (k v) on dirvish-scopes by 'cddr
            append (list k (and (functionp v) (funcall v)))))
@@ -495,14 +488,14 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-buffers () :documentation "holds all file preview buffers in this session.")
   (preview-window nil :documentation "is the window to display preview buffer.")
   (name (cl-gensym) :documentation "is an unique symbol for every session.")
-  (window-conf nil :documentation "is the saved window configuration.")
+  (winconf nil :documentation "is the saved window configuration.")
   (index-dir () :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
   (roots () :documentation "is the list of all INDEX-DIRs."))
 
-(defun dirvish--find-reusable-session (type)
+(defun dirvish--find-reusable (type)
   "Return the first matched reusable session with TYPE."
   (cl-loop
-   with scopes = (dirvish--get-scopes)
+   with scopes = (dirvish--scopes)
    with len = (length dirvish-scopes)
    for dv-name in (dirvish-get-all 'name t t)
    for dv = (gethash dv-name dirvish--session-hash)
@@ -515,45 +508,28 @@ If FLATTEN is non-nil, collect them as a flattened list."
 (defun dirvish--reuse-session (&optional dir layout type)
   "Reuse some hidden Dirvish session with TYPE and find DIR in it.
 Set layout for the session with LAYOUT."
-  (when-let ((dv (dirvish--find-reusable-session type)))
+  (when-let ((dv (dirvish--find-reusable type)))
     (prog1 dv
       (if (and (not current-prefix-arg) (eq dirvish-reuse-session 'resume))
           (setq dir nil)
         (setq dir (and dir (if (file-directory-p dir) dir
                              (file-name-directory dir)))))
-      (dirvish--save-env dv)
       (with-selected-window (dirvish--create-root-window dv)
         (dirvish-save-dedication (switch-to-buffer (cdr (dv-index-dir dv))))
         (setf (dv-layout dv) layout)
         (setq dirvish--this dv)
         (dirvish-find-entry-a (or dir (dirvish-prop :root)))))))
 
-(defun dirvish--save-env (dv)
-  "Save the environment information of DV."
-  (let ((envs `(:dv ,dv :point ,(point) :bname ,buffer-file-name)))
-    (setf (dv-window-conf dv) (current-window-configuration))
-    (setf (dv-scopes dv) (append (dirvish--get-scopes) envs))))
-
-(defmacro dirvish-new (&rest args)
+(defun dirvish-new (&rest args)
   "Create and save a new dirvish struct to `dirvish--session-hash'.
-ARGS is a list of keyword arguments followed by an optional BODY.
-The keyword arguments set the fields of the dirvish struct."
-  (declare (indent defun))
-  (let ((keywords))
-    (while (keywordp (car args))
-      (dotimes (_ 2) (push (pop args) keywords)))
-    (setq keywords (reverse keywords))
-    `(let ((new (make-dirvish ,@keywords)))
-       (puthash (dv-name new) new dirvish--session-hash)
-       (dirvish--refresh-slots new)
-       (dirvish--save-env new)
-       (dirvish--create-root-window new)
-       (setq dirvish--this new)
-       (when-let ((path (dv-path new)))
-         (dirvish-find-entry-a
-          (if (file-directory-p path) path (file-name-directory path))))
-       ,(when args `(save-excursion ,@args)) ; Body form given
-       new)))
+ARGS is a list of keyword arguments for `dirvish' struct."
+  (let (slots new)
+    (while (keywordp (car args)) (dotimes (_ 2) (push (pop args) slots)))
+    (setq new (apply #'make-dirvish (reverse slots)) dirvish--this new)
+    (puthash (dv-name new) new dirvish--session-hash)
+    (dirvish--refresh-slots new)
+    (dirvish--create-root-window new)
+    (when-let ((path (dv-path new))) (dirvish-find-entry-a path)) new))
 
 (defun dirvish-kill (dv)
   "Kill the dirvish instance DV."
@@ -561,23 +537,23 @@ The keyword arguments set the fields of the dirvish struct."
     (when (dv-layout dv)
       (with-current-buffer index
         (setq header-line-format dirvish--header-line-fmt))
-      (set-window-configuration (dv-window-conf dv))
-      (goto-char (plist-get (dv-scopes dv) :point))
+      (when-let ((wconf (dv-winconf dv))) (set-window-configuration wconf))
       (dirvish-save-dedication (switch-to-buffer index)))
     (dolist (b (mapcar #'cdr (dv-roots dv))) (dirvish--kill-buffer b t))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
     (setf (dv-roots dv) (cl-loop for (d . b) in (dv-roots dv) when
                                  (get-buffer-window b) collect (cons d b)))
-    (cl-loop with kill-buffer-hook = nil
-             for b in (buffer-list) for bn = (buffer-name b) when
-             (string-match-p (format " ?*Dirvish-.*-%s*" (dv-name dv)) bn) do
-             (dirvish--kill-buffer b))
+    (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
+             (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-name dv)) bn)
+             do (dirvish--kill-buffer b))
+    (setq dirvish--parent-hash (make-hash-table :test #'equal))
+    (if dirvish-reuse-session (setf (dv-winconf dv) nil)
+      (dirvish--kill-buffer (cdr (dv-index-dir dv))))
     (setq dirvish--this nil)))
 
 (defun dirvish-on-file-open (dv)
   "Called before opening a file in Dirvish session DV."
-  (dirvish-kill dv)
-  (dirvish--remove-session dv))
+  (dirvish-kill dv))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -761,21 +737,19 @@ If ALL-FRAMES, search target directories in all frames."
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
     (unless (dv-roots dv)
       (when-let ((layout (dv-layout dv))
+                 (wconf (dv-winconf dv))
                  ((eq buf (window-buffer (selected-window)))))
-        (set-window-configuration (dv-window-conf dv))
-        (goto-char (plist-get (dv-scopes dv) :point)))
+        (set-window-configuration wconf))
       (remhash (dv-name dv) dirvish--session-hash)
-      (cl-loop with kill-buffer-hook = nil
-               for b in (buffer-list) for bn = (buffer-name b) when
-               (string-match-p (format " ?*Dirvish-.*-%s*" (dv-name dv)) bn) do
-               (dirvish--kill-buffer b))
+      (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
+               (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-name dv)) bn)
+               do (dirvish--kill-buffer b))
       (setq dirvish--this nil))))
 
 (defun dirvish-selection-change-h (&optional _frame-or-window)
   "Save current session to frame parameters."
   (let* ((w (frame-selected-window)) (b (window-buffer w)) (dv (dirvish-curr)))
     (cond ((and dv (minibufferp (window-buffer dirvish--selected-window)))
-           (quit-window)
            (with-selected-window (dirvish--create-root-window dv)
              (dirvish-save-dedication (switch-to-buffer b))
              (dirvish--build dv)))
@@ -783,9 +757,11 @@ If ALL-FRAMES, search target directories in all frames."
           ((and dirvish--this (dv-layout dirvish--this)
                 (not (get-buffer-window (cdr (dv-index-dir dirvish--this)) t))
                 (window-live-p (dv-preview-window dirvish--this)))
-           (set-window-configuration (dv-window-conf dirvish--this))
-           (switch-to-buffer b)))
-    (setq dirvish--this dv dirvish--selected-window w)))
+           (set-window-configuration (dv-winconf dirvish--this))
+           (switch-to-buffer b)
+           (setq dirvish--this nil))
+          (t (setq dirvish--this dv)))
+    (setq dirvish--selected-window w)))
 
 (defun dirvish-winconf-change-h ()
   "Restore hidden sessions on buffer switching."
@@ -1052,9 +1028,11 @@ Dirvish sets `revert-buffer-function' to this function."
   (setq dir (file-name-as-directory (expand-file-name dir)))
   (set-window-dedicated-p
    (or (minibuffer-selected-window) (frame-selected-window)) nil)
-  (let* ((dv (or dirvish--this (dirvish-curr)
-                 (dirvish--find-reusable-session nil)
-                 (dirvish-new)))
+  (let* ((dv (cond ((memq this-command '(dired-other-tab dired-other-frame))
+                    (dirvish-new :layout dirvish-default-layout))
+                   (t (or dirvish--this (dirvish-curr)
+                          (dirvish--find-reusable nil) (dirvish-new)))))
+         (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get dir (dv-roots dv) nil nil #'equal)))
@@ -1070,7 +1048,7 @@ Dirvish sets `revert-buffer-function' to this function."
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :remote remote)
       (dirvish-prop :root dir)
-      (dired-goto-file (or (plist-get (dv-scopes dv) :bname) dir))
+      (dired-goto-file (or bname dir))
       (setf (dv-index-dir dv) (cons dir buffer))
       (run-hook-with-args 'dirvish-find-entry-hook dir buffer)
       buffer)))
@@ -1227,7 +1205,9 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
+  (setf (dv-scopes dv) (append (dirvish--scopes) `(:dv ,dv)))
   (setf (dv-index-dir dv) (cons (dirvish-prop :root) (current-buffer)))
+  (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
   (let* ((layout (dv-layout dv))
          (w-order (and layout (dirvish--window-split-order)))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
@@ -1275,10 +1255,10 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 (defun dirvish-quit ()
   "Quit current Dirvish session."
   (interactive)
-  (let ((dv (dirvish-curr)))
+  (let ((dv (dirvish-curr)) (frame (selected-frame)))
     (dirvish-kill dv)
-    (quit-window)
-    (dirvish--remove-session dv)))
+    (when dirvish-reuse-session (quit-window))
+    (unless (eq (selected-frame) frame) (delete-frame frame))))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode

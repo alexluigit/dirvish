@@ -78,7 +78,6 @@ vc-hooks.el) for detail explanation of these states."
         (dirvish-preview-update dv)
       (quit-window nil (dv-root-window dv))
       (delete-window transient--window)
-      (dirvish--save-env dv)
       (setf (dv-layout dv) new-layout)
       (dirvish-save-dedication (switch-to-buffer buf))
       (dirvish--build dv))))
