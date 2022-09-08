@@ -94,17 +94,18 @@ The valid value are:
   "Like `dirvish-use-mode-line', but for header line."
   :group 'dirvish :type 'symbol)
 
-(defcustom dirvish-mode-line-height '(25 . 30)
+(defcustom dirvish-mode-line-height 30
   "Height of Dirvish's mode line.
 The value should be a cons cell (H-DIRED . H-DIRVISH), where
 H-DIRED and H-DIRVISH represent the height in single window
-session and fullscreen session respectively."
+session and fullscreen session respectively.  If this value is a
+integer INT, it is seen as a shorthand for (INT . INT)."
   :group 'dirvish
   :type '(choice (interger :tag "Mode line height in all sessions.")
                  (cons (integer :tag "Mode line height in fullscreen sessions.")
                                 (integer :tag "Mode line height in single window sessions."))))
 
-(defcustom dirvish-header-line-height '(25 . 35)
+(defcustom dirvish-header-line-height 30
   "Like `dirvish-mode-line-height', but for header line."
   :type '(choice interger (cons integer integer)))
 
