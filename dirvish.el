@@ -656,8 +656,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   (let* ((entry (or entry (dired-get-filename)))
          (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd--find entry))
                        ((file-directory-p entry) (dired-noselect entry)))))
-    (if buffer
-        (dirvish-save-dedication (switch-to-buffer buffer))
+    (if buffer (dirvish-save-dedication (switch-to-buffer buffer))
       (let* ((ext (downcase (or (file-name-extension entry) "")))
              (file (expand-file-name entry))
              (process-connection-type nil)
@@ -1024,8 +1023,8 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (defun dirvish-dired-noselect-a (fn dir &optional flags)
   "Return buffer for DIR with FLAGS, FN is `dired-noselect'."
-  (setq dir (file-name-as-directory (expand-file-name dir)))
-  (let* ((win (or (minibuffer-selected-window) (frame-selected-window)))
+  (let* ((key (file-name-as-directory (expand-file-name dir)))
+         (win (or (minibuffer-selected-window) (frame-selected-window)))
          (this dirvish--this)
          (dv (cond ((memq this-command '(dired-other-tab dired-other-frame))
                     (dirvish-new :layout dirvish-default-layout))
@@ -1034,7 +1033,7 @@ Dirvish sets `revert-buffer-function' to this function."
          (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
-         (buffer (alist-get dir (dv-roots dv) nil nil #'equal)))
+         (buffer (alist-get key (dv-roots dv) nil nil #'equal)))
     (set-window-dedicated-p win nil)
     (when (and (memq this-command cmds) (not this)) (setf (dv-layout dv) nil))
     (unless buffer
@@ -1043,15 +1042,15 @@ Dirvish sets `revert-buffer-function' to this function."
           (require 'dirvish-tramp)
           (setq buffer (dirvish-tramp--noselect fn dir flags remote))))
       (with-current-buffer buffer (dirvish--init-dired-buffer dv))
-      (push (cons dir buffer) (dv-roots dv)))
+      (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
       (dirvish-prop :dv (dv-name dv))
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :remote remote)
-      (dirvish-prop :root dir)
-      (dired-goto-file (or bname dir))
-      (setf (dv-index-dir dv) (cons dir buffer))
-      (run-hook-with-args 'dirvish-find-entry-hook dir buffer)
+      (dirvish-prop :root key)
+      (dired-goto-file (or bname key))
+      (setf (dv-index-dir dv) (cons key buffer))
+      (run-hook-with-args 'dirvish-find-entry-hook key buffer)
       buffer)))
 
 (defun dirvish--readin-dir (dirname &optional flags)
