@@ -279,7 +279,7 @@ value 16, let the user choose the root directory of their search."
    (progn (insert f-full) (push (cons f-name f-full) res))
    finally return (prog1 (nreverse res) (goto-char (point-min)))))
 
-(defun dirvish-fd--find-entry (entry)
+(defun dirvish-fd--find (entry)
   "Run fd accroring to ENTRY."
   (let* ((dv (or dirvish--this (dirvish-curr)))
          (roots (and dv (dv-roots dv)))

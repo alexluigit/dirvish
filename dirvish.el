@@ -24,7 +24,7 @@
 (require 'dired)
 (require 'transient)
 (declare-function ansi-color-apply-on-region "ansi-color")
-(declare-function dirvish-fd--find-entry "dirvish-fd")
+(declare-function dirvish-fd--find "dirvish-fd")
 (declare-function dirvish-subtree--prefix-length "dirvish-subtree")
 (declare-function dirvish-tramp--noselect "dirvish-tramp")
 (declare-function dirvish-tramp--preview-handler "dirvish-tramp")
@@ -654,7 +654,8 @@ ENTRY can be a filename or a string with format of
 `dirvish-fd-bufname' used to query or create a `fd' result
 buffer, it defaults to filename under the cursor when it is nil."
   (let* ((entry (or entry (dired-get-filename)))
-         (buffer (dirvish--find-entry entry)))
+         (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd--find entry))
+                       ((file-directory-p entry) (dired-noselect entry)))))
     (if buffer
         (dirvish-save-dedication (switch-to-buffer buffer))
       (let* ((ext (downcase (or (file-name-extension entry) "")))
@@ -710,6 +711,7 @@ If ALL-FRAMES, search target directories in all frames."
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-line -1))
+          ((cdr dired-subdir-alist))
           ((bobp) (when dirvish-use-header-line
                     (forward-line (if dirvish--dired-free-space 2 1)))))
     (when dirvish-hide-cursor (dired-move-to-filename))
@@ -1023,16 +1025,18 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-dired-noselect-a (fn dir &optional flags)
   "Return buffer for DIR with FLAGS, FN is `dired-noselect'."
   (setq dir (file-name-as-directory (expand-file-name dir)))
-  (set-window-dedicated-p
-   (or (minibuffer-selected-window) (frame-selected-window)) nil)
-  (let* ((dv (cond ((memq this-command '(dired-other-tab dired-other-frame))
+  (let* ((win (or (minibuffer-selected-window) (frame-selected-window)))
+         (this dirvish--this)
+         (dv (cond ((memq this-command '(dired-other-tab dired-other-frame))
                     (dirvish-new :layout dirvish-default-layout))
-                   (t (or dirvish--this (dirvish-curr)
-                          (dirvish--find-reusable nil) (dirvish-new)))))
+                   (t (or this (dirvish--find-reusable nil) (dirvish-new)))))
+         (cmds '(dired dired-other-window dired-jump dired-jump-other-window))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get dir (dv-roots dv) nil nil #'equal)))
+    (set-window-dedicated-p win nil)
+    (when (and (memq this-command cmds) (not this)) (setf (dv-layout dv) nil))
     (unless buffer
       (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
         (if (not remote) (setq buffer (apply fn (list dir flags)))
@@ -1049,11 +1053,6 @@ Dirvish sets `revert-buffer-function' to this function."
       (setf (dv-index-dir dv) (cons dir buffer))
       (run-hook-with-args 'dirvish-find-entry-hook dir buffer)
       buffer)))
-
-(defun dirvish--find-entry (entry)
-  "Return dirvish buffer for ENTRY."
-  (cond ((string-prefix-p "🔍" entry) (dirvish-fd--find-entry entry))
-        ((file-directory-p entry) (dired-noselect entry))))
 
 (defun dirvish--readin-dir (dirname &optional flags)
   "Readin the directory DIRNAME with optional FLAGS as a string."
