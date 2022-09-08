@@ -849,20 +849,17 @@ When PROC finishes, fill preview buffer with process result."
   (when-let ((dv (or (dirvish-curr) dirvish--this)))
     (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
       (erase-buffer) (remove-overlays)
-      (let* ((proc-buf (process-buffer proc))
-             (result-str (with-current-buffer proc-buf (buffer-string)))
-             (p-min (point-min)))
-        (with-current-buffer proc-buf (erase-buffer))
-        (insert result-str)
-        (pcase (process-get proc 'cmd-type)
-          ('shell (dirvish-apply-ansicolor-h nil p-min))
-          ('dired
-           (setq-local dired-subdir-alist
-                       (list (cons (car (dv-index-dir dv)) (point-min-marker))))
-           (setq-local font-lock-defaults
-                       '(dired-font-lock-keywords t nil nil beginning-of-line))
-           (font-lock-mode 1)
-           (when (fboundp 'diredfl-mode) (diredfl-mode))))))))
+      (insert (with-current-buffer (process-buffer proc) (buffer-string)))
+      (pcase (process-get proc 'cmd-info)
+        ('shell (font-lock-mode -1) (dirvish-apply-ansicolor-h nil (point-min)))
+        ('dired
+         (setq-local dired-subdir-alist
+                     (list (cons (car (dv-index-dir dv)) (point-min-marker))))
+         (setq-local font-lock-defaults
+                     '(dired-font-lock-keywords t nil nil beginning-of-line))
+         (font-lock-mode 1)
+         (when (fboundp 'diredfl-mode) (diredfl-mode))))))
+  (kill-buffer (process-buffer proc)))
 
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
@@ -872,7 +869,7 @@ When PROC finishes, fill preview buffer with process result."
         (proc (make-process :name "sh-out" :connection-type nil
                             :buffer " *Dirvish-temp*" :command (cdr recipe)
                             :sentinel 'dirvish-shell-preview-proc-s)))
-    (process-put proc 'cmd-type (car recipe))
+    (process-put proc 'cmd-info (car recipe))
     (with-current-buffer buf (erase-buffer) (remove-overlays) buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head shell)) dv)
@@ -1121,9 +1118,8 @@ LEVEL is the depth of current window."
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
   (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
-    (fundamental-mode)
-    (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t)
-    (setq mode-line-format nil header-line-format nil))
+    (fundamental-mode) (setq mode-line-format nil header-line-format nil)
+    (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
   (with-current-buffer (dirvish--util-buffer 'header dv)
     (dirvish-prop :dv (dv-name dv))
     (setq cursor-type nil window-size-fixed 'height mode-line-format nil))
