@@ -243,7 +243,7 @@ value 16, let the user choose the root directory of their search."
                      (let ((dir (car (find-file-read-args "Select root directory: " nil))))
                        (if (file-directory-p dir)
                            (file-name-as-directory dir)
-                         (file-parent-directory dir))))
+                         (dirvish--get-parent-path dir))))
                     (t dirvish-fd-default-dir)))
          (command (concat dirvish-fd-program " -H -td -0 . " base-dir))
          (output (shell-command-to-string command))

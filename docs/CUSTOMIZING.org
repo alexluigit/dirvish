@@ -381,23 +381,9 @@ These packages are only listed here for discoverability.
   ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 #+end_src
 
-** Working with Doom Emacs
+** Working with Doom Emacs (WIP)
 
-Doom provides a ~+dirvish~ flag in its dired module which can be enabled like this.
-
-#+begin_src emacs-lisp
-  ;; .doom.d/init.el
-  :emacs
-  (dired +dirvish)
-#+end_src
-
-For now, you should follow the instructions in [[https://github.com/doomemacs/doomemacs/pull/6568][this PR]] and pin the package to
-the latest version.
-
-#+begin_src emacs-lisp
-  ;; .doom.d/packages.el
-  (unpin! dirvish)
-#+end_src
+A [[https://github.com/doomemacs/doomemacs/pull/6760][PR]] to make dirvish as the default file manager in doom-emacs is under review.
 
 * FAQ
 ** How to kill all session buffers on quit?
