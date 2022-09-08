@@ -82,9 +82,8 @@ current layout defined in `dirvish-layout-recipes'."
 The session takes the whole frame when `one-window-p'."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
   (let ((path (expand-file-name (or path default-directory)))
-        (layout (and (one-window-p) dirvish-default-layout))
-        (dv (dirvish-curr)))
-    (if (and dv (dv-layout dv))
+        (layout (and (one-window-p) dirvish-default-layout)))
+    (if (dirvish-curr)
         (dirvish-find-entry-a path)
       (or (dirvish--reuse-session path layout)
           (dirvish-new :path path :layout layout)))))
