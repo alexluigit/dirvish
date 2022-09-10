@@ -13,106 +13,106 @@
 ** Changes since 1.9.23
 
 + =core=:
-  bind ~dirvish-dispatch~ to ~q~
-  add basic perspective.el support
-  allow user to have classic dired header (#96)
-  basic mouse support
-  add ~dirvish-hide-cursor~ user option (#119)
-  add ~dirvish-redisplay-debounce~ option
+  - bind ~dirvish-dispatch~ to ~q~
+  - add basic perspective.el support
+  - allow user to have classic dired header (#96)
+  - basic mouse support
+  - add ~dirvish-hide-cursor~ user option (#119)
+  - add ~dirvish-redisplay-debounce~ option
 + =quick-access=:
-  add ~dirvish-quick-access-function~ option
+  - add ~dirvish-quick-access-function~ option
 + =media=:
-  display media properties automatically
+  - display media properties automatically
 + =fd=:
-  allow user to select root directory for fd jump (#141)
-  new option for default directory in dirvish-fd-jump (#138)
-  interactive narrowing and orderless support
+  - allow user to select root directory for fd jump (#141)
+  - new option for default directory in dirvish-fd-jump (#138)
+  - interactive narrowing and orderless support
 + =widgets=:
-  support mouse click on path header line segment
-  add `dirvish-path-separators` option, closes #142
+  - support mouse click on path header line segment
+  - add `dirvish-path-separators` option, closes #142
 + =side=:
-  auto-expand to buffer file name (#113)
+  - auto-expand to buffer file name (#113)
 + =extras=:
-  add `dirvish-desktop-save-mode` (#133)
-  add `dirvish-copy-remote-path` command, closes #110
+  - add `dirvish-desktop-save-mode` (#133)
+  - add `dirvish-copy-remote-path` command, closes #110
 + =vc=:
-  add `dirvish-vc-menu` prefix
-  add `vc-log` `vc-blame` preview dispatchers
+  - add `dirvish-vc-menu` prefix
+  - add `vc-log` `vc-blame` preview dispatchers
 + =subtree=:
-  add indent guide
-  make `dirvish-subtree-remove` an interactive function (#105)
-  add subtree-up/clear commands
+  - add indent guide
+  - make `dirvish-subtree-remove` an interactive function (#105)
+  - add subtree-up/clear commands
 
 ** Fixes since 1.9.23
 
-fix(core): set `dirvish--this` after session rebuild
-fix(core): avoid unexpected fullscreen session
-fix(core): disable font-lock-mode in shell preview
-fix(core): allow wildcard as entry
-fix(core): do not run dired-mode-hook in parent buffers
-fix(side): issues on frame resize update / subtree expansion #140
-fix(core): session reuse issue #135 #136
-fix(core): do not reuse sessions in other frames
-fix(side): show project in header line after project switching
-fix(core): only revert window config when buffer is the current one
-fix(tramp): support TRAMP connections with nongnu ls
-fix(core): `cursor-type` in `wdired-mode`, closes #132
-fix(yank): backup existed files instead of new files
-fix(subtree): revert buffer correctly in emerged buffer
-fix(core): use local value of `other-window-scroll-buffer` (#131)
-fix(extras): autoload `dirvish-copy-*`, closes #129
-fix(fd): handle systems using `fdfind` by default (#122)
-fix(collapse): endless while loop
-fix(extras): add offset when aligning text in TTY sessions (#115)
-fix(core): remove `mod` from `dirvish-audio-exts`, closes #114
-fix(core): revert buffer upon wdired exit
-fix(core): inhibit undo-tree when previewing files (#107)
-fix(core): use hollow cursor for evil normal state in wdired-mode (#104)
-fix(core): emacs -q -> emacs -Q (#84)
-fix: `window system should be used` warning on terminal (#93)
-fix(fd): improve GNU ls detection (#92)
-fix(core): escape %-constructs in path mode line segments (#97)
-fix(core): mode-line not update on Emacs 27 (#93)
-fix(core): use `start-file-process-shell-command` to print dir
-fix(subtree): ensure directory name ends with / on TRAMP
-fix(core): shell quote filenames for git-msg (#86)
-fix(extras): args-out-of-range error on file-size attribute
+- fix(core): set `dirvish--this` after session rebuild
+- fix(core): avoid unexpected fullscreen session
+- fix(core): disable font-lock-mode in shell preview
+- fix(core): allow wildcard as entry
+- fix(core): do not run dired-mode-hook in parent buffers
+- fix(core): session reuse issue #135 #136
+- fix(core): do not reuse sessions in other frames
+- fix(core): only revert window config when buffer is the current one
+- fix(core): `cursor-type` in `wdired-mode`, closes #132
+- fix(core): use local value of `other-window-scroll-buffer` (#131)
+- fix(core): remove `mod` from `dirvish-audio-exts`, closes #114
+- fix(core): revert buffer upon wdired exit
+- fix(core): inhibit undo-tree when previewing files (#107)
+- fix(core): use hollow cursor for evil normal state in wdired-mode (#104)
+- fix(core): emacs -q -> emacs -Q (#84)
+- fix(core): `window system should be used` warning on terminal (#93)
+- fix(core): escape %-constructs in path mode line segments (#97)
+- fix(core): mode-line not update on Emacs 27 (#93)
+- fix(core): use `start-file-process-shell-command` to print dir
+- fix(core): shell quote filenames for git-msg (#86)
+- fix(side): issues on frame resize update / subtree expansion #140
+- fix(side): show project in header line after project switching
+- fix(tramp): support TRAMP connections with nongnu ls
+- fix(yank): backup existed files instead of new files
+- fix(subtree): revert buffer correctly in emerged buffer
+- fix(subtree): ensure directory name ends with / on TRAMP
+- fix(extras): autoload `dirvish-copy-*`, closes #129
+- fix(extras): add offset when aligning text in TTY sessions (#115)
+- fix(extras): args-out-of-range error on file-size attribute
+- fix(fd): handle systems using `fdfind` by default (#122)
+- fix(fd): improve GNU ls detection (#92)
+- fix(collapse): endless while loop
 
 * 1.9.23
 ** Breaking changes
 
 + Extract =dirvish-media= from =dirvish=
 
-  ~dirvish-auto-cache-threshold~ -> ~dirvish-media-auto-cache-threshold~
-  New faces: ~dirvish-media-info-heading~, ~dirvish-media-info-property-key~
-  New command: ~dirvish-media-properties~
+  - ~dirvish-auto-cache-threshold~ -> ~dirvish-media-auto-cache-threshold~
+  - New faces: ~dirvish-media-info-heading~, ~dirvish-media-info-property-key~
+  - New command: ~dirvish-media-properties~
 
 ** Changes since 1.8.14
 
 + =ls=: apply switches to current session on M-RET ([[https://github.com/alexluigit/dirvish/issus/63][#63]])
 + =narrow=: C-g to cancel the narrowing / custom regex builder
 + =emerge=:
-  Add ~dirvish-emerge-toggle-current-group~ command to to toggle the visibility of the group
-  Add ~dirvish-emerge-group-heading-map~, TAB -> ~dirvish-emerge-toggle-current-group~
-  Add ~dirvish-emerge-next/previous-group~ commands
-  Add some predicates
+  - Add ~dirvish-emerge-toggle-current-group~ command to to toggle the visibility of the group
+  - Add ~dirvish-emerge-group-heading-map~, TAB -> ~dirvish-emerge-toggle-current-group~
+  - Add ~dirvish-emerge-next/previous-group~ commands
+  - Add some predicates
 
 ** Fixes since 1.8.14
 
 + =core=:
-  revert to `dirvish-mode` after quit `wdired-mode`
-  guard `dired-current-directory` in dwim target ([[https://github.com/alexluigit/dirvish/issus/78][#78]])
-  scroll preview util buffer with `scroll-other-window`
-  set buffer-modified-p to nil at startup
-  kill session util buffers on dirvish-kill-buffer-h
-  rename obsolete command in `dirvish-dispatch`
-  highlight current line in any case
-  reuse fullscreen sessions unconditionally ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
-  kill overlapping session correctly ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
+  - revert to `dirvish-mode` after quit `wdired-mode`
+  - guard `dired-current-directory` in dwim target ([[https://github.com/alexluigit/dirvish/issus/78][#78]])
+  - scroll preview util buffer with `scroll-other-window`
+  - set buffer-modified-p to nil at startup
+  - kill session util buffers on dirvish-kill-buffer-h
+  - rename obsolete command in `dirvish-dispatch`
+  - highlight current line in any case
+  - reuse fullscreen sessions unconditionally ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
+  - kill overlapping session correctly ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
 + =emerge=:
-  apply changes in transient menu to buffer
-  infinite while loop
-  expunge invisible overlay property
+  - apply changes in transient menu to buffer
+  - infinite while loop
+  - expunge invisible overlay property
 + =subtree=: revert subtrees after emerging groups
 + =extras=: increase file size string length to 8 ([[https://github.com/alexluigit/dirvish/issus/77][#77]])
 + =peek=: get candidate retriever at runtime ([[https://github.com/alexluigit/dirvish/issus/70][#70]])
