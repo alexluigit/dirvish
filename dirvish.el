@@ -192,7 +192,8 @@ input for `dirvish-redisplay-debounce' seconds."
 (defconst dirvish--dired-free-space
   (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--preview-variables ; Copied from `consult.el'
-  '((inhibit-message . t) (enable-local-variables . :safe) (non-essential . t) (delay-mode-hooks . t)))
+  '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
+    (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--builtin-dps '(tramp disable default))
 (defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
@@ -1223,7 +1224,8 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
       (dirvish--normalize-util-windows maybe-abnormal)
       (unless (dirvish-prop :cached)
         (dirvish-data-for-dir default-directory (current-buffer) t)
-        (dirvish-prop :cached t)))))
+        (dirvish-prop :cached t)))
+    (setq dirvish--this dv)))
 
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
