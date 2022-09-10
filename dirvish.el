@@ -639,7 +639,7 @@ See `dirvish--available-preview-dispatchers' for details."
            with remote = (dirvish-prop :remote)
            with st = (bound-and-true-p dirvish-subtree--overlays)
            with height = (frame-height) ; use `window-height' here breaks `dirvish-narrow'
-           with width = (- (window-width) (if (dirvish-prop :gui) 0 2))
+           with width = (- (window-width) (if (dirvish-prop :gui) 1 2))
            for (ov pred fn wd) in (dv-attribute-fns dv)
            do (remove-overlays (point-min) (point-max) ov t)
            when (funcall pred dv) do
