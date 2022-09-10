@@ -494,23 +494,17 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (index-dir () :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
   (roots () :documentation "is the list of all INDEX-DIRs."))
 
-(defun dirvish--find-reusable (type)
+(defun dirvish--find-reusable (&optional type)
   "Return the first matched reusable session with TYPE."
   (cl-loop
    with scopes = (dirvish--scopes)
-   with len = (length dirvish-scopes)
-   for dv-name in (dirvish-get-all 'name t t)
-   for dv = (gethash dv-name dirvish--session-hash)
-   for (_ . index-buf) = (dv-index-dir dv)
-   thereis (and (not (get-buffer-window index-buf t))
-                (eq type (dv-type dv))
-                (equal (seq-take (dv-scopes dv) len) scopes)
-                dv)))
+   for dv in (hash-table-values dirvish--session-hash)
+   when (and (eq type (dv-type dv)) (equal (dv-scopes dv) scopes)) collect dv))
 
 (defun dirvish--reuse-session (&optional dir layout type)
   "Reuse some hidden Dirvish session with TYPE and find DIR in it.
 Set layout for the session with LAYOUT."
-  (when-let ((dv (dirvish--find-reusable type)))
+  (when-let ((dv (car (dirvish--find-reusable type))))
     (prog1 dv
       (if (and (not current-prefix-arg) (eq dirvish-reuse-session 'resume))
           (setq dir nil)
@@ -549,8 +543,10 @@ ARGS is a list of keyword arguments for `dirvish' struct."
              (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-name dv)) bn)
              do (dirvish--kill-buffer b))
     (setq dirvish--parent-hash (make-hash-table :test #'equal))
-    (if dirvish-reuse-session (setf (dv-winconf dv) nil)
-      (dirvish--kill-buffer (cdr (dv-index-dir dv))))
+    (cond ((> (length (dirvish--find-reusable (dv-type dv))) 1)
+           (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv)))
+          (dirvish-reuse-session (setf (dv-winconf dv) nil))
+          (t (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv))))
     (setq dirvish--this nil)))
 
 (defun dirvish-on-file-open (dv)
@@ -1027,7 +1023,7 @@ Dirvish sets `revert-buffer-function' to this function."
          (this dirvish--this)
          (dv (cond ((memq this-command '(dired-other-tab dired-other-frame))
                     (dirvish-new :layout dirvish-default-layout))
-                   (t (or this (dirvish--find-reusable nil) (dirvish-new)))))
+                   (t (or this (car (dirvish--find-reusable)) (dirvish-new)))))
          (cmds '(dired-other-tab dired-other-frame dirvish dirvish-dwim))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
@@ -1196,7 +1192,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
-  (setf (dv-scopes dv) (append (dirvish--scopes) `(:dv ,dv)))
+  (setf (dv-scopes dv) (dirvish--scopes))
   (setf (dv-index-dir dv) (cons (dirvish-prop :root) (current-buffer)))
   (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
   (let* ((layout (dv-layout dv))
