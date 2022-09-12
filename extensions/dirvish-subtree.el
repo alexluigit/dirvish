@@ -148,7 +148,7 @@ Ensure correct DIR when inside of a subtree."
 (defun dirvish-subtree--insert ()
   "Insert subtree under this directory."
   (let* ((dir (dired-get-filename))
-         (listing (dirvish--readin-dir dir dirvish-subtree-listing-switches))
+         (listing (dirvish-readin-dir dir dirvish-subtree-listing-switches))
          buffer-read-only beg end)
     (dirvish-data-for-dir dir (current-buffer) nil)
     (with-silent-modifications

@@ -237,7 +237,7 @@ RANGE can be `buffer', `session', `frame', `all'."
 SRCS and DEST are source files and destination."
   (dirvish-yank--prepare-dest-names srcs dest)
   (cl-loop with fn = (alist-get method dirvish-yank-fallback-methods)
-           for src in srcs do (apply fn src dest t)))
+           for src in srcs do (funcall fn src dest t)))
 
 (defun dirvish-yank--l2l-handler (method srcs dest)
   "Execute a local yank command with type of METHOD.

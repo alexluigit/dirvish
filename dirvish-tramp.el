@@ -46,10 +46,11 @@
 Save the REMOTE host to `dirvish-tramp-hosts'.
 FN is the original `dired-noselect' closure."
   (let* ((r-flags (cdr (assoc remote dirvish-tramp-hosts #'equal)))
-         (short-flags "-alh")
+         (ftp (tramp-ftp-file-name-p dir))
+         (short-flags "-Alh")
          (gnu? t)
-         (buffer (apply fn (list dir (or r-flags flags)))))
-    (unless flags
+         (buffer (apply fn (list dir (if ftp short-flags (or r-flags flags))))))
+    (unless (or r-flags ftp)
       (with-current-buffer buffer
         (setq gnu? (dirvish-tramp--gnuls-available-p))
         (push (cons remote (if gnu? flags short-flags))
@@ -92,6 +93,23 @@ FN is the original `dired-noselect' closure."
            (proc (start-file-process-shell-command (buffer-name buf) buf cmd)))
       (process-put proc 'meta (list dir buffer setup))
       (set-process-sentinel proc #'dirvish-tramp-dir-data-proc-s))))
+
+(cl-defmethod dirvish-readin-dir
+  (dir &context ((dirvish-prop :remote) string) &optional flags)
+  "DIR FLAGS DIRVISH-PROP."
+  (let* ((ftp (tramp-ftp-file-name-p (dirvish-prop :tramp)))
+         (flags (if ftp "-Alh"
+                  (or flags dired-actual-switches dired-listing-switches))))
+    (with-temp-buffer
+      (insert-directory (file-name-as-directory dir) flags nil t)
+      (delete-char -1)
+      (unless ftp
+        (delete-region (goto-char (point-min))
+                       (progn (forward-line 1) (point))))
+      (unless (looking-at-p "  ")
+        (let ((indent-tabs-mode nil))
+          (indent-rigidly (point-min) (point-max) 2)))
+      (buffer-string))))
 
 (defun dirvish-tramp--preview-handler (dv file vec)
   "Preview handler for remote FILE in DV.

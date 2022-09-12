@@ -253,9 +253,11 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
 (defun dirvish--hide-dired-header ()
   "Hide the Dired header."
   (remove-overlays (point-min) (point) 'dired-header t)
-  (cond ((cdr dired-subdir-alist) nil)
-        (dirvish-use-header-line
-         (save-excursion
+  (save-excursion
+    (goto-char (point-min))
+    (cond ((or (not (looking-at-p dired-subdir-regexp))
+               (cdr dired-subdir-alist)))
+          (dirvish-use-header-line
            (let* ((ofs (if dirvish--dired-free-space 2 1))
                   (o (make-overlay (goto-char (point-min))
                                    (progn (forward-line ofs) (point)))))
@@ -616,7 +618,7 @@ See `dirvish--available-preview-dispatchers' for details."
         (setq f-str (buffer-substring f-beg f-end))
         (setq f-wid (string-width f-str))
         (setq f-dir (dired-current-directory))
-        (setq f-name (expand-file-name f-str f-dir))
+        (setq f-name (concat f-dir f-str))
         (setq f-attrs (dirvish-attribute-cache f-name :builtin
                         (unless remote (file-attributes f-name))))
         (setq f-type (dirvish-attribute-cache f-name :type
@@ -1048,16 +1050,13 @@ Dirvish sets `revert-buffer-function' to this function."
       (run-hook-with-args 'dirvish-find-entry-hook key buffer)
       buffer)))
 
-(defun dirvish--readin-dir (dirname &optional flags)
-  "Readin the directory DIRNAME with optional FLAGS as a string."
-  (let* ((switches (or flags dired-actual-switches dired-listing-switches))
-         (trim (if (member "--all" (split-string switches)) 3 1)))
+(cl-defgeneric dirvish-readin-dir (dir &optional flags)
+  "Readin the directory DIR with optional FLAGS as a string."
+  (let ((switches (or flags dired-actual-switches dired-listing-switches)))
     (with-temp-buffer
-      (insert-directory (file-name-as-directory dirname) switches nil t)
+      (insert-directory (file-name-as-directory dir) switches nil t)
       (delete-char -1)
-      (goto-char (point-min))
-      (delete-region (point) (progn (forward-line trim) (point)))
-      (goto-char (point-min))
+      (delete-region (goto-char (point-min)) (progn (forward-line 1) (point)))
       (unless (looking-at-p "  ")
         (let ((indent-tabs-mode nil))
           (indent-rigidly (point-min) (point-max) 2)))
@@ -1068,10 +1067,11 @@ Dirvish sets `revert-buffer-function' to this function."
 LEVEL is the depth of current window."
   (let ((index (directory-file-name index))
         (buf (dirvish--util-buffer (format "parent-%s" level) dv nil t))
-        (str (or (gethash dir dirvish--parent-hash) (dirvish--readin-dir dir))))
+        (str (or (gethash dir dirvish--parent-hash) (dirvish-readin-dir dir))))
     (with-current-buffer buf
       (dirvish-parent-mode)
       (dirvish-prop :dv (dv-name dv))
+      (dirvish-prop :remote (file-remote-p dir))
       (puthash dir str dirvish--parent-hash)
       (erase-buffer)
       (setq mode-line-format nil header-line-format nil)
