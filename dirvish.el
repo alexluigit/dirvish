@@ -1243,10 +1243,12 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 (defun dirvish-quit ()
   "Quit current Dirvish session."
   (interactive)
-  (let ((dv (dirvish-curr)) (frame (selected-frame)))
+  (let ((dv (dirvish-curr)) (frame (selected-frame)) (ct 0) (lst (window-list)))
     (dirvish-kill dv)
-    (when dirvish-reuse-session (quit-window))
-    (unless (eq (selected-frame) frame) (delete-frame frame))))
+    (while (and (<= (cl-incf ct) (length lst)) (eq (dirvish-curr) dv))
+      (quit-window))
+    (when (or (not (eq (selected-frame) frame)) (eq (dirvish-curr) dv))
+      (delete-frame frame))))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode

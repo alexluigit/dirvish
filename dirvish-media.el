@@ -376,7 +376,8 @@ Require: `zipinfo' (executable)
 Require: `tar' (executable)"
   :require ("zipinfo" "tar")
   (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
-        ((member ext '("tar" "zst")) `(shell . ("tar" "-tvf" ,file)))))
+        ((member ext '("tar" "zst" "bz2" "bz" "gz" "xz" "tgz"))
+         `(shell . ("tar" "-tvf" ,file)))))
 
 (provide 'dirvish-media)
 ;;; dirvish-media.el ends here
