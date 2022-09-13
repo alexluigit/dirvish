@@ -1262,7 +1262,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
         (progn (pcase-dolist (`(,sym ,fn ,how) ads) (advice-add sym how fn))
                (add-hook 'window-selection-change-functions h-fn))
       (pcase-dolist (`(,sym ,fn) ads) (advice-remove sym fn))
-      (add-hook 'window-selection-change-functions h-fn))))
+      (remove-hook 'window-selection-change-functions h-fn))))
 
 ;;;###autoload
 (defun dirvish (&optional path)

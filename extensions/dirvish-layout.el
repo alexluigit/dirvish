@@ -81,7 +81,7 @@ current layout defined in `dirvish-layout-recipes'."
   "Start a Dirvish session with optional PATH.
 The session takes the whole frame when `one-window-p'."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
-  (let ((path (expand-file-name (or path default-directory)))
+  (let ((path (or path default-directory))
         (layout (and (one-window-p) dirvish-default-layout)))
     (if (dirvish-curr)
         (dirvish-find-entry-a path)
