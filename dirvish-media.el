@@ -317,13 +317,12 @@ Require: `convert' (executable from `imagemagick' suite)"
 (dirvish-define-preview gif (file ext)
   "Preview gif images with animations."
   (when (equal ext "gif")
-    (let ((gif-buf (find-file-noselect file t))
-          (callback (lambda (buf)
-                      (when (buffer-live-p buf)
+    (let ((gif (dirvish--find-file-temporarily file))
+          (callback (lambda (rcp)
+                      (when-let* ((buf (cdr rcp)) ((buffer-live-p buf)))
                         (with-current-buffer buf
                           (image-animate (get-char-property 1 'display)))))))
-      (run-with-idle-timer 1 nil callback gif-buf)
-      `(buffer . ,gif-buf))))
+      (run-with-idle-timer 1 nil callback gif) gif)))
 
 (dirvish-define-preview video (file ext preview-window)
   "Preview video files.
@@ -355,7 +354,7 @@ Require: `epub-thumbnailer' (executable)"
   "Preview pdf files.
 Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
-    (if (featurep 'pdf-tools) `(buffer . ,(find-file-noselect file t nil))
+    (if (featurep 'pdf-tools) (dirvish--find-file-temporarily file)
       '(info . "Emacs package 'pdf-tools' is required to preview pdf documents"))))
 
 (dirvish-define-preview pdf-preface (file ext preview-window)

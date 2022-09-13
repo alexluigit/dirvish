@@ -151,7 +151,8 @@ vc-hooks.el) for detail explanation of these states."
                              (not (memq (vc-state file bk)
                                         '(unregistered ignored)))
                              file))
-                  (f-buf (find-file-noselect file)))
+                  (f-buf (cdr (dirvish--find-file-temporarily file)))
+                  ((bufferp f-buf)))
         (unless (memq f-buf orig-buflist)
           (push f-buf (dv-preview-buffers dv)))
         (with-selected-window preview-window
