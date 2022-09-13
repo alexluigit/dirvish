@@ -200,8 +200,7 @@ When CLEAR, remove all subtrees in the buffer."
 
 (defun dirvish-subtree-expand-to (target)
   "Go to line describing TARGET and expand its parent directories."
-  (let ((file (dired-get-filename))
-        (dir (dired-current-directory)))
+  (let ((file (dired-get-filename nil t)) (dir (dired-current-directory)))
     (cond ((equal file target) target)
           ((string-prefix-p file target)
            (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
@@ -215,13 +214,14 @@ When CLEAR, remove all subtrees in the buffer."
            (let ((depth (dirvish-subtree--depth))
                  (next (car (split-string (substring target (length dir)) "/"))))
              (goto-char (dired-subdir-min))
-             (and dirvish--dired-free-space (forward-line))
+             (goto-char (next-single-property-change (point) 'dired-filename))
+             (forward-line -1)
              ;; TARGET is either not exist or being hidden (#135)
              (when (dirvish-subtree--move-to-file next depth)
                (dirvish-subtree-expand-to target))))
           ((string-prefix-p (expand-file-name default-directory) dir)
            (goto-char (dired-subdir-min))
-           (forward-line (if dirvish--dired-free-space 2 1))
+           (goto-char (next-single-property-change (point) 'dired-filename))
            (dirvish-subtree-expand-to target))
           ('invalid-target nil))))
 

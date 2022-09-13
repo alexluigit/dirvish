@@ -404,20 +404,19 @@ DESC and HIDE are the group title and visibility respectively."
 (defun dirvish-emerge--insert-groups (groups &optional pos beg end)
   "Insert GROUPS then resume cursor to POS.
 POS can be a integer or filename.
-BEG and END, if provided, determine the boundary of groups."
-  (let ((beg (or beg (progn (goto-char (cdar (last dired-subdir-alist)))
-                            (forward-line (if dirvish--dired-free-space 2 1))
-                            (point))))
-        (end (or end (- (dired-subdir-max)
-                        (if (= (length dired-subdir-alist) 1) 0 1)))))
-    (with-silent-modifications
-      (setq dirvish-emerge--group-overlays nil)
-      (delete-region beg end)
-      (mapc #'dirvish-emerge--insert-group groups)
-      (setq dirvish-emerge--group-overlays
-            (nreverse dirvish-emerge--group-overlays)))
-    (cond ((numberp pos) (goto-char pos))
-          ((stringp pos) (dired-goto-file pos)))))
+BEG and END determine the boundary of groups."
+  (unless (or beg end)
+    (setq beg (cl-loop for o in (overlays-at (point-min)) thereis
+                       (and (overlay-get o 'dired-header) (overlay-end o)))
+          end (- (dired-subdir-max) (if (cdr dired-subdir-alist) 1 0))))
+  (with-silent-modifications
+    (setq dirvish-emerge--group-overlays nil)
+    (delete-region beg end)
+    (mapc #'dirvish-emerge--insert-group groups)
+    (setq dirvish-emerge--group-overlays
+          (nreverse dirvish-emerge--group-overlays)))
+  (cond ((numberp pos) (goto-char pos))
+        ((stringp pos) (dired-goto-file pos))))
 
 (defun dirvish-emerge--apply-1 (preds)
   "Helper for `dirvish-emerge--apply'.
@@ -429,13 +428,12 @@ PREDS are locally composed predicates."
                  for i from 0
                  for (desc _ hide) in grs
                  collect (list i desc hide '())))
-        (min (progn (goto-char (cdar (last dired-subdir-alist)))
-                    (forward-line (if dirvish--dired-free-space 2 1))
-                    (point)))
-        (max (- (dired-subdir-max) (if (= (length dired-subdir-alist) 1) 0 1)))
+        (beg (cl-loop for o in (overlays-at (goto-char (point-min))) thereis
+                      (and (overlay-get o 'dired-header) (overlay-end o))))
+        (end (- (dired-subdir-max) (if (cdr dired-subdir-alist) 1 0)))
         (max-idx (length preds))
         (dir (file-local-name (dired-current-directory))))
-    (while (< (point) max)
+    (while (< (point) end)
       (when-let ((f-beg (dired-move-to-filename))
                  (f-end (dired-move-to-end-of-filename)))
         (let* ((l-beg (line-beginning-position))
@@ -450,7 +448,7 @@ PREDS are locally composed predicates."
           (push (buffer-substring-no-properties l-beg l-end)
                 (nth 3 (nth (or match max-idx) groups)))))
       (forward-line 1))
-    (dirvish-emerge--insert-groups groups old-file min max)))
+    (dirvish-emerge--insert-groups groups old-file beg end)))
 
 (defun dirvish-emerge--apply ()
   "Readin `dirvish-emerge-groups' and apply them."

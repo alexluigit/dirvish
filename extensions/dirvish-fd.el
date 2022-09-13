@@ -72,6 +72,12 @@ should return a list of regular expressions."
 (defvar-local dirvish-fd--output nil)
 (defvar-local dirvish-fd--input "" "Last used fd user input.")
 
+(defsubst dirvish-fd--header-offset ()
+  "Return # of header lines in a fd buffer."
+  (if (or (not (boundp 'dired-free-space))
+          (eq (bound-and-true-p dired-free-space) 'separate))
+      2 1))
+
 (defun dirvish-fd--apply-switches ()
   "Apply fd SWITCHES to current buffer."
   (interactive)
@@ -322,7 +328,8 @@ When GLOB, convert the regexs using `dired-glob-regexp'."
                       (t (funcall dirvish-fd-regex-builder input))))
         buffer-read-only)
     (goto-char (cdar dired-subdir-alist))
-    (forward-line (if dirvish--dired-free-space 2 1))
+    (forward-line (dirvish-fd--header-offset))
+    (dirvish-prop :content-begin (point))
     (delete-region (point) (dired-subdir-max))
     (save-excursion
       (if (not regexs)
@@ -370,7 +377,7 @@ The command run is essentially:
     (dirvish--kill-buffer (get-buffer bufname))
     (with-current-buffer buffer
       (erase-buffer)
-      (insert "  " dir ":\n" (if dirvish--dired-free-space "\n" ""))
+      (insert "  " dir ":" (make-string (dirvish-fd--header-offset) ?\n))
       (setq default-directory dir
             dired-subdir-alist (list (cons dir (point-min-marker))))
       (dired-mode dir ls-switches)

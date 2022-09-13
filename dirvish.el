@@ -189,8 +189,6 @@ input for `dirvish-redisplay-debounce' seconds."
     (dirvish-subtree  subtree-state)
     (dirvish-yank     yank)))
 (defvar dirvish-reset-keywords '(:free-space))
-(defconst dirvish--dired-free-space
-  (or (not (boundp 'dired-free-space)) (eq (bound-and-true-p dired-free-space) 'separate)))
 (defconst dirvish--preview-variables ; Copied from `consult.el'
   '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
     (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
@@ -254,15 +252,16 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
   "Hide the Dired header."
   (remove-overlays (point-min) (point) 'dired-header t)
   (save-excursion
-    (goto-char (point-min))
-    (cond ((or (not (looking-at-p dired-subdir-regexp))
-               (cdr dired-subdir-alist)))
-          (dirvish-use-header-line
-           (let* ((ofs (if dirvish--dired-free-space 2 1))
-                  (o (make-overlay (goto-char (point-min))
-                                   (progn (forward-line ofs) (point)))))
-             (overlay-put o 'dired-header t)
-             (overlay-put o 'invisible t))))))
+    (let* ((beg (goto-char (point-min)))
+           (next-file (next-single-property-change beg 'dired-filename))
+           (end (if (not next-file) (point-max)
+                  (goto-char next-file) (line-beginning-position)))
+           (o (make-overlay beg end)))
+      (dirvish-prop :content-begin end)
+      (overlay-put o 'dired-header t)
+      (overlay-put o 'invisible
+                   (cond ((cdr dired-subdir-alist) nil)
+                         (dirvish-use-header-line t))))))
 
 (defun dirvish--display-buffer (buffer alist)
   "Try displaying BUFFER with ALIST.
@@ -711,8 +710,8 @@ If ALL-FRAMES, search target directories in all frames."
   (when-let ((dv (dirvish-curr)))
     (cond ((eobp) (forward-line -1))
           ((cdr dired-subdir-alist))
-          ((bobp) (when dirvish-use-header-line
-                    (forward-line (if dirvish--dired-free-space 2 1)))))
+          ((and (bobp) dirvish-use-header-line)
+           (goto-char (dirvish-prop :content-begin))))
     (when dirvish-hide-cursor (dired-move-to-filename))
     (dirvish--render-attrs dv)
     (when-let ((filename (dired-get-filename nil t)))
@@ -1034,10 +1033,9 @@ Dirvish sets `revert-buffer-function' to this function."
     (set-window-dedicated-p win nil)
     (unless (or (memq this-command cmds) this) (setf (dv-layout dv) nil))
     (unless buffer
-      (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
-        (if (not remote) (setq buffer (apply fn (list dir flags)))
-          (require 'dirvish-tramp)
-          (setq buffer (dirvish-tramp--noselect fn dir flags remote))))
+      (if (not remote) (setq buffer (apply fn (list dir flags)))
+        (require 'dirvish-tramp)
+        (setq buffer (dirvish-tramp--noselect fn dir flags remote)))
       (with-current-buffer buffer (dirvish--init-dired-buffer dv))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
