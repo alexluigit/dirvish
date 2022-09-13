@@ -75,7 +75,7 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
 BASE is a string indicating the subdir of `dirvish-cache-dir' to
 use.  EXT is a suffix such as \".jpg\" that is attached to FILE.
 A new directory is created unless NO-MKDIR."
-  (let* ((file (if dirvish--os-windows-p
+  (let* ((file (if (memq system-type '(windows-nt ms-dos))
                    (concat "/" (replace-regexp-in-string ":" "" file)) file))
          (cache (concat dirvish-cache-dir base file)))
     (and (not no-mkdir) (not (file-exists-p cache))

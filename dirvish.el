@@ -194,7 +194,6 @@ input for `dirvish-redisplay-debounce' seconds."
     (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
 (defconst dirvish--builtin-attrs '(hl-line symlink-target))
 (defconst dirvish--builtin-dps '(tramp disable default))
-(defconst dirvish--os-windows-p (memq system-type '(windows-nt ms-dos)))
 (defconst dirvish--no-update-preview-cmds
   '(ace-select-window other-window scroll-other-window scroll-other-window-down))
 (defvar dirvish-redisplay-debounce-timer nil)
