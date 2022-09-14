@@ -334,7 +334,7 @@ If DEMOTE, shift them to the lowest instead."
 (defun dirvish-emerge--ifx-write ()
   "Write groups to .dir-locals.el."
   (add-dir-local-variable
-   'dirvish-mode 'dirvish-emerge-groups
+   'dired-mode 'dirvish-emerge-groups
    (cl-loop for o in transient-current-suffixes
             when (eq (type-of o) 'dirvish-emerge-group) collect
             (list (oref o description) (oref o recipe)
@@ -512,7 +512,7 @@ Press again to set the value for the group"))
         (add-hook 'dirvish-setup-hook #'dirvish-emerge--apply nil t)
         (unless dirvish-emerge--group-overlays (dirvish-emerge--apply)))
     (remove-hook 'dirvish-setup-hook #'dirvish-emerge--apply t)
-    (when (derived-mode-p 'dirvish-mode) (revert-buffer))))
+    (revert-buffer)))
 
 (defun dirvish-emerge--get-group-overlay ()
   "Return overlay for the group at point."

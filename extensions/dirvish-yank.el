@@ -88,7 +88,7 @@ invoke the CMD, DOC is the documentation string."
          (lambda () (dirvish--format-menu-heading "Select yank operation on marked files:"))
          ,@v]
         (interactive)
-        (if (derived-mode-p 'dirvish-mode)
+        (if (derived-mode-p 'dired-mode)
             (transient-setup 'dirvish-yank-menu)
           (user-error "Not in a Dirvish buffer"))))))
 

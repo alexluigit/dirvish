@@ -188,7 +188,12 @@ input for `dirvish-redisplay-debounce' seconds."
     (dirvish-icons    all-the-icons vscode-icon)
     (dirvish-subtree  subtree-state)
     (dirvish-yank     yank)))
-(defvar dirvish-reset-keywords '(:free-space))
+(defvar dirvish-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map dired-mode-map)
+    (define-key map (kbd "?") 'dirvish-dispatch)
+    (define-key map (kbd "q") 'dirvish-quit) map)
+  "Keymap used in dirvish buffers.")
 (defconst dirvish--preview-variables ; Copied from `consult.el'
   '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
     (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
@@ -196,6 +201,7 @@ input for `dirvish-redisplay-debounce' seconds."
 (defconst dirvish--builtin-dps '(tramp disable default))
 (defconst dirvish--no-update-preview-cmds
   '(ace-select-window other-window scroll-other-window scroll-other-window-down))
+(defvar dirvish--reset-keywords '(:free-space))
 (defvar dirvish-redisplay-debounce-timer nil)
 (defvar dirvish--selected-window nil)
 (defvar dirvish--mode-line-fmt nil)
@@ -559,7 +565,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 
 (defun dirvish--preview-dps-validate (dps)
   "Check if the requirements of dispatchers DPS are met."
-  (cl-loop with res = (prog1 '() (require 'ansi-color))
+  (cl-loop with res = (prog1 '() (require 'recentf) (require 'ansi-color))
            with fmt = "[Dirvish]: install '%s' executable to preview %s files.
 See `dirvish--available-preview-dispatchers' for details."
            with dp-fmt = "dirvish-%s-preview-dp"
@@ -668,13 +674,6 @@ buffer, it defaults to filename under the cursor when it is nil."
                       (cl-substitute file "%f" ex :test 'string=))
           (when-let ((dv (dirvish-curr))) (funcall (dv-on-file-open dv) dv))
           (find-file file))))))
-
-(defun dirvish-dwim-target-next-a (&optional all-frames)
-  "Replacement for `dired-dwim-target-next'.
-If ALL-FRAMES, search target directories in all frames."
-  (delete (when (derived-mode-p 'dired-mode) (dired-current-directory))
-          (cl-loop for (dir . buf) in (dirvish-get-all 'index-dir all-frames)
-                   when (get-buffer-window buf) collect dir)))
 
 (defun dirvish-insert-subdir-a (dirname &rest _)
   "Setup newly inserted subdir DIRNAME for this Dirvish buffer."
@@ -793,7 +792,6 @@ If ALL-FRAMES, search target directories in all frames."
 
 (defun dirvish--find-file-temporarily (name)
   "Open file NAME temporarily for preview."
-  (unless (fboundp 'recentf-track-opened-file) (require 'recentf))
   (cl-letf (((symbol-function 'recentf-track-opened-file) #'ignore)
             ((symbol-function 'undo-tree-save-history-from-hook) #'ignore)
             ((symbol-function 'flycheck-mode-on-safe) #'ignore))
@@ -981,7 +979,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   "Reread the Dirvish buffer.
 Dirvish sets `revert-buffer-function' to this function."
   (dirvish-prop :old-index (dired-get-filename nil t))
-  (dolist (keyword dirvish-reset-keywords) (dirvish-prop keyword nil))
+  (dolist (keyword dirvish--reset-keywords) (dirvish-prop keyword nil))
   (dired-revert)
   (dirvish--hide-dired-header)
   (setq dirvish--attrs-hash (make-hash-table))
@@ -998,7 +996,7 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (defun dirvish--init-dired-buffer (dv)
   "Initialize a Dired buffer for session DV."
-  (dirvish-mode)
+  (use-local-map dirvish-mode-map)
   (dirvish--hide-cursor)
   (setq dirvish--attrs-hash (make-hash-table))
   (setq-local revert-buffer-function #'dirvish-revert)
@@ -1013,7 +1011,6 @@ Dirvish sets `revert-buffer-function' to this function."
   (add-hook 'window-configuration-change-hook #'dirvish-winconf-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
-  (run-hooks 'dirvish-mode-hook)
   (set-buffer-modified-p nil))
 
 (defun dirvish-dired-noselect-a (fn dir &optional flags)
@@ -1021,6 +1018,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (let* ((key (file-name-as-directory (expand-file-name dir)))
          (win (or (minibuffer-selected-window) (frame-selected-window)))
          (this dirvish--this)
+         (dired-buffers nil) ; disable reuse from dired side
          (dv (cond ((memq this-command '(dired-other-tab dired-other-frame))
                     (dirvish-new :layout dirvish-default-layout))
                    (t (or this (car (dirvish--find-reusable)) (dirvish-new)))))
@@ -1220,19 +1218,8 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
         (dirvish-prop :cached t)))
     (setq dirvish--this dv)))
 
-(defvar dirvish-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "?") 'dirvish-dispatch)
-    (define-key map (kbd "q") 'dirvish-quit)
-    map)
-  "Keymap used in a dirvish buffer.")
-
 (define-derived-mode dirvish-parent-mode fundamental-mode "Dirvish-parent"
   "Major mode for dirvish parent buffers."
-  :group 'dirvish :interactive nil)
-
-(define-derived-mode dirvish-mode dired-mode "Dirvish"
-  "Major mode for dirvish buffers."
   :group 'dirvish :interactive nil)
 
 ;;;; Commands
@@ -1252,7 +1239,6 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   "Let Dirvish take over Dired globally."
   :group 'dirvish :global t
   (let ((ads '((dired-find-file dirvish-find-entry-a :override)
-               (dired-dwim-target-next dirvish-dwim-target-next-a :override)
                (dired-noselect dirvish-dired-noselect-a :around)
                (dired-insert-subdir dirvish-insert-subdir-a :after)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
@@ -1272,11 +1258,9 @@ otherwise it defaults to `default-directory'."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Dirvish: "))))
   (setq path (or path default-directory))
-  (let ((dv (dirvish-curr)))
-    (if (and dv (dv-layout dv))
-        (dirvish-find-entry-a path)
-      (or (dirvish--reuse-session path dirvish-default-layout)
-          (dirvish-new :path path :layout dirvish-default-layout)))))
+  (if (dirvish-curr) (dirvish-find-entry-a path)
+    (or (dirvish--reuse-session path dirvish-default-layout)
+        (dirvish-new :path path :layout dirvish-default-layout))))
 
 (transient-define-prefix dirvish-dispatch ()
   "Main menu for Dired/Dirvish."
@@ -1307,14 +1291,6 @@ otherwise it defaults to `default-directory'."
   (interactive)
   (if dirvish--props (transient-setup 'dirvish-dispatch)
     (user-error "Not in a Dirvish buffer")))
-
-(defun dirvish-restore-desktop-buffer (_file-name _buffer-name misc-data)
-  "Restore a Dirvish buffer with MISC-DATA ."
-  (dirvish-override-dired-mode)
-  (dired-restore-desktop-buffer nil nil misc-data))
-
-(add-to-list 'desktop-buffer-mode-handlers
-             '(dirvish-mode . dirvish-restore-desktop-buffer))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
