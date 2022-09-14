@@ -851,11 +851,11 @@ When PROC finishes, fill preview buffer with process result."
         ('shell (font-lock-mode -1) (dirvish-apply-ansicolor-h nil (point-min)))
         ('dired
          (setq-local dired-subdir-alist
-                     (list (cons (car (dv-index-dir dv)) (point-min-marker))))
-         (setq-local font-lock-defaults
+                     (list (cons (car (dv-index-dir dv)) (point-min-marker)))
+                     font-lock-defaults
                      '(dired-font-lock-keywords t nil nil beginning-of-line))
          (font-lock-mode 1)
-         (when (fboundp 'diredfl-mode) (diredfl-mode))))))
+         (run-hooks 'dirvish-directory-view-mode-hook)))))
   (kill-buffer (process-buffer proc)))
 
 (defun dirvish--run-shell-for-preview (dv recipe)
@@ -898,7 +898,7 @@ When PROC finishes, fill preview buffer with process result."
     (let ((ov (make-overlay l-beg (1+ l-end)))) (overlay-put ov 'face hl-face) ov)))
 
 (dirvish-define-attribute symlink-target "Hide symlink target."
-  (:if (or (eq major-mode 'dirvish-parent-mode)
+  (:if (or (eq major-mode 'dirvish-directory-view-mode)
            (and dired-hide-details-mode
                 (default-value 'dired-hide-details-hide-symlink-targets))))
   (when (< (+ f-end 4) l-end)
@@ -1065,21 +1065,20 @@ LEVEL is the depth of current window."
         (buf (dirvish--util-buffer (format "parent-%s" level) dv nil t))
         (str (or (gethash dir dirvish--parent-hash) (dirvish-readin-dir dir))))
     (with-current-buffer buf
-      (dirvish-parent-mode)
+      (dirvish-directory-view-mode)
       (dirvish-prop :dv (dv-name dv))
       (dirvish-prop :remote (file-remote-p dir))
       (puthash dir str dirvish--parent-hash)
       (erase-buffer)
       (setq mode-line-format nil header-line-format nil)
       (save-excursion (insert str "\n"))
-      (setq-local dired-subdir-alist (list (cons dir (point-min-marker))))
-      (setq-local font-lock-defaults
+      (setq-local dired-subdir-alist (list (cons dir (point-min-marker)))
+                  font-lock-defaults
                   '(dired-font-lock-keywords t nil nil beginning-of-line))
       (font-lock-mode 1)
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--hide-cursor)
       (setq dirvish--attrs-hash (make-hash-table))
-      (when (fboundp 'diredfl-mode) (diredfl-mode))
       (add-hook 'window-configuration-change-hook #'dirvish--render-attrs nil t)
       buf)))
 
@@ -1219,7 +1218,8 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
         (dirvish-prop :cached t)))
     (setq dirvish--this dv)))
 
-(define-derived-mode dirvish-parent-mode fundamental-mode "Dirvish-parent"
+(define-derived-mode dirvish-directory-view-mode
+  fundamental-mode "Dirvish-directory-view"
   "Major mode for dirvish parent buffers."
   :group 'dirvish :interactive nil)
 
