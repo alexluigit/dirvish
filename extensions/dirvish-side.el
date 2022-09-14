@@ -155,8 +155,7 @@ otherwise it defaults to `project-current'."
         (visible (dirvish-side--session-visible-p))
         (path (or path (dirvish--get-project-root) default-directory)))
     (cond (fullframep (user-error "Can not create side session here"))
-          ((eq visible (selected-window))
-           (let ((dirvish-reuse-session t)) (dirvish-quit)))
+          ((eq visible (selected-window)) (dirvish-quit))
           (visible (select-window visible))
           (t (dirvish-side--new path)))))
 

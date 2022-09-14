@@ -502,10 +502,11 @@ If FLATTEN is non-nil, collect them as a flattened list."
 
 (defun dirvish--find-reusable (&optional type)
   "Return the first matched reusable session with TYPE."
-  (cl-loop
-   with scopes = (dirvish--scopes)
-   for dv in (hash-table-values dirvish--session-hash)
-   when (and (eq type (dv-type dv)) (equal (dv-scopes dv) scopes)) collect dv))
+  (when dirvish-reuse-session
+    (cl-loop with scopes = (dirvish--scopes)
+             for dv in (hash-table-values dirvish--session-hash)
+             when (and (eq type (dv-type dv)) (equal (dv-scopes dv) scopes))
+             collect dv)))
 
 (defun dirvish--reuse-session (&optional dir layout type)
   "Reuse some hidden Dirvish session with TYPE and find DIR in it.
