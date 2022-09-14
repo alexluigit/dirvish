@@ -33,13 +33,6 @@ being used at runtime."
   "Minibuffer metadata categories to show file preview."
   :group 'dirvish :type 'list)
 
-(defcustom dirvish-peek-display-alist
-  '((side . right)
-    (slot . -1)
-    (window-width . 0.5))
-  "Display alist for preview window of `dirvish-peek'."
-  :group 'dirvish :type 'alist)
-
 (defvar dirvish-peek--cand-fetcher nil)
 (defun dirvish-peek--prepare-cand-fetcher ()
   "Set candidate fetcher according to current completion framework."
@@ -72,13 +65,12 @@ one of categories in `dirvish-peek-categories'."
     (setq dirvish-peek--curr-category p-category)
     (when p-category
       (dirvish-peek--prepare-cand-fetcher)
-      (add-hook 'post-command-hook #'dirvish-peek-update-h 99 t)
+      (add-hook 'post-command-hook #'dirvish-peek-update-h 90 t)
+      (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h nil t)
       (unless (and dirvish--this (dv-preview-window dirvish--this))
         (setq new-dv (dirvish-new :type 'peek))
         (setf (dv-preview-window new-dv)
-              (display-buffer-in-side-window
-               (dirvish--util-buffer "temp")
-               dirvish-peek-display-alist))))))
+              (or (minibuffer-selected-window) (next-window)))))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
@@ -109,11 +101,8 @@ one of categories in `dirvish-peek-categories'."
   "Show file preview when narrowing candidates using minibuffer."
   :group 'dirvish :global t
   (if dirvish-peek-mode
-      (progn
-        (add-hook 'minibuffer-setup-hook #'dirvish-peek-setup-h)
-        (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h))
-    (remove-hook 'minibuffer-setup-hook #'dirvish-peek-setup-h)
-    (remove-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h)))
+      (add-hook 'minibuffer-setup-hook #'dirvish-peek-setup-h)
+    (remove-hook 'minibuffer-setup-hook #'dirvish-peek-setup-h)))
 
 (provide 'dirvish-peek)
 ;;; dirvish-peek.el ends here

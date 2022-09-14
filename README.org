@@ -24,11 +24,11 @@ file manager.
 
 * Screenshots
 
-[[https://user-images.githubusercontent.com/16313743/187678438-18c2032c-d937-4417-aca7-c59d72dcf38b.png][https://user-images.githubusercontent.com/16313743/187678438-18c2032c-d937-4417-aca7-c59d72dcf38b.png]]
+[[https://user-images.githubusercontent.com/16313743/189978788-900b3de7-b3e5-42a6-9f28-426e1e80c314.png][https://user-images.githubusercontent.com/16313743/189978788-900b3de7-b3e5-42a6-9f28-426e1e80c314.png]]
 
-[[https://user-images.githubusercontent.com/16313743/187436132-f15cdbf7-ed05-47ed-aa08-37c64baca2c0.png][https://user-images.githubusercontent.com/16313743/187436132-f15cdbf7-ed05-47ed-aa08-37c64baca2c0.png]]
+[[https://user-images.githubusercontent.com/16313743/189978802-f6fb09ea-13a2-4dc9-828b-992523d51dd5.png][https://user-images.githubusercontent.com/16313743/189978802-f6fb09ea-13a2-4dc9-828b-992523d51dd5.png]]
 
-[[https://user-images.githubusercontent.com/16313743/187674778-20aad9d6-0398-4a95-a10f-f01ab164d454.png][https://user-images.githubusercontent.com/16313743/187674778-20aad9d6-0398-4a95-a10f-f01ab164d454.png]]
+[[https://user-images.githubusercontent.com/16313743/189978796-426c3f83-6a69-4e50-a5c2-97b0f6acc4b0.png][https://user-images.githubusercontent.com/16313743/189978796-426c3f83-6a69-4e50-a5c2-97b0f6acc4b0.png]]
 
 * Prerequisites
 
