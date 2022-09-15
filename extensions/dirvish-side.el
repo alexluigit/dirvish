@@ -115,9 +115,8 @@ will visit the latest `project-root' after executing
          (r-win (dv-root-window dv)))
     (unless (window-live-p r-win) (setq r-win (dirvish--create-root-window dv)))
     (with-selected-window r-win
-      (dirvish-save-dedication (switch-to-buffer (cdr (dv-index dv))))
       (setq dirvish--this dv)
-      (dirvish-find-entry-a (or path (dirvish-prop :root)))
+      (dirvish-find-entry-a path)
       (cond ((not bname) nil)
             (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))
