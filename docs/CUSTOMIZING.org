@@ -246,25 +246,21 @@ Dired, you can create a directory previewer that utilizes the ~exa~ command:
     "Use `exa' to generate directory preview."
     :require ("exa") ; tell Dirvish to check if we have the executable
     (when (file-directory-p file) ; we only interest in directories here
-      `(shell . ("exa" "--color=always" "-al" ,file)))) ; use the command output as preview
+      `(shell . ("exa" "-al" "--color=always" "--icons"
+                 "--group-directories-first" ,file))))
 
   (add-to-list 'dirvish-preview-dispatchers 'exa)
 #+end_src
 
 This makes Dirvish use the output from ~exa~ shell command as your preview content
-for a directory entry. The other benefit of doing so is that Dirvish execute
-shell commands asynchronously, therefore preview a huge directory won't block
-the main process of Emacs.
-
-On a side note, you can customize the corresponding =ansi-color= faces to change
-the coloring in the preview window.
+for a directory entry.  On a side note, you can customize the corresponding
+=ansi-color= faces to change the coloring in the preview window.
 
 #+begin_src emacs-lisp
-(set-face-attribute 'ansi-color-blue nil :foreground "#FFFFFF")
+  (set-face-attribute 'ansi-color-blue nil :foreground "#FFFFFF")
 #+end_src
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
-[screenshot from the ~doom-one~ theme]
 
 * Sample config
 ** Dired | Dirvish

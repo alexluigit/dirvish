@@ -28,7 +28,7 @@ file manager.
 
 [[https://user-images.githubusercontent.com/16313743/189978802-f6fb09ea-13a2-4dc9-828b-992523d51dd5.png][https://user-images.githubusercontent.com/16313743/189978802-f6fb09ea-13a2-4dc9-828b-992523d51dd5.png]]
 
-[[https://user-images.githubusercontent.com/16313743/189978796-426c3f83-6a69-4e50-a5c2-97b0f6acc4b0.png][https://user-images.githubusercontent.com/16313743/189978796-426c3f83-6a69-4e50-a5c2-97b0f6acc4b0.png]]
+[[https://user-images.githubusercontent.com/16313743/190370038-1d64a7aa-ac1c-4436-a2a3-05cd801de0a4.png][https://user-images.githubusercontent.com/16313743/190370038-1d64a7aa-ac1c-4436-a2a3-05cd801de0a4.png]]
 
 * Prerequisites
 

@@ -38,16 +38,12 @@ window to place the file buffer.  Note that if this value is
 `selected-window', the session closes after opening a file."
   :group 'dirvish :type 'function)
 
-(defcustom dirvish-side-follow-buffer-file 'expand
-  "Whether to follow current buffer's filename.
-The valid value are:
-- nil:        Do not follow the buffer file when reopen the side sessions
-- t:          Go to file's directory and select it
-- \\='expand: Go to file's project root and expand all subtrees until file"
-  :group 'dirvish
-  :type '(choice (const :tag "Do not follow the buffer file" nil)
-                 (const :tag "Go to file's directory and select it" t)
-                 (const :tag "Go to file's project root and expand subtrees" expand)))
+(define-obsolete-variable-alias 'dirvish-side-follow-buffer-file 'dirvish-side-auto-expand "Sep 15, 2022")
+(defcustom dirvish-side-auto-expand t
+  "Whether to auto expand parent directories of current file.
+If non-nil, expand all the parent directories of current buffer's
+filename until the project root when opening a side session."
+  :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-side-follow-project-switch t
   "Whether visible side session update index on project switch.
@@ -104,8 +100,7 @@ will visit the latest `project-root' after executing
     (with-selected-window win
       (when dir (dirvish-find-entry-a dir))
       (dirvish-prop :cus-header 'dirvish-side-header)
-      (if (eq dirvish-side-follow-buffer-file 'expand)
-          (dirvish-subtree-expand-to file)
+      (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
         (dired-goto-file file))
       (dirvish--setup-mode-line (dv-layout (dirvish-curr)))
       (dirvish-update-body-h))))
@@ -124,10 +119,9 @@ will visit the latest `project-root' after executing
       (setq dirvish--this dv)
       (dirvish-find-entry-a (or path (dirvish-prop :root)))
       (cond ((not bname) nil)
-            ((eq dirvish-side-follow-buffer-file 'expand)
+            (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))
-            (dirvish-side-follow-buffer-file
-             (dired-goto-file bname)))
+            (t (dired-goto-file bname)))
       (dirvish-prop :cus-header 'dirvish-side-header)
       (dirvish-update-body-h))))
 

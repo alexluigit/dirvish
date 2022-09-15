@@ -9,7 +9,9 @@
 
 ;;; Commentary:
 
-;; Allows important files emerged (pinned) at top in Dirvish buffers.
+;; This extension allows user to pin important files at the top of Dirvish
+;; buffers.  Type M-x dirvish-emerge-menu RET into a dirvish buffer to get
+;; started.
 
 ;;; Code:
 
@@ -49,9 +51,10 @@ in the buffer are separated and rearranged by the following groups:
 4. files whose extension is \"tex\" or \"bib\"
 5. other files
 
-You can set this variable globally, a more appropriate way would
-be set it directory locally though.  You can compose and save
-this variable to .dir-locals.el through `dirvish-emerge-menu'."
+Althought you can set this variable globally, a more appropriate
+way would be set it directory locally.  In that case, it is
+recommended to compose and save this variable to .dir-locals.el
+by the help of `dirvish-emerge-menu'."
   :group 'dirvish :type 'alist)
 (put 'dirvish-emerge-groups 'safe-local-variable #'dirvish-emerge-safe-groups-p)
 
@@ -483,7 +486,7 @@ Press again to set the value for the group"))
         ("RET" "Apply current setup" (lambda () (interactive) (dirvish-emerge--ifx-apply)))
         ("u" "  Unselect all groups"
          (lambda () (interactive) (dirvish-emerge--ifx-unselect)) :transient t)
-        ("v" "  Toggle visibility of selected groups"
+        ("v" "  Toggle visibility of selected"
          (lambda () (interactive) (dirvish-emerge--ifx-toggle-hiding)) :transient t)
         ("a" "  Add a group"
          (lambda () (interactive) (dirvish-emerge--ifx-add)))

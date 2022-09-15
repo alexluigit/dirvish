@@ -41,6 +41,34 @@ B, and paste them with ~dirvish-yank/move/symlink/hardlink~.
 
 See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#dired-ranger][comparison with dired-ranger]]
 
+* Group files with custom filter stack (dirvish-emerge.el)
+
+This extension lets you split the file list into different groups by various
+criteria.  These groups are then displayed in the same manner as ~ibuffer~.
+
+The variable ~dirvish-emerge-groups~ contains filter criteria of groups.
+Althought you can set this variable globally, a more appropriate way would be
+set it directory locally.  In that case, it is recommended to compose and save
+this variable to .dir-locals.el by the help of ~dirvish-emerge-menu~, which saves
+the manual editing.
+
+Placing the point on the group header and hitting ~TAB~ folds it. Hitting ~TAB~
+again expands it.  Here is a quick demo.
+
+https://user-images.githubusercontent.com/16313743/190387614-16f8d660-7e48-483b-ae54-db471324b4e0.mp4
+
+The ~dirvish-emerge-groups~ used in the above video is the following (compose and
+saved to .dir-locals.el using ~dirvish-emerge-menu~):
+
+#+begin_src emacs-lisp
+  '(("Recent files" (predicate . recent-files-2h))
+    ("Documents" (extensions "pdf" "tex" "bib" "epub"))
+    ("Video" (extensions "mp4" "mkv" "webm"))
+    ("Pictures" (extensions "jpg" "png" "svg" "gif"))
+    ("Audio" (extensions "mp3" "flac" "wav" "ape" "aac"))
+    ("Archives" (extensions "gz" "rar" "zip")))
+#+end_src
+
 * Minibuffer file preview (dirvish-peek.el)
 
 ~dirvish-peek-mode~ gives you a preview window when narrowing file candidates
@@ -103,17 +131,22 @@ layout of Dirvish sessions. They are:
 This extension provides two attributes: ~all-the-icons~ and ~vscode-icon~.  To tweak
 the appearance of the icons, you have these options:
 
-+ ~dirvish-all-the-icons-height~
-+ ~dirvish-all-the-icons-offset~
-+ ~dirvish-all-the-icons-palette~
-+ ~dirvish-vscode-icon-size~
++ ~dirvish-all-the-icons-height~: Height of icons from =all-the-icons=.
++ ~dirvish-all-the-icons-offset~: Vertical offset of icons from =all-the-icons=.
++ ~dirvish-all-the-icons-palette~: Coloring style used for =all-the-icons=.
++ ~dirvish-vscode-icon-size~: Image size of icons from =vscode-icon=.
 
 * Toggle Dirvish in side window (dirvish-side.el)
 
 This extension provides the ~dirvish-side~ command. It toggles a Dirvish session
-as a sidebar in the frame.
+as a sidebar in the frame.  These customization options are available:
 
-[[https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png][https://user-images.githubusercontent.com/16313743/173187130-bd16f99b-93b1-4f3f-903c-65e7cf240198.png]]
++ ~dirvish-side-display-alist~: Display actions for the side window.
++ ~dirvish-side-window-parameters~: Window parameters for the side window.
++ ~dirvish-side-width~: Width of the side window.
++ ~dirvish-side-open-file-window-function~: Set window of for opened files.
++ ~dirvish-side-auto-expand~: Whether to auto expand parent directories of current file.
++ ~dirvish-side-follow-project-switch~: Whether to update the cursor file on project switching.
 
 * Setup ls switches on the fly (dirvish-ls.el)
 
@@ -200,7 +233,7 @@ See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#dired-c
 
 * Live-narrowing of Dirvish buffer (dirvish-narrow.el)
 
-This package provides live filtering of files in dirvish buffers.  In general,
+This extension provides live filtering of files in dirvish buffers.  In general,
 after calling ~dirvish-narrow~ you type a filter string into the minibuffer.
 After each change the changes automatically reflect in the buffer. Typing =RET=
 will exit the live filtering mode and leave the dired buffer in the narrowed
@@ -218,6 +251,3 @@ If you have [[https://github.com/oantolin/orderless][orderless]] installed, you 
 The actual matching styles being applied are determined by your orderless
 config.  Also see ~dirvish-narrow-regex-builder~.
 
-* Pin files you are interested in at top (dirvish-emerge.el)
-
-TODO
