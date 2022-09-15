@@ -139,8 +139,9 @@ Dirvish session as its argument."
 (defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
 (defconst dirvish-media-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts '("pdf" "gif")))
 (defcustom dirvish-open-with-programs
-  `((,dirvish-audio-exts . ("mpv" "%f"))
-    (,dirvish-video-exts . ("mpv" "%f")))
+  (when-let ((mpv (executable-find "mpv")))
+    `((,dirvish-audio-exts . (,mpv "--profile=builtin-pseudo-gui" "%f"))
+      (,dirvish-video-exts . (,mpv "%f"))))
   "Association list of mimetype and external program for `find-file'.
 Each element is of the form (EXTS . (CMD . ARGS)).  EXTS is a
 list of file name extensions.  Once the EXTS is matched with
