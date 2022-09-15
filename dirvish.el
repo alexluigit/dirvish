@@ -213,6 +213,7 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-mode-line-segments '())
 (defvar dirvish--available-preview-dispatchers '())
+(defvar image-dired-thumbnail-buffer)
 (defvar-local dirvish--props '())
 (defvar-local dirvish--attrs-hash nil)
 (put 'dirvish--props 'permanent-local t)
@@ -681,6 +682,19 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Advice for exiting `wdired-mode'."
   (dirvish--init-dired-buffer (dirvish-curr))
   (revert-buffer))
+
+(defun dirvish-thumb-buf-a (fn)
+  "Advice for FN `image-dired-create-thumbnail-buffer'."
+  (when-let ((dv dirvish--this) ((dv-preview-window dv)))
+    (dirvish--build dv)
+    (with-selected-window (dv-preview-window dv)
+      (switch-to-buffer image-dired-thumbnail-buffer)))
+  (let ((buf (funcall fn))
+        (fun (lambda () (let ((buf (get-text-property
+                               (point) 'associated-dired-buffer)))
+                     (and (buffer-live-p buf)
+                          (with-current-buffer buf (dirvish--render-attrs)))))))
+    (with-current-buffer buf (add-hook 'post-command-hook fun nil t)) buf))
 
 ;;;; Hooks
 
@@ -1240,6 +1254,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (let ((ads '((dired-find-file dirvish-find-entry-a :override)
                (dired-noselect dirvish-dired-noselect-a :around)
                (dired-insert-subdir dirvish-insert-subdir-a :after)
+               (image-dired-create-thumbnail-buffer dirvish-thumb-buf-a :around)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
                (wdired-change-to-dired-mode dirvish-wdired-exit-a :after)))
         (h-fn #'dirvish-selection-change-h))
