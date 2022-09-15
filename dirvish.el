@@ -481,7 +481,6 @@ If FLATTEN is non-nil, collect them as a flattened list."
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
   (type nil :documentation "is the session type, such as \\='side.")
-  (path nil :documentation "is the initial directory.")
   (layout () :documentation "is the working layout.")
   (last-fs-layout dirvish-default-layout :documentation "is the last fullscreen layout.")
   (attributes (purecopy dirvish-attributes) :documentation "is the actual `dirvish-attributes'.")
@@ -497,8 +496,8 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-window nil :documentation "is the window to display preview buffer.")
   (name (cl-gensym) :documentation "is an unique symbol for every session.")
   (winconf nil :documentation "is the saved window configuration.")
-  (index-dir () :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
-  (roots () :documentation "is the list of all INDEX-DIRs."))
+  (index () :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
+  (roots () :documentation "is the list of all INDEXs."))
 
 (defun dirvish--find-reusable (&optional type)
   "Return the first matched reusable session with TYPE."
@@ -508,21 +507,6 @@ If FLATTEN is non-nil, collect them as a flattened list."
              when (and (eq type (dv-type dv)) (equal (dv-scopes dv) scopes))
              collect dv)))
 
-(defun dirvish--reuse-session (&optional dir layout type)
-  "Reuse some hidden Dirvish session with TYPE and find DIR in it.
-Set layout for the session with LAYOUT."
-  (when-let ((dv (car (dirvish--find-reusable type))))
-    (prog1 dv
-      (if (and (not current-prefix-arg) (eq dirvish-reuse-session 'resume))
-          (setq dir nil)
-        (setq dir (and dir (if (file-directory-p dir) dir
-                             (file-name-directory dir)))))
-      (with-selected-window (dirvish--create-root-window dv)
-        (dirvish-save-dedication (switch-to-buffer (cdr (dv-index-dir dv))))
-        (setf (dv-layout dv) layout)
-        (setq dirvish--this dv)
-        (dirvish-find-entry-a (or dir (dirvish-prop :root)))))))
-
 (defun dirvish-new (&rest args)
   "Create and save a new dirvish struct to `dirvish--session-hash'.
 ARGS is a list of keyword arguments for `dirvish' struct."
@@ -531,12 +515,11 @@ ARGS is a list of keyword arguments for `dirvish' struct."
     (setq new (apply #'make-dirvish (reverse slots)) dirvish--this new)
     (puthash (dv-name new) new dirvish--session-hash)
     (dirvish--refresh-slots new)
-    (dirvish--create-root-window new)
-    (when-let ((path (dv-path new))) (dirvish-find-entry-a path)) new))
+    (dirvish--create-root-window new) new))
 
 (defun dirvish-kill (dv)
   "Kill the dirvish instance DV."
-  (let ((index (cdr (dv-index-dir dv))))
+  (let ((index (cdr (dv-index dv))))
     (when (dv-layout dv)
       (with-current-buffer index
         (setq header-line-format dirvish--header-line-fmt))
@@ -554,6 +537,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
            (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv)))
           (dirvish-reuse-session (setf (dv-winconf dv) nil))
           (t (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv))))
+    (setf (dv-index dv) (car (dv-roots dv))) ; old index might get killed
     (setq dirvish--this nil)))
 
 (defun dirvish-on-file-open (dv)
@@ -754,7 +738,7 @@ buffer, it defaults to filename under the cursor when it is nil."
              (dirvish--build dv)))
           ((active-minibuffer-window))
           ((and dirvish--this (dv-layout dirvish--this)
-                (not (get-buffer-window (cdr (dv-index-dir dirvish--this)) t))
+                (not (get-buffer-window (cdr (dv-index dirvish--this)) t))
                 (window-live-p (dv-preview-window dirvish--this)))
            (set-window-configuration (dv-winconf dirvish--this))
            (switch-to-buffer b)
@@ -765,7 +749,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-winconf-change-h ()
   "Restore hidden sessions on buffer switching."
   (let ((dv (dirvish-curr)))
-    (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index-dir dv))))
+    (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index dv))))
     (dirvish-update-body-h)))
 
 (defun dirvish-winbuf-change-h (frame-or-window)
@@ -851,7 +835,7 @@ When PROC finishes, fill preview buffer with process result."
         ('shell (font-lock-mode -1) (dirvish-apply-ansicolor-h nil (point-min)))
         ('dired
          (setq-local dired-subdir-alist
-                     (list (cons (car (dv-index-dir dv)) (point-min-marker)))
+                     (list (cons (car (dv-index dv)) (point-min-marker)))
                      font-lock-defaults
                      '(dired-font-lock-keywords t nil nil beginning-of-line))
          (font-lock-mode 1)
@@ -921,7 +905,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-curr))
-              (buf (and (dv-layout dv) (cdr (dv-index-dir dv))))
+              (buf (and (dv-layout dv) (cdr (dv-index dv))))
               (scale ,(get-font-scale))
               (win-width (floor (/ (window-width) scale)))
               (str-l (format-mode-line
@@ -1042,7 +1026,7 @@ Dirvish sets `revert-buffer-function' to this function."
       (dirvish-prop :remote remote)
       (dirvish-prop :root key)
       (dired-goto-file (or bname key))
-      (setf (dv-index-dir dv) (cons key buffer))
+      (setf (dv-index dv) (cons key buffer))
       (run-hook-with-args 'dirvish-find-entry-hook key buffer)
       buffer)))
 
@@ -1188,7 +1172,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 (defun dirvish--build (dv)
   "Build layout for Dirvish session DV."
   (setf (dv-scopes dv) (dirvish--scopes))
-  (setf (dv-index-dir dv) (cons (dirvish-prop :root) (current-buffer)))
+  (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
   (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
   (let* ((layout (dv-layout dv))
          (w-order (and layout (dirvish--window-split-order)))
@@ -1217,6 +1201,19 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
         (dirvish-data-for-dir default-directory (current-buffer) t)
         (dirvish-prop :cached t)))
     (setq dirvish--this dv)))
+
+(defun dirvish--reuse-or-create (path layout)
+  "Find PATH in a dirvish session with LAYOUT."
+  (let ((dir (or path default-directory))
+        (reuse (car (dirvish--find-reusable))))
+    (cond ((dirvish-curr) (dirvish-find-entry-a dir))
+          (reuse
+           (with-selected-window (dirvish--create-root-window reuse)
+             (setf (dv-layout reuse) layout)
+             (dirvish-save-dedication (switch-to-buffer (cdr (dv-index reuse))))
+             (when (or path (not (eq dirvish-reuse-session 'resume)))
+               (dirvish-find-entry-a (or dir (dirvish-prop :root))))))
+          (t (progn (dirvish-new :layout layout) (dirvish-find-entry-a dir))))))
 
 (define-derived-mode dirvish-directory-view-mode
   fundamental-mode "Dirvish-directory-view"
@@ -1256,12 +1253,17 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   "Start a full frame Dirvish session with optional PATH.
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `default-directory'."
-  (interactive (list (and current-prefix-arg
-                          (read-directory-name "Dirvish: "))))
-  (setq path (or path default-directory))
-  (if (dirvish-curr) (dirvish-find-entry-a path)
-    (or (dirvish--reuse-session path dirvish-default-layout)
-        (dirvish-new :path path :layout dirvish-default-layout))))
+  (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
+  (dirvish--reuse-or-create path dirvish-default-layout))
+
+;;;###autoload
+(defun dirvish-dwim (&optional path)
+  "Start a fullframe session only when `one-window-p'.
+If called with \\[universal-arguments], prompt for PATH,
+otherwise it defaults to `default-directory'.
+If `one-window-p' returns nil, open PATH using regular Dired."
+  (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
+  (dirvish--reuse-or-create path (and (one-window-p) dirvish-default-layout)))
 
 (transient-define-prefix dirvish-dispatch ()
   "Main menu for Dired/Dirvish."

@@ -112,13 +112,17 @@ will visit the latest `project-root' after executing
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
-  (let ((bname buffer-file-name)
-        (dv (or (dirvish--reuse-session path nil 'side)
-                (dirvish-new
-                  :type 'side :path path
-                  :root-window-fn #'dirvish-side-root-window-fn
-                  :on-file-open #'dirvish-side-on-file-open))))
-    (with-selected-window (dv-root-window dv)
+  (let* ((bname buffer-file-name)
+         (dv (or (car (dirvish--find-reusable 'side))
+                 (dirvish-new
+                  :type 'side :on-file-open #'dirvish-side-on-file-open
+                  :root-window-fn #'dirvish-side-root-window-fn)))
+         (r-win (dv-root-window dv)))
+    (unless (window-live-p r-win) (setq r-win (dirvish--create-root-window dv)))
+    (with-selected-window r-win
+      (dirvish-save-dedication (switch-to-buffer (cdr (dv-index dv))))
+      (setq dirvish--this dv)
+      (dirvish-find-entry-a (or path (dirvish-prop :root)))
       (cond ((not bname) nil)
             ((eq dirvish-side-follow-buffer-file 'expand)
              (dirvish-subtree-expand-to bname))

@@ -225,7 +225,7 @@ GROUP-TITLES is a list of group titles."
           (insert (make-string w-offset ?\s))
           (when dirvish-media-auto-properties
             (let* ((beg (progn (goto-char (point-max)) (point)))
-                   (file (with-current-buffer (cdr(dv-index-dir dv))
+                   (file (with-current-buffer (cdr (dv-index dv))
                            (dirvish-prop :index)))
                    (type (dirvish-media--type
                           (downcase (or (file-name-extension file) "")))))

@@ -97,6 +97,10 @@ After installation, let Dirvish take over Dired globally:
 
   Dirvish takes care all of your Dired entries.
 
++ =M-x dirvish-dwim RET=
+
+  If the selected window is the only window, open Dirvish, otherwise open Dired.
+
 * Resources
 
 + [[file:docs/CUSTOMIZING.org][Customizing]]

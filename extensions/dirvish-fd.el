@@ -284,7 +284,7 @@ value 16, let the user choose the root directory of their search."
                      (bufname (dirvish-fd--bufname input default-directory dv)))
                 (rename-buffer bufname)
                 (dirvish-prop :root bufname)
-                (setf (dv-index-dir dv) (cons bufname buf))
+                (setf (dv-index dv) (cons bufname buf))
                 (push (cons bufname buf) (dv-roots dv))))
           (kill-buffer buf))))))
 
@@ -332,7 +332,7 @@ value 16, let the user choose the root directory of their search."
           (let ((bufname (dirvish-fd--bufname input dir dv)))
             (rename-buffer bufname)
             (dirvish-prop :root bufname)
-            (setf (dv-index-dir dv) (cons bufname buf))
+            (setf (dv-index dv) (cons bufname buf))
             (push (cons bufname buf) (dv-roots dv))
             (dirvish--build dv)))))))
 
@@ -386,7 +386,7 @@ The command run is essentially:
              (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir)
       (user-error "'fd' command requires a directory: %s" dir))
-  (let* ((dv (or (dirvish-curr) (dirvish dir)))
+  (let* ((dv (or (dirvish-curr) (progn (dirvish dir) dirvish--this)))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
          (buffer (dirvish--util-buffer 'fd dv nil t)))

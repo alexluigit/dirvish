@@ -74,7 +74,7 @@ ARG defaults to 1."
   (let* ((dv (or (dirvish-curr) (user-error "Not in a dirvish session")))
          (dirs (reverse (mapcar #'car (dv-roots dv))))
          (len (length dirs))
-         (idx (cl-position (car (dv-index-dir dv)) dirs :test #'equal))
+         (idx (cl-position (car (dv-index dv)) dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
            (dirvish-find-entry-a (nth (- len 1) dirs))

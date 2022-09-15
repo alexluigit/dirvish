@@ -76,17 +76,5 @@ current layout defined in `dirvish-layout-recipes'."
      (setf (dv-last-fs-layout dv) new-recipe)
      (dirvish--build dv))))
 
-;;;###autoload
-(defun dirvish-dwim (&optional path)
-  "Start a Dirvish session with optional PATH.
-The session takes the whole frame when `one-window-p'."
-  (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
-  (let ((path (or path default-directory))
-        (layout (and (one-window-p) dirvish-default-layout)))
-    (if (dirvish-curr)
-        (dirvish-find-entry-a path)
-      (or (dirvish--reuse-session path layout)
-          (dirvish-new :path path :layout layout)))))
-
 (provide 'dirvish-layout)
 ;;; dirvish-layout.el ends here

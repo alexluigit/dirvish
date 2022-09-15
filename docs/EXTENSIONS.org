@@ -89,11 +89,6 @@ VC commands, it also provides a way to cycle through the ~vc-*~ preview methods.
 This extension provided several commands that can help with managing the window
 layout of Dirvish sessions. They are:
 
-+ ~dirvish-dwim~
-
-  Open a session with a "smart" layout.  If current window is the only window of
-  the frame, open a fullscreen session, otherwise open a single window session.
-
 + ~dirvish-layout-toggle~
 
   Toggle layout of current Dirvish session.  A session with layout means it has
