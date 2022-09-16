@@ -38,9 +38,13 @@
 This value is passed to function `format-time-string'."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-path-separators '(:home " ⌂ " :root " ∀ " :sep " ⋗ ")
-  "Separators in path mode line segment."
-  :group 'dirvish :type 'plist)
+(defcustom dirvish-path-separators '(" ⌂ " " ∀ " " ⋗ ")
+  "Separators in path mode line segment.
+The value is a list with 3 elements:
+- icon for home directory [~]
+- icon for root directory [/]
+- icon for path separators [/]"
+  :group 'dirvish :type '(repeat (string :tag "path separator")))
 
 (defface dirvish-free-space
   '((t (:inherit font-lock-constant-face)))
@@ -191,10 +195,10 @@ This value is passed to function `format-time-string'."
          (segs (nbutlast (split-string abvname "/")))
          (scope (pcase (car segs)
                   ("~" (dirvish--register-path-seg
-                        (plist-get dirvish-path-separators :home)
+                        (nth 0 dirvish-path-separators)
                         (concat rmt "~/") face))
                   ("" (dirvish--register-path-seg
-                        (plist-get dirvish-path-separators :root)
+                        (nth 1 dirvish-path-separators)
                        (concat rmt "/") face))))
          (path (cl-loop for idx from 2
                         for sp = (format
@@ -203,7 +207,7 @@ This value is passed to function `format-time-string'."
                         for s in (cdr segs) concat
                         (format "%s%s"
                                 (if (eq idx 2) ""
-                                  (plist-get dirvish-path-separators :sep))
+                                  (nth 2 dirvish-path-separators))
                                 (dirvish--register-path-seg s sp face)))))
     (replace-regexp-in-string "%" "%%%%" (format "%s%s%s " host scope path))))
 

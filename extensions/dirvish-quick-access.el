@@ -22,7 +22,7 @@
 
 (require 'dirvish)
 
-(defcustom dirvish-quick-access-function 'dired
+(defcustom dirvish-quick-access-function 'dirvish-dwim
   "Function used to access `dirvish-quick-access-entries'.
 The function takes the entry as the sole argument."
   :group 'dirvish :type 'function)
