@@ -224,7 +224,7 @@ This value is passed to function `format-time-string'."
                      (t "mtime")))
          (rev (if (member "--reverse" switches) "↓" "↑")))
     (format " %s %s|%s "
-            (propertize rev 'face 'font-lock-doc-markup-face)
+            (propertize rev 'face 'font-lock-constant-face)
             (propertize crit 'face 'font-lock-type-face)
             (propertize time 'face 'font-lock-doc-face))))
 

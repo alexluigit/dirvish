@@ -146,9 +146,9 @@ invoke the sort function, SWITCHES is the the sort flags for
                          'face '(:inherit dired-mark :underline t)
                          'display '((height 1.2)))
              (propertize "lowercased switches also work in" 'face 'font-lock-doc-face)
-             (propertize "dired-hide-details-mode" 'face 'font-lock-doc-markup-face)
+             (propertize "dired-hide-details-mode" 'face 'font-lock-constant-face)
              (propertize "C-u RET and C-u M-RET will modify" 'face 'font-lock-doc-face)
-             (propertize "dired-listing-switches" 'face 'font-lock-doc-markup-face)))
+             (propertize "dired-listing-switches" 'face 'font-lock-constant-face)))
    ["options"
     ("a" dirvish-ls--filter-switch)
     ("s" dirvish-ls--sort-switch)
