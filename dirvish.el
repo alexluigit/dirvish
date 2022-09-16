@@ -198,8 +198,6 @@ input for `dirvish-redisplay-debounce' seconds."
 (defconst dirvish--preview-variables ; Copied from `consult.el'
   '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
     (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
-(defconst dirvish--builtin-attrs '(hl-line symlink-target))
-(defconst dirvish--builtin-dps '(tramp disable default))
 (defconst dirvish--no-update-preview-cmds
   '(ace-select-window other-window scroll-other-window scroll-other-window-down))
 (defvar dirvish--reset-keywords '(:free-space))
@@ -393,7 +391,7 @@ the length of the attribute."
         with doc-head = "All available `dirvish-attributes'.
 This is a internal variable and should *NOT* be set manually."
         with attr-docs = ""
-        with attrs = (seq-remove (lambda (i) (memq (car i) dirvish--builtin-attrs))
+        with attrs = (seq-remove (lambda (i) (memq (car i) '(hl-line symlink-target)))
                                  dirvish--available-attrs)
         for (a-name . a-plist) in attrs
         do (setq attr-docs (format "%s\n\n`%s': %s" attr-docs a-name
@@ -439,7 +437,7 @@ get rid of the warnings upon session initialization, please
 install the dependencies (recommended) or remove corresponding
 items from `dirvish-preview-dispatchers'."
         with dp-docs = ""
-        with dps = (seq-remove (lambda (i) (memq (car i) dirvish--builtin-dps))
+        with dps = (seq-remove (lambda (i) (memq (car i) '(tramp disable default)))
                                dirvish--available-preview-dispatchers)
         for (dp-name . dp-plist) in dps
         do (setq dp-docs (format "%s\n\n`%s': %s" dp-docs dp-name
@@ -575,7 +573,7 @@ See `dirvish--available-preview-dispatchers' for details."
    with (ml-l . ml-r) = (cons (plist-get m :left) (plist-get m :right))
    with (hl-l . hl-r) = (cons (plist-get h :left) (plist-get h :right))
    with feat-reqs = (append dps ml-l ml-r hl-l hl-r)
-   with attrs = dirvish--builtin-attrs
+   with attrs = `(,@(if dirvish-hide-cursor '(hl-line)) symlink-target)
    for (lib . feat) in dirvish-libraries do
    (let ((m-attr (cl-intersection feat dv-attrs))
          (feat-in-lib (cl-intersection feat feat-reqs)))
@@ -604,7 +602,8 @@ See `dirvish--available-preview-dispatchers' for details."
           (l-end (line-end-position))
           (width (- width (if subtrees (dirvish-subtree--prefix-length) 0)))
           f-str f-wid f-dir f-name f-attrs f-type hl-face)
-      (setq hl-face (and (eq (or f-beg l-beg) pos) 'dirvish-hl-line))
+      (setq hl-face
+            (and (eq (or f-beg l-beg) pos) dirvish-hide-cursor 'dirvish-hl-line))
       (when f-beg
         (setq f-str (buffer-substring f-beg f-end))
         (setq f-wid (string-width f-str))
