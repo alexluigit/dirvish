@@ -290,14 +290,12 @@ ALIST is window arguments passed to `window--display-buffer'."
             (window-resize-pixelwise t))
         (fit-window-to-buffer win 2 1)))))
 
-(defun dirvish--kill-buffer (buffer &optional visible)
-  "Kill BUFFER unless VISIBLE."
+(defun dirvish--kill-buffer (buffer)
+  "Kill BUFFER without side effects."
   (and (buffer-live-p buffer)
        (cl-letf (((symbol-function 'undo-tree-save-history-from-hook) #'ignore)
                  ((symbol-function 'recentf-track-closed-file) #'ignore))
-         (let (kill-buffer-query-functions)
-           (when (or (not visible) (not (get-buffer-window buffer)))
-             (kill-buffer buffer))))))
+         (let (kill-buffer-query-functions) (kill-buffer buffer)))))
 
 (defun dirvish--get-project-root (&optional directory)
   "Get project root path of DIRECTORY."
@@ -523,15 +521,17 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish-kill (dv)
   "Kill the dirvish instance DV."
   (let ((index (cdr (dv-index dv))))
-    (when (dv-layout dv)
+    (if (not (dv-layout dv))
+        (cl-loop for (_d . b) in (dv-roots dv) when
+                 (not (get-buffer-window b)) do (kill-buffer b)
+                 finally (setf (dv-index dv) (car (dv-roots dv))))
       (when dirvish-use-header-line
         (with-current-buffer index
           (setq header-line-format dirvish--header-line-fmt)))
+      (cl-loop for (_d . b) in (dv-roots dv)
+               when (not (eq b index)) do (kill-buffer b))
       (when-let ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
-    (dolist (b (mapcar #'cdr (dv-roots dv))) (dirvish--kill-buffer b t))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
-    (setf (dv-roots dv) (cl-loop for (d . b) in (dv-roots dv) when
-                                 (get-buffer-window b) collect (cons d b)))
     (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
              (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-name dv)) bn)
              do (dirvish--kill-buffer b))
@@ -540,7 +540,6 @@ ARGS is a list of keyword arguments for `dirvish' struct."
            (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv)))
           (dirvish-reuse-session (setf (dv-winconf dv) nil))
           (t (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv))))
-    (setf (dv-index dv) (car (dv-roots dv))) ; old index might get killed
     (setq dirvish--this nil)))
 
 (defun dirvish-on-file-open (dv)
