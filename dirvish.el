@@ -498,7 +498,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-buffers () :documentation "holds all file preview buffers in this session.")
   (preview-window nil :documentation "is the window to display preview buffer.")
   (name (cl-gensym) :documentation "is an unique symbol for every session.")
-  (winconf nil :documentation "is the saved window configuration.")
+  (winconf (current-window-configuration) :documentation "is the saved window configuration.")
   (index () :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
   (roots () :documentation "is the list of all INDEXs."))
 
@@ -524,10 +524,10 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   "Kill the dirvish instance DV."
   (let ((index (cdr (dv-index dv))))
     (when (dv-layout dv)
-      (with-current-buffer index
-        (setq header-line-format dirvish--header-line-fmt))
-      (when-let ((wconf (dv-winconf dv))) (set-window-configuration wconf))
-      (dirvish-save-dedication (switch-to-buffer index)))
+      (when dirvish-use-header-line
+        (with-current-buffer index
+          (setq header-line-format dirvish--header-line-fmt)))
+      (when-let ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
     (dolist (b (mapcar #'cdr (dv-roots dv))) (dirvish--kill-buffer b t))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
     (setf (dv-roots dv) (cl-loop for (d . b) in (dv-roots dv) when
@@ -1248,7 +1248,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (interactive)
   (let ((dv (dirvish-curr)) (frame (selected-frame)) (ct 0) (lst (window-list)))
     (dirvish-kill dv)
-    (while (and (<= (cl-incf ct) (length lst)) (eq (dirvish-curr) dv))
+    (while (and (eq (dirvish-curr) dv) (<= (cl-incf ct) (length lst)))
       (quit-window))
     (when (or (not (eq (selected-frame) frame)) (eq (dirvish-curr) dv))
       (delete-frame frame))))
