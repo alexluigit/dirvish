@@ -60,7 +60,7 @@ The value should be a integer between 23 to 128."
 
 (dirvish-define-attribute all-the-icons
   "File icons provided by `all-the-icons.el'."
-  (:width (+ (length dirvish-icon-delimiter) 2))
+  :width (+ (length dirvish-icon-delimiter) 2)
   (let* ((offset `(:v-adjust ,dirvish-all-the-icons-offset))
          (height `(:height ,dirvish-all-the-icons-height))
          (face (cond (hl-face `(:face ,hl-face))
@@ -76,7 +76,7 @@ The value should be a integer between 23 to 128."
 
 (dirvish-define-attribute vscode-icon
   "File icons provided by `vscode-icon.el'."
-  (:width (1+ (length dirvish-icon-delimiter)))
+  :width (1+ (length dirvish-icon-delimiter))
   (let* ((vscode-icon-size dirvish-vscode-icon-size)
          (icon
           (dirvish-attribute-cache f-name :vscode-icon

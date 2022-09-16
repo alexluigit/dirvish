@@ -354,11 +354,11 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
          (name (format "%s*Dirvish-%s%s" (if inhibit-hiding "" " ") type id)))
     (if no-create (get-buffer name) (get-buffer-create name))))
 
-(cl-defmacro dirvish-define-attribute (name docstring (&key if width) &rest body)
+(defmacro dirvish-define-attribute (name docstring &rest body)
   "Define a Dirvish attribute NAME.
 An attribute contains a pair of predicate/rendering functions
 that are being called on `post-command-hook'.  The predicate fn
-IF takes current DV as argument and executed once.  When it
+takes current DV as argument and is executed once.  When it
 evaluates to t, the rendering fn runs BODY for every line with
 following arguments:
 
@@ -375,18 +375,21 @@ following arguments:
 - `remain'  remained space (width) of current line
 - `hl-face' a face that is only passed in on current line
 
-DOCSTRING is the docstring for the attribute.  WIDTH designates
-the length of the attribute."
+DOCSTRING is the docstring for the attribute.  An optional
+`:width' keyword is used to declare the length of the attribute."
   (declare (indent defun) (doc-string 2))
-  (let* ((ov (intern (format "dirvish-%s-ov" name)))
-         (pred (intern (format "dirvish-attribute-%s-pred" name)))
-         (render (intern (format "dirvish-attribute-%s-rd" name)))
-         (args '(f-beg f-end f-str f-wid f-dir f-name f-attrs f-type l-beg l-end remain hl-face))
-         (pred-body (if (> (length if) 0) if t)))
+  (let ((ov (intern (format "dirvish-%s-ov" name)))
+        (pred (intern (format "dirvish-attribute-%s-pred" name)))
+        (render (intern (format "dirvish-attribute-%s-rd" name)))
+        (args '(f-beg f-end f-str f-wid f-dir f-name f-attrs f-type l-beg l-end remain hl-face))
+        options)
+    (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) options)))
+    (setq options (reverse options))
     `(progn
        (add-to-list
         'dirvish--available-attrs
-        (cons ',name '(:doc ,docstring :width ,width :overlay ,ov :if ,pred :fn ,render)))
+        (cons ',name '(:doc ,docstring :width ,(plist-get options :width)
+                            :overlay ,ov :if ,pred :fn ,render)))
        (cl-loop
         with doc-head = "All available `dirvish-attributes'.
 This is a internal variable and should *NOT* be set manually."
@@ -398,7 +401,7 @@ This is a internal variable and should *NOT* be set manually."
                                    (plist-get a-plist :doc)))
         finally do (put 'dirvish--available-attrs 'variable-documentation
                         (format "%s%s" doc-head attr-docs)))
-       (defun ,pred (dv) (ignore dv) ,pred-body)
+       (defun ,pred (dv) (ignore dv) ,(or (plist-get options :when) t))
        (defun ,render ,args
          (ignore ,@args)
          (let ((ov ,@body)) (and ov (overlay-put ov ',ov t)))))))
@@ -891,14 +894,18 @@ When PROC finishes, fill preview buffer with process result."
 
 ;;;; Builder
 
-(dirvish-define-attribute hl-line "Highlight current line." ()
+(dirvish-define-attribute hl-line
+  "Highlight current line.
+This attribute is enabled when `dirvish-hide-cursor' is non-nil."
   (when hl-face
-    (let ((ov (make-overlay l-beg (1+ l-end)))) (overlay-put ov 'face hl-face) ov)))
+    (let ((ov (make-overlay l-beg (1+ l-end))))
+      (overlay-put ov 'face hl-face) ov)))
 
-(dirvish-define-attribute symlink-target "Hide symlink target."
-  (:if (or (eq major-mode 'dirvish-directory-view-mode)
-           (and dired-hide-details-mode
-                (default-value 'dired-hide-details-hide-symlink-targets))))
+(dirvish-define-attribute symlink-target
+  "Hide symlink target."
+  :when (or (eq major-mode 'dirvish-directory-view-mode)
+            (and dired-hide-details-mode
+                 (default-value 'dired-hide-details-hide-symlink-targets)))
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
 

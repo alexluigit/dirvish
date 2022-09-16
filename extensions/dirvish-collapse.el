@@ -58,9 +58,9 @@
 
 (dirvish-define-attribute collapse
   "Collapse unique nested paths."
-  (:if (and (dirvish-prop :root)
-            (not (dirvish-prop :fd-arglist))
-            (not (dirvish-prop :remote))))
+  :when (and (dirvish-prop :root)
+             (not (dirvish-prop :fd-arglist))
+             (not (dirvish-prop :remote)))
   (when-let* ((cache (dirvish-collapse--cache f-name))
               (head (car cache))
               (tail (cdr cache)))

@@ -227,10 +227,10 @@ When CLEAR, remove all subtrees in the buffer."
 
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
-  (:if (and (dirvish-prop :root)
-            (or dirvish-subtree-always-show-state
-                dirvish-subtree--overlays))
-       :width 1)
+  :when (and (dirvish-prop :root)
+             (or dirvish-subtree-always-show-state
+                 dirvish-subtree--overlays))
+  :width 1
   (let ((state-str
          (propertize (if (eq (car f-type) 'dir)
                          (if (dirvish-subtree--expanded-p)

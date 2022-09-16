@@ -154,8 +154,8 @@ The value is a list with 3 elements:
 
 (dirvish-define-attribute file-size
   "Show file size or directories file count at right fringe."
-  (:if (and (dirvish-prop :root) dired-hide-details-mode)
-       :width (1+ dirvish--file-size-str-len))
+  :when (and (dirvish-prop :root) dired-hide-details-mode)
+  :width (1+ dirvish--file-size-str-len)
   (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
          (ov-pos (if (> remain f-wid) l-end
                    (let* ((end (+ f-beg remain))

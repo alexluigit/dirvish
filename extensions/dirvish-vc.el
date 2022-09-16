@@ -91,9 +91,9 @@ vc-hooks.el) for detail explanation of these states."
 
 (dirvish-define-attribute vc-state
   "The version control state at left fringe."
-  (:if (and (dirvish-prop :root)
-            (dirvish-prop :vc-backend)
-            (or (set-window-fringes nil 5 1) t)))
+  :when (and (dirvish-prop :root)
+             (dirvish-prop :vc-backend)
+             (or (set-window-fringes nil 5 1) t))
   (let* ((state (dirvish-attribute-cache f-name :vc-state))
          (face (alist-get state dirvish-vc-state-face-alist))
          (display (and face `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
@@ -104,10 +104,10 @@ vc-hooks.el) for detail explanation of these states."
 
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
-  (:if (and (dirvish-prop :root)
+  :when (and (dirvish-prop :root)
             (eq (dirvish-prop :vc-backend) 'Git)
             (not (dirvish-prop :remote))
-            (>= (window-width) 40)))
+            (>= (window-width) 40))
   (let* ((info (dirvish-attribute-cache f-name :git-msg))
          (face (or hl-face 'dirvish-git-commit-message-face))
          (str (substring (concat "  " info) 0 -1))
