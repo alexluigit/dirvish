@@ -667,7 +667,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-insert-subdir-a (dirname &rest _)
   "Setup newly inserted subdir DIRNAME for this Dirvish buffer."
   (dirvish--hide-dired-header)
-  (dirvish-data-for-dir dirname (current-buffer) t))
+  (dirvish-data-for-dir dirname (current-buffer)))
 
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
