@@ -18,11 +18,6 @@
   "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null")
 (defvar dirvish-tramp-hosts '())
 
-(defun dirvish-tramp--gnuls-available-p ()
-  "Check if GNU ls is available or not."
-  (string-prefix-p
-   "ls (GNU coreutils)" (shell-command-to-string "ls --version")))
-
 (defun dirvish-tramp--ls-parser (entry output)
   "Parse ls OUTPUT for ENTRY and store it in `dirvish--attrs-hash'."
   (dolist (file (and (> (length output) 2) (cl-subseq output 2 -1)))
@@ -41,6 +36,13 @@
                    :type ,(cons (if f-dirp 'dir 'file) f-truename))
                  dirvish--attrs-hash)))))
 
+(defun dirvish-tramp--gnuls-available-p (dir)
+  "Check if GNU ls is available or not over the remote DIR."
+  (with-temp-buffer
+    (cl-letf (((symbol-function 'display-message-or-buffer) #'ignore))
+      (let ((default-directory dir))
+        (= (tramp-handle-shell-command "ls --version") 0)))))
+
 (defun dirvish-tramp--noselect (fn dir flags remote)
   "Return the Dired buffer at DIR with listing FLAGS.
 Save the REMOTE host to `dirvish-tramp-hosts'.
@@ -51,10 +53,8 @@ FN is the original `dired-noselect' closure."
          (gnu? t)
          (buffer (apply fn (list dir (if ftp short-flags (or r-flags flags))))))
     (unless (or r-flags ftp)
-      (with-current-buffer buffer
-        (setq gnu? (dirvish-tramp--gnuls-available-p))
-        (push (cons remote (if gnu? flags short-flags))
-              dirvish-tramp-hosts)))
+      (setq gnu? (dirvish-tramp--gnuls-available-p dir))
+      (push (cons remote (if gnu? flags short-flags)) dirvish-tramp-hosts))
     (unless gnu?
       (kill-buffer buffer)
       (setq buffer (apply fn (list dir short-flags))))
