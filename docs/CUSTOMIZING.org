@@ -338,9 +338,6 @@ These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
   (use-package dired-x
-    ;; Enable dired-omit-mode by default
-    ;; :hook
-    ;; (dired-mode . dired-omit-mode)
     :config
     ;; Make dired-omit-mode hide all "dotfiles"
     (setq dired-omit-files
@@ -360,7 +357,9 @@ These packages are only listed here for discoverability.
   ;; Addtional syntax highlighting for dired
   (use-package diredfl
     :hook
-    (dired-mode . diredfl-mode)
+    ((dired-mode . diredfl-mode)
+     ;; highlight parent and directory preview as well
+     (dirvish-directory-view-mode . diredfl-mode))
     :config
     set-face-attribute 'diredfl-dir-name nil :bold t)
 

@@ -409,8 +409,7 @@ DESC and HIDE are the group title and visibility respectively."
 POS can be a integer or filename.
 BEG and END determine the boundary of groups."
   (unless (or beg end)
-    (setq beg (cl-loop for o in (overlays-at (point-min)) thereis
-                       (and (overlay-get o 'dired-header) (overlay-end o)))
+    (setq beg (dirvish-prop :content-begin)
           end (- (dired-subdir-max) (if (cdr dired-subdir-alist) 1 0))))
   (with-silent-modifications
     (setq dirvish-emerge--group-overlays nil)
@@ -431,8 +430,7 @@ PREDS are locally composed predicates."
                  for i from 0
                  for (desc _ hide) in grs
                  collect (list i desc hide '())))
-        (beg (cl-loop for o in (overlays-at (goto-char (point-min))) thereis
-                      (and (overlay-get o 'dired-header) (overlay-end o))))
+        (beg (progn (goto-char (point-min)) (dirvish-prop :content-begin)))
         (end (- (dired-subdir-max) (if (cdr dired-subdir-alist) 1 0)))
         (max-idx (length preds))
         (dir (file-local-name (dired-current-directory))))

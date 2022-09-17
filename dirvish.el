@@ -200,7 +200,7 @@ input for `dirvish-redisplay-debounce' seconds."
     (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
 (defconst dirvish--no-update-preview-cmds
   '(ace-select-window other-window scroll-other-window scroll-other-window-down))
-(defvar dirvish--reset-keywords '(:free-space))
+(defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish-redisplay-debounce-timer nil)
 (defvar dirvish--selected-window nil)
 (defvar dirvish--mode-line-fmt nil)
@@ -259,8 +259,9 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
   (save-excursion
     (let* ((beg (goto-char (point-min)))
            (next-file (next-single-property-change beg 'dired-filename))
-           (end (if (not next-file) (point-max)
-                  (goto-char next-file) (line-beginning-position)))
+           (end (or (dirvish-prop :content-begin)
+                    (and (not next-file) (point-max))
+                    (progn (goto-char next-file) (line-beginning-position))))
            (o (make-overlay beg end)))
       (dirvish-prop :content-begin end)
       (overlay-put o 'dired-header t)
