@@ -1224,7 +1224,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 (defun dirvish--reuse-or-create (path layout)
   "Find PATH in a dirvish session with LAYOUT."
   (let ((dir (or path default-directory))
-        (dv (car (dirvish--find-reusable))))
+        (dv (or dirvish--this (car (dirvish--find-reusable)))))
     (cond (dv (with-selected-window (dirvish--create-root-window dv)
                 (setf (dv-layout dv) layout)
                 (setq dirvish--this dv)
