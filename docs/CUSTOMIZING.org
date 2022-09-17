@@ -358,7 +358,7 @@ These packages are only listed here for discoverability.
   (use-package diredfl
     :hook
     ((dired-mode . diredfl-mode)
-     ;; highlight parent and directory preview as well
+     ;; highlight parent and preview as well
      (dirvish-directory-view-mode . diredfl-mode))
     :config
     set-face-attribute 'diredfl-dir-name nil :bold t)

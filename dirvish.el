@@ -1025,16 +1025,14 @@ Dirvish sets `revert-buffer-function' to this function."
          (win (or (minibuffer-selected-window) (frame-selected-window)))
          (this dirvish--this)
          (dired-buffers nil) ; disable reuse from dired side
-         (dv (cond ((memq this-command '(dired-other-tab dired-other-frame))
-                    (dirvish-new :layout dirvish-default-layout))
-                   (t (or this (car (dirvish--find-reusable)) (dirvish-new)))))
-         (cmds '(dired-other-tab dired-other-frame dirvish dirvish-dwim))
+         (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish-new)
+               (or this (car (dirvish--find-reusable)) (dirvish-new))))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal)))
     (set-window-dedicated-p win nil)
-    (unless (or (memq this-command cmds) this) (setf (dv-layout dv) nil))
+    (unless this (setf (dv-layout dv) nil))
     (unless buffer
       (if (not remote) (setq buffer (apply fn (list dir flags)))
         (require 'dirvish-tramp)
@@ -1246,12 +1244,13 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 (defun dirvish-quit ()
   "Quit current Dirvish session."
   (interactive)
-  (let ((dv (dirvish-curr)) (frame (selected-frame)) (ct 0) (lst (window-list)))
+  (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
+        (win (selected-window)) (frame (selected-frame)))
     (dirvish-kill dv)
-    (while (and (eq (dirvish-curr) dv) (<= (cl-incf ct) (length lst)))
+    (while (and (dirvish-curr) (eq (selected-window) win)
+                (<= (cl-incf ct) (length lst)))
       (quit-window))
-    (when (or (not (eq (selected-frame) frame)) (eq (dirvish-curr) dv))
-      (delete-frame frame))))
+    (unless (eq (selected-frame) frame) (delete-frame frame))))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
@@ -1286,8 +1285,8 @@ otherwise it defaults to `default-directory'.
 If `one-window-p' returns nil, open PATH using regular Dired."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
   (dirvish--reuse-or-create
-   path (or (and dirvish--this (dv-layout dirvish--this))
-            (and (one-window-p) dirvish-default-layout))))
+   path (if dirvish--this (dv-layout dirvish--this)
+          (and (one-window-p) dirvish-default-layout))))
 
 (transient-define-prefix dirvish-dispatch ()
   "Main menu for Dired/Dirvish."
