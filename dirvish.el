@@ -1226,13 +1226,13 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   "Find PATH in a dirvish session with LAYOUT."
   (let ((dir (or path default-directory))
         (dv (car (dirvish--find-reusable))))
-    (cond ((dirvish-curr) (dirvish-find-entry-a dir))
-          (dv (with-selected-window (dirvish--create-root-window dv)
+    (cond (dv (with-selected-window (dirvish--create-root-window dv)
                 (setf (dv-layout dv) layout)
                 (setq dirvish--this dv)
                 (dirvish-find-entry-a
                  (if (or path (not (eq dirvish-reuse-session 'resume))) dir
-                   (car (dv-index dv))))))
+                   (car (dv-index dv))))
+                (dirvish--build dv)))
           (t (progn (dirvish-new :layout layout) (dirvish-find-entry-a dir))))))
 
 (define-derived-mode dirvish-directory-view-mode
@@ -1284,7 +1284,9 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `default-directory'.
 If `one-window-p' returns nil, open PATH using regular Dired."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
-  (dirvish--reuse-or-create path (and (one-window-p) dirvish-default-layout)))
+  (dirvish--reuse-or-create
+   path (or (and dirvish--this (dv-layout dirvish--this))
+            (and (one-window-p) dirvish-default-layout))))
 
 (transient-define-prefix dirvish-dispatch ()
   "Main menu for Dired/Dirvish."
