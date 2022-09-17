@@ -230,7 +230,7 @@ RANGE can be `buffer', `session', `frame', `all'."
             (?N (setq never t)
                 (push (dirvish-yank--newbase base dfiles dest) to-rename))
             (?q (user-error "Dirvish[info]: yank task aborted")))))
-   finally do (cl-loop for (from . to) in to-rename do (rename-file from to))))
+   finally (cl-loop for (from . to) in to-rename do (rename-file from to))))
 
 (defun dirvish-yank--fallback-handler (method srcs dest)
   "Execute a fallback yank command with type of METHOD.

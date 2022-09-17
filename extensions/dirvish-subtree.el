@@ -141,8 +141,8 @@ Ensure correct DIR when inside of a subtree."
   (cl-loop
    with (pov . max) = (cons nil 0)
    for ov in (overlays-at p)
-   for depth = (or (overlay-get ov 'dired-subtree-depth) 0) do
-   (when (> depth max) (setq pov ov) (setq max depth))
+   for depth = (or (overlay-get ov 'dired-subtree-depth) 0)
+   do (when (> depth max) (setq pov ov) (setq max depth))
    finally return pov))
 
 (defun dirvish-subtree--insert ()
@@ -176,7 +176,7 @@ When CLEAR, remove all subtrees in the buffer."
    for depth = (overlay-get ov 'dired-subtree-depth)
    for name = (overlay-get ov 'dired-subtree-name) do
    (push (cons depth name) maps)
-   finally do
+   finally
    (setq dirvish-subtree--overlays nil)
    (cl-loop for (_ . name) in (sort maps (lambda (a b) (< (car a) (car b))))
             when (dirvish-subtree--goto-file name) do

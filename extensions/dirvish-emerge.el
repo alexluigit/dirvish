@@ -320,7 +320,7 @@ If DEMOTE, shift them to the lowest instead."
                            (assoc-delete-all
                             (oref obj description)
                             dirvish-emerge-groups #'equal)))
-           finally do
+           finally
            (let* ((sel (cl-loop for o in (reverse sel) collect
                                 (list (oref o description) (oref o recipe)
                                       (oref o hide) (oref o selected))))
@@ -570,7 +570,7 @@ Press again to set the value for the group"))
                                        (forward-line 1) (point))
                        (overlay-end o)))))
    do (push (list idx desc hide files) groups)
-   finally do (dirvish-emerge--insert-groups (nreverse groups) pos)))
+   finally (dirvish-emerge--insert-groups (nreverse groups) pos)))
 
 (provide 'dirvish-emerge)
 ;;; dirvish-emerge.el ends here

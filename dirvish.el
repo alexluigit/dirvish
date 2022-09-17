@@ -397,8 +397,8 @@ This is a internal variable and should *NOT* be set manually."
         for (a-name . a-plist) in attrs
         do (setq attr-docs (format "%s\n\n`%s': %s" attr-docs a-name
                                    (plist-get a-plist :doc)))
-        finally do (put 'dirvish--available-attrs 'variable-documentation
-                        (format "%s%s" doc-head attr-docs)))
+        finally (put 'dirvish--available-attrs 'variable-documentation
+                     (format "%s%s" doc-head attr-docs)))
        (defun ,pred (dv) (ignore dv) ,(or (plist-get options :when) t))
        (defun ,render ,args
          (ignore ,@args)
@@ -443,8 +443,8 @@ items from `dirvish-preview-dispatchers'."
         for (dp-name . dp-plist) in dps
         do (setq dp-docs (format "%s\n\n`%s': %s" dp-docs dp-name
                                  (plist-get dp-plist :doc)))
-        finally do (put 'dirvish--available-preview-dispatchers 'variable-documentation
-                        (format "%s%s" doc-head dp-docs)))
+        finally (put 'dirvish--available-preview-dispatchers 'variable-documentation
+                     (format "%s%s" doc-head dp-docs)))
        (defun ,dp-name ,default-arglist ,docstring (ignore ,@ignore-list) ,@body))))
 
 (cl-defmacro dirvish-define-mode-line (name &optional docstring &rest body)
@@ -460,7 +460,7 @@ This is a internal variable and should *NOT* be set manually."
         with seg-docs = ""
         for (seg-name . doc) in dirvish--available-mode-line-segments
         do (setq seg-docs (format "%s\n\n`%s': %s" seg-docs seg-name doc))
-        finally do (put 'dirvish--available-mode-line-segments 'variable-documentation
+        finally (put 'dirvish--available-mode-line-segments 'variable-documentation
                         (format "%s%s" doc-head seg-docs)))
        (defun ,ml-name (dv) ,docstring (ignore dv) ,@body))))
 
@@ -581,7 +581,7 @@ See `dirvish--available-preview-dispatchers' for details."
          (feat-in-lib (cl-intersection feat feat-reqs)))
      (when (or m-attr feat-in-lib) (require lib))
      (and m-attr (setq attrs (append attrs m-attr))))
-   finally do
+   finally
    (setf dirvish--mode-line-fmt (dirvish--mode-line-fmt-setter ml-l ml-r))
    (setf dirvish--header-line-fmt (dirvish--mode-line-fmt-setter hl-l hl-r t))
    (setf (dv-preview-fns dv) (dirvish--preview-dps-validate dps))
@@ -634,9 +634,9 @@ See `dirvish--available-preview-dispatchers' for details."
            do (remove-overlays (point-min) (point-max) ov t)
            when (funcall pred dv) do
            (progn (setq width (- width (or (eval wd) 0))) (push fn fns))
-           finally do (with-silent-modifications
-                        (save-excursion (dirvish--render-attrs-1
-                                         height width st (point) remote fns)))))
+           finally (with-silent-modifications
+                     (save-excursion (dirvish--render-attrs-1
+                                      height width st (point) remote fns)))))
 
 ;;;; Advices
 
