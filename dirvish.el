@@ -241,12 +241,9 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
 (defmacro dirvish-save-dedication (&rest body)
   "Run BODY with window undedicated."
   (declare (debug (&rest form)))
-  `(progn
-     (let* ((window (get-buffer-window (current-buffer)))
-            (dedicated (window-dedicated-p window)))
-       (set-window-dedicated-p window nil)
-       ,@body
-       (set-window-dedicated-p window dedicated))))
+  `(let ((dedicated (window-dedicated-p)) (win (selected-window)))
+     (set-window-dedicated-p win nil)
+     (prog1 ,@body (set-window-dedicated-p win dedicated))))
 
 (defun dirvish--hide-dired-header ()
   "Hide the Dired header."
