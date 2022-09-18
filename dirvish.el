@@ -123,12 +123,8 @@ string.  See `dirvish--available-mode-line-segments'."
   :group 'dirvish :type 'plist)
 
 (defcustom dirvish-hide-details t
-  "Whether to hide detailed information on session startup.
-The value can be a boolean or a function that takes current
-Dirvish session as its argument."
-  :group 'dirvish :type '(choice (const :tag "Always hide details" t)
-                                 (const :tag "Never hide details" nil)
-                                 (function :tag "Custom function")))
+  "Whether to hide detailed information on session startup."
+  :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-hide-cursor t
   "Whether to hide cursor in dirvish buffers."
@@ -216,7 +212,6 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar-local dirvish--attrs-hash nil)
 (put 'dirvish--props 'permanent-local t)
 (put 'dired-subdir-alist 'permanent-local t)
-(put 'wdired--old-marks 'permanent-local t)
 
 ;;;; Helpers
 
@@ -680,11 +675,6 @@ buffer, it defaults to filename under the cursor when it is nil."
   (remove-hook 'window-configuration-change-hook #'dirvish-winconf-change-h t)
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
 
-(defun dirvish-wdired-exit-a (&rest _)
-  "Advice for exiting `wdired-mode'."
-  (dirvish--init-dired-buffer (dirvish-curr))
-  (revert-buffer))
-
 (defun dirvish-thumb-buf-a (fn)
   "Advice for FN `image-dired-create-thumbnail-buffer'."
   (when-let ((dv dirvish--this) ((dv-preview-window dv)))
@@ -708,7 +698,8 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-update-body-h ()
   "Update UI of current Dirvish."
   (when-let ((dv (dirvish-curr)))
-    (cond ((eobp) (forward-line -1))
+    (cond ((not dirvish-hide-cursor))
+          ((eobp) (forward-line -1))
           ((cdr dired-subdir-alist))
           ((and (bobp) dirvish-use-header-line)
            (goto-char (dirvish-prop :content-begin))))
@@ -988,31 +979,21 @@ Dirvish sets `revert-buffer-function' to this function."
   (dolist (keyword dirvish--reset-keywords) (dirvish-prop keyword nil))
   (dired-revert)
   (dirvish--hide-dired-header)
-  (setq dirvish--attrs-hash (make-hash-table))
+  (setq-local dirvish--attrs-hash (make-hash-table))
   (dirvish-data-for-dir default-directory (current-buffer) t)
   (run-hooks 'dirvish-after-revert-hook))
 
-(defun dirvish--init-dired-window (dv window)
-  "Initialize the Dired WINDOW for session DV."
-  (dirvish--setup-mode-line (dv-layout dv)) ; for layout switching
-  (set-window-fringes nil 1 1)
-  (let ((side (window-parameter window 'window-side)))
-    (when side (setq-local window-size-fixed 'width))
-    (set-window-dedicated-p window (or (dv-layout dv) side))))
-
-(defun dirvish--init-dired-buffer (dv)
-  "Initialize a Dired buffer for session DV."
+(defun dirvish-init-dired-buffer ()
+  "Initialize a Dired buffer for dirvish."
   (use-local-map dirvish-mode-map)
   (dirvish--hide-cursor)
-  (setq dirvish--attrs-hash (make-hash-table))
-  (setq-local revert-buffer-function #'dirvish-revert)
-  (setq-local tab-bar-new-tab-choice "*scratch*")
-  (setq-local dired-hide-details-hide-symlink-targets nil)
-  (setq-local dired-kill-when-opening-new-dired-buffer nil)
   (dirvish--hide-dired-header)
-  (dirvish--setup-mode-line (dv-layout dv))
-  (cond ((functionp dirvish-hide-details) (funcall dirvish-hide-details dv))
-        (dirvish-hide-details (dired-hide-details-mode t)))
+  (and dirvish-hide-details (dired-hide-details-mode t))
+  (setq-local dirvish--attrs-hash (make-hash-table)
+              revert-buffer-function #'dirvish-revert
+              tab-bar-new-tab-choice "*scratch*"
+              dired-hide-details-hide-symlink-targets nil
+              dired-kill-when-opening-new-dired-buffer nil)
   (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
   (add-hook 'window-configuration-change-hook #'dirvish-winconf-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
@@ -1037,7 +1018,7 @@ Dirvish sets `revert-buffer-function' to this function."
       (if (not remote) (setq buffer (apply fn (list dir flags)))
         (require 'dirvish-tramp)
         (setq buffer (dirvish-tramp--noselect fn dir flags remote)))
-      (with-current-buffer buffer (dirvish--init-dired-buffer dv))
+      (with-current-buffer buffer (dirvish-init-dired-buffer))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
       (dirvish-prop :dv (dv-name dv))
@@ -1081,7 +1062,7 @@ LEVEL is the depth of current window."
       (font-lock-mode 1)
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--hide-cursor)
-      (setq dirvish--attrs-hash (make-hash-table))
+      (setq-local dirvish--attrs-hash (make-hash-table))
       (add-hook 'window-configuration-change-hook #'dirvish--render-attrs nil t)
       buf)))
 
@@ -1092,7 +1073,11 @@ LEVEL is the depth of current window."
          (parent-dirs ())
          (depth (or (car (dv-layout dv)) 0))
          (i 0))
-    (dirvish--init-dired-window dv (selected-window))
+    (dirvish--setup-mode-line (dv-layout dv)) ; for layout switching
+    (set-window-fringes nil 1 1)
+    (let ((side (window-parameter (selected-window) 'window-side)))
+      (when side (setq-local window-size-fixed 'width))
+      (set-window-dedicated-p (selected-window) (or (dv-layout dv) side)))
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
       (push (cons current parent) parent-dirs)
@@ -1261,7 +1246,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
                (dired-insert-subdir dirvish-insert-subdir-a :after)
                (image-dired-create-thumbnail-buffer dirvish-thumb-buf-a :around)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
-               (wdired-change-to-dired-mode dirvish-wdired-exit-a :after)))
+               (wdired-change-to-dired-mode dirvish-init-dired-buffer :after)))
         (h-fn #'dirvish-selection-change-h))
     (if dirvish-override-dired-mode
         (progn (pcase-dolist (`(,sym ,fn ,how) ads) (advice-add sym how fn))

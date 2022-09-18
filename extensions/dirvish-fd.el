@@ -203,29 +203,34 @@ should return a list of regular expressions."
   "Return a formatted string showing the DIRVISH-FD-ACTUAL-SWITCHES."
   (pcase-let ((`(,globp ,casep ,ign-range ,types ,exts ,excludes)
                (dirvish-prop :fd-arglist))
-              (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow)))
-    (format " %s | %s \"%s\" | %s %s | %s %s | %s %s | %s %s | %s %s |"
+              (face (if (dirvish--window-selected-p dv)
+                        'dired-header 'shadow)))
+    (format "  %s | %s"
             (propertize "FD" 'face face)
-            (propertize (if globp "glob:" "regex:") 'face face)
-            (propertize (or dirvish-fd--input "") 'face 'font-lock-regexp-grouping-construct)
-            (propertize "type:" 'face face)
-            (propertize (if (equal types "") "all" types) 'face 'font-lock-variable-name-face)
-            (propertize "case:" 'face face)
-            (propertize (if casep "sensitive" "smart") 'face 'font-lock-type-face)
-            (propertize "ignore:" 'face face)
-            (propertize ign-range 'face 'font-lock-comment-face)
-            (propertize "exts:" 'face face)
-            (propertize (if (equal exts "") "all" exts) 'face 'font-lock-string-face)
-            (propertize "excludes:" 'face face)
-            (propertize (if (equal excludes "") "none" excludes) 'face 'font-lock-string-face))))
+            (if (not (dirvish-prop :fd-time))
+                (propertize "Processing... (C-c C-k to abort)"
+                            'face 'font-lock-string-face)
+              (format "%s \"%s\" | %s %s | %s %s | %s %s | %s %s | %s %s |"
+                      (propertize (if globp "glob:" "regex:") 'face face)
+                      (propertize (or dirvish-fd--input "")
+                                  'face 'font-lock-regexp-grouping-construct)
+                      (propertize "type:" 'face face)
+                      (propertize (if (equal types "") "all" types)
+                                  'face 'font-lock-variable-name-face)
+                      (propertize "case:" 'face face)
+                      (propertize (if casep "sensitive" "smart")
+                                  'face 'font-lock-type-face)
+                      (propertize "ignore:" 'face face)
+                      (propertize ign-range 'face 'font-lock-comment-face)
+                      (propertize "exts:" 'face face)
+                      (propertize (if (equal exts "") "all" exts)
+                                  'face 'font-lock-string-face)
+                      (propertize "excludes:" 'face face)
+                      (propertize (if (equal excludes "") "none" excludes)
+                                  'face 'font-lock-string-face))))))
 
 (dirvish-define-mode-line fd-timestamp
   "Timestamp of search finished."
-  (unless (dirvish-prop :fd-time)
-    (dirvish-prop :fd-time
-      (format " %s %s  "
-              (propertize "Finished at:" 'face 'font-lock-doc-face)
-              (propertize (current-time-string) 'face 'success))))
   (when (dv-layout dv) (dirvish-prop :fd-time)))
 
 (dirvish-define-mode-line fd-pwd
@@ -309,18 +314,20 @@ value 16, let the user choose the root directory of their search."
           (dirvish-fd dir pattern)))))
 
 (defun dirvish-fd-sentinel (proc _)
-  "Sentinel for `dirvish-fd' processes PROC."
+  "Sentinel for `dirvish-fd' process PROC."
   (pcase-let* ((buf (process-buffer proc))
-               (`(,input ,dir) (process-get proc 'info))
-               (dv nil) (output nil))
+               (success (eq (process-exit-status proc) 0))
+               (`(,input ,dir ,dv) (process-get proc 'info)))
     (with-current-buffer buf
-      (setq dv (dirvish-curr))
-      (setq output (dirvish-fd--parse-output))
-      (dirvish--init-dired-buffer dv)
       (setq-local dirvish-fd--input input
-                  dirvish-fd--output output
+                  dirvish-fd--output (dirvish-fd--parse-output)
                   revert-buffer-function
                   `(lambda (_i _n) (dirvish-fd ,default-directory (or dirvish-fd--input ""))))
+      (dirvish-prop :fd-time
+        (format " %s %s "
+                (propertize "Finished at:" 'face 'font-lock-doc-face)
+                (propertize (current-time-string)
+                            'face (if success 'success 'error))))
       (if (> (length input) 0)
           (dirvish-fd--narrow input (car (dirvish-prop :fd-arglist)))
         (dirvish-update-body-h)))
@@ -370,6 +377,11 @@ When GLOB, convert the regexs using `dired-glob-regexp'."
   "Minibuffer setup function for `dirvish-fd'."
   (add-hook 'post-command-hook #'dirvish-fd-minibuffer-update-h nil t))
 
+(defun dirvish-fd-kill ()
+  "Kill the `fd' process running in the current buffer."
+  (interactive)
+  (dirvish--kill-buffer (current-buffer)))
+
 ;;;###autoload
 (defun dirvish-fd (dir pattern)
   "Run `fd' on DIR and go into Dired mode on a buffer of the output.
@@ -398,6 +410,11 @@ The command run is essentially:
       (setq-local default-directory dir
                   dired-subdir-alist (list (cons dir (point-min-marker))))
       (dired-mode dir ls-switches)
+      (dirvish-init-dired-buffer)
+      (let ((map (make-sparse-keymap)))
+        (set-keymap-parent map (current-local-map))
+        (define-key map "\C-c\C-k" #'dirvish-fd-kill)
+        (use-local-map map))
       (dirvish-prop :dv (dv-name dv))
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :fd-switches fd-switches)
@@ -412,8 +429,8 @@ The command run is essentially:
                               "--quoting-style=literal" "--directory")
                    :filter 'dirvish-fd-filter :sentinel 'dirvish-fd-sentinel)))
         (dirvish-fd--argparser (split-string (or fd-switches "")))
-        (process-put proc 'info (list pattern dir))))
-    buffer))
+        (process-put proc 'info (list pattern dir dv))))
+    (switch-to-buffer buffer)))
 
 (provide 'dirvish-fd)
 ;;; dirvish-fd.el ends here

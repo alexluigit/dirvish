@@ -66,7 +66,10 @@ Here is a sample value for this variable.
                             (propertize path 'face 'font-lock-comment-face))
                     `(lambda ()
                        (interactive)
-                       (funcall dirvish-quick-access-function ,path))))])))))
+                       (funcall dirvish-quick-access-function ,path))))]
+          (interactive)
+          (require 'dirvish-fd nil t)
+          (transient-setup 'dirvish-quick-access))))))
 
 (provide 'dirvish-quick-access)
 ;;; dirvish-quick-access.el ends here
