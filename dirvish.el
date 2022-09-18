@@ -477,7 +477,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
 
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
-  (type nil :documentation "is the session type, such as \\='side.")
+  (type () :documentation "is the (TYPE FIXED-WIDTH DEDICATED ROOT-WIN-FN FILE-OPEN-FN) struct.")
   (layout () :documentation "is the working layout.")
   (last-fs-layout dirvish-default-layout :documentation "is the last fullscreen layout.")
   (attributes (purecopy dirvish-attributes) :documentation "is the actual `dirvish-attributes'.")
@@ -485,9 +485,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (preview-dispatchers dirvish-preview-dispatchers :documentation "are actual preview dispatchers.")
   (preview-fns () :documentation "are preview functions expanded from PREVIEW-DISPATCHERS.")
   (ls-switches dired-listing-switches :documentation "is the listing switches.")
-  (root-window-fn #'frame-selected-window :documentation "is the function to create the ROOT-WINDOW.")
   (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
-  (on-file-open #'dirvish-on-file-open :documentation "Function to run before opening a file.")
   (scopes () :documentation "are the \"environments\" such as init frame of this session.")
   (preview-buffers () :documentation "holds all file preview buffers in this session.")
   (preview-window nil :documentation "is the window to display preview buffer.")
@@ -501,7 +499,7 @@ If FLATTEN is non-nil, collect them as a flattened list."
   (when dirvish-reuse-session
     (cl-loop with scopes = (dirvish--scopes)
              for dv in (hash-table-values dirvish--session-hash)
-             when (and (eq type (dv-type dv)) (equal (dv-scopes dv) scopes))
+             when (and (equal type (dv-type dv)) (equal (dv-scopes dv) scopes))
              collect dv)))
 
 (defun dirvish-new (&rest args)
@@ -538,13 +536,10 @@ ARGS is a list of keyword arguments for `dirvish' struct."
           (t (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv))))
     (setq dirvish--this nil)))
 
-(defun dirvish-on-file-open (dv)
-  "Called before opening a file in Dirvish session DV."
-  (dirvish-kill dv))
-
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
-  (let ((w (funcall (dv-root-window-fn dv)))) (setf (dv-root-window dv) w) w))
+  (let* ((fn (or (nth 3 (dv-type dv)) 'frame-selected-window)) (w (funcall fn)))
+    (setf (dv-root-window dv) w) w))
 
 (defun dirvish--preview-dps-validate (dps)
   "Check if the requirements of dispatchers DPS are met."
@@ -641,7 +636,11 @@ See `dirvish--available-preview-dispatchers' for details."
 ENTRY can be a filename or a string with format of
 `dirvish-fd-bufname' used to query or create a `fd' result
 buffer, it defaults to filename under the cursor when it is nil."
-  (let* ((entry (or entry (dired-get-filename)))
+  (let* ((find-file-run-dired t)
+         (switch-to-buffer-preserve-window-point
+          (unless dired-auto-revert-buffer
+            switch-to-buffer-preserve-window-point))
+         (entry (or entry (dired-get-filename)))
          (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd--find entry))
                        ((file-directory-p entry) (dired-noselect entry)))))
     (if buffer (dirvish-save-dedication (switch-to-buffer buffer))
@@ -656,7 +655,8 @@ buffer, it defaults to filename under the cursor when it is nil."
                                (append (list cmd) args)))))
         (if ex (apply #'start-process "" nil "nohup"
                       (cl-substitute file "%f" ex :test 'string=))
-          (when-let ((dv (dirvish-curr))) (funcall (dv-on-file-open dv) dv))
+          (let* ((dv (dirvish-curr)) (fn (nth 4 (dv-type dv))))
+            (if fn (funcall fn) (dirvish-kill dv)))
           (find-file file))))))
 
 (defun dirvish-insert-subdir-a (dirname &rest _)
@@ -745,12 +745,6 @@ buffer, it defaults to filename under the cursor when it is nil."
              (dirvish-save-dedication (switch-to-buffer b))
              (dirvish--build dv)))
           ((active-minibuffer-window))
-          ((and dirvish--this (dv-layout dirvish--this)
-                (not (get-buffer-window (cdr (dv-index dirvish--this)) t))
-                (window-live-p (dv-preview-window dirvish--this)))
-           (set-window-configuration (dv-winconf dirvish--this))
-           (switch-to-buffer b)
-           (setq dirvish--this nil))
           (t (setq dirvish--this dv)))
     (setq dirvish--selected-window w)))
 
@@ -1003,7 +997,6 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-dired-noselect-a (fn dir &optional flags)
   "Return buffer for DIR with FLAGS, FN is `dired-noselect'."
   (let* ((key (file-name-as-directory (expand-file-name dir)))
-         (win (or (minibuffer-selected-window) (frame-selected-window)))
          (this dirvish--this)
          (dired-buffers nil) ; disable reuse from dired side
          (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish-new)
@@ -1011,21 +1004,26 @@ Dirvish sets `revert-buffer-function' to this function."
          (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
-         (buffer (alist-get key (dv-roots dv) nil nil #'equal)))
-    (set-window-dedicated-p win nil)
+         (buffer (alist-get key (dv-roots dv) nil nil #'equal))
+         (new-buffer-p (not buffer)))
     (unless this (setf (dv-layout dv) nil))
-    (unless buffer
+    (when new-buffer-p
       (if (not remote) (setq buffer (apply fn (list dir flags)))
         (require 'dirvish-tramp)
         (setq buffer (dirvish-tramp--noselect fn dir flags remote)))
       (with-current-buffer buffer (dirvish-init-dired-buffer))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
+      (cond (new-buffer-p)
+            ((not (equal flags dired-actual-switches)) (dired-sort-other flags))
+            ((eq dired-auto-revert-buffer t) (revert-buffer))
+	    ((functionp dired-auto-revert-buffer)
+	     (when (funcall dired-auto-revert-buffer dir) (revert-buffer))))
       (dirvish-prop :dv (dv-name dv))
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :remote remote)
       (dirvish-prop :root key)
-      (dired-goto-file (or bname key))
+      (when bname (dired-goto-file bname))
       (setf (dv-index dv) (cons key buffer))
       (run-hook-with-args 'dirvish-find-entry-hook key buffer)
       buffer)))
@@ -1073,11 +1071,10 @@ LEVEL is the depth of current window."
          (parent-dirs ())
          (depth (or (car (dv-layout dv)) 0))
          (i 0))
-    (dirvish--setup-mode-line (dv-layout dv)) ; for layout switching
+    (dirvish--setup-mode-line (dv-layout dv))
+    (when-let (fixed (nth 1 (dv-type dv))) (setq window-size-fixed fixed))
+    (set-window-dedicated-p nil (and (or (dv-layout dv) (nth 2 (dv-type dv))) t))
     (set-window-fringes nil 1 1)
-    (let ((side (window-parameter (selected-window) 'window-side)))
-      (when side (setq-local window-size-fixed 'width))
-      (set-window-dedicated-p (selected-window) (or (dv-layout dv) side)))
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
       (push (cons current parent) parent-dirs)

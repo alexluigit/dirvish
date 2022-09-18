@@ -68,7 +68,7 @@ one of categories in `dirvish-peek-categories'."
       (add-hook 'post-command-hook #'dirvish-peek-update-h 90 t)
       (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h nil t)
       (unless (and dirvish--this (dv-preview-window dirvish--this))
-        (setq new-dv (dirvish-new :type 'peek))
+        (setq new-dv (dirvish-new :type '(peek)))
         (setf (dv-preview-window new-dv)
               (or (minibuffer-selected-window) (next-window)))))))
 
@@ -92,7 +92,7 @@ one of categories in `dirvish-peek-categories'."
 (defun dirvish-peek-exit-h ()
   "Hook for `minibuffer-exit-hook' to destroy peek session."
   (dolist (dv (hash-table-values dirvish--session-hash))
-    (when (eq (dv-type dv) 'peek)
+    (when (eq (car (dv-type dv)) 'peek)
       (dirvish-kill dv)
       (remhash (dv-name dv) dirvish--session-hash))))
 

@@ -90,28 +90,30 @@ will visit the latest `project-root' after executing
    for w in (window-list)
    for b = (window-buffer w)
    for dv = (with-current-buffer b (dirvish-curr))
-   thereis (and dv (eq 'side (dv-type dv)) w)))
+   thereis (and dv (eq 'side (car (dv-type dv))) w)))
 
 (defun dirvish-side--auto-jump (&optional dir)
   "Visit DIR in current visible `dirvish-side' session."
   (setq dir (dirvish--get-project-root dir))
-  (when-let ((win (dirvish-side--session-visible-p))
-             (file buffer-file-name))
+  (when-let* ((win (dirvish-side--session-visible-p))
+              (dv (with-selected-window win
+                    (setq dirvish--this (dirvish-curr))))
+              (file buffer-file-name))
     (with-selected-window win
       (when dir (dirvish-find-entry-a dir))
       (dirvish-prop :cus-header 'dirvish-side-header)
       (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
         (dired-goto-file file))
-      (dirvish--setup-mode-line (dv-layout (dirvish-curr)))
+      (dirvish--setup-mode-line (dv-layout dv))
       (dirvish-update-body-h))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
   (let* ((bname buffer-file-name)
          (dv (or (car (dirvish--find-reusable 'side))
-                 (dirvish-new
-                  :type 'side :on-file-open #'dirvish-side-on-file-open
-                  :root-window-fn #'dirvish-side-root-window-fn)))
+                 (dirvish-new :type '(side width dedicated
+                                      dirvish-side-root-window-fn
+                                      dirvish-side-on-file-open))))
          (r-win (dv-root-window dv)))
     (unless (window-live-p r-win) (setq r-win (dirvish--create-root-window dv)))
     (with-selected-window r-win
