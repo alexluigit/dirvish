@@ -114,9 +114,12 @@ vc-hooks.el) for detail explanation of these states."
          (remain (max (- remain f-wid) 0))
          (len (length str))
          (overflow (< remain len))
+         (p-end (if overflow remain len))
+         (p-beg (min p-end 2))
          (ov (make-overlay f-end f-end)))
     (and overflow (setq str (substring str 0 remain)))
-    (add-face-text-property 0 (if overflow remain len) face t str)
+    (when hl-face (add-face-text-property 0 p-beg hl-face t str))
+    (add-face-text-property p-beg p-end face t str)
     (overlay-put ov 'after-string str) ov))
 
 (dirvish-define-preview vc-diff (ext)
