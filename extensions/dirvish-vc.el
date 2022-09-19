@@ -53,7 +53,7 @@ vc-hooks.el) for detail explanation of these states."
   :group 'dirvish)
 
 (defface dirvish-git-commit-message-face
-  '((t (:inherit font-lock-comment-face :underline nil)))
+  '((t (:inherit dired-ignored :underline nil :background unspecified)))
   "Face for commit message overlays."
   :group 'dirvish)
 

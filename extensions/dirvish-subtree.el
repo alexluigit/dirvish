@@ -77,12 +77,12 @@ The value can be one of: `plus', `arrow', `chevron'."
                :v-adjust 0.1 :face 'dirvish-subtree-state)))))))
 
 (defface dirvish-subtree-state
-  '((t (:inherit font-lock-doc-face :underline nil)))
+  '((t (:inherit dired-ignored :underline nil :background unspecified)))
   "Face used for `expanded-state' attribute."
   :group 'dirvish)
 
 (defface dirvish-subtree-guide
-  '((t (:inherit font-lock-comment-face :underline nil)))
+  '((t (:inherit dired-ignored :underline nil :background unspecified)))
   "Face used for `expanded-state' attribute."
   :group 'dirvish)
 
