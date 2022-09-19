@@ -65,9 +65,9 @@ will visit the latest `project-root' after executing
 
 (defconst dirvish-side-header (dirvish--mode-line-fmt-setter '(project) nil t))
 
-(defun dirvish-side-on-file-open (dv)
+(defun dirvish-side-on-file-open ()
   "Called before opening a file in Dirvish-side session DV."
-  (unless (dv-layout dv)
+  (unless (dv-layout (dirvish-curr))
     (select-window (funcall dirvish-side-open-file-window-function))))
 
 (defun dirvish-side-root-window-fn ()

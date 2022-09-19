@@ -1003,7 +1003,7 @@ Dirvish sets `revert-buffer-function' to this function."
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
          (new-buffer-p (not buffer)))
-    (unless this (setf (dv-layout dv) nil))
+    (if this (set-window-dedicated-p nil nil) (setf (dv-layout dv) nil))
     (when new-buffer-p
       (if (not remote) (setq buffer (apply fn (list dir flags)))
         (require 'dirvish-tramp)

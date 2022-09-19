@@ -280,10 +280,9 @@ value 16, let the user choose the root directory of their search."
 (defun dirvish-fd--read-input ()
   "Setup INPUT reader for fd."
   (minibuffer-with-setup-hook #'dirvish-fd-minibuffer-setup-h
-    (let ((buf (window-buffer (minibuffer-selected-window))) input)
-      (condition-case nil
-          (setq input (read-string "🔍: " nil dirvish-fd-input-history))
-        (quit (prog1 'cancelled (message "Fd search cancelled")))))))
+    (condition-case nil
+        (read-string "🔍: " nil dirvish-fd-input-history)
+      (quit (prog1 'cancelled (message "Fd search cancelled"))))))
 
 (defun dirvish-fd--parse-output ()
   "Parse fd command output."
