@@ -13,6 +13,7 @@
 ;;
 ;; Attributes
 ;; - `file-size'
+;; - `file-time'
 ;;
 ;; Mode-line segments
 ;; - `path'
@@ -33,7 +34,7 @@
 
 (require 'dirvish)
 
-(defcustom dirvish-time-format-string "%R-%x"
+(defcustom dirvish-time-format-string "%y-%m-%d %R"
   "FORMAT-STRING for `file-time' mode line segment.
 This value is passed to function `format-time-string'."
   :group 'dirvish :type 'string)
@@ -91,9 +92,6 @@ The value is a list with 3 elements:
   "Face used for filesystem device number mode-line segment."
   :group 'dirvish)
 
-;; A small value (< 7) would cause line skipping on Emacs 28-, see #77
-(defconst dirvish--file-size-str-len 8)
-
 (defun dirvish--count-file-size (fileset)
   "Return file size of FILESET in bytes."
   (cl-labels ((f-name (f) (if (file-directory-p f)
@@ -102,44 +100,57 @@ The value is a list with 3 elements:
               (f-size (f) (file-attribute-size (file-attributes f))))
     (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
 
-(defun dirvish--file-size-add-spaces (str)
-  "Fill file size STR with leading spaces."
-  (let* ((spc (concat str (if (dirvish-prop :gui) " " "")))
-         (len (- dirvish--file-size-str-len (length spc))))
-    (if (> len 0) (concat (make-string len ?\ ) spc) spc)))
+(defun dirvish--attr-size-human-readable (file-size)
+  "Produce a string showing FILE-SIZE in human-readable form."
+  (let ((power 1024.0)
+        (prefixes '("" "k" "M" "G" "T" "P" "E" "Z" "Y")))
+    (while (and (>= file-size power) (cdr prefixes))
+      (setq file-size (/ file-size power)
+            prefixes (cdr prefixes)))
+    (substring (format (if (and (< file-size 10)
+                                (>= (mod file-size 1.0) 0.05)
+                                (< (mod file-size 1.0) 0.95))
+                           "      %.1f%s%s"
+                         "      %.0f%s%s")
+                       file-size (car prefixes)
+                       (if (dirvish-prop :gui) " " ""))
+               -6)))
 
-(defun dirvish--get-file-size-or-count (name attrs)
+(defun dirvish--file-attr-size (name attrs)
   "Get file size of file NAME from ATTRS."
-  (let ((type (file-attribute-type attrs)))
-    (cond ((dirvish-prop :remote)
-           (dirvish--file-size-add-spaces
-            (or (file-attribute-size attrs) "?")))
-          ((stringp type)
-           (let ((count
-                  (dirvish-attribute-cache name :f-count
-                    (condition-case nil
-                        (dirvish--file-size-add-spaces
-                         (number-to-string
-                          (- (length (directory-files name nil nil t)) 2)))
-                      (file-error 'file)))))
-             (if (eq count 'file)
-                 (dirvish-attribute-cache name :f-size
-                   (dirvish--file-size-add-spaces
-                    (file-size-human-readable
-                     (file-attribute-size (file-attributes name)))))
-               count)))
-          (type
-           (let ((count
-                  (dirvish-attribute-cache name :f-count
-                    (condition-case nil
-                        (dirvish--file-size-add-spaces
-                         (number-to-string
-                          (- (length (directory-files name nil nil t)) 2)))
-                      (file-error 'no-permission)))))
-             (if (eq count 'no-permission) " NOPERM " count)))
-          (t (dirvish--file-size-add-spaces
-              (dirvish-attribute-cache name :f-size
-                (file-size-human-readable (or (file-attribute-size attrs) 0))))))))
+  (cond ((dirvish-prop :remote)
+         (substring (format "      %s" (or (file-attribute-size attrs) "?")) -6))
+        ((stringp (file-attribute-type attrs))
+         (let ((ct (dirvish-attribute-cache name :f-count
+                     (condition-case nil
+                         (let ((files (directory-files name nil nil t)))
+                           (dirvish--attr-size-human-readable
+                            (- (length files) 2)))
+                       (file-error 'file)))))
+           (if (not (eq ct 'file)) ct
+             (dirvish-attribute-cache name :f-size
+               (dirvish--attr-size-human-readable
+                 (file-attribute-size (file-attributes name)))))))
+        ((file-attribute-type attrs)
+         (let ((ct (dirvish-attribute-cache name :f-count
+                     (condition-case nil
+                         (let ((files (directory-files name nil nil t)))
+                           (dirvish--attr-size-human-readable
+                            (- (length files) 2)))
+                       (file-error 'no-permission)))))
+           (if (eq ct 'no-permission) " ---- " ct)))
+        (t (dirvish-attribute-cache name :f-size
+             (dirvish--attr-size-human-readable
+              (or (file-attribute-size attrs) 0))))))
+
+(defun dirvish--file-attr-time (name attrs)
+  "File NAME's modified time from ATTRS."
+  (if (dirvish-prop :remote)
+      (format "  %s " (or (file-attribute-modification-time attrs) "?"))
+    (format "  %s " (dirvish-attribute-cache name :f-time
+                      (format-time-string
+                       dirvish-time-format-string
+                       (file-attribute-modification-time attrs))))))
 
 (defun dirvish--format-file-attr (attr-name)
   "Return a string of cursor file's attribute ATTR-NAME."
@@ -153,24 +164,22 @@ The value is a list with 3 elements:
 ;;;; Attributes
 
 (dirvish-define-attribute file-size
-  "Show file size or directories file count at right fringe."
-  :when (and (dirvish-prop :root) dired-hide-details-mode)
-  :width (1+ dirvish--file-size-str-len)
-  (let* ((str (dirvish--get-file-size-or-count f-name f-attrs))
-         (ov-pos (if (> remain f-wid) l-end
-                   (let* ((end (+ f-beg remain))
-                          (offset (- f-wid (length f-str))))
-                     (- end offset))))
-         (face (or hl-face 'dirvish-file-size))
-         (dp-spec `(space :align-to (- right-fringe
-                                       ,dirvish--file-size-str-len
-                                       ,(if (dirvish-prop :gui) 0 2))))
-         (spc (propertize " " 'display dp-spec 'face face))
-         (ov (make-overlay ov-pos ov-pos)))
-    (setq str (concat spc str))
-    (add-face-text-property 0 (1+ dirvish--file-size-str-len) face t str)
-    (overlay-put ov 'after-string str)
-    ov))
+  "File size or directories file count at right fringe."
+  :when (and (dirvish-prop :root) dired-hide-details-mode
+             (> win-width 30))
+  (let* ((str (concat (dirvish--file-attr-size f-name f-attrs)))
+         (face (or hl-face 'dirvish-file-size)))
+    (add-face-text-property 0 (length str) face t str)
+    `(right . ,str)))
+
+(dirvish-define-attribute file-time
+  "File's modified time at right fringe before the file size."
+  :when (and (dirvish-prop :root) dired-hide-details-mode
+             (> win-width 60))
+  (let* ((str (concat (dirvish--file-attr-time f-name f-attrs)))
+         (face (or hl-face 'dirvish-file-time)))
+    (add-face-text-property 0 (length str) face t str)
+    `(right . ,str)))
 
 ;;;; Mode line segments
 
@@ -275,13 +284,13 @@ The value is a list with 3 elements:
   "Group name of file."
   (when-let* ((name (dirvish-prop :index))
               (attrs (dirvish-attribute-cache name :builtin))
-              (gid (and attrs (file-attribute-group-id attrs)))
+              (gid (file-attribute-group-id attrs))
               (gname (if (dirvish-prop :remote) gid (group-name gid))))
     (propertize gname 'face 'dirvish-file-group-id)))
 
 (dirvish-define-mode-line file-time
   "Last modification time of file."
-  (when-let* ((name (or (dirvish-prop :index) (dired-get-filename nil t)))
+  (when-let* ((name (dirvish-prop :index))
               (attrs (dirvish-attribute-cache name :builtin))
               (f-mtime (file-attribute-modification-time attrs))
               (time-string
@@ -293,7 +302,7 @@ The value is a list with 3 elements:
   "File size of files or file count of directories."
   (when-let* ((name (dirvish-prop :index))
               (attrs (dirvish-attribute-cache name :builtin))
-              (size (and attrs (dirvish--get-file-size-or-count name attrs))))
+              (size (dirvish--file-attr-size name attrs)))
     (format "%s" (propertize size 'face 'dirvish-file-size))))
 
 (dirvish-define-mode-line file-modes

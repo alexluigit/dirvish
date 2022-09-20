@@ -120,7 +120,7 @@ Ensure correct DIR when inside of a subtree."
         (dired-move-to-filename)))
     stop))
 
-(defun dirvish-subtree--prefix-length ()
+(defun dirvish-subtree--prefix ()
   "Calculate subtree prefix length at point."
   (* dirvish-subtree--prefix-unit-len (dirvish-subtree--depth)))
 
@@ -240,7 +240,8 @@ When CLEAR, remove all subtrees in the buffer."
         (ov (make-overlay (1+ l-beg) (1+ l-beg))))
     (when hl-face
       (add-face-text-property 0 1 hl-face t state-str))
-    (overlay-put ov 'after-string state-str) ov))
+    (overlay-put ov 'after-string state-str)
+    `(ov . ,ov)))
 
 ;;;###autoload
 (defun dirvish-subtree-up ()

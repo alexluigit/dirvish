@@ -72,7 +72,8 @@ The value should be a integer between 23 to 128."
                  (apply #'all-the-icons-icon-for-file f-str icon-attrs)))
          (icon-str (concat icon (propertize dirvish-icon-delimiter 'face hl-face)))
          (ov (make-overlay (1- f-beg) f-beg)))
-    (overlay-put ov 'after-string icon-str) ov))
+    (overlay-put ov 'after-string icon-str)
+    `(ov . ,ov)))
 
 (dirvish-define-attribute vscode-icon
   "File icons provided by `vscode-icon.el'."
@@ -93,7 +94,8 @@ The value should be a integer between 23 to 128."
     (overlay-put ov 'display icon)
     (overlay-put ov 'before-string (propertize " " 'face hl-face))
     (overlay-put ov 'after-string
-                 (propertize dirvish-icon-delimiter 'face hl-face)) ov))
+                 (propertize dirvish-icon-delimiter 'face hl-face))
+    `(ov . ,ov)))
 
 (provide 'dirvish-icons)
 ;;; dirvish-icons.el ends here

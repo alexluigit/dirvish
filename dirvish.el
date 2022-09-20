@@ -25,7 +25,7 @@
 (require 'transient)
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd--find "dirvish-fd")
-(declare-function dirvish-subtree--prefix-length "dirvish-subtree")
+(declare-function dirvish-subtree--prefix "dirvish-subtree")
 (declare-function dirvish-tramp--noselect "dirvish-tramp")
 (declare-function dirvish-tramp--preview-handler "dirvish-tramp")
 
@@ -35,7 +35,6 @@
 
 (defcustom dirvish-attributes '(file-size)
   "File attributes such as `file-size' showing in Dirvish file lines.
-You can get all available attributes in `dirvish--available-attrs'.
 See `dirvish-define-attribute'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
@@ -179,9 +178,9 @@ input for `dirvish-redisplay-debounce' seconds."
   '((dirvish-widgets  path symlink omit index free-space file-link-number
                       file-user file-group file-time file-size file-modes
                       file-inode-number file-device-number)
+    (dirvish-collapse collapse)
     (dirvish-vc       vc-state git-msg vc-diff vc-blame vc-log vc-info)
     (dirvish-media    audio image gif video epub pdf pdf-preface archive)
-    (dirvish-collapse collapse)
     (dirvish-icons    all-the-icons vscode-icon)
     (dirvish-subtree  subtree-state)
     (dirvish-yank     yank)))
@@ -356,46 +355,27 @@ following arguments:
 - `f-beg'   from `dired-move-to-filename'
 - `f-end'   from `dired-move-to-end-of-filename'
 - `f-str'   from (`buffer-substring' F-BEG F-END)
-- `f-wid'   from `(`string-width' F-STR)'
-- `f-dir'   from `dired-current-directory'
 - `f-name'  from `dired-get-filename'
 - `f-attrs' from `file-attributes'
 - `f-type'  from `file-directory-p' along with `file-symlink-p'
 - `l-beg'   from `line-beginning-position'
 - `l-end'   from `line-end-position'
-- `remain'  remained space (width) of current line
 - `hl-face' a face that is only passed in on current line
 
 DOCSTRING is the docstring for the attribute.  An optional
 `:width' keyword is used to declare the length of the attribute."
   (declare (indent defun) (doc-string 2))
   (let ((ov (intern (format "dirvish-%s-ov" name)))
-        (pred (intern (format "dirvish-attribute-%s-pred" name)))
         (render (intern (format "dirvish-attribute-%s-rd" name)))
-        (args '(f-beg f-end f-str f-wid f-dir f-name f-attrs f-type l-beg l-end remain hl-face))
+        (args '(f-beg f-end f-str f-name f-attrs f-type l-beg l-end hl-face))
         options)
     (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) options)))
     (setq options (reverse options))
     `(progn
-       (add-to-list
-        'dirvish--available-attrs
-        (cons ',name '(:doc ,docstring :width ,(plist-get options :width)
-                            :overlay ,ov :if ,pred :fn ,render)))
-       (cl-loop
-        with doc-head = "All available `dirvish-attributes'.
-This is a internal variable and should *NOT* be set manually."
-        with attr-docs = ""
-        with attrs = (seq-remove (lambda (i) (memq (car i) '(hl-line symlink-target)))
-                                 dirvish--available-attrs)
-        for (a-name . a-plist) in attrs
-        do (setq attr-docs (format "%s\n\n`%s': %s" attr-docs a-name
-                                   (plist-get a-plist :doc)))
-        finally (put 'dirvish--available-attrs 'variable-documentation
-                     (format "%s%s" doc-head attr-docs)))
-       (defun ,pred (dv) (ignore dv) ,(or (plist-get options :when) t))
-       (defun ,render ,args
-         (ignore ,@args)
-         (let ((ov ,@body)) (and ov (overlay-put ov ',ov t)))))))
+       (add-to-list 'dirvish--available-attrs
+                    (cons ',name '(,docstring ,(or (plist-get options :when) t)
+                                   ,render ,ov ,(plist-get options :width))))
+       (defun ,render ,args (ignore ,@args) ,@body))))
 
 (defmacro dirvish-attribute-cache (file attribute &rest body)
   "Get FILE's ATTRIBUTE from `dirvish--attrs-hash'.
@@ -575,56 +555,76 @@ See `dirvish--available-preview-dispatchers' for details."
    (setf (dv-preview-fns dv) (dirvish--preview-dps-validate dps))
    (setf (dv-attribute-fns dv)
          (cl-loop
-          for name in attrs
-          for attr = (cdr (assoc name dirvish--available-attrs)) collect
-          (cl-destructuring-bind
-              (&key overlay if fn width &allow-other-keys)
-              attr (list overlay if fn width))))))
+          for a in attrs collect (cdr (assoc a dirvish--available-attrs))))))
 
-(defun dirvish--render-attrs-1 (height width subtrees pos remote fns)
-  "HEIGHT WIDTH SUBTREES POS REMOTE FNS."
+(defun dirvish--render-attrs-1 (height width subtree pos remote fns ov align-to)
+  "HEIGHT WIDTH SUBTREE POS REMOTE FNS OV ALIGN-TO."
   (forward-line (- 0 height))
   (cl-dotimes (_ (* 2 height))
     (when (eobp) (cl-return))
     (let ((f-beg (dired-move-to-filename))
           (f-end (dired-move-to-end-of-filename t))
-          (l-beg (line-beginning-position))
-          (l-end (line-end-position))
-          (width (- width (if subtrees (dirvish-subtree--prefix-length) 0)))
-          f-str f-wid f-dir f-name f-attrs f-type hl-face)
+          (l-beg (line-beginning-position)) (l-end (line-end-position))
+          (f-wid 0) f-str f-name f-attrs f-type hl-face left right)
       (setq hl-face
             (and (eq (or f-beg l-beg) pos) dirvish-hide-cursor 'dirvish-hl-line))
       (when f-beg
-        (setq f-str (buffer-substring f-beg f-end))
-        (setq f-wid (string-width f-str))
-        (setq f-dir (dired-current-directory))
-        (setq f-name (concat f-dir f-str))
-        (setq f-attrs (dirvish-attribute-cache f-name :builtin
-                        (unless remote (file-attributes f-name))))
-        (setq f-type (dirvish-attribute-cache f-name :type
+        (setq f-str (buffer-substring f-beg f-end)
+              f-wid (string-width f-str)
+              f-name (concat (dired-current-directory) f-str)
+              f-attrs (dirvish-attribute-cache f-name :builtin
+                        (unless remote (file-attributes f-name)))
+              f-type (dirvish-attribute-cache f-name :type
                        (let ((ch (progn (back-to-indentation) (char-after))))
                          `(,(if (eq ch 100) 'dir 'file) . nil))))
         (unless (get-text-property f-beg 'mouse-face)
           (dired-insert-set-properties l-beg l-end)))
-      (dolist (fn (if f-beg fns '(dirvish-attribute-hl-line-rd)))
-        (funcall fn f-beg f-end f-str f-wid f-dir f-name
-                 f-attrs f-type l-beg l-end width hl-face)))
+      (cl-loop
+       for fn in (if f-beg fns '(dirvish-attribute-hl-line-rd))
+       for (k . v) = (funcall fn f-beg f-end f-str f-name
+                              f-attrs f-type l-beg l-end hl-face)
+       do (pcase k ('ov (overlay-put v ov t))
+                 ('left (push v left)) ('right (push v right)))
+       finally
+       (prog1 (unless (or left right) (cl-return))
+         (let* ((right (mapconcat #'concat right "")) (len1 (length right))
+                (left (mapconcat #'concat left ""))
+                (remain (- width (if subtree (dirvish-subtree--prefix) 0) len1))
+                (len2 (min (length left) (max 0 (- remain f-wid 1))))
+                (ovl (make-overlay f-end f-end))
+                (r-pos (if (> remain f-wid) l-end
+                         (let ((end (+ f-beg remain))
+                               (offset (- f-wid (length f-str))))
+                           (- end offset))))
+                (spec `(space :align-to (- right-fringe ,len1 ,align-to)))
+                (spc (propertize " " 'display spec 'face hl-face))
+                (ovr (make-overlay r-pos r-pos)))
+           (overlay-put ovl 'dirvish-l-end-ov t)
+           (overlay-put ovl 'after-string (substring left 0 len2))
+           (overlay-put ovr 'dirvish-r-end-ov t)
+           (overlay-put ovr 'after-string (concat spc right))))))
     (forward-line 1)))
 
-(defun dirvish--render-attrs (&optional dv)
-  "Render attributes in DV's dirvish buffer."
+(defun dirvish--render-attrs (&optional dv clear)
+  "Render or CLEAR attributes in DV's dirvish buffer."
   (cl-loop with dv = (or dv (dirvish-curr)) with fns = ()
-           with remote = (dirvish-prop :remote)
+           with remote = (dirvish-prop :remote) with gui = (dirvish-prop :gui)
            with st = (bound-and-true-p dirvish-subtree--overlays)
            with height = (frame-height) ; use `window-height' here breaks `dirvish-narrow'
-           with width = (- (window-width) (if (dirvish-prop :gui) 1 2))
-           for (ov pred fn wd) in (dv-attribute-fns dv)
+           with width = (- (window-width) (if gui 1 2))
+           for (_ pred render ov wd) in (dv-attribute-fns dv)
            do (remove-overlays (point-min) (point-max) ov t)
-           when (funcall pred dv) do
-           (progn (setq width (- width (or (eval wd) 0))) (push fn fns))
-           finally (with-silent-modifications
-                     (save-excursion (dirvish--render-attrs-1
-                                      height width st (point) remote fns)))))
+           when (eval pred `((dv . ,dv) (win-width . ,width)))
+           do (setq width (- width (or (eval wd) 0))) (push render fns)
+           initially
+           (remove-overlays (point-min) (point-max) 'dirvish-l-end-ov t)
+           (remove-overlays (point-min) (point-max) 'dirvish-r-end-ov t)
+           finally
+           (with-silent-modifications
+             (unless clear
+               (save-excursion
+                 (dirvish--render-attrs-1 height width st (point)
+                                          remote fns ov (if gui 0 2)))))))
 
 ;;;; Advices
 
@@ -663,12 +663,11 @@ buffer, it defaults to filename under the cursor when it is nil."
 
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
-  (dired-move-to-end-of-filename t)
+  (when dirvish-hide-cursor (dired-move-to-end-of-filename t))
   (setq-local cursor-type 'hollow)
   (when (boundp 'evil-normal-state-cursor)
     (setq-local evil-normal-state-cursor 'hollow))
-  (dolist (ov (mapcar #'car (dv-attribute-fns (dirvish-curr))))
-    (remove-overlays (point-min) (point-max) ov t))
+  (dirvish--render-attrs nil 'clear)
   (remove-hook 'window-configuration-change-hook #'dirvish-winconf-change-h t)
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
 
@@ -881,7 +880,7 @@ When PROC finishes, fill preview buffer with process result."
 This attribute is enabled when `dirvish-hide-cursor' is non-nil."
   (when hl-face
     (let ((ov (make-overlay l-beg (1+ l-end))))
-      (overlay-put ov 'face hl-face) ov)))
+      (overlay-put ov 'face hl-face) `(ov . ,ov))))
 
 (dirvish-define-attribute symlink-target
   "Hide symlink target."
@@ -889,7 +888,8 @@ This attribute is enabled when `dirvish-hide-cursor' is non-nil."
             (and dired-hide-details-mode
                  (default-value 'dired-hide-details-hide-symlink-targets)))
   (when (< (+ f-end 4) l-end)
-    (let ((ov (make-overlay f-end l-end))) (overlay-put ov 'invisible t) ov)))
+    (let ((ov (make-overlay f-end l-end)))
+      (overlay-put ov 'invisible t) `(ov . ,ov))))
 
 (defun dirvish--mode-line-fmt-setter (left right &optional header)
   "Set the `dirvish--mode-line-fmt'.

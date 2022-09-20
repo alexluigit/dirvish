@@ -99,28 +99,20 @@ vc-hooks.el) for detail explanation of these states."
          (display (and face `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
          (gutter-str (and display (propertize "!" 'display display))) ov)
     (when gutter-str
-      (prog1 (setq ov (make-overlay f-beg f-beg))
+      (prog1 `(ov . ,(setq ov (make-overlay f-beg f-beg)))
         (overlay-put ov 'before-string gutter-str)))))
 
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
   :when (and (dirvish-prop :root)
-            (eq (dirvish-prop :vc-backend) 'Git)
-            (not (dirvish-prop :remote))
-            (>= (window-width) 40))
+             (eq (dirvish-prop :vc-backend) 'Git)
+             (not (dirvish-prop :remote))
+             (> win-width 65))
   (let* ((info (dirvish-attribute-cache f-name :git-msg))
          (face (or hl-face 'dirvish-git-commit-message-face))
-         (str (substring (concat "  " info) 0 -1))
-         (remain (max (- remain f-wid) 0))
-         (len (length str))
-         (overflow (< remain len))
-         (p-end (if overflow remain len))
-         (p-beg (min p-end 2))
-         (ov (make-overlay f-end f-end)))
-    (and overflow (setq str (substring str 0 remain)))
-    (when hl-face (add-face-text-property 0 p-beg hl-face t str))
-    (add-face-text-property p-beg p-end face t str)
-    (overlay-put ov 'after-string str) ov))
+         (str (concat (substring (concat "  " info) 0 -1) " ")))
+    (add-face-text-property 0 (length str) face t str)
+    `(left . ,str)))
 
 (dirvish-define-preview vc-diff (ext)
   "Use output of `vc-diff' as preview."
