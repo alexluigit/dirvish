@@ -334,10 +334,11 @@ value 16, let the user choose the root directory of their search."
       (when (eq input 'cancelled)
         (cl-return-from dirvish-fd-proc-s (kill-buffer buf)))
       (let ((bufname (dirvish-fd--bufname input dir dv)))
-        (rename-buffer bufname)
         (dirvish-prop :root bufname)
         (setf (dv-index dv) (cons bufname buf))
-        (push (cons bufname buf) (dv-roots dv))))))
+        (push (cons bufname buf) (dv-roots dv))
+        (dirvish--kill-buffer (get-buffer bufname))
+        (rename-buffer bufname)))))
 
 (defun dirvish-fd--narrow (&optional input glob)
   "Filter the subdir with regexs composed from INPUT.
