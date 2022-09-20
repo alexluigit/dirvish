@@ -227,7 +227,7 @@ When CLEAR, remove all subtrees in the buffer."
 
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
-  :when (and (dirvish-prop :root)
+  :when (and (eq major-mode 'dired-mode)
              (or dirvish-subtree-always-show-state
                  dirvish-subtree--overlays))
   :width 1

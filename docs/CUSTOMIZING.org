@@ -113,17 +113,21 @@ For now Dirvish ships with these attributes:
 + ~git-msg~: Append git commit message to filename.
 + ~vc-state~: The version control state at left fringe.
 + ~file-size~: Show file size or directories file count at right fringe.
++ ~file-time~ (newly added): Show file modification time before the file name.
 
 Here is an overview of how does these attributes look like:
 
 [[https://user-images.githubusercontent.com/16313743/178137697-3ff4ca5a-aaf3-44d4-b644-9e9a2e7f911a.svg][https://user-images.githubusercontent.com/16313743/178137697-3ff4ca5a-aaf3-44d4-b644-9e9a2e7f911a.svg]]
 
+*NOTE*: ~file-time~ was added recently (v2.0+), hence not in the screenshot.
+
 To achieve this, the only thing you need to do is put these symbols into
 ~dirvish-attributes~ like this (order doesn't matter):
 
 #+begin_src emacs-lisp
-;; Don't worry, Dirvish is still performant even you enable all these attributes
-(setq dirvish-attributes '(vc-state subtree-state all-the-icons collapse git-msg file-size))
+  ;; Don't worry, Dirvish is still performant even you enable all these attributes
+  (setq dirvish-attributes
+        '(vc-state subtree-state all-the-icons collapse git-msg file-time file-size))
 #+end_src
 
 * Mode line | Header line

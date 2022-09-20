@@ -69,11 +69,11 @@ vc-hooks.el) for detail explanation of these states."
          (buf (current-buffer))
          (old-layout (dv-layout dv))
          (new-layout (unless old-layout (dv-last-fs-layout dv)))
-         (dv-dps (dv-preview-dispatchers dv))
-         (new-dps (seq-difference dv-dps '(vc-diff vc-log vc-blame))))
+         (new-dps (seq-difference
+                   dirvish-preview-dispatchers '(vc-diff vc-log vc-blame))))
     (when value (push (intern (format "%s" value)) new-dps))
-    (setf (dv-preview-dispatchers dv) new-dps)
-    (dirvish--refresh-slots dv)
+    (setq-local dirvish--working-preview-dispathchers
+                (dirvish--preview-dps-validate new-dps))
     (if (not new-layout)
         (dirvish-preview-update dv)
       (quit-window nil (dv-root-window dv))
@@ -91,8 +91,7 @@ vc-hooks.el) for detail explanation of these states."
 
 (dirvish-define-attribute vc-state
   "The version control state at left fringe."
-  :when (and (dirvish-prop :root)
-             (dirvish-prop :vc-backend)
+  :when (and (dirvish-prop :vc-backend)
              (or (set-window-fringes nil 5 1) t))
   (let* ((state (dirvish-attribute-cache f-name :vc-state))
          (face (alist-get state dirvish-vc-state-face-alist))
@@ -104,8 +103,8 @@ vc-hooks.el) for detail explanation of these states."
 
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
-  :when (and (dirvish-prop :root)
-             (eq (dirvish-prop :vc-backend) 'Git)
+  :index 1
+  :when (and (eq (dirvish-prop :vc-backend) 'Git)
              (not (dirvish-prop :remote))
              (> win-width 65))
   (let* ((info (dirvish-attribute-cache f-name :git-msg))
@@ -191,7 +190,7 @@ vc-hooks.el) for detail explanation of these states."
   "Help menu for features in `dirvish-vc'."
   :init-value
   (lambda (o) (oset o value (mapcar (lambda (d) (format "%s" d))
-                               (dv-preview-dispatchers (dirvish-curr)))))
+                               dirvish-preview-dispatchers)))
   [:description
    (lambda () (dirvish--format-menu-heading "Version control commands"))
    ("v" dirvish-vc-preview-ifx

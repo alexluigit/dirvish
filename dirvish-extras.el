@@ -53,7 +53,7 @@
 (cl-defmethod transient-init-value ((obj dirvish-attribute))
   "Initialize value for DIRVISH-ATTRIBUTE instance OBJ."
   (let ((sym (oref obj variable)))
-    (oset obj value (if (memq sym (dv-attributes (dirvish-curr))) "+" "-"))))
+    (oset obj value (if (memq sym dirvish-attributes) "+" "-"))))
 
 (cl-defmethod transient-infix-read ((obj dirvish-attribute))
   "Read value from DIRVISH-ATTRIBUTE instance OBJ."
@@ -61,17 +61,15 @@
 
 (cl-defmethod transient-infix-set ((obj dirvish-attribute) value)
   "Set relevant value in DIRVISH-ATTRIBUTE instance OBJ to VALUE."
-  (let* ((dv (dirvish-curr))
-         (item (oref obj variable))
-         (curr-val (dv-attributes dv))
-         (new-val (if (equal value "+") (push item curr-val) (remq item curr-val))))
-    (cl-loop for buf in (mapcar #'cdr (dv-roots dv)) do
-             (with-current-buffer buf
-               (dolist (ov (mapcar #'car (dv-attribute-fns dv)))
-                 (remove-overlays (point-min) (point-max) ov t))))
-    (setf (dv-attributes dv) new-val)
-    (dirvish--refresh-slots dv)
-    (dirvish-update-body-h)))
+  (let* ((item (oref obj variable))
+         (old-val (purecopy dirvish-attributes))
+         (new-val (if (equal value "+") (cl-pushnew item old-val)
+                    (remq item old-val)))
+         (attrs (append '(hl-line symlink-target) new-val)))
+    (mapc #'require '(dirvish-widgets dirvish-vc dirvish-collapse))
+    (dirvish--render-attrs 'clear)
+    (setq-local dirvish--working-attrs (dirvish--attrs-expand attrs))
+    (dirvish--render-attrs)))
 
 (defun dirvish-find-file-true-path ()
   "Open truename of (maybe) symlink file under the cursor."
@@ -302,6 +300,7 @@ FILESET defaults to `dired-get-marked-files'."
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-extras" nil t)
 (defcustom dirvish-ui-setup-items
   '(("s"  file-size      attr     "File size")
+    ("t"  file-time      attr     "File modification time")
     ("c"  collapse       attr     "Collapse unique nested paths"
      (not (dirvish-prop :remote)))
     ("v"  vc-state       attr     "Version control state"
