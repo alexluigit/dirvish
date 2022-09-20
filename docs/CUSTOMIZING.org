@@ -52,13 +52,6 @@ correctly, there are a few rules here:
    If you insist on using the ~dired-sort-toggle-or-edit~ command, you'll have
    to obey the above rules when entering the ls flags.
 
-** Isolated sessions
-
-A Dirvish session holds a set of Dired buffers and preview buffers along with
-some session independent settings such as header string and window layout, etc.
-This makes it easy for Dirvish to adapt itself towards different file management
-tasks.
-
 ** TRAMP integration
 
 Dirvish integrates TRAMP at its core.  But most of the features (file preview,
@@ -73,19 +66,14 @@ see the sample config below.
 
 ** Buffer management
 
-=dired= command and friends create new Dired buffers, hence navigating through
-the file system always end up with a lot of Dired buffers. To avoid this, one
-can either replace ~dired-find-file~ with ~dired-find-alternate-file~ or enable
-~dired-kill-when-opening-new-dired-buffer~, but they introduce two new issues:
+A Dirvish session holds a set of Dired buffers and preview buffers that are
+/always/ reused during the session. The ~dired-find-alternate-file~ command and
+~dired-kill-when-opening-new-dired-buffer~ option is ignored in Dirvish.
 
-- Dired buffers in other windows/tabs/frames might be killed unexpectedly
-- Dired buffers are no longer reusable
+Open a file using ~dired-find-file~ quits the session. Alternatively, you can
+quit it explicitly using ~dirvish-quit~ (bound to =q= by default) command.
 
-As a comparison, the directory/preview buffers are reused during a Dirvish
-session and get killed when user explicitly exit the session.
-
-The buffer holding the last entry of the session won't get killed on session
-exit if ~dirvish-reuse-session~ is enabled (disabled by default).
+See: [[https://github.com/alexluigit/dirvish/discussions/102#discussioncomment-3205349][the rationale behind buffer management in Dirvish]]
 
 ** Hooks
 

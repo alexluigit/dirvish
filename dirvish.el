@@ -508,9 +508,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
              (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-name dv)) bn)
              do (dirvish--kill-buffer b))
     (setq dirvish--parent-hash (make-hash-table :test #'equal))
-    (cond ((> (length (dirvish--find-reusable (dv-type dv))) 1)
-           (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv)))
-          (dirvish-reuse-session (setf (dv-winconf dv) nil))
+    (cond (dirvish-reuse-session (setf (dv-winconf dv) nil))
           (t (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv))))
     (setq dirvish--this nil)))
 
@@ -1225,7 +1223,12 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 ;;;; Commands
 
 (defun dirvish-quit ()
-  "Quit current Dirvish session."
+  "Quit current Dirvish session.
+If the session is a full-framed one, the window layout is
+restored.  If `dirvish-reuse-session' is nil, all Dired buffers
+in the session are killed, otherwise only the invisible Dired
+buffers within the session are killed and the Dired buffer(s) in
+the selected window are buried."
   (interactive)
   (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
         (win (selected-window)) (frame (selected-frame)))
