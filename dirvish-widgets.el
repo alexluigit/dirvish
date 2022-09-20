@@ -68,7 +68,7 @@ The value is a list with 3 elements:
   :group 'dirvish)
 
 (defface dirvish-file-time
-  '((t (:inherit font-lock-string-face)))
+  '((t (:inherit shadow :underline nil :italic nil)))
   "Face used for file access/modify/change time mode-line segment."
   :group 'dirvish)
 
@@ -119,7 +119,10 @@ The value is a list with 3 elements:
 (defun dirvish--file-attr-size (name attrs)
   "Get file size of file NAME from ATTRS."
   (cond ((dirvish-prop :remote)
-         (substring (format "      %s" (or (file-attribute-size attrs) "?")) -6))
+         (substring (format "      %s%s"
+                            (or (file-attribute-size attrs) "?")
+                            (if (dirvish-prop :gui) " " ""))
+                    -6))
         ((stringp (file-attribute-type attrs))
          (let ((ct (dirvish-attribute-cache name :f-count
                      (condition-case nil
@@ -168,7 +171,7 @@ The value is a list with 3 elements:
   :index 1
   :when (and (eq major-mode 'dired-mode)
              dired-hide-details-mode
-             (> win-width 30))
+             (> win-width 25))
   (let* ((str (concat (dirvish--file-attr-size f-name f-attrs)))
          (face (or hl-face 'dirvish-file-size)))
     (add-face-text-property 0 (length str) face t str)

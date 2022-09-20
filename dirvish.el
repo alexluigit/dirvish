@@ -276,14 +276,6 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--normalize-util-windows (windows)
-  "Normalize the size of utility WINDOWS, like header line window."
-  (when (and (display-graphic-p) (> emacs-major-version 28))
-    (dolist (win windows)
-      (let ((window-safe-min-height 0)
-            (window-resize-pixelwise t))
-        (fit-window-to-buffer win 2 1)))))
-
 (defun dirvish--kill-buffer (buffer)
   "Kill BUFFER without side effects."
   (and (buffer-live-p buffer)
@@ -441,21 +433,6 @@ This is a internal variable and should *NOT* be set manually."
         finally (put 'dirvish--available-mode-line-segments 'variable-documentation
                         (format "%s%s" doc-head seg-docs)))
        (defun ,ml-name (dv) ,docstring (ignore dv) ,@body))))
-
-(defun dirvish-get-all (slot &optional all-frame flatten)
-  "Gather slot value SLOT of all Dirvish in `dirvish--session-hash'.
-If ALL-FRAME is non-nil, collect for all frames.
-If FLATTEN is non-nil, collect them as a flattened list."
-  (cl-loop
-   with dv-slot = (intern (format "dv-%s" slot))
-   with h-vals = (hash-table-values dirvish--session-hash)
-   with s-vals = (mapcar dv-slot h-vals)
-   for h-val in h-vals
-   when (or all-frame (eq (plist-get (dv-scopes h-val) :frame)
-                          (selected-frame)))
-   for s-val in s-vals
-   if flatten append (delete-dups (flatten-tree s-val))
-   else collect s-val))
 
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
@@ -1175,13 +1152,12 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
   (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
   (let* ((layout (dv-layout dv))
-         (w-order (and layout (dirvish--window-split-order)))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
                    (header (side . above) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))
                    (footer (side . below) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))))
-         maybe-abnormal)
+         (w-order (and layout (dirvish--window-split-order))) util-windows)
     (setq dirvish--selected-window (selected-window))
     (dirvish--init-util-buffers dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
@@ -1190,13 +1166,15 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
              (args (alist-get pane w-args))
              (win (display-buffer buf `(dirvish--display-buffer . ,args))))
         (cond ((eq pane 'preview) (setf (dv-preview-window dv) win))
-              (t (set-window-dedicated-p win t) (push win maybe-abnormal)))
+              (t (set-window-dedicated-p win t) (push win util-windows)))
         (set-window-buffer win buf)))
     (dirvish--create-parent-windows dv)
     (let ((h-fmt (or (dirvish-prop :cus-header) dirvish--header-line-fmt)))
       (with-current-buffer (dirvish--util-buffer 'header dv)
         (setq header-line-format h-fmt))
-      (dirvish--normalize-util-windows maybe-abnormal)
+      (when (and (display-graphic-p) (> emacs-major-version 28))
+        (let ((window-safe-min-height 0) (window-resize-pixelwise t))
+          (dolist (win util-windows) (fit-window-to-buffer win 2 1))))
       (unless (dirvish-prop :cached)
         (dirvish-data-for-dir default-directory (current-buffer) t)
         (dirvish-prop :cached t)))

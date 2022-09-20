@@ -35,8 +35,7 @@ The value can be a symbol or a function that returns a fileset."
   :group 'dirvish
   :type '(choice (const :tag "Marked files in current buffer" buffer)
                  (const :tag "Marked files in current session" session)
-                 (const :tag "Marked files in all session within selected frame" frame)
-                 (const :tag "Marked files in all sessions" all)
+                 (const :tag "Marked files in all Dired buffers" all)
                  (function :tag "Custom function")))
 
 (defcustom dirvish-yank-auto-unmark t
@@ -120,10 +119,10 @@ RANGE can be `buffer', `session', `frame', `all'."
     with buffers = (pcase range
                      ('buffer (list (current-buffer)))
                      ('session (mapcar #'cdr (dv-roots (dirvish-curr))))
-                     ('frame (cl-loop for i in (reverse (dirvish-get-all 'roots nil t))
-                                      by 'cddr collect i))
-                     ('all (cl-loop for i in (reverse (dirvish-get-all 'roots t t))
-                                    by 'cddr collect i)))
+                     ('all (cl-loop for b in (buffer-list)
+                                    when (with-current-buffer b
+                                           (eq major-mode 'dired-mode))
+                                    collect b)))
     for buffer in (seq-filter #'buffer-live-p buffers) append
     (with-current-buffer buffer
       (when (save-excursion (goto-char (point-min))
@@ -189,8 +188,9 @@ RANGE can be `buffer', `session', `frame', `all'."
     (process-put proc 'dv (dirvish-curr))
     (set-process-sentinel proc #'dirvish-yank--sentinel)
     (when dirvish-yank-auto-unmark
-      (cl-loop for buf in (reverse (dirvish-get-all 'roots t t)) by 'cddr
-               do (with-current-buffer buf (dired-unmark-all-marks))))
+      (cl-loop for buf in (buffer-list)
+               do (with-current-buffer buf
+                    (when (eq major-mode 'dired) (dired-unmark-all-marks)))))
     (cl-incf dirvish-yank-task-counter)))
 
 (defun dirvish-yank--newbase (base-name fileset dest)
