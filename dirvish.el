@@ -62,12 +62,13 @@ the fallback dispatcher named `default' is used.  For details see
 (defcustom dirvish-default-layout '(1 0.11 0.55)
   "Default layout recipe for fullscreen Dirvish sessions.
 The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH).
-DEPTH controls the number of windows displaying parent directories.
-  It can be 0 if you don't need the parent directories.
-MAX-PARENT-WIDTH controls the max width allocated to each parent windows.
-PREVIEW-WIDTH controls the width allocated to preview window.
-The default value gives us an 1:3:5 (approximately) pane ratio.
-Also see `dirvish-layout-recipes' in `dirvish-extras.el'."
+DEPTH controls the number of windows displaying parent
+directories.  It can be 0 if you don't need the parent
+directories.  MAX-PARENT-WIDTH controls the max width allocated
+to each parent windows.  PREVIEW-WIDTH controls the width
+allocated to preview window.  The default value provides a
+1:3:5 (approximately) pane ratio.  Also see
+`dirvish-layout-recipes' in `dirvish-extras.el'."
   :group 'dirvish :type '(list (integer :tag "number of parent windows")
                                (float :tag "max width of parent windows")
                                (float :tag "width of preview windows")))
@@ -145,7 +146,7 @@ ARGS is issued to open the file outside of Emacs.  The special
 placeholder \"%f\" in the ARGS is replaced by the FILENAME at
 runtime.  Set it to nil disables this feature."
   :group 'dirvish
-  :type '(alist :key-type ((repeat string) :tag "File mimetype or extensions")
+  :type '(alist :key-type ((repeat string) :tag "File extensions")
                 :value-type ((repeat string) :tag "External command and args")))
 
 (defcustom dirvish-reuse-session t

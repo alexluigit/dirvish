@@ -38,9 +38,10 @@ should return a list of regular expressions."
   (setq dirvish-narrow--subdir-alist '())
   (when (bound-and-true-p dirvish-subtree--overlays)
     (dirvish-subtree--revert t))
-  (with-current-buffer (window-buffer (minibuffer-selected-window))
-    (cl-loop for (dir . beg) in dired-subdir-alist do
-             (dirvish-narrow--index-subdir dir beg))))
+  (save-excursion
+    (with-current-buffer (window-buffer (minibuffer-selected-window))
+      (cl-loop for (dir . beg) in dired-subdir-alist do
+               (dirvish-narrow--index-subdir dir beg)))))
 
 (defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
@@ -48,11 +49,10 @@ should return a list of regular expressions."
     (let* ((input (minibuffer-contents-no-properties))
            (regex-list (funcall dirvish-narrow-regex-builder input)))
       (with-current-buffer (window-buffer (minibuffer-selected-window))
-        (cl-loop for idx from 0
-                 for (dir . pos) in dired-subdir-alist
-                 do (dirvish-narrow--filter-subdir dir pos regex-list idx))
-        (goto-char (window-start))
-        (dired-goto-file (dirvish-prop :index))
+        (save-excursion
+          (cl-loop for idx from 0
+                   for (dir . pos) in dired-subdir-alist
+                   do (dirvish-narrow--filter-subdir dir pos regex-list idx)))
         (dirvish-update-body-h)))))
 
 (defun dirvish-narrow--revert ()
@@ -76,8 +76,8 @@ should return a list of regular expressions."
       (forward-line 1))
     (push (cons subdir (reverse files)) dirvish-narrow--subdir-alist)))
 
-(defun dirvish-narrow--filter-subdir (dir pos regex-list idx)
-  "Filter the subdir DIR in POS with REGEX-LIST.
+(defun dirvish-narrow--filter-subdir (dir pos regexs idx)
+  "Filter the subdir DIR in POS with REGEXS.
 IDX the index of DIR in `dired-subdir-alist'."
   (goto-char pos)
   (let* ((files (alist-get dir dirvish-narrow--subdir-alist nil nil #'equal))
@@ -86,19 +86,17 @@ IDX the index of DIR in `dired-subdir-alist'."
          (beg (progn (forward-line offset) (point)))
          buffer-read-only)
     (delete-region beg end)
-    (if (not regex-list)
+    (if (not regexs)
         (cl-loop for (_ . line) in files do (insert line))
-      (cl-loop for (file . line) in files do
-               (when (cl-loop for regex in regex-list
-                              thereis (string-match regex file))
-                 (insert line))))))
+      (cl-loop for (file . line) in files
+               unless (cl-loop for regex in regexs
+                               thereis (not (string-match regex file)))
+               do (insert line)))))
 
 (defun dirvish-narrow-minibuffer-setup-h ()
   "Minibuffer setup function for `dirvish-narrow'."
   (with-current-buffer (window-buffer (minibuffer-selected-window))
-    (if (>= (line-number-at-pos (point-max)) (frame-height))
-        (goto-char (window-start))
-      (dired-goto-file (dirvish-prop :index)))
+    (goto-char (dirvish-prop :content-begin))
     (dirvish-update-body-h))
   (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
 
@@ -112,7 +110,7 @@ IDX the index of DIR in `dired-subdir-alist'."
     (minibuffer-with-setup-hook #'dirvish-narrow-minibuffer-setup-h
       (unwind-protect
           (setq final-input (read-from-minibuffer "Focus on files: "))
-        (when (eq (length final-input) 0) (dirvish-narrow--revert))
+        (when (= (length final-input) 0) (dirvish-narrow--revert))
         (dired-goto-file old-f)))))
 
 (provide 'dirvish-narrow)
