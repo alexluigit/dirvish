@@ -39,7 +39,7 @@
 This value is passed to function `format-time-string'."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-path-separators '(" ⌂ " " ∀ " " ⋗ ")
+(defcustom dirvish-path-separators '("  ⌂" "  ∀" " ⋗ ")
   "Separators in path mode line segment.
 The value is a list with 3 elements:
 - icon for home directory [~]
@@ -201,10 +201,11 @@ The value is a list with 3 elements:
 
 (dirvish-define-mode-line path
   "Path of file under the cursor."
-  (let* ((index (dired-current-directory))
+  (let* ((directory-abbrev-alist nil) ; TODO: support custom `directory-abbrev-alist'
+         (index (dired-current-directory))
          (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow))
-         (abvname (abbreviate-file-name (file-local-name index)))
          (rmt (dirvish-prop :remote))
+         (abvname (if rmt (file-local-name index) (abbreviate-file-name index)))
          (host (propertize (if rmt (concat " " (substring rmt 1)) "")
                            'face 'font-lock-builtin-face))
          (segs (nbutlast (split-string abvname "/")))
@@ -220,9 +221,7 @@ The value is a list with 3 elements:
                                   "%s%s" (or rmt "")
                                   (mapconcat #'concat (seq-take segs idx) "/"))
                         for s in (cdr segs) concat
-                        (format "%s%s"
-                                (if (eq idx 2) ""
-                                  (nth 2 dirvish-path-separators))
+                        (format "%s%s" (nth 2 dirvish-path-separators)
                                 (dirvish--register-path-seg s sp face)))))
     (replace-regexp-in-string "%" "%%%%" (format "%s%s%s " host scope path))))
 
