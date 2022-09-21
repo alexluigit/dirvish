@@ -1022,7 +1022,11 @@ Dirvish sets `revert-buffer-function' to this function."
 LEVEL is the depth of current window."
   (let ((index (directory-file-name index))
         (buf (dirvish--util-buffer (format "parent-%s" level) dv nil t))
-        (str (or (gethash dir dirvish--parent-hash) (dirvish-readin-dir dir))))
+        (str (or (gethash dir dirvish--parent-hash) (dirvish-readin-dir dir)))
+        (attrs (append
+                '(hl-line symlink-target)
+                (cond ((memq 'all-the-icons dirvish-attributes) '(all-the-icons))
+                      ((memq 'vscode-icon dirvish-attributes) '(vscode-icon))))))
     (with-current-buffer buf
       (dirvish-directory-view-mode)
       (dirvish-prop :dv (dv-name dv))
@@ -1037,7 +1041,8 @@ LEVEL is the depth of current window."
       (font-lock-mode 1)
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--hide-cursor)
-      (setq-local dirvish--attrs-hash (make-hash-table))
+      (setq-local dirvish--attrs-hash (make-hash-table)
+                  dirvish--working-attrs (dirvish--attrs-expand attrs))
       (dirvish--render-attrs) buf)))
 
 (defun dirvish--create-parent-windows (dv)

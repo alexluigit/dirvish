@@ -169,9 +169,7 @@ The value is a list with 3 elements:
 (dirvish-define-attribute file-size
   "File size or directories file count at right fringe."
   :index 1
-  :when (and (eq major-mode 'dired-mode)
-             dired-hide-details-mode
-             (> win-width 25))
+  :when (and dired-hide-details-mode (> win-width 25))
   (let* ((str (concat (dirvish--file-attr-size f-name f-attrs)))
          (face (or hl-face 'dirvish-file-size)))
     (add-face-text-property 0 (length str) face t str)
@@ -179,9 +177,7 @@ The value is a list with 3 elements:
 
 (dirvish-define-attribute file-time
   "File's modified time at right fringe before the file size."
-  :when (and (eq major-mode 'dired-mode)
-             dired-hide-details-mode
-             (> win-width 60))
+  :when (and dired-hide-details-mode (> win-width 60))
   (let* ((str (concat (dirvish--file-attr-time f-name f-attrs)))
          (face (or hl-face 'dirvish-file-time)))
     (add-face-text-property 0 (length str) face t str)
