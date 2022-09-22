@@ -24,10 +24,9 @@
 (require 'dired)
 (require 'transient)
 (declare-function ansi-color-apply-on-region "ansi-color")
-(declare-function dirvish-fd--find "dirvish-fd")
-(declare-function dirvish-subtree--prefix "dirvish-subtree")
-(declare-function dirvish-tramp--noselect "dirvish-tramp")
-(declare-function dirvish-tramp--preview-handler "dirvish-tramp")
+(declare-function dirvish-fd-find "dirvish-fd")
+(declare-function dirvish-subtree-prefix "dirvish-subtree")
+(declare-function dirvish-noselect-tramp "dirvish-extras")
 
 ;;;; User Options
 
@@ -502,7 +501,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
            with fmt = "[Dirvish]: install '%s' executable to preview %s files.
 See `dirvish--available-preview-dispatchers' for details."
            with dp-fmt = "dirvish-%s-preview-dp"
-           for dp in (append '(tramp disable) dps '(default))
+           for dp in (append '(disable) dps '(default))
            for info = (alist-get dp dirvish--available-preview-dispatchers)
            for requirements = (plist-get info :require)
            for met = t
@@ -571,7 +570,7 @@ See `dirvish--available-preview-dispatchers' for details."
        (prog1 (unless (or left right) (cl-return))
          (let* ((right (mapconcat #'concat right "")) (len1 (length right))
                 (left (mapconcat #'concat left ""))
-                (remain (- width (if subtree (dirvish-subtree--prefix) 0) len1))
+                (remain (- width (if subtree (dirvish-subtree-prefix) 0) len1))
                 (len2 (min (length left) (max 0 (- remain f-wid 1))))
                 (ovl (make-overlay f-end f-end))
                 (r-pos (if (> remain f-wid) l-end
@@ -619,7 +618,7 @@ buffer, it defaults to filename under the cursor when it is nil."
           (unless dired-auto-revert-buffer
             switch-to-buffer-preserve-window-point))
          (entry (or entry (dired-get-filename)))
-         (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd--find entry))
+         (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd-find entry))
                        ((file-directory-p entry) (dired-noselect entry)))))
     (if buffer (dirvish-save-dedication (switch-to-buffer buffer))
       (let* ((ext (downcase (or (file-name-extension entry) "")))
@@ -738,11 +737,6 @@ buffer, it defaults to filename under the cursor when it is nil."
       (when-let ((dv (dirvish-curr))) (dirvish--build dv)))))
 
 ;;;; Preview
-
-(dirvish-define-preview tramp (file _ dv)
-  "Preview files with `ls' or `head' for tramp files."
-  (when-let ((vec (dirvish-prop :tramp)))
-    (dirvish-tramp--preview-handler dv file vec)))
 
 (dirvish-define-preview disable (file ext)
   "Disable preview in some cases."
@@ -957,6 +951,9 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (defun dirvish-init-dired-buffer ()
   "Initialize a Dired buffer for dirvish."
+  (when (file-remote-p default-directory)
+    (setq-local dirvish--working-preview-dispathchers
+                '(dirvish-tramp-preview-dp)))
   (use-local-map dirvish-mode-map)
   (dirvish--hide-cursor)
   (dirvish--hide-dired-header)
@@ -987,8 +984,8 @@ Dirvish sets `revert-buffer-function' to this function."
     (if this (set-window-dedicated-p nil nil) (setf (dv-layout dv) nil))
     (when new-buffer-p
       (if (not remote) (setq buffer (apply fn (list dir flags)))
-        (require 'dirvish-tramp)
-        (setq buffer (dirvish-tramp--noselect fn dir flags remote)))
+        (require 'dirvish-extras)
+        (setq buffer (dirvish-noselect-tramp fn dir flags remote)))
       (with-current-buffer buffer (dirvish-init-dired-buffer))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer

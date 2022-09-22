@@ -17,14 +17,6 @@
 (declare-function all-the-icons-octicon "all-the-icons")
 (require 'dirvish)
 
-(defvar dirvish-subtree--prefix-unit-len 2)
-(defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
-
-(dolist (sym-a '((dired-current-directory . dirvish-curr-dir-a)
-                 (dired-subdir-index . dirvish-subdir-index-a)
-                 (dired-get-subdir . dirvish-get-subdir-a)))
-  (advice-add (car sym-a) :around (cdr sym-a)))
-
 (defcustom dirvish-subtree-listing-switches nil
   "Listing SWITCHES used in subtrees.
 The value may be a string of options or nil which means the
@@ -35,8 +27,7 @@ working switches of current buffer will be used."
 (defcustom dirvish-subtree-prefix " │"
   "A string put into each nested subtree.
 The prefix is repeated \"depth\" times."
-  :type 'string :group 'dirvish
-  :set (lambda (k v) (set k v) (setq dirvish-subtree--prefix-unit-len (length v))))
+  :type 'string :group 'dirvish)
 
 (defcustom dirvish-subtree-save-on-revert t
   "Non-nil means `revert-buffer' keeps all expanded subtrees."
@@ -86,6 +77,13 @@ The value can be one of: `plus', `arrow', `chevron'."
   "Face used for `expanded-state' attribute."
   :group 'dirvish)
 
+(defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
+
+(dolist (sym-a '((dired-current-directory . dirvish-curr-dir-a)
+                 (dired-subdir-index . dirvish-subdir-index-a)
+                 (dired-get-subdir . dirvish-get-subdir-a)))
+  (advice-add (car sym-a) :around (cdr sym-a)))
+
 (defun dirvish-curr-dir-a (fn &optional localp)
   "Advice for FN `dired-current-directory'.
 LOCALP is the arg for `dired-current-directory', which see."
@@ -120,9 +118,9 @@ Ensure correct DIR when inside of a subtree."
         (dired-move-to-filename)))
     stop))
 
-(defun dirvish-subtree--prefix ()
+(defun dirvish-subtree-prefix ()
   "Calculate subtree prefix length at point."
-  (* dirvish-subtree--prefix-unit-len (dirvish-subtree--depth)))
+  (* (length dirvish-subtree-prefix) (dirvish-subtree--depth)))
 
 (defun dirvish-subtree--depth ()
   "Get subtree depth at point."

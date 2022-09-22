@@ -92,14 +92,6 @@ The value is a list with 3 elements:
   "Face used for filesystem device number mode-line segment."
   :group 'dirvish)
 
-(defun dirvish--count-file-size (fileset)
-  "Return file size of FILESET in bytes."
-  (cl-labels ((f-name (f) (if (file-directory-p f)
-                              (directory-files-recursively f ".*" nil t)
-                            f))
-              (f-size (f) (file-attribute-size (file-attributes f))))
-    (cl-reduce #'+ (mapcar #'f-size (flatten-tree (mapcar #'f-name fileset))))))
-
 (defun dirvish--attr-size-human-readable (file-size)
   "Produce a string showing FILE-SIZE in human-readable form."
   (let ((power 1024.0)

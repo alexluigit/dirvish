@@ -26,8 +26,7 @@
 ;;; Code:
 
 (require 'dired-aux)
-(require 'dirvish)
-(require 'dirvish-tramp)
+(require 'dirvish-extras)
 
 (defcustom dirvish-yank-sources 'all
   "The way to collect source files.
