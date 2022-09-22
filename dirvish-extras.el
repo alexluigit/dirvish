@@ -19,6 +19,7 @@
 ;; - `dirvish-copy-file-name' (autoload)
 ;; - `dirvish-copy-file-path' (autoload)
 ;; - `dirvish-copy-file-directory'
+;; - `dirvish-create-empty-file' (autoload)
 ;; - `dirvish-total-file-size' (autoload)
 ;; - `dirvish-rename-space-to-underscore'
 ;;
@@ -266,6 +267,15 @@ FILESET defaults to `dired-get-marked-files'."
                               file-size-human-readable)))
       (message "%s" (format "Total size of %s entries: %s" count size)))))
 
+;;;###autoload
+(defun dirvish-create-empty-file (file)
+  "Create an empty file called FILE.
+Same as `dired-create-empty-file', but use
+`dired-current-directory' as the prompt."
+  (interactive (list (read-file-name
+                      "Create empty file: " (dired-current-directory))))
+  (dired-create-empty-file file))
+
 (defun dirvish-rename-space-to-underscore ()
   "Rename marked files by replacing space to underscore."
   (interactive)
@@ -408,7 +418,7 @@ FILESET defaults to `dired-get-marked-files'."
           "The keys listed here may be different from the actual bindings"))
    ("n" "  Move to next line"      dired-next-line :transient t)
    ("p" "  Move to prev line"      dired-previous-line :transient t)
-   ("." "  Add an empty file"      dired-create-empty-file)
+   ("." "  Add an empty file"      dirvish-create-empty-file)
    ("+" "  Add a directory"        dired-create-directory)
    ("X" "  Delete files"           dired-do-delete)
    ("v" "  View this file"         dired-view-file)
