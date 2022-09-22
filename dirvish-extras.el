@@ -110,6 +110,7 @@ FN is the original `dired-noselect' closure."
          (ftp (tramp-ftp-file-name-p dir))
          (short-flags "-Alh")
          (gnu? t)
+         (dired-buffers nil) ; disable reuse from dired
          (buffer (apply fn (list dir (if ftp short-flags (or r-flags flags))))))
     (unless (or r-flags ftp)
       (setq gnu? (dirvish-gnuls-available-p dir))

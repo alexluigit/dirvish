@@ -969,7 +969,6 @@ Dirvish sets `revert-buffer-function' to this function."
   "Return buffer for DIR with FLAGS, FN is `dired-noselect'."
   (let* ((key (file-name-as-directory (expand-file-name dir)))
          (this dirvish--this)
-         (dired-buffers nil) ; disable reuse from dired side
          (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish-new)
                (or this (car (dirvish--find-reusable)) (dirvish-new))))
          (bname buffer-file-name)
@@ -979,11 +978,14 @@ Dirvish sets `revert-buffer-function' to this function."
          (new-buffer-p (not buffer)))
     (if this (set-window-dedicated-p nil nil) (setf (dv-layout dv) nil))
     (when new-buffer-p
-      (if (not remote) (setq buffer (apply fn (list dir flags)))
+      (if (not remote)
+          (let ((dired-buffers nil)) ; disable reuse from dired
+            (setq buffer (apply fn (list dir flags))))
         (require 'dirvish-extras)
         (setq buffer (dirvish-noselect-tramp fn dir flags remote)))
       (with-current-buffer buffer (dirvish-init-dired-buffer))
-      (push (cons key buffer) (dv-roots dv)))
+      (push (cons key buffer) (dv-roots dv))
+      (push (cons key buffer) dired-buffers))
     (with-current-buffer buffer
       (cond (new-buffer-p)
             ((not (equal flags dired-actual-switches)) (dired-sort-other flags))
