@@ -176,7 +176,7 @@ RANGE can be `buffer', `session', `frame', `all'."
     (when (and (buffer-live-p dv-buf)
                (or (eq dv-buf (current-buffer))
                    (not (with-current-buffer dv-buf (dirvish-prop :remote)))))
-      (with-current-buffer dv-buf (revert-buffer)))))
+      (with-current-buffer dv-buf (revert-buffer) (dirvish--build dv)))))
 
 (defun dirvish-yank--execute (cmd)
   "Run yank CMD in the same host."
@@ -189,7 +189,8 @@ RANGE can be `buffer', `session', `frame', `all'."
     (when dirvish-yank-auto-unmark
       (cl-loop for buf in (buffer-list)
                do (with-current-buffer buf
-                    (when (eq major-mode 'dired) (dired-unmark-all-marks)))))
+                    (when (eq major-mode 'dired-mode)
+                      (dired-unmark-all-marks)))))
     (cl-incf dirvish-yank-task-counter)))
 
 (defun dirvish-yank--newbase (base-name fileset dest)

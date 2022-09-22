@@ -613,11 +613,7 @@ See `dirvish--available-preview-dispatchers' for details."
 ENTRY can be a filename or a string with format of
 `dirvish-fd-bufname' used to query or create a `fd' result
 buffer, it defaults to filename under the cursor when it is nil."
-  (let* ((find-file-run-dired t)
-         (switch-to-buffer-preserve-window-point
-          (unless dired-auto-revert-buffer
-            switch-to-buffer-preserve-window-point))
-         (entry (or entry (dired-get-filename)))
+  (let* ((entry (or entry (dired-get-filename)))
          (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd-find entry))
                        ((file-directory-p entry) (dired-noselect entry)))))
     (if buffer (dirvish-save-dedication (switch-to-buffer buffer))
