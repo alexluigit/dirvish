@@ -454,7 +454,7 @@ This is a internal variable and should *NOT* be set manually."
   (when dirvish-reuse-session
     (cl-loop with scopes = (dirvish--scopes)
              for dv in (hash-table-values dirvish--session-hash)
-             when (and (equal type (dv-type dv)) (equal (dv-scopes dv) scopes))
+             when (and (eq type (car (dv-type dv))) (equal (dv-scopes dv) scopes))
              collect dv)))
 
 (defun dirvish-new (&rest args)

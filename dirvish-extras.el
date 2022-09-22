@@ -275,7 +275,8 @@ Same as `dired-create-empty-file', but use
 `dired-current-directory' as the prompt."
   (interactive (list (read-file-name
                       "Create empty file: " (dired-current-directory))))
-  (dired-create-empty-file file))
+  (dired-create-empty-file file)
+  (unless (file-remote-p file) (revert-buffer)))
 
 (defun dirvish-rename-space-to-underscore ()
   "Rename marked files by replacing space to underscore."
