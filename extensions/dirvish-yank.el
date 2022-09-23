@@ -99,6 +99,13 @@ invoke the CMD, DOC is the documentation string."
   "An explicit ssh command for rsync to use port forwarded proxy.
 The string is treated as a format string where %d is replaced with the
 results of `dirvish-yank--get-remote-port'.")
+(defvar dirvish-yank-methods-w32
+  '((yank     . dired-do-copy)
+    (move     . dired-do-rename)
+    (symlink  . dired-do-symlink)
+    (relalink . dired-do-relsymlink)
+    (hardlink . dired-do-hardlink))
+  "Yank functions for w32.")
 
 (defun dirvish-yank--get-remote-port ()
   "Return the remote port we shall use for the reverse port-forward."
@@ -242,15 +249,18 @@ SRCS and DEST are source files and destination."
 (defun dirvish-yank--l2l-handler (method srcs dest)
   "Execute a local yank command with type of METHOD.
 SRCS and DEST have to be in the same HOST (local or remote)."
-  (let* ((method (alist-get method dirvish-yank-methods))
-         (l-files (cl-loop for f in srcs collect
-                           (shell-quote-argument (file-local-name f))))
-         (files (mapconcat #'concat l-files ","))
-         (cmd (format "%s %s %s" method
-                      (if (> (length srcs) 1) (format "{%s}" files) files)
-                      (shell-quote-argument (file-local-name dest)))))
-    (dirvish-yank--prepare-dest-names srcs dest)
-    (dirvish-yank--execute cmd)))
+  (if (memq system-type '(windows-nt ms-dos))
+      ;; HACK: for now, just redirect to builtin dired functions on windows platform
+      (funcall (alist-get method dirvish-yank-methods-w32))
+    (let* ((method (alist-get method dirvish-yank-methods))
+           (l-files (cl-loop for f in srcs collect
+                             (shell-quote-argument (file-local-name f))))
+           (files (mapconcat #'concat l-files ","))
+           (cmd (format "%s %s %s" method
+                        (if (> (length srcs) 1) (format "{%s}" files) files)
+                        (shell-quote-argument (file-local-name dest)))))
+      (dirvish-yank--prepare-dest-names srcs dest)
+      (dirvish-yank--execute cmd))))
 
 (defun dirvish-yank--l2fr-handler (srcs dest)
   "Execute a local to/from remote rsync command for SRCS and DEST."
