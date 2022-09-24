@@ -173,8 +173,9 @@ FN is the original `dired-noselect' closure."
 
 (dirvish-define-preview tramp (file _ dv)
   "Preview files with `ls' or `head' for tramp files."
-  (when-let ((vec (dirvish-prop :tramp)))
-    (if (dirvish-tramp--async-p vec)
+  (let ((vec (dirvish-prop :tramp)))
+    (if (not (dirvish-tramp--async-p vec))
+        '(info . "File preview is not supported in current connection")
       (let ((process-connection-type nil)
             (localname (file-remote-p file 'localname))
             (buf (dirvish--util-buffer 'preview dv nil t)) proc)
@@ -191,8 +192,7 @@ FN is the original `dired-noselect' closure."
                 (with-current-buffer (process-buffer proc)
                   (fundamental-mode)
                   (insert str))))
-        `(buffer . ,buf))
-      '(info . "File preview is not supported in current TRAMP connection"))))
+        `(buffer . ,buf)))))
 
 (defun dirvish-find-file-true-path ()
   "Open truename of (maybe) symlink file under the cursor."
