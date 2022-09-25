@@ -27,10 +27,6 @@
 The function takes the entry as the sole argument."
   :group 'dirvish :type 'function)
 
-;;;###autoload
-(define-obsolete-variable-alias 'dirvish-bookmark-entries 'dirvish-quick-access-entries "Jul 22, 2022")
-;;;###autoload
-(define-obsolete-function-alias 'dirvish-bookmark-jump 'dirvish-quick-access "Jul 22, 2022")
 ;;;###autoload (autoload 'dirvish-quick-access "dirvish-quick-access" nil t)
 (defcustom dirvish-quick-access-entries
   `(("h" "~/"                  "Home")

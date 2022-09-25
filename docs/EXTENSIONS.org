@@ -32,9 +32,11 @@ buffers into a single "clipboard", then copy or move all of them to the target
 location.
 #+end_quote
 
-Multi-stage copy/paste, asynchronous I/O (whenever applicable), work with TRAMP,
-=dirvish-yank= has all of them. =dirvish-yank= also handles file operations on the
-same remote host, see: https://github.com/stsquad/dired-rsync/issues/24.
+Multi-stage copy/paste, asynchronous I/O, work with TRAMP, =dirvish-yank= has all
+of them.  This package also provides the ~dirvish-rsync~ command, which can be
+seen as a alternative to =dired-rsync= package.  =dirvish-yank= and friends also
+handles file operations on the same remote host, see:
+https://github.com/stsquad/dired-rsync/issues/24.
 
 To copy/move/symlink/hardlink files from A to B, just mark the files in A, go to
 B, and paste them with ~dirvish-yank/move/symlink/hardlink~.

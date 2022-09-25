@@ -22,6 +22,7 @@
 ;; - `dirvish-symlink'
 ;; - `dirvish-relative-symlink'
 ;; - `dirvish-hardlink'
+;; - `dirvish-rsync' (requires 'rsync' executable)
 
 ;;; Code:
 
@@ -188,7 +189,7 @@ When BATCH, execute the command using `emacs -q -batch'."
   (pcase-let* ((process-connection-type nil) (name "*dirvish-yank*")
                (buf (dirvish--util-buffer
                      (format "yank@%s" (current-time-string)) nil nil t))
-               (`(,_ ,srcs ,dest ,method) details)
+               (`(,_ ,_ ,dest ,_) details)
                (proc (if batch
                          (let* ((q (if (file-remote-p dest) "-q" "-Q"))
                                 (c (list "emacs" q "-batch" "--eval" cmd)))
@@ -226,7 +227,7 @@ When BATCH, execute the command using `emacs -q -batch'."
    with overwrite = (eq dirvish-yank-overwrite-existing-files 'always)
    with never = (eq dirvish-yank-overwrite-existing-files 'never)
    with skip = (eq dirvish-yank-overwrite-existing-files 'skip)
-   with (skipped to-rename async-fn-list) = ()
+   with (skipped to-rename) = ()
    with dfiles = (directory-files dest nil nil t)
    with fmt = "Overwrite `%s'? (y)es (n)o (s)kip (q)uit (Y)es-to-all (N)o-to-all (S)kip-all"
    for src in srcs
@@ -424,7 +425,7 @@ defaults to `dired-current-directory'."
   "Rsync marked files to DEST, prompt for DEST if not called with.
 If either the sources or the DEST is located in a remote host,
 the `dirvish-yank-rsync-program' and `dirvish-yank-rsync-args'
-are used to transfer the files (also see `dirvish-rsync').
+are used to transfer the files.
 
 This command requires proper ssh authentication setup to work
 correctly for file transfer involving remote hosts, because rsync
