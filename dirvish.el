@@ -988,7 +988,8 @@ Dirvish sets `revert-buffer-function' to this function."
       (push (cons key buffer) dired-buffers))
     (with-current-buffer buffer
       (cond (new-buffer-p)
-            ((not (equal flags dired-actual-switches)) (dired-sort-other flags))
+            ((and (not remote) (not (equal flags dired-actual-switches)))
+             (dired-sort-other flags))
             ((eq dired-auto-revert-buffer t) (revert-buffer))
 	    ((functionp dired-auto-revert-buffer)
 	     (when (funcall dired-auto-revert-buffer dir) (revert-buffer))))
