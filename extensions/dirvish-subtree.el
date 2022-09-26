@@ -79,10 +79,14 @@ The value can be one of: `plus', `arrow', `chevron'."
 
 (defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
 
-(dolist (sym-a '((dired-current-directory . dirvish-curr-dir-a)
-                 (dired-subdir-index . dirvish-subdir-index-a)
-                 (dired-get-subdir . dirvish-get-subdir-a)))
-  (advice-add (car sym-a) :around (cdr sym-a)))
+(cl-loop
+ for (sym ad how) in '((dired-current-directory dirvish-curr-dir-a :around)
+                       (dired-subdir-index dirvish-subdir-index-a :around)
+                       (dired-get-subdir dirvish-get-subdir-a :around)
+                       (dired-remove-entry dirvish-remove-entry-a :around)
+                       (dired-create-empty-file dirvish-new-empty-file-a :around)
+                       (dired-create-directory dirvish-new-directory-a :after))
+ do (advice-add sym how ad))
 
 (defun dirvish-curr-dir-a (fn &optional localp)
   "Advice for FN `dired-current-directory'.
@@ -106,6 +110,31 @@ Ensure correct DIR when inside of a subtree."
         (dired-previous-line 1))
       (unless (eq count 0) (setq dir (dired-current-directory))))
     (funcall fn dir)))
+
+(defun dirvish-remove-entry-a (fn file)
+  "Advice for FN `dired-remove-entry' FILE."
+  (if dirvish-subtree--overlays
+      (save-excursion
+        (and (dirvish-subtree-expand-to file)
+	     (let ((inhibit-read-only t))
+	       (delete-region (progn (beginning-of-line) (point))
+			      (line-beginning-position 2)))))
+    (funcall fn file)))
+
+(defun dirvish-new-empty-file-a (fn file)
+  "Create an empty file called FILE.
+Same as FN `dired-create-empty-file', but use
+`dired-current-directory' as the prompt."
+  (interactive (list (read-file-name
+                      "Create empty file: " (dired-current-directory))))
+  (funcall fn file)
+  (when dirvish-subtree--overlays (revert-buffer)))
+
+(defun dirvish-new-directory-a (&rest _)
+  "Advice for `dired-create-directory'.
+Ensure the entry is inserted to the buffer after directory
+creation even the entry is in nested subtree nodes."
+  (when dirvish-subtree--overlays (revert-buffer)))
 
 (defun dirvish-subtree--goto-file (filename)
   "Go to line describing FILENAME."
