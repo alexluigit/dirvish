@@ -1002,24 +1002,15 @@ Dirvish sets `revert-buffer-function' to this function."
       (run-hook-with-args 'dirvish-find-entry-hook key buffer)
       buffer)))
 
-(cl-defgeneric dirvish-readin-dir (dir &optional flags)
-  "Readin the directory DIR with optional FLAGS as a string."
-  (let ((switches (or flags dired-actual-switches dired-listing-switches)))
-    (with-temp-buffer
-      (insert-directory (file-name-as-directory dir) switches nil t)
-      (delete-char -1)
-      (delete-region (goto-char (point-min)) (progn (forward-line 1) (point)))
-      (unless (looking-at-p "  ")
-        (let ((indent-tabs-mode nil))
-          (indent-rigidly (point-min) (point-max) 2)))
-      (buffer-string))))
-
 (defun dirvish--create-parent-buffer (dv dir index level)
   "Create parent buffer at DIR in DV selecting file INDEX.
 LEVEL is the depth of current window."
   (let ((index (directory-file-name index))
         (buf (dirvish--util-buffer (format "parent-%s" level) dv nil t))
-        (str (or (gethash dir dirvish--parent-hash) (dirvish-readin-dir dir)))
+        (str (or (gethash dir dirvish--parent-hash)
+                 (let ((flags dired-actual-switches))
+                   (with-temp-buffer (dired-insert-directory dir flags)
+                                     (buffer-string)))))
         (attrs (append
                 '(hl-line symlink-target)
                 (cond ((memq 'all-the-icons dirvish-attributes) '(all-the-icons))
@@ -1031,7 +1022,7 @@ LEVEL is the depth of current window."
       (puthash dir str dirvish--parent-hash)
       (erase-buffer)
       (setq mode-line-format nil header-line-format nil)
-      (save-excursion (insert str "\n"))
+      (save-excursion (insert str))
       (setq-local dired-subdir-alist (list (cons dir (point-min-marker)))
                   font-lock-defaults
                   '(dired-font-lock-keywords t nil nil beginning-of-line))

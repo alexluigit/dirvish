@@ -143,10 +143,19 @@ Ensure correct DIR when inside of a subtree."
    do (when (> depth max) (setq pov ov) (setq max depth))
    finally return pov))
 
+(defun dirvish-subtree--readin (dir)
+  "Readin DIR as a subtree node."
+  (let ((flags (or dirvish-subtree-listing-switches dired-actual-switches)) str)
+    (with-temp-buffer
+      (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
+        (dired-insert-directory dir flags)
+        (setq str (buffer-string))
+        (if (= (length str) 0) "" (substring (buffer-string) 0 -1))))))
+
 (defun dirvish-subtree--insert ()
   "Insert subtree under this directory."
   (let* ((dir (dired-get-filename))
-         (listing (dirvish-readin-dir dir dirvish-subtree-listing-switches))
+         (listing (dirvish-subtree--readin dir))
          buffer-read-only beg end)
     (dirvish-data-for-dir dir (current-buffer) nil)
     (with-silent-modifications

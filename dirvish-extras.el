@@ -154,23 +154,6 @@ FN is the original `dired-noselect' closure."
       (process-put proc 'meta (list dir buffer setup))
       (set-process-sentinel proc #'dirvish-tramp-dir-data-proc-s))))
 
-(cl-defmethod dirvish-readin-dir
-  (dir &context ((dirvish-prop :remote) string) &optional flags)
-  "DIR FLAGS DIRVISH-PROP."
-  (let* ((ftp (tramp-ftp-file-name-p (dirvish-prop :tramp)))
-         (flags (if ftp "-Alh"
-                  (or flags dired-actual-switches dired-listing-switches))))
-    (with-temp-buffer
-      (insert-directory (file-name-as-directory dir) flags nil t)
-      (delete-char -1)
-      (unless ftp
-        (delete-region (goto-char (point-min))
-                       (progn (forward-line 1) (point))))
-      (unless (looking-at-p "  ")
-        (let ((indent-tabs-mode nil))
-          (indent-rigidly (point-min) (point-max) 2)))
-      (buffer-string))))
-
 (dirvish-define-preview tramp (file _ dv)
   "Preview files with `ls' or `head' for tramp files."
   (let ((vec (dirvish-prop :tramp)))
