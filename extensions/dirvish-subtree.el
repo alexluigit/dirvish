@@ -177,9 +177,10 @@ creation even the entry is in nested subtree nodes."
   (let ((flags (or dirvish-subtree-listing-switches dired-actual-switches)) str)
     (with-temp-buffer
       (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
-        (dired-insert-directory dir flags)
+        (dired-insert-directory (file-name-as-directory dir) flags)
         (setq str (buffer-string))
-        (if (= (length str) 0) "" (substring (buffer-string) 0 -1))))))
+        (if (or (= (length str) 0) (string-prefix-p "//DIRED-OPTIONS//" str)) ""
+          (substring (buffer-string) 0 -1))))))
 
 (defun dirvish-subtree--insert ()
   "Insert subtree under this directory."
