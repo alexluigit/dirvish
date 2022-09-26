@@ -19,21 +19,26 @@
   "Fd arguments inserted before user input."
   :type 'string :group 'dirvish)
 
-(defcustom dirvish-fd-program
-  (let ((fd (executable-find "fd"))
-        (fdfind (executable-find "fdfind")))
+(defun dirvish-fd--find-fd-program (&optional remote)
+  "Find fd programm on a local or `REMOTE' host ."
+  (let ((fd (executable-find "fd" remote))
+        (fdfind (executable-find "fdfind" remote)))
     (cond (fd fd)
           (fdfind fdfind)
-          (t nil)))
+          (t nil))))
+
+(defcustom dirvish-fd-program
+  (dirvish-fd--find-fd-program)
   "The default fd program."
   :type 'string :group 'dirvish)
 
-(defcustom dirvish-fd-ls-program
-  (let* ((ls (executable-find "ls"))
-         (gls (executable-find "gls"))
-         (idp (executable-find insert-directory-program))
-         (ls-is-gnu? (and ls (= 0 (call-process ls nil nil nil "--version"))))
-         (idp-is-gnu-ls? (and idp (= 0 (call-process idp nil nil nil "--version")))))
+(defun dirvish-fd--find-ls-program (&optional remote)
+  "Find ls programm on a local or `REMOTE' host ."
+  (let* ((ls (executable-find "ls" remote))
+         (gls (executable-find "gls" remote))
+         (idp (executable-find insert-directory-program remote))
+         (ls-is-gnu? (and ls (= 0 (process-file ls nil nil nil "--version"))))
+         (idp-is-gnu-ls? (and idp (= 0 (process-file idp nil nil nil "--version")))))
     (cond
      ;; just use GNU ls if found
      (ls-is-gnu? ls)
@@ -43,7 +48,10 @@
      ((and (eq system-type 'darwin) gls) gls)
      ;; fallback: use insert-directory-program, but warn the user that it may not be compatible
      (t (warn "`dirvish-fd' requires `ls' from GNU coreutils, please install it")
-        insert-directory-program)))
+        insert-directory-program))))
+
+(defcustom dirvish-fd-ls-program
+  (dirvish-fd--find-ls-program)
   "Listing program for `fd'."
   :type '(string :tag "Listing program, such as `ls'") :group 'dirvish)
 
@@ -69,7 +77,7 @@ should return a list of regular expressions."
   (dirvish--mode-line-fmt-setter '(fd-switches) '(fd-timestamp fd-pwd " ") t))
 (defvar dirvish-fd-input-history nil "History list of fd input in the minibuffer.")
 (defvar dirvish-fd-debounce-timer nil)
-(defvar-local dirvish-fd--output nil)
+(defvar-local dirvish-fd--output "")
 (defvar-local dirvish-fd--input "" "Last used fd user input.")
 
 (defsubst dirvish-fd--header-offset ()
@@ -252,8 +260,6 @@ search for directories in `dirvish-fd-default-dir'.
 If prefixed twice with \\`C-u' or if CURRENT-DIR-P holds the
 value 16, let the user choose the root directory of their search."
   (interactive "p")
-  (unless dirvish-fd-program
-    (user-error "`dirvish-fd' requires `fd', please install it"))
   (let* ((base-dir (cond
                     ((eq current-dir-p 4) default-directory)
                     ((eq current-dir-p 16)
@@ -262,12 +268,19 @@ value 16, let the user choose the root directory of their search."
                            (file-name-as-directory dir)
                          (dirvish--get-parent-path dir))))
                     (t dirvish-fd-default-dir)))
-         (command (concat dirvish-fd-program " -H -td -0 . " base-dir))
-         (output (shell-command-to-string command))
-         (files-raw (split-string output "\0" t))
-         (files (dirvish--append-metadata 'file files-raw))
-         (file (completing-read "Go to: " files)))
-    (dired-jump nil file)))
+         (remote (file-remote-p base-dir))
+         (fd-program (dirvish-fd--get-fd-program remote)))
+    (unless fd-program
+      (user-error "`dirvish-fd' requires `fd', please install it"))
+
+    (let* ((command (concat fd-program " -H -td --color=never -0 . " (file-local-name base-dir)))
+           (default-directory base-dir)
+           (output (shell-command-to-string command))
+           (files-raw (split-string output "\0" t))
+           (files (dirvish--append-metadata 'file files-raw))
+           (file (completing-read "Go to: " files))
+           (full-file (concat remote file)))
+      (dired-jump nil full-file))))
 
 (defun dirvish-fd-filter (proc string)
   "Filter for `dirvish-fd' processes PROC and output STRING."
@@ -379,6 +392,20 @@ When GLOB, convert the regexs using `dired-glob-regexp'."
   (interactive)
   (dirvish--kill-buffer (current-buffer)))
 
+(defun dirvish-fd--get-fd-program (remote)
+  "Return executable of fd.
+If `REMOTE' is non-nil, search on remote host."
+  (if remote
+      (dirvish-fd--find-fd-program remote)
+    dirvish-fd-program))
+
+(defun dirvish-fd--get-ls-program (remote)
+  "Return executable of ls.
+If `REMOTE' is non-nil, search on remote host."
+  (if remote
+      (dirvish-fd--find-ls-program remote)
+    dirvish-fd-ls-program))
+
 ;;;###autoload
 (defun dirvish-fd (dir pattern)
   "Run `fd' on DIR and go into Dired mode on a buffer of the output.
@@ -389,16 +416,19 @@ The command run is essentially:
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Fd target directory: " nil "" t))
                      nil))
-  (unless dirvish-fd-program
-    (user-error "`dirvish-fd' requires `fd', please install it"))
   (setq dir (file-name-as-directory
              (expand-file-name (or dir default-directory))))
   (or (file-directory-p dir)
       (user-error "'fd' command requires a directory: %s" dir))
-  (let* ((dv (or (dirvish-curr) (progn (dirvish dir) dirvish--this)))
+  (let* ((remote (file-remote-p dir))
+         (fd-program (dirvish-fd--get-fd-program remote))
+         (ls-program (dirvish-fd--get-ls-program remote))
+         (dv (or (dirvish-curr) (progn (dirvish dir) dirvish--this)))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
          (buffer (dirvish--util-buffer 'fd dv nil t)))
+    (unless fd-program
+      (user-error "`dirvish-fd' requires `fd', please install it"))
     (dirvish--kill-buffer (get-buffer (dirvish-fd--bufname pattern dir dv)))
     (with-current-buffer buffer
       (erase-buffer)
@@ -415,15 +445,17 @@ The command run is essentially:
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :fd-switches fd-switches)
       (dirvish-prop :cus-header 'dirvish-fd-header)
+      (dirvish-prop :remote remote)
       (dirvish-prop :global-header t)
-      (let ((proc (make-process
-                   :name "fd" :buffer buffer :connection-type nil
-                   :command `(,dirvish-fd-program "--color=never"
-                              ,@(or (split-string fd-switches) "")
-                              "--exec-batch" ,dirvish-fd-ls-program
-                              ,@(or (split-string ls-switches) "")
-                              "--quoting-style=literal" "--directory")
-                   :filter 'dirvish-fd-filter :sentinel 'dirvish-fd-proc-s)))
+      (let ((proc (apply #'start-file-process
+                         "fd" buffer
+                         `(,fd-program "--color=never"
+                           ,@(or (split-string fd-switches) "")
+                           "--exec-batch" ,ls-program
+                           ,@(or (split-string ls-switches) "")
+                           "--quoting-style=literal" "--directory"))))
+        (set-process-filter proc #'dirvish-fd-filter)
+        (set-process-sentinel proc #'dirvish-fd-proc-s)
         (dirvish-fd--argparser (split-string (or fd-switches "")))
         (process-put proc 'info (list pattern dir dv))))
     (dirvish-save-dedication (switch-to-buffer buffer))))
