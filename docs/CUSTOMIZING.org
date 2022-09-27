@@ -52,18 +52,6 @@ correctly, there are a few rules here:
    If you insist on using the ~dired-sort-toggle-or-edit~ command, you'll have
    to obey the above rules when entering the ls flags.
 
-** TRAMP integration
-
-Dirvish integrates TRAMP at its core.  But most of the features (file preview,
-asynchronous file transfer through =dirvish-yank= .etc) that are available in
-localhost are NOT enabled over a /synchronous/ TRAMP connection (see:
-[[https://www.gnu.org/software/tramp/#Improving-performance-of-asynchronous-remote-processes-1][TRAMP-async]]).  To enable them on a remote host, one will need to have a proper
-ssh config such as ssh-agent for that host, because it requires working SSH
-authentication which bypasses the password entering to work.
-
-You can improve the speed and responsiveness of TRAMP by tweaking its options,
-see the sample config below.
-
 ** Buffer management
 
 A Dirvish session holds a set of Dired buffers and preview buffers that are
@@ -79,13 +67,13 @@ See: [[https://github.com/alexluigit/dirvish/discussions/102#discussioncomment-3
 
 Apart from the hooks provided by Dired, Dirvish got some additions.
 
-|---------------------------+-------------------------------------------|
-| Hook                      | Description                               |
-|---------------------------+-------------------------------------------|
-| ~dirvish-setup-hook~        | Executed after the root buffer is ready.  |
-| ~dirvish-after-revert-hook~ | Executed after ~dirvish-revert~.            |
-| ~dirvish-find-entry-hook~   | Executed after ~dirvish-find-entry~.        |
-|---------------------------+-------------------------------------------|
+|---------------------------+------------------------------------------|
+| Hook                      | Description                              |
+|---------------------------+------------------------------------------|
+| ~dirvish-setup-hook~        | Executed after the root buffer is ready. |
+| ~dirvish-after-revert-hook~ | Executed after ~revert-buffer~.            |
+| ~dirvish-find-entry-hook~   | Executed after finding a entry.          |
+|---------------------------+------------------------------------------|
 
 * Dirvish "attributes"
 
@@ -101,7 +89,7 @@ For now Dirvish ships with these attributes:
 + ~git-msg~: Append git commit message to filename.
 + ~vc-state~: The version control state at left fringe.
 + ~file-size~: Show file size or directories file count at right fringe.
-+ ~file-time~ (newly added): Show file modification time before the file name.
++ ~file-time~ (newly added): Show file modification time before the ~file-size~.
 
 Here is an overview of how does these attributes look like:
 
@@ -255,7 +243,7 @@ for a directory entry.  On a side note, you can customize the corresponding
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
 
 * Sample config
-** Dired | Dirvish
+** Dirvish
 
 The extra commands in this sample config are documented at [[file:EXTENSIONS.org][Extensions]].
 
@@ -324,6 +312,28 @@ Some keybindings for mouse:
   (define-key dirvish-mode-map (kbd "<mouse-3>") 'dired-mouse-find-file)
 #+end_src
 
+** TRAMP integration
+
+Dirvish integrates TRAMP at its core.  Some features such as file preview are
+*disabled* over synchronous TRAMP connections (see below on how to bypass this
+limitation).  For certain commands such as ~dirvish-yank~ you should configure
+your ssh authentication properly to avoid being stuck with a prompt you will not
+be able to answer to in the child emacs.
+
+#+begin_src emacs-lisp
+  (use-package tramp
+    :config
+    ;; Enable full-featured Dirvish over TRAMP on certain connections
+    ;; https://www.gnu.org/software/tramp/#Improving-performance-of-asynchronous-remote-processes-1.
+    (add-to-list 'tramp-connection-properties
+                 (list (regexp-quote "/ssh:YOUR_HOSTNAME:")
+                       "direct-async-process" t))
+    ;; Tips to speed up connections
+    (setq tramp-verbose 0)
+    (setq tramp-chunksize 2000)
+    (setq tramp-use-ssh-controlmaster-options nil))
+#+end_src
+
 ** Complementary packages
 
 These packages are only listed here for discoverability.
@@ -334,17 +344,6 @@ These packages are only listed here for discoverability.
     ;; Make dired-omit-mode hide all "dotfiles"
     (setq dired-omit-files
           (concat dired-omit-files "\\|^\\..*$")))
-
-  ;; Some tips to speed up Dired/Dirvish over TRAMP
-  (use-package tramp
-    :config
-    (add-to-list 'tramp-connection-properties
-                 (list (regexp-quote "/ssh:YOUR_HOSTNAME:")
-                       "direct-async-process" t))
-    (setq tramp-verbose 0)
-    (setq tramp-auto-save-directory (locate-user-emacs-file "tramp/"))
-    (setq tramp-chunksize 2000)
-    (setq tramp-use-ssh-controlmaster-options nil))
 
   ;; Addtional syntax highlighting for dired
   (use-package diredfl
