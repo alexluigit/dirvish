@@ -190,6 +190,13 @@ should return a list of regular expressions."
     ("r" dirvish-fd--search-pattern-infix)
     ("RET" "Apply switches" dirvish-fd--apply-switches)]])
 
+(defun dirvish-fd-switch-to-buffer (buffer)
+  "Switch to BUFFER with window undedicated."
+  (let ((dedicated (window-dedicated-p)) (win (selected-window)))
+    (set-window-dedicated-p win nil)
+    (prog1 (switch-to-buffer buffer)
+      (set-window-dedicated-p win dedicated))))
+
 (defun dirvish-fd--argparser (args)
   "Parse fd args to a list of flags from ARGS."
   (let* ((globp (member "--glob" args))
@@ -331,7 +338,7 @@ value 16, let the user choose the root directory of their search."
       (cl-return-from dirvish-fd-proc-s (message "`fd' process terminated")))
     (with-selected-window (dv-root-window dv)
       (unless (eq (current-buffer) buf)
-        (dirvish-save-dedication (switch-to-buffer buf))))
+        (dirvish-fd-switch-to-buffer buf)))
     (with-current-buffer buf
       (setq-local dirvish-fd--input input
                   dirvish-fd--output (dirvish-fd--parse-output)
@@ -458,7 +465,7 @@ The command run is essentially:
         (set-process-sentinel proc #'dirvish-fd-proc-s)
         (dirvish-fd--argparser (split-string (or fd-switches "")))
         (process-put proc 'info (list pattern dir dv))))
-    (dirvish-save-dedication (switch-to-buffer buffer))))
+    (dirvish-fd-switch-to-buffer buffer)))
 
 (provide 'dirvish-fd)
 ;;; dirvish-fd.el ends here

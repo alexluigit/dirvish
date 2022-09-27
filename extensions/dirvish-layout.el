@@ -45,8 +45,8 @@ possibly one or more parent windows."
       (with-selected-window (dv-root-window dv) (quit-window)))
     (setf (dv-layout dv) new-layout)
     (with-selected-window (dirvish--create-root-window dv)
-      (dirvish-save-dedication (switch-to-buffer buf))
-      (dirvish--build dv)
+      (switch-to-buffer buf)
+      (dirvish--init-session dv)
       (dirvish-debounce nil (dirvish-preview-update dv)))))
 
 ;;;###autoload
@@ -74,7 +74,7 @@ current layout defined in `dirvish-layout-recipes'."
           (new-recipe (nth new-idx recipes)))
      (setf (dv-layout dv) new-recipe)
      (setf (dv-last-fs-layout dv) new-recipe)
-     (dirvish--build dv))))
+     (dirvish--init-session dv))))
 
 (provide 'dirvish-layout)
 ;;; dirvish-layout.el ends here

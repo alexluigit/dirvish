@@ -19,7 +19,6 @@
 ;; - `dirvish-copy-file-name' (autoload)
 ;; - `dirvish-copy-file-path' (autoload)
 ;; - `dirvish-copy-file-directory'
-;; - `dirvish-create-empty-file' (autoload)
 ;; - `dirvish-total-file-size' (autoload)
 ;; - `dirvish-rename-space-to-underscore'
 ;;
@@ -296,8 +295,7 @@ FILESET defaults to `dired-get-marked-files'."
    ("L"   "Go to symlink's truename"           dirvish-find-file-true-path
     :if (lambda () (file-symlink-p (dired-get-filename nil t))))
    ("s"   "Get total size of marked files"     dirvish-total-file-size)
-   ("t"   "Show file TYPE"                     dired-show-file-type)
-   ("m"   "Show media properties"              dirvish-media-properties)])
+   ("t"   "Show file TYPE"                     dired-show-file-type)])
 
 (transient-define-prefix dirvish-subdir-menu ()
   "Help Menu for Dired subdir management."
@@ -466,7 +464,7 @@ keyword in that prefix or infix."
             ["Actions:"
              ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
              ("RET" "Quit and revert buffer"
-              (lambda () (interactive) (dirvish--build (dirvish-curr)) (revert-buffer)))]
+              (lambda () (interactive) (dirvish--init-session (dirvish-curr)) (revert-buffer)))]
             (interactive)
             (if dirvish--props
                 (transient-setup 'dirvish-setup-menu)

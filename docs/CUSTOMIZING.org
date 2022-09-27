@@ -186,15 +186,10 @@ requires cache image generation, the corresponding caches are generated later
 when Emacs is idle.
 
 You can tweak the behavior of auto caching or turn off this feature completely
-by customizing the ~dirvish-media-auto-cache-threshold~ option.  Here is how to
-disable the auto caching completely.
-
-#+begin_src emacs-lisp
-(customize-set-variable 'dirvish-media-auto-cache-threshold '(0))
-#+end_src
+by customizing the ~dirvish-media-auto-cache-threshold~ option.
 
 If you don't want the media properties displayed in the preview buffer, you can
-turn it off by setting ~dirvish-media-auto-properties~ to ~nil~.
+turn off ~dirvish-show-media-properties~.
 
 Here are several examples to extend the preview capabilities of Dirvish.
 

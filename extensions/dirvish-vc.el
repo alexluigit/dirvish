@@ -79,8 +79,8 @@ vc-hooks.el) for detail explanation of these states."
       (quit-window nil (dv-root-window dv))
       (delete-window transient--window)
       (setf (dv-layout dv) new-layout)
-      (dirvish-save-dedication (switch-to-buffer buf))
-      (dirvish--build dv))))
+      (switch-to-buffer buf)
+      (dirvish--init-session dv))))
 
 (transient-define-infix dirvish-vc-preview-ifx ()
   :description "Preview style"
