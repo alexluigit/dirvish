@@ -240,8 +240,6 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar image-dired-thumbnail-buffer)
 (defvar-local dirvish--props '())
 (defvar-local dirvish--attrs-hash nil)
-(put 'dirvish--props 'permanent-local t)
-(put 'dired-subdir-alist 'permanent-local t)
 
 ;;;; Macros
 
@@ -989,7 +987,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (dirvish--hide-cursor)
   (dirvish--hide-dired-header)
   (and dirvish-hide-details (dired-hide-details-mode t))
-  (setq-local dirvish--attrs-hash (make-hash-table)
+  (setq-local dirvish--attrs-hash (or dirvish--attrs-hash (make-hash-table))
               revert-buffer-function #'dirvish-revert
               tab-bar-new-tab-choice "*scratch*"
               dired-hide-details-hide-symlink-targets nil

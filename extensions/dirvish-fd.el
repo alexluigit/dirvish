@@ -440,9 +440,9 @@ The command run is essentially:
     (with-current-buffer buffer
       (erase-buffer)
       (insert "  " dir ":" (make-string (dirvish-fd--header-offset) ?\n))
+      (dired-mode dir ls-switches)
       (setq-local default-directory dir
                   dired-subdir-alist (list (cons dir (point-min-marker))))
-      (dired-mode dir ls-switches)
       (dirvish-init-dired-buffer)
       (let ((map (make-sparse-keymap)))
         (set-keymap-parent map (current-local-map))
