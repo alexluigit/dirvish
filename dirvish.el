@@ -861,11 +861,11 @@ When PROC finishes, fill preview buffer with process result."
   "Fill DV's preview buffer with output of sh command from RECIPE."
   (dirvish--run-shell-for-preview dv recipe))
 
-(defun dirvish-preview-update (dv)
-  "Update preview content of DV."
+(defun dirvish-preview-update (dv &optional index)
+  "Update preview content of INDEX for DV."
   (when-let* ((window (dv-preview-window dv))
               ((window-live-p window))
-              (index (dirvish-prop :index))
+              (index (or index (dirvish-prop :index)))
               (orig-bufs (buffer-list))
               (ext (downcase (or (file-name-extension index) "")))
               (buf (cl-loop for fn in dirvish--working-preview-dispathchers
