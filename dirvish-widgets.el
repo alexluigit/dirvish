@@ -16,9 +16,9 @@
 ;; `file-size', `file-time'
 ;;
 ;; Mode-line segments:
-;; `path', `symlink', `omit', `index', `free-space',
-;; `file-link-number', `file-user', `file-group', `file-time',
-;; `file-size'`file-modes'`file-inode-number'`file-device-number'
+;; `path', `symlink', `omit', `sort', `index', `free-space', `file-link-number',
+;; `file-user', `file-group', `file-time', `file-size', `file-modes',
+;; `file-inode-number', `file-device-number'
 ;;
 ;; Preview dispatchers (all enabled by default):
 ;; `image', `gif', `video', `epub', `archive', `pdf'

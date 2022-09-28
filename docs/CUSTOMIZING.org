@@ -115,8 +115,7 @@ Set the same option to /nil/ hides the mode line in dirvish buffers.
 
 To configure the content in the mode line, put the segments you wanted into
 ~dirvish-mode-line-format~.  There is also ~dirvish-mode-line-height~ for you to set
-the height of the mode line.  Type =C-h v dirvish--available-mode-line-segments
-RET= to see all loaded mode line segments.
+the height of the mode line.
 
 The header line can be customized in the same way with ~dirvish-use-header-line~,
 ~dirvish-header-line-format~ and ~dirvish-header-line-height~.

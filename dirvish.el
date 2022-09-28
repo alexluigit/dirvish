@@ -115,9 +115,25 @@ integer INT, it is seen as a shorthand for (INT . INT)."
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
   "Mode line SEGMENTs aligned to left/right respectively.
-Set it to nil to use the default `mode-line-format'.  SEGMENT is
-a mode line segment defined by `dirvish-define-mode-line' or a
-string.  See `dirvish--available-mode-line-segments'."
+Here are all the predefined segments you can choose from:
+
+* Basics (from `dirvish-extras')
+`path': directory path under the cursor.
+`symlink': target of symlink under the cursor.
+`sort': sort criteria applied in current buffer.
+`omit': a `dired-omit-mode' indicator.
+`index': line number / total line count.
+`free-space': amount of free space on `default-directory''s file system.
+
+Others are self-explanatory:
+`file-size', `file-modes', `file-link-number', `file-user',
+`file-group',`file-time',`file-inode-number',`file-device-number'.
+
+* Miscs
+`vc-info': version control information (from `dirvish-vc').
+`yank': file transfer progress (from `dirvish-yank').
+
+Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist)
 
 (defcustom dirvish-header-line-format
@@ -189,7 +205,7 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar dirvish-scopes '(:frame selected-frame :tab tab-bar--current-tab-index
                                 :persp get-current-persp :perspective persp-curr))
 (defvar dirvish-libraries
-  '((dirvish-widgets  path symlink omit index free-space file-link-number
+  '((dirvish-widgets  path symlink sort omit index free-space file-link-number
                       file-user file-group file-time file-size file-modes
                       file-inode-number file-device-number
                       audio image gif video epub pdf pdf-preface archive)
@@ -218,7 +234,6 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar dirvish--parent-hash (make-hash-table :test #'equal))
 (defvar dirvish--this nil)
 (defvar dirvish--available-attrs '())
-(defvar dirvish--available-mode-line-segments '())
 (defvar dirvish--available-preview-dispatchers '())
 (defvar dirvish--working-attrs '())
 (defvar dirvish--working-preview-dispathchers '())
@@ -318,22 +333,11 @@ A dirvish preview dispatcher is a function consumed by
         'dirvish--available-preview-dispatchers (cons ',name ',keywords))
        (defun ,dp-name ,default-arglist (ignore ,@ignore-list) ,@body))))
 
-(cl-defmacro dirvish-define-mode-line (name &optional docstring &rest body)
+(defmacro dirvish-define-mode-line (name &optional docstring &rest body)
   "Define a mode line segment NAME with BODY and DOCSTRING."
   (declare (indent defun) (doc-string 2))
   (let ((ml-name (intern (format "dirvish-%s-ml" name))))
-    `(progn
-       (add-to-list
-        'dirvish--available-mode-line-segments (cons ',name ,docstring))
-       (cl-loop
-        with doc-head = "All available segments for `dirvish-mode/header-line-format'.
-This is a internal variable and should *NOT* be set manually."
-        with seg-docs = ""
-        for (seg-name . doc) in dirvish--available-mode-line-segments
-        do (setq seg-docs (format "%s\n\n`%s': %s" seg-docs seg-name doc))
-        finally (put 'dirvish--available-mode-line-segments 'variable-documentation
-                        (format "%s%s" doc-head seg-docs)))
-       (defun ,ml-name (dv) ,docstring (ignore dv) ,@body))))
+    `(defun ,ml-name (dv) ,docstring (ignore dv) ,@body)))
 
 ;;;; Helpers
 
