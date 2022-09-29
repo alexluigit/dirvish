@@ -25,7 +25,6 @@
 (require 'transient)
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd-find "dirvish-fd")
-(declare-function dirvish-subtree-prefix "dirvish-subtree")
 (declare-function dirvish-noselect-tramp "dirvish-extras")
 
 ;;;; User Options
@@ -534,8 +533,8 @@ ARGS is a list of keyword arguments for `dirvish' struct."
    (setf dirvish--working-preview-dispathchers (dirvish--preview-dps-validate))
    (setf dirvish--working-attrs (dirvish--attrs-expand attrs))))
 
-(defun dirvish--render-attrs-1 (height width subtree pos remote fns ov align-to)
-  "HEIGHT WIDTH SUBTREE POS REMOTE FNS OV ALIGN-TO."
+(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to)
+  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO."
   (forward-line (- 0 height))
   (cl-dotimes (_ (* (if (eq major-mode 'dired-mode) 2 5) height))
     (when (eobp) (cl-return))
@@ -566,7 +565,10 @@ ARGS is a list of keyword arguments for `dirvish' struct."
        (prog1 (unless (or left right) (cl-return))
          (let* ((right (mapconcat #'concat right "")) (len1 (length right))
                 (left (mapconcat #'concat left ""))
-                (remain (- width (if subtree (dirvish-subtree-prefix) 0) len1))
+                (remain (cl-loop with maxl = 0 for o in (overlays-at l-beg)
+                                 for pfxl = (length (overlay-get o 'line-prefix))
+                                 do (setq maxl (max maxl pfxl))
+                                 finally return (- width maxl len1)))
                 (len2 (min (length left) (max 0 (- remain f-wid 1))))
                 (ovl (make-overlay f-end f-end))
                 (r-pos (if (> remain f-wid) l-end
@@ -585,8 +587,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish--render-attrs (&optional clear)
   "Render or CLEAR attributes in DV's dirvish buffer."
   (cl-loop with remote = (dirvish-prop :remote) with gui = (dirvish-prop :gui)
-           with st = (bound-and-true-p dirvish-subtree--overlays) with fns = ()
-           with height = (frame-height) ; use `window-height' here breaks `dirvish-narrow'
+           with fns = () with height = (frame-height)
            with remain = (- (window-width) (if gui 1 2))
            for (_ width pred render ov) in dirvish--working-attrs
            do (remove-overlays (point-min) (point-max) ov t)
@@ -599,7 +600,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
            (with-silent-modifications
              (unless clear
                (save-excursion
-                 (dirvish--render-attrs-1 height remain st (point)
+                 (dirvish--render-attrs-1 height remain (point)
                                           remote fns ov (if gui 0 2)))))))
 
 ;;;; Advices

@@ -136,10 +136,6 @@ Ensure the entry is inserted to the buffer after directory
 creation even the entry is in nested subtree nodes."
   (when dirvish-subtree--overlays (revert-buffer)))
 
-(defun dirvish-subtree-prefix ()
-  "Calculate subtree prefix length at point."
-  (* (length dirvish-subtree-prefix) (dirvish-subtree--depth)))
-
 (defun dirvish-subtree--depth ()
   "Get subtree depth at point."
   (let ((dps (cl-loop for ov in (overlays-at (point)) collect
