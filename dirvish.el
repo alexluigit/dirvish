@@ -123,7 +123,6 @@ Here are all the predefined segments you can choose from:
 `omit': a `dired-omit-mode' indicator.
 `index': line number / total line count.
 `free-space': amount of free space on `default-directory''s file system.
-
 Others are self-explanatory:
 `file-size', `file-modes', `file-link-number', `file-user',
 `file-group',`file-time',`file-inode-number',`file-device-number'.

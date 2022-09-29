@@ -15,6 +15,9 @@
 ;;; Code:
 
 (declare-function all-the-icons-octicon "all-the-icons")
+(declare-function consult-lsp-file-symbols "consult-lsp")
+(declare-function consult-imenu "consult-imenu")
+(declare-function consult-line "consult")
 (require 'dirvish)
 
 (defcustom dirvish-subtree-listing-switches nil
@@ -67,6 +70,15 @@ The value can be one of: `plus', `arrow', `chevron'."
                :height (* (or (bound-and-true-p dirvish-all-the-icons-height) 1) 0.8)
                :v-adjust 0.1 :face 'dirvish-subtree-state)))))))
 
+(defcustom dirvish-subtree-file-viewer #'dirvish-subtree-default-file-viewer
+  "The function used to view a file node.
+After executing `dirvish-subtree-toggle' on a file node, the
+newly opened file buffer is put in either the session preview
+window or whatever returned by `next-window'.  This function is
+called in the opened file buffer with the original buffer of the
+window as its sole argument."
+  :type 'function :group 'dirvish)
+
 (defface dirvish-subtree-state
   '((t (:inherit dired-ignored :underline nil :background unspecified)))
   "Face used for `expanded-state' attribute."
@@ -116,9 +128,9 @@ Ensure correct DIR when inside of a subtree."
   (if dirvish-subtree--overlays
       (save-excursion
         (and (dirvish-subtree-expand-to file)
-	     (let ((inhibit-read-only t))
-	       (delete-region (progn (beginning-of-line) (point))
-			      (line-beginning-position 2)))))
+	     (let (buffer-read-only)
+               (delete-region (line-beginning-position)
+                              (line-beginning-position 2)))))
     (funcall fn file)))
 
 (defun dirvish-new-empty-file-a (fn file)
@@ -206,6 +218,20 @@ When CLEAR, remove all subtrees in the buffer."
           (dirvish-subtree--insert)))
    finally (and index (if clear (dired-goto-file index)
                         (dirvish-subtree-expand-to index)))))
+
+(defun dirvish-subtree-default-file-viewer (orig-buffer)
+  "Default `dirvish-subtree-file-viewer'.
+Try executing `consult-lsp-file-symbols', `consult-imenu',
+`consult-line' and `imenu' sequentially until one of them
+succeed, switch back to ORIG-BUFFER afterwards regardlessly."
+  (unwind-protect
+      (condition-case nil (consult-lsp-file-symbols t)
+        (error (condition-case nil (consult-imenu)
+                 (error (condition-case nil (consult-line)
+                          (error (message "Failed to view file `%s'. \
+See `dirvish-subtree-file-viewer' for details"
+                                          buffer-file-name)))))))
+    (switch-to-buffer orig-buffer)))
 
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
@@ -297,6 +323,24 @@ When CLEAR, remove all subtrees in the buffer."
   (dirvish-subtree--revert t)
   (goto-char (point-min)))
 
+(defun dirvish-subtree--view-file ()
+  "View file node using `dirvish-subtree-file-viewer'."
+  (let* ((index (dirvish-prop :index))
+         (file (or (and (dirvish-prop :remote)
+                        (user-error "Remote file `%s' not previewed" index))
+                   index))
+         (buf (or (get-file-buffer file) (find-file-noselect file)))
+         orig-buf)
+    (when (with-current-buffer buf
+            (save-excursion (goto-char (point-min))
+                            (search-forward "\0" nil 'noerror)))
+      (kill-buffer buf)
+      (user-error "Binary file `%s' not previewed" file))
+    (with-selected-window (or (get-buffer-window buf) (next-window))
+      (setq orig-buf (current-buffer))
+      (switch-to-buffer buf)
+      (funcall dirvish-subtree-file-viewer orig-buf))))
+
 (defalias 'dirvish-toggle-subtree #'dirvish-subtree-toggle
   "Insert subtree at point or remove it if it was not present.")
 ;;;###autoload
@@ -305,7 +349,9 @@ When CLEAR, remove all subtrees in the buffer."
   (interactive)
   (if (dirvish-subtree--expanded-p)
       (progn (dired-next-line 1) (dirvish-subtree-remove))
-    (dirvish-subtree--insert)))
+    (condition-case err (dirvish-subtree--insert)
+      ('file-error (dirvish-subtree--view-file))
+      ('error (message "%s" (cdr err))))))
 
 (defun dirvish-subtree-toggle-or-open (ev)
   "Toggle the subtree if in a dirline, otherwise open the file.
