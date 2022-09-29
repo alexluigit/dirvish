@@ -194,26 +194,22 @@ creation even the entry is in nested subtree nodes."
       (push ov dirvish-subtree--overlays))))
 
 (defun dirvish-subtree--revert (&optional clear)
-  "Put the `dired-subtree-overlays' again after buffer reverting.
+  "Reinsert saved subtree nodes into the buffer.
 When CLEAR, remove all subtrees in the buffer."
   (cl-loop
-   with maps = () with index = (dirvish-prop :old-index)
-   for ov in dirvish-subtree--overlays
-   for depth = (overlay-get ov 'dired-subtree-depth)
-   for name = (overlay-get ov 'dired-subtree-name)
-   do (push (cons depth name) maps)
-   finally
-   (setq dirvish-subtree--overlays nil)
-   (if (or clear (bound-and-true-p dirvish-emerge--group-overlays))
-       (cl-loop for (depth . name) in maps
-                when (dired-goto-file name)
-                do (progn (dired-next-line 1) (dirvish-subtree-remove))
-                finally (and index (dired-goto-file index)))
-     (cl-loop for (depth . name) in maps
-              when (and (dirvish-subtree-expand-to name)
-                        (not (dirvish-subtree--expanded-p)))
-              do (dirvish-subtree--insert)
-              finally (and index (dirvish-subtree-expand-to index))))))
+   with filenames = (cl-loop for o in dirvish-subtree--overlays
+                             collect (overlay-get o 'dired-subtree-name))
+   with index = (dirvish-prop :old-index)
+   with clear = (or clear (bound-and-true-p dirvish-emerge--group-overlays))
+   initially (setq dirvish-subtree--overlays nil)
+   for filename in filenames
+   do (if clear (when (dired-goto-file filename)
+                  (dired-next-line 1) (dirvish-subtree-remove))
+        (when (and (dirvish-subtree-expand-to filename)
+                   (not (dirvish-subtree--expanded-p)))
+          (dirvish-subtree--insert)))
+   finally (and index (if clear (dired-goto-file index)
+                        (dirvish-subtree-expand-to index)))))
 
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
