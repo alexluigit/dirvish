@@ -136,16 +136,6 @@ Ensure the entry is inserted to the buffer after directory
 creation even the entry is in nested subtree nodes."
   (when dirvish-subtree--overlays (revert-buffer)))
 
-(defun dirvish-subtree--goto-file (filename)
-  "Go to line describing FILENAME."
-  (goto-char (point-min))
-  (let (stop)
-    (while (and (not stop) (= (forward-line) 0))
-      (when (equal filename (dired-get-filename nil t))
-        (setq stop t)
-        (dired-move-to-filename)))
-    stop))
-
 (defun dirvish-subtree-prefix ()
   "Calculate subtree prefix length at point."
   (* (length dirvish-subtree-prefix) (dirvish-subtree--depth)))
@@ -210,18 +200,20 @@ When CLEAR, remove all subtrees in the buffer."
    with maps = () with index = (dirvish-prop :old-index)
    for ov in dirvish-subtree--overlays
    for depth = (overlay-get ov 'dired-subtree-depth)
-   for name = (overlay-get ov 'dired-subtree-name) do
-   (push (cons depth name) maps)
+   for name = (overlay-get ov 'dired-subtree-name)
+   do (push (cons depth name) maps)
    finally
    (setq dirvish-subtree--overlays nil)
-   (cl-loop for (_ . name) in (sort maps (lambda (a b) (< (car a) (car b))))
-            when (dirvish-subtree--goto-file name) do
-            (cond ((or clear (bound-and-true-p dirvish-emerge--group-overlays))
-                   (dired-next-line 1)
-                   (dirvish-subtree-remove))
-                  ((not (dirvish-subtree--expanded-p))
-                   (dirvish-subtree--insert))))
-   (when (and (not clear) index) (dirvish-subtree--goto-file index))))
+   (if (or clear (bound-and-true-p dirvish-emerge--group-overlays))
+       (cl-loop for (depth . name) in maps
+                when (dired-goto-file name)
+                do (progn (dired-next-line 1) (dirvish-subtree-remove))
+                finally (and index (dired-goto-file index)))
+     (cl-loop for (depth . name) in maps
+              when (and (dirvish-subtree-expand-to name)
+                        (not (dirvish-subtree--expanded-p)))
+              do (dirvish-subtree--insert)
+              finally (and index (dirvish-subtree-expand-to index))))))
 
 (dirvish-define-attribute subtree-state
   "A indicator for directory expanding state."
@@ -256,12 +248,9 @@ When CLEAR, remove all subtrees in the buffer."
    (list (directory-file-name (expand-file-name
 	                       (read-file-name "Expand to file: "
 			                       (dired-current-directory))))))
-  (let ((file (dired-get-filename nil t)) dir)
-    (setq file (or file (progn (forward-line 1) (dired-get-filename nil t))))
-    (setq dir (dired-current-directory))
-    (cond ((not file) nil)
-          ((equal file target) target)
-          ((string-prefix-p file target)
+  (let ((file (dired-get-filename nil t)) (dir (dired-current-directory)))
+    (cond ((equal file target) target)
+          ((and file (string-prefix-p file target))
            (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
            (let ((depth (1+ (dirvish-subtree--depth)))
                  (next (car (split-string
