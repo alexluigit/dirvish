@@ -205,11 +205,11 @@ When CLEAR, remove all subtrees in the buffer."
    finally
    (setq dirvish-subtree--overlays nil)
    (if (or clear (bound-and-true-p dirvish-emerge--group-overlays))
-       (cl-loop for (depth . name) in maps
+       (cl-loop for (_depth . name) in maps
                 when (dired-goto-file name)
                 do (progn (dired-next-line 1) (dirvish-subtree-remove))
                 finally (and index (dired-goto-file index)))
-     (cl-loop for (depth . name) in maps
+     (cl-loop for (_depth . name) in maps
               when (and (dirvish-subtree-expand-to name)
                         (not (dirvish-subtree--expanded-p)))
               do (dirvish-subtree--insert)
