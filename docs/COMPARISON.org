@@ -103,13 +103,19 @@ including but not limited to:
 3. ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works in the result
    buffer of ~dirvish-fd~.
 4. The result buffer of ~dirvish-fd~ is added to Dirvish's local history, which
-   means commands like ~dirvish-go-forward/backward-history~ works seamlessly with
+   means commands like ~dirvish-history-go-forward/backward~ works seamlessly with
    ~dirvish-fd~.
 
    ...
 
-* dired-git-info | dired-k
+* dired-git-info | diff-hl | dired-k
 
 The ~vc-state~ and ~git-msg~ attributes in Dirvish can achieve the same
 functionality without sacrificing performance. Meanwhile, these packages doesn't
 mesh well with =dirvish-subtree= nor =dired-subtree=.
+
+* dired-rsync
+
+~dirvish-rsync~ command has feature parity of ~dired-rsync~.  A exclusive feature in
+~dirvish-rsync~ is that it can collect all marked files across different Dired
+buffers as the source files.
