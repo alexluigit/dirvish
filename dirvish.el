@@ -155,11 +155,12 @@ Set it to nil to use the default `mode-line-format'."
   (when-let ((mpv (executable-find "mpv")))
     `((,dirvish-audio-exts . (,mpv "--profile=builtin-pseudo-gui" "%f"))
       (,dirvish-video-exts . (,mpv "%f"))))
-  "Association list of mimetype and external program for `find-file'.
-Each element is of the form (EXTS . (CMD . ARGS)).  EXTS is a
-list of file name extensions.  Once the EXTS is matched with
-FILENAME in `find-file', a subprocess according to CMD and its
-ARGS is issued to open the file outside of Emacs.  The special
+  "Open certain file types using external programs.
+The value should be an association list where each element is of
+the form (EXTS . (CMD . ARGS)).  EXTS is a list of file name
+extensions.  When opening a file whose filename ends with one of
+the EXTS using `dired-find-file', a subprocess according to CMD
+and its ARGS is issued to open the file externally.  The special
 placeholder \"%f\" in the ARGS is replaced by the FILENAME at
 runtime.  Set it to nil disables this feature."
   :group 'dirvish
