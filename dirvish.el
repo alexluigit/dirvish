@@ -968,15 +968,17 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
         (cond ((or layout (not dirvish-use-header-line)) nil)
               (t (or (dirvish-prop :cus-header) dirvish--header-line-fmt)))))
 
-(defun dirvish-revert (&optional _arg _noconfirm)
+(defun dirvish-revert (&optional ignore-auto _noconfirm)
   "Reread the Dirvish buffer.
+When IGNORE-AUTO, refresh file attributes as well.
 Dirvish sets `revert-buffer-function' to this function."
   (dirvish-prop :old-index (dired-get-filename nil t))
   (dolist (keyword dirvish--reset-keywords) (dirvish-prop keyword nil))
   (dired-revert)
   (dirvish--hide-dired-header)
-  (setq-local dirvish--attrs-hash (make-hash-table))
-  (dirvish-data-for-dir default-directory (current-buffer) t)
+  (when ignore-auto ; meaning it is called interactively from user
+    (setq-local dirvish--attrs-hash (make-hash-table))
+    (dirvish-data-for-dir default-directory (current-buffer) t))
   (run-hooks 'dirvish-after-revert-hook))
 
 (defun dirvish-init-dired-buffer ()
