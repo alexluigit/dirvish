@@ -76,7 +76,7 @@ will visit the latest `project-root' after executing
 
 (defun dirvish-side-file-open-fn ()
   "Called before opening a file in side sessions."
-  (let* ((dv (dirvish-curr)) (layout (dv-layout dv))
+  (let* ((dv (dirvish-curr)) (layout (car (dv-layout dv)))
          (mru (get-mru-window nil nil t)))
     (if layout (dirvish-kill dv)
       (when dirvish-side-auto-close
@@ -124,7 +124,7 @@ will visit the latest `project-root' after executing
       (dirvish-prop :cus-header 'dirvish-side-header)
       (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
         (dired-goto-file file))
-      (dirvish--setup-mode-line (dv-layout dv))
+      (dirvish--setup-mode-line (car (dv-layout dv)))
       (dirvish-update-body-h))))
 
 (defun dirvish-side--new (path)
@@ -170,7 +170,7 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Open sidetree: "))))
-  (let ((fullframep (when-let ((dv (dirvish-curr))) (dv-layout dv)))
+  (let ((fullframep (when-let ((dv (dirvish-curr))) (car (dv-layout dv))))
         (visible (dirvish-side--session-visible-p))
         (path (or path (dirvish--get-project-root) default-directory)))
     (cond (fullframep (user-error "Can not create side session here"))

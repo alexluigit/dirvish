@@ -63,6 +63,16 @@ quit it explicitly using ~dirvish-quit~ (bound to =q= by default) command.
 
 See: [[https://github.com/alexluigit/dirvish/discussions/102#discussioncomment-3205349][the rationale behind buffer management in Dirvish]]
 
+** Multiple window layouts
+
+A session with a /layout/ means it has a companion preview window and possibly
+one or more parent windows.  The session layout can be toggled, namely turn
+on/off the preview and parent windows, using ~dirvish-layout-toggle~.
+
+You can define multiple layouts in ~dirvish-layout-recipes~ and cycle them through
+~dirvish-layout-switch~, by doing so you can have various pane-ratio for different
+tasks. For example, 1:3 for image preview, 1:3:5 for general file preview, etc.
+
 ** Hooks
 
 Apart from the hooks provided by Dired, Dirvish got some additions.

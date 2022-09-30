@@ -114,20 +114,6 @@ VC commands, it also provides a way to cycle through the ~vc-*~ preview methods.
 
 *Figure 2*. Toggle ~vc-state~ and ~git-msg~ (attribute), cycle through ~vc-[log|diff|blame]~.
 
-* Manage Dirvish's window layouts (dirvish-layout.el)
-
-This extension provided several commands that can help with managing the window
-layout of Dirvish sessions. They are:
-
-+ ~dirvish-layout-toggle~
-
-  Toggle layout of current Dirvish session.  A session with layout means it has
-  a companion preview window and possibly one or more parent windows.
-
-+ ~dirvish-layout-switch~
-
-  Cycle the layouts defined in ~dirvish-layout-recipes~
-
 * Show icons at front of file name (dirvish-icons.el)
 
 This extension provides two attributes: ~all-the-icons~ and ~vscode-icon~.  To tweak

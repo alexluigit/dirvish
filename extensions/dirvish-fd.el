@@ -246,7 +246,7 @@ should return a list of regular expressions."
 
 (dirvish-define-mode-line fd-timestamp
   "Timestamp of search finished."
-  (when (dv-layout dv) (dirvish-prop :fd-time)))
+  (when (car (dv-layout dv)) (dirvish-prop :fd-time)))
 
 (dirvish-define-mode-line fd-pwd
   "Current working directory."

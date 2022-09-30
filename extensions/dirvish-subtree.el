@@ -374,6 +374,7 @@ This command takes a mouse event EV as its argment."
   [:description
    (lambda () (dirvish--format-menu-heading "Manage subtrees"))
    ("TAB" "Toggle subtree"             dirvish-subtree-toggle :transient t)
+   ("t" "  Expand until target"        dirvish-subtree-expand-to)
    ("u" "  Move up 1 depth level"      dirvish-subtree-up)
    ("r" "  Remove current subtree"     dirvish-subtree-remove)
    ("c" "  Remove all subtrees"        dirvish-subtree-clear)])

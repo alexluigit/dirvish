@@ -14,8 +14,6 @@
 
 ;;; Code:
 
-(declare-function magit-stage-file "magit-apply")
-(declare-function magit-unstage-file "magit-apply")
 (require 'dirvish)
 (define-fringe-bitmap 'dirvish-vc-gutter [250] nil nil '(center repeated))
 
@@ -57,9 +55,6 @@ vc-hooks.el) for detail explanation of these states."
   "Face for commit message overlays."
   :group 'dirvish)
 
-(defconst dirvish-vc-inhibit-exts
-  (append dirvish-image-exts dirvish-video-exts
-          dirvish-audio-exts '("pdf" "epub" "gif")))
 (defvar vc-dir-process-buffer)
 
 (cl-defmethod transient-infix-set ((obj dirvish-vc-preview) value)
@@ -67,8 +62,8 @@ vc-hooks.el) for detail explanation of these states."
   (oset obj value value)
   (let* ((dv (dirvish-curr))
          (buf (current-buffer))
-         (old-layout (dv-layout dv))
-         (new-layout (unless old-layout (dv-last-fs-layout dv)))
+         (old-layout (car (dv-layout dv)))
+         (new-layout (unless old-layout (cdr (dv-layout dv))))
          (new-dps (seq-difference
                    dirvish-preview-dispatchers '(vc-diff vc-log vc-blame))))
     (when value (push (intern (format "%s" value)) new-dps))
@@ -78,7 +73,7 @@ vc-hooks.el) for detail explanation of these states."
         (dirvish-preview-update dv)
       (quit-window nil (dv-root-window dv))
       (delete-window transient--window)
-      (setf (dv-layout dv) new-layout)
+      (setcar (dv-layout dv) new-layout)
       (switch-to-buffer buf)
       (dirvish--init-session dv))))
 
@@ -116,7 +111,7 @@ vc-hooks.el) for detail explanation of these states."
 (dirvish-define-preview vc-diff (ext)
   "Use output of `vc-diff' as preview."
   (when (and (dirvish-prop :vc-backend)
-             (not (member ext dirvish-vc-inhibit-exts))
+             (not (member ext dirvish-media-exts))
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
                        ((symbol-function 'message) #'ignore))
                (vc-diff)))
@@ -141,7 +136,7 @@ vc-hooks.el) for detail explanation of these states."
           (vc-dir file bk)
           (cl-pushnew vc-dir-process-buffer (dv-preview-buffers dv))
           `(buffer . ,(current-buffer)))
-      (when-let* ((file (and (not (member ext dirvish-vc-inhibit-exts))
+      (when-let* ((file (and (not (member ext dirvish-media-exts))
                              (not (memq (vc-state file bk)
                                         '(unregistered ignored)))
                              file))
@@ -158,32 +153,14 @@ vc-hooks.el) for detail explanation of these states."
 
 (dirvish-define-mode-line vc-info
   "Version control info such as git branch."
-  (when-let* ((bk (dirvish-prop :vc-backend))
+  (when-let* (((> (window-width) 30))
+              (bk (dirvish-prop :vc-backend))
               (ml-str (vc-call-backend bk 'mode-line-string default-directory))
               (bk-str (format "%s:" bk)))
     (format " %s %s "
             (propertize bk-str 'face 'bold)
             (propertize (substring ml-str (length bk-str))
                         'face 'font-lock-builtin-face))))
-
-(defun dirvish--magit-on-files (fn &optional fileset)
-  "Execute magit function FN to FILESET."
-  (unless (featurep 'magit)
-    (user-error "Dirvish: install magit.el to use this command"))
-  (setq fileset (or fileset (dired-get-marked-files)))
-  (cl-dolist (file fileset) (funcall fn file))
-  (dired-unmark-all-marks)
-  (revert-buffer))
-
-(defun dirvish-magit-stage-files (&optional fileset)
-  "Stage vc diffs of FILESET using `magit-stage-file'."
-  (interactive)
-  (dirvish--magit-on-files #'magit-stage-file fileset))
-
-(defun dirvish-magit-unstage-files (&optional fileset)
-  "Unstage vc diffs of FILESET using `magit-unstage-file'."
-  (interactive)
-  (dirvish--magit-on-files #'magit-unstage-file fileset))
 
 ;;;###autoload (autoload 'dirvish-vc-menu "dirvish-vc" nil t)
 (transient-define-prefix dirvish-vc-menu ()

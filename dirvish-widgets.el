@@ -435,7 +435,7 @@ GROUP-TITLES is a list of group titles."
   "Cache image/video-thumbnail when `DISPLAY-GRAPHIC-P'."
   (when-let* ((dv (dirvish-curr))
               ((not (dirvish-prop :remote)))
-              ((dv-layout dv))
+              ((car (dv-layout dv)))
               (win (dv-preview-window dv))
               ((window-live-p win))
               (width (window-width win))
@@ -472,11 +472,11 @@ GROUP-TITLES is a list of group titles."
   "Get metadata for image FILE."
   (let ((minfo (dirvish-media--metadata-from-mediainfo (cdr file))))
     (format "%s%s\n%s%s"
-            (dirvish-media--group-heading '("General"))
-            (dirvish-media--format-metadata minfo '(Full-name Format File-size))
             (dirvish-media--group-heading '("Image"))
             (dirvish-media--format-metadata
-             minfo '(Width Height Color-space Chroma-subsampling Bit-depth Compression-mode)))))
+             minfo '(Width Height Color-space Chroma-subsampling Bit-depth Compression-mode))
+            (dirvish-media--group-heading '("General"))
+            (dirvish-media--format-metadata minfo '(Full-name Format File-size)))))
 
 (cl-defmethod dirvish-media-metadata ((file (head video)))
   "Get metadata for video FILE."

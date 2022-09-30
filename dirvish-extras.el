@@ -20,6 +20,8 @@
 ;; - `dirvish-copy-file-path' (autoload)
 ;; - `dirvish-copy-file-directory'
 ;; - `dirvish-total-file-size' (autoload)
+;; - `dirvish-layout-toggle' (autoload)
+;; - `dirvish-layout-switch' (autoload)
 ;; - `dirvish-rename-space-to-underscore'
 ;;
 ;; Transient prefixes included (all autoloaded):
@@ -35,6 +37,18 @@
 
 (require 'dirvish)
 (require 'tramp)
+
+(defcustom dirvish-layout-recipes
+  '((0 0    0.4)   ;        | CURRENT | preview
+    (0 0    0.8)   ;        | current | PREVIEW
+    (1 0.08 0.8)   ; parent | current | PREVIEW
+    (1 0.11 0.55)) ; parent | current | preview
+  "Layout RECIPEs for `dirvish-layout-switch' command.
+RECIPE has the same form as `dirvish-default-layout'."
+  :group 'dirvish
+  :type '(repeat (list (integer :tag "number of parent windows")
+                       (float :tag "max width of parent windows")
+                       (float :tag "width of preview window"))))
 
 (defclass dirvish-attribute (transient-infix)
   ((variable  :initarg :variable))
@@ -71,6 +85,67 @@
     (dirvish--render-attrs 'clear)
     (setq-local dirvish--working-attrs (dirvish--attrs-expand attrs))
     (dirvish--render-attrs)))
+
+;;;###autoload (autoload 'dirvish-setup-menu "dirvish-extras" nil t)
+(defcustom dirvish-ui-setup-items
+  '(("s"  file-size      attr     "File size")
+    ("t"  file-time      attr     "File modification time")
+    ("c"  collapse       attr     "Collapse unique nested paths"
+     (not (dirvish-prop :remote)))
+    ("v"  vc-state       attr     "Version control state"
+     (and (display-graphic-p) (dirvish-prop :vc-backend)))
+    ("m"  git-msg        attr     "Git commit messages"
+     (and (dirvish-prop :vc-backend) (not (dirvish-prop :remote))))
+    ("1" '(0 nil  0.4)   layout   "     -       | current (60%) | preview (40%)")
+    ("2" '(0 nil  0.8)   layout   "     -       | current (20%) | preview (80%)")
+    ("3" '(1 0.08 0.8)   layout   "parent (8%)  | current (12%) | preview (80%)")
+    ("4" '(1 0.11 0.55)  layout   "parent (11%) | current (33%) | preview (55%)"))
+  "ITEMs for `dirvish-setup-menu'.
+A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
+where KEY is the keybinding for the item, VAR can be valid
+attribute (as in `dirvish-attributes') or a layout recipe (see
+`dirvish-layout-recipes'), SCOPE can be `attr' or `layout'.
+DESCRIPTION is the documentation for the VAR.  PRED, when
+present, is wrapped with a lambda and being put into the `:if'
+keyword in that prefix or infix."
+  :group 'dirvish :type 'alist
+  :set
+  (lambda (k v)
+    (set k v)
+    (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attr)) v))
+          (layout-alist (seq-filter (lambda (i) (eq (nth 2 i) 'layout)) v)))
+      (cl-labels ((new-infix (i)
+                    (let* ((infix-var (nth 1 i))
+                           (infix-name (intern (format "dirvish-%s-infix" (nth 1 i))))
+                           (infix-pred (nth 4 i)))
+                      (eval `(transient-define-infix ,infix-name ()
+                               :class 'dirvish-attribute
+                               :variable ',infix-var
+                               :description ,(nth 3 i)
+                               :if (lambda () ,(if infix-pred `,@infix-pred t))))))
+                  (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
+                  (layout-option (i) (list (car i)
+                                           (propertize (nth 3 i) 'face 'font-lock-doc-face)
+                                           `(lambda () (interactive) (dirvish-layout-switch ,(nth 1 i))))))
+        (mapc #'new-infix attr-alist)
+        (eval
+         `(transient-define-prefix dirvish-setup-menu ()
+            "Configure current Dirvish session."
+            [:description
+             (lambda () (dirvish--format-menu-heading "Setup Dirvish UI"))
+             ["Attributes:"
+              ,@(mapcar #'expand-infix attr-alist)]]
+            ["Switch layouts:"
+             :if (lambda () (car (dv-layout (dirvish-curr))))
+             ,@(mapcar #'layout-option layout-alist)]
+            ["Actions:"
+             ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
+             ("RET" "Quit and revert buffer"
+              (lambda () (interactive) (dirvish--init-session (dirvish-curr)) (revert-buffer)))]
+            (interactive)
+            (if dirvish--props
+                (transient-setup 'dirvish-setup-menu)
+              (user-error "`dirvish-setup-menu' is for Dirvish only"))))))))
 
 (defconst dirvish-tramp-preview-cmd
   "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null")
@@ -250,6 +325,48 @@ FILESET defaults to `dired-get-marked-files'."
                               file-size-human-readable)))
       (message "%s" (format "Total size of %s entries: %s" count size)))))
 
+;;;###autoload
+(defun dirvish-layout-toggle ()
+  "Toggle layout of current Dirvish session.
+A session with layout means it has a companion preview window and
+possibly one or more parent windows."
+  (interactive)
+  (let* ((dv (or (dirvish-curr) (user-error "Not a dirvish buffer")))
+         (old-layout (car (dv-layout dv)))
+         (new-layout (unless old-layout (cdr (dv-layout dv))))
+         (buf (current-buffer)))
+    (if old-layout (set-window-configuration (dv-winconf dv))
+      (with-selected-window (dv-root-window dv) (quit-window)))
+    (setcar (dv-layout dv) new-layout)
+    (with-selected-window (dirvish--create-root-window dv)
+      (switch-to-buffer buf)
+      (dirvish--init-session dv)
+      (dirvish-debounce nil (dirvish-preview-update dv)))))
+
+;;;###autoload
+(defun dirvish-layout-switch (&optional recipe)
+  "Switch Dirvish layout according to RECIPE.
+If RECIPE is not provided, switch to the recipe next to the
+current layout defined in `dirvish-layout-recipes'."
+  (interactive)
+  (cl-loop
+   with dv = (let ((dv (dirvish-curr)))
+               (unless dv (user-error "Not in a Dirvish session"))
+               (unless (car (dv-layout dv))
+                 (dirvish-layout-toggle)
+                 (user-error "Dirvish: entering fullscreen")) dv)
+   with old-recipe = (car (dv-layout dv))
+   with recipes = (if recipe (list recipe) dirvish-layout-recipes)
+   with l-length = (length recipes)
+   for idx from 1
+   for recipe in recipes
+   when (or (eq idx l-length) (equal old-recipe recipe))
+   return
+   (let* ((new-idx (if (> idx (1- l-length)) 0 idx))
+          (new-recipe (nth new-idx recipes)))
+     (setf (dv-layout dv) (cons new-recipe new-recipe))
+     (dirvish--init-session dv))))
+
 (defun dirvish-rename-space-to-underscore ()
   "Rename marked files by replacing space to underscore."
   (interactive)
@@ -408,67 +525,6 @@ FILESET defaults to `dired-get-marked-files'."
    ("s" "  Manage subdirs"         dirvish-subdir-menu)
    (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
    ("h" "  More info about Dired"  describe-mode)])
-
-;;;###autoload (autoload 'dirvish-setup-menu "dirvish-extras" nil t)
-(defcustom dirvish-ui-setup-items
-  '(("s"  file-size      attr     "File size")
-    ("t"  file-time      attr     "File modification time")
-    ("c"  collapse       attr     "Collapse unique nested paths"
-     (not (dirvish-prop :remote)))
-    ("v"  vc-state       attr     "Version control state"
-     (and (display-graphic-p) (dirvish-prop :vc-backend)))
-    ("m"  git-msg        attr     "Git commit messages"
-     (and (dirvish-prop :vc-backend) (not (dirvish-prop :remote))))
-    ("1" '(0 nil  0.4)   layout   "     -       | current (60%) | preview (40%)")
-    ("2" '(0 nil  0.8)   layout   "     -       | current (20%) | preview (80%)")
-    ("3" '(1 0.08 0.8)   layout   "parent (8%)  | current (12%) | preview (80%)")
-    ("4" '(1 0.11 0.55)  layout   "parent (11%) | current (33%) | preview (55%)"))
-  "ITEMs for `dirvish-setup-menu'.
-A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
-where KEY is the keybinding for the item, VAR can be valid
-attribute (as in `dirvish-attributes') or a layout recipe (see
-`dirvish-layout-recipes'), SCOPE can be `attr' or `layout'.
-DESCRIPTION is the documentation for the VAR.  PRED, when
-present, is wrapped with a lambda and being put into the `:if'
-keyword in that prefix or infix."
-  :group 'dirvish :type 'alist
-  :set
-  (lambda (k v)
-    (set k v)
-    (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attr)) v))
-          (layout-alist (seq-filter (lambda (i) (eq (nth 2 i) 'layout)) v)))
-      (cl-labels ((new-infix (i)
-                    (let* ((infix-var (nth 1 i))
-                           (infix-name (intern (format "dirvish-%s-infix" (nth 1 i))))
-                           (infix-pred (nth 4 i)))
-                      (eval `(transient-define-infix ,infix-name ()
-                               :class 'dirvish-attribute
-                               :variable ',infix-var
-                               :description ,(nth 3 i)
-                               :if (lambda () ,(if infix-pred `,@infix-pred t))))))
-                  (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
-                  (layout-option (i) (list (car i)
-                                           (propertize (nth 3 i) 'face 'font-lock-doc-face)
-                                           `(lambda () (interactive) (dirvish-switch-layout ,(nth 1 i))))))
-        (mapc #'new-infix attr-alist)
-        (eval
-         `(transient-define-prefix dirvish-setup-menu ()
-            "Configure current Dirvish session."
-            [:description
-             (lambda () (dirvish--format-menu-heading "Setup Dirvish UI"))
-             ["Attributes:"
-              ,@(mapcar #'expand-infix attr-alist)]]
-            ["Switch layouts:"
-             :if (lambda () (dv-layout (dirvish-curr)))
-             ,@(mapcar #'layout-option layout-alist)]
-            ["Actions:"
-             ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
-             ("RET" "Quit and revert buffer"
-              (lambda () (interactive) (dirvish--init-session (dirvish-curr)) (revert-buffer)))]
-            (interactive)
-            (if dirvish--props
-                (transient-setup 'dirvish-setup-menu)
-              (user-error "`dirvish-setup-menu' is for Dirvish only"))))))))
 
 (provide 'dirvish-extras)
 ;;; dirvish-extras.el ends here

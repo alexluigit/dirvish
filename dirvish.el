@@ -47,7 +47,7 @@ The default value contains:
 - gif: preview GIF image files with animation.
 - video: preview videos files with thumbnail, requires `ffmpegthumbnailer'.
 - audio: preview audio files with metadata, requires `mediainfo'.
-- epub: preview epub documents, requires `epub-thumbnail'.
+- epub: preview epub documents, requires `epub-thumbnailer'.
 - pdf: preview pdf documents via `pdf-tools'.
 - archive: preview archive files such as .tar, .zip, requires `tar' / `unzip'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish preview methods")))
@@ -150,7 +150,7 @@ Set it to nil to use the default `mode-line-format'."
 (defconst dirvish-image-exts '("webp" "wmf" "pcx" "xif" "wbmp" "vtf" "tap" "s1j" "sjp" "sjpg" "s1g" "sgi" "sgif" "s1n" "spn" "spng" "xyze" "rgbe" "hdr" "b16" "mdi" "apng" "ico" "pgb" "rlc" "mmr" "fst" "fpx" "fbs" "dxf" "dwg" "djv" "uvvg" "uvg" "uvvi" "uvi" "azv" "psd" "tfx" "t38" "svgz" "svg" "pti" "btf" "btif" "ktx2" "ktx" "jxss" "jxsi" "jxsc" "jxs" "jxrs" "jxra" "jxr" "jxl" "jpf" "jpx" "jpgm" "jpm" "jfif" "jhc" "jph" "jpg2" "jp2" "jls" "hsj2" "hej2" "heifs" "heif" "heics" "heic" "fts" "fit" "fits" "emf" "drle" "cgm" "dib" "bmp" "hif" "avif" "avcs" "avci" "exr" "fax" "icon" "ief" "jpg" "macp" "pbm" "pgm" "pict" "png" "pnm" "ppm" "ras" "rgb" "tga" "tif" "tiff" "xbm" "xpm" "xwd" "jpe" "jpeg"))
 (defconst dirvish-audio-exts '("ape" "stm" "s3m" "ra" "rm" "ram" "wma" "wax" "m3u" "med" "669" "mtm" "m15" "uni" "ult" "mka" "flac" "axa" "kar" "midi" "mid" "s1m" "smp" "smp3" "rip" "multitrack" "ecelp9600" "ecelp7470" "ecelp4800" "vbk" "pya" "lvp" "plj" "dtshd" "dts" "mlp" "eol" "uvva" "uva" "koz" "xhe" "loas" "sofa" "smv" "qcp" "psid" "sid" "spx" "opus" "ogg" "oga" "mp1" "mpga" "m4a" "mxmf" "mhas" "l16" "lbc" "evw" "enw" "evb" "evc" "dls" "omg" "aa3" "at3" "atx" "aal" "acn" "awb" "amr" "ac3" "ass" "aac" "adts" "726" "abs" "aif" "aifc" "aiff" "au" "mp2" "mp3" "mp2a" "mpa" "mpa2" "mpega" "snd" "vox" "wav"))
 (defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
-(defconst dirvish-media-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts '("pdf" "gif")))
+(defconst dirvish-media-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts '("pdf" "epub" "gif")))
 (defcustom dirvish-open-with-programs
   (when-let ((mpv (executable-find "mpv")))
     `((,dirvish-audio-exts . (,mpv "--profile=builtin-pseudo-gui" "%f"))
@@ -397,7 +397,7 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--window-selected-p (dv)
   "Return t if session DV is selected."
-  (eq (if (dv-layout dv) (dv-root-window dv) (frame-selected-window))
+  (eq (if (car (dv-layout dv)) (dv-root-window dv) (frame-selected-window))
       dirvish--selected-window))
 
 (defun dirvish--scopes ()
@@ -433,8 +433,7 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
   (type () :documentation "is the (TYPE FIXED-WIDTH DEDICATED ROOT-WIN-FN FILE-OPEN-FN) struct.")
-  (layout () :documentation "is the working layout.")
-  (last-fs-layout dirvish-default-layout :documentation "is the last fullscreen layout.")
+  (layout (cons nil dirvish-default-layout) :documentation "is the working layouts.")
   (ls-switches dired-listing-switches :documentation "is the listing switches.")
   (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
   (scopes () :documentation "are the \"environments\" such as init frame of this session.")
@@ -450,7 +449,8 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
   (when dirvish-reuse-session
     (cl-loop with scopes = (dirvish--scopes)
              for dv in (hash-table-values dirvish--session-hash)
-             when (and (eq type (car (dv-type dv))) (equal (dv-scopes dv) scopes))
+             when (and (eq type (car (dv-type dv)))
+                       (equal (dv-scopes dv) scopes))
              collect dv)))
 
 (defun dirvish-new (&rest args)
@@ -466,7 +466,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish-kill (dv)
   "Kill the dirvish instance DV."
   (let ((index (cdr (dv-index dv))))
-    (if (not (dv-layout dv))
+    (if (not (car (dv-layout dv)))
         (cl-loop for (_d . b) in (dv-roots dv) when
                  (not (get-buffer-window b)) do (kill-buffer b)
                  finally (setf (dv-index dv) (car (dv-roots dv))))
@@ -668,7 +668,7 @@ buffer, it defaults to filename under the cursor when it is nil."
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
          (new-buffer-p (not buffer)))
-    (if this (set-window-dedicated-p nil nil) (setf (dv-layout dv) nil))
+    (if this (set-window-dedicated-p nil nil) (setcar (dv-layout dv) nil))
     (when new-buffer-p
       (if (not remote)
           (let ((dired-buffers nil)) ; disable reuse from dired
@@ -717,7 +717,7 @@ buffer, it defaults to filename under the cursor when it is nil."
             (f-buf (dirvish--util-buffer 'footer dv t))
             (this-cmd this-command))
         (dirvish-debounce nil
-          (if (not (dv-layout dv))
+          (if (not (car (dv-layout dv)))
               (and (< emacs-major-version 29) (force-mode-line-update))
             (when (and dirvish-use-mode-line (buffer-live-p f-buf))
               (with-current-buffer f-buf (force-mode-line-update)))
@@ -733,7 +733,7 @@ buffer, it defaults to filename under the cursor when it is nil."
       (when (window-live-p win) (set-window-dedicated-p win nil)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
     (unless (dv-roots dv)
-      (when-let ((layout (dv-layout dv))
+      (when-let ((layout (car (dv-layout dv)))
                  (wconf (dv-winconf dv))
                  ((eq buf (window-buffer (selected-window)))))
         (set-window-configuration wconf))
@@ -913,7 +913,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-curr))
-              (buf (and (dv-layout dv) (cdr (dv-index dv))))
+              (buf (and (car (dv-layout dv)) (cdr (dv-index dv))))
               (scale ,(get-font-scale))
               (win-width (floor (/ (window-width) scale)))
               (str-l (format-mode-line
@@ -921,7 +921,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
               (str-r (format-mode-line ',(expand right) nil nil buf))
               (len-r (string-width str-r)))
          (concat
-          (dirvish--bar-image (dv-layout dv) ,header)
+          (dirvish--bar-image (car (dv-layout dv)) ,header)
           (if (< (+ (string-width str-l) len-r) win-width)
               str-l
             (let ((trim (1- (- win-width len-r))))
@@ -1035,11 +1035,12 @@ LEVEL is the depth of current window."
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent-path current))
          (parent-dirs ())
-         (depth (or (car (dv-layout dv)) 0))
+         (depth (or (caar (dv-layout dv)) 0))
          (i 0))
-    (dirvish--setup-mode-line (dv-layout dv))
+    (dirvish--setup-mode-line (car (dv-layout dv)))
     (when-let (fixed (nth 1 (dv-type dv))) (setq window-size-fixed fixed))
-    (set-window-dedicated-p nil (and (or (dv-layout dv) (nth 2 (dv-type dv))) t))
+    (set-window-dedicated-p
+     nil (and (or (car (dv-layout dv)) (nth 2 (dv-type dv))) t))
     (set-window-fringes nil 1 1)
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
@@ -1047,8 +1048,8 @@ LEVEL is the depth of current window."
       (setq current (dirvish--get-parent-path current))
       (setq parent (dirvish--get-parent-path parent)))
     (when (> depth 0)
-      (cl-loop with parent-width = (nth 1 (dv-layout dv))
-               with remain = (- 1 (nth 2 (dv-layout dv)) parent-width)
+      (cl-loop with layout = (car (dv-layout dv)) with parent-width = (nth 1 layout)
+               with remain = (- 1 (nth 2 layout) parent-width)
                with width = (min (/ remain depth) parent-width)
                for level from 1 for (current . parent) in parent-dirs
                for args = `((side . left) (inhibit-same-window . t)
@@ -1141,7 +1142,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (setf (dv-scopes dv) (dirvish--scopes))
   (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
   (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
-  (let* ((layout (dv-layout dv))
+  (let* ((layout (car (dv-layout dv)))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
                    (header (side . above) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))
@@ -1175,13 +1176,14 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (let ((dir (or path default-directory))
         (dv (or dirvish--this (car (dirvish--find-reusable)))))
     (cond (dv (with-selected-window (dirvish--create-root-window dv)
-                (setf (dv-layout dv) layout)
+                (setcar (dv-layout dv) layout)
                 (setq dirvish--this dv)
                 (dirvish-find-entry-a
                  (if (or path (not (eq dirvish-reuse-session 'resume))) dir
                    (car (dv-index dv))))
                 (dirvish--init-session dv)))
-          (t (progn (dirvish-new :layout layout) (dirvish-find-entry-a dir))))))
+          (t (dirvish-new :layout (cons layout dirvish-default-layout))
+             (dirvish-find-entry-a dir)))))
 
 (define-derived-mode dirvish-directory-view-mode
   fundamental-mode "Dirvish-directory-view"
@@ -1239,7 +1241,7 @@ otherwise it defaults to `default-directory'.
 If `one-window-p' returns nil, open PATH using regular Dired."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
   (dirvish--reuse-or-create
-   path (if dirvish--this (dv-layout dirvish--this)
+   path (if dirvish--this (car (dv-layout dirvish--this))
           (and (one-window-p) dirvish-default-layout))))
 
 (transient-define-prefix dirvish-dispatch ()
