@@ -169,39 +169,35 @@ keyword in that prefix or infix."
                    :type ,(cons (if f-dirp 'dir 'file) f-truename))
                  dirvish--attrs-hash)))))
 
-(defun dirvish-gnuls-available-p (dir)
-  "Check if GNU ls is available or not over DIR."
-  (with-temp-buffer
-    (cl-letf (((symbol-function 'display-message-or-buffer) #'ignore))
-      (let ((default-directory dir))
-        (= (tramp-handle-shell-command "ls --version") 0)))))
-
 (defun dirvish-noselect-tramp (fn dir flags remote)
   "Return the Dired buffer at DIR with listing FLAGS.
 Save the REMOTE host to `dirvish-tramp-hosts'.
 FN is the original `dired-noselect' closure."
-  (let* ((r-flags (cdr (assoc remote dirvish-tramp-hosts #'equal)))
-         (ftp (tramp-ftp-file-name-p dir))
+  (let* ((saved-flags (cdr (assoc remote dirvish-tramp-hosts #'equal)))
+         (ftp? (tramp-ftp-file-name-p dir))
          (short-flags "-Alh")
-         (gnu? t)
-         (dired-buffers nil) ; disable reuse from dired
-         (buffer (apply fn (list dir (if ftp short-flags (or r-flags flags))))))
-    (unless (or r-flags ftp)
-      (setq gnu? (dirvish-gnuls-available-p dir))
-      (push (cons remote (if gnu? flags short-flags)) dirvish-tramp-hosts))
-    (unless gnu?
-      (kill-buffer buffer)
-      (setq buffer (apply fn (list dir short-flags))))
+         (default-directory dir)
+         (dired-buffers nil)
+         (buffer (cond (ftp? (funcall fn dir short-flags))
+                       (saved-flags (funcall fn dir saved-flags))
+                       ((= (process-file "ls" nil nil nil "--version") 0)
+                        (push (cons remote flags) dirvish-tramp-hosts)
+                        (funcall fn dir flags))
+                       (t (push (cons remote short-flags) dirvish-tramp-hosts)
+                          (funcall fn dir short-flags)))))
     (with-current-buffer buffer
       (dirvish-prop :tramp (tramp-dissect-file-name dir))
       buffer)))
 
-(defun dirvish-tramp--async-p (&optional vec)
+(defun dirvish-tramp--async-p (vec)
   "Return t if tramp connection VEC support async commands."
-  (when-let ((vec (or vec (dirvish-prop :tramp))))
-    (or (tramp-local-host-p vec)
-        (and (tramp-get-method-parameter vec 'tramp-direct-async)
-             (tramp-get-connection-property vec "direct-async-process" nil)))))
+  ;; no password needed
+  (and (stringp (tramp-get-connection-property vec "first-password-request"))
+       ;; the connection is localhost or support `direct-async-process'
+       (or (tramp-local-host-p vec)
+           (and (tramp-get-method-parameter vec 'tramp-direct-async)
+                (tramp-get-connection-property
+                 vec "direct-async-process" nil)))))
 
 (defun dirvish-tramp-dir-data-proc-s (proc _exit)
   "Sentinel for `dirvish-data-for-dir''s process PROC."

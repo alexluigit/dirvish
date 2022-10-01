@@ -32,13 +32,14 @@
   "The default fd program."
   :type 'string :group 'dirvish)
 
-(defun dirvish-fd--find-ls-program (&optional remote)
-  "Find ls programm on a local or `REMOTE' host ."
+(defun dirvish-fd--find-gnu-ls (&optional remote)
+  "Find ls from gnu coreutils on a local or REMOTE host ."
   (let* ((ls (executable-find "ls" remote))
          (gls (executable-find "gls" remote))
          (idp (executable-find insert-directory-program remote))
          (ls-is-gnu? (and ls (= 0 (process-file ls nil nil nil "--version"))))
-         (idp-is-gnu-ls? (and idp (= 0 (process-file idp nil nil nil "--version")))))
+         (idp-is-gnu-ls?
+          (and idp (= 0 (process-file idp nil nil nil "--version")))))
     (cond
      ;; just use GNU ls if found
      (ls-is-gnu? ls)
@@ -51,7 +52,7 @@
         insert-directory-program))))
 
 (defcustom dirvish-fd-ls-program
-  (dirvish-fd--find-ls-program)
+  (dirvish-fd--find-gnu-ls)
   "Listing program for `fd'."
   :type '(string :tag "Listing program, such as `ls'") :group 'dirvish)
 
@@ -79,6 +80,12 @@ should return a list of regular expressions."
 (defvar dirvish-fd-debounce-timer nil)
 (defvar-local dirvish-fd--output "")
 (defvar-local dirvish-fd--input "" "Last used fd user input.")
+
+(defun dirvish-fd--ensure-fd (remote)
+  "Return fd executable on REMOTE or localhost.
+Raise an error if fd executable is not available."
+  (or (and remote (dirvish-fd--find-fd-program remote)) dirvish-fd-program
+      (user-error "`dirvish-fd' requires `fd', please install it")))
 
 (defsubst dirvish-fd--header-offset ()
   "Return # of header lines in a fd buffer."
@@ -270,17 +277,16 @@ value 16, let the user choose the root directory of their search."
   (let* ((base-dir (cond
                     ((eq current-dir-p 4) default-directory)
                     ((eq current-dir-p 16)
-                     (let ((dir (car (find-file-read-args "Select root directory: " nil))))
+                     (let ((dir (car (find-file-read-args
+                                      "Select root directory: " nil))))
                        (if (file-directory-p dir)
                            (file-name-as-directory dir)
                          (dirvish--get-parent-path dir))))
                     (t dirvish-fd-default-dir)))
          (remote (file-remote-p base-dir))
-         (fd-program (dirvish-fd--get-fd-program remote)))
-    (unless fd-program
-      (user-error "`dirvish-fd' requires `fd', please install it"))
-
-    (let* ((command (concat fd-program " -H -td --color=never -0 . " (file-local-name base-dir)))
+         (fd-program (dirvish-fd--ensure-fd remote)))
+    (let* ((command (concat fd-program " -H -td --color=never -0 . "
+                            (file-local-name base-dir)))
            (default-directory base-dir)
            (output (shell-command-to-string command))
            (files-raw (split-string output "\0" t))
@@ -289,7 +295,7 @@ value 16, let the user choose the root directory of their search."
            (full-file (concat remote file)))
       (dired-jump nil full-file))))
 
-(defun dirvish-fd-filter (proc string)
+(defun dirvish-fd-proc-filter (proc string)
   "Filter for `dirvish-fd' processes PROC and output STRING."
   (let ((buf (process-buffer proc)))
     (if (buffer-name buf)
@@ -329,13 +335,14 @@ value 16, let the user choose the root directory of their search."
   "Revert buffer function for fd buffer."
   (dirvish-fd default-directory (or dirvish-fd--input "")))
 
-(cl-defun dirvish-fd-proc-s (proc _)
+(cl-defun dirvish-fd-proc-sentinel (proc _)
   "Sentinel for `dirvish-fd' process PROC."
   (pcase-let* ((buf (process-buffer proc))
                (success (eq (process-exit-status proc) 0))
                (`(,input ,dir ,dv) (process-get proc 'info)))
     (unless (buffer-live-p buf)
-      (cl-return-from dirvish-fd-proc-s (message "`fd' process terminated")))
+      (cl-return-from dirvish-fd-proc-sentinel
+        (message "`fd' process terminated")))
     (with-selected-window (dv-root-window dv)
       (unless (eq (current-buffer) buf)
         (dirvish-fd-switch-to-buffer buf)))
@@ -352,7 +359,7 @@ value 16, let the user choose the root directory of their search."
             ((equal input "") (dirvish-update-body-h))
             (t (dirvish-fd--narrow input (car (dirvish-prop :fd-arglist)))))
       (when (eq input 'cancelled)
-        (cl-return-from dirvish-fd-proc-s (kill-buffer buf)))
+        (cl-return-from dirvish-fd-proc-sentinel (kill-buffer buf)))
       (let ((bufname (dirvish-fd--bufname input dir dv)))
         (dirvish-prop :root bufname)
         (setf (dv-index dv) (cons bufname buf))
@@ -399,20 +406,6 @@ When GLOB, convert the regexs using `dired-glob-regexp'."
   (interactive)
   (dirvish--kill-buffer (current-buffer)))
 
-(defun dirvish-fd--get-fd-program (remote)
-  "Return executable of fd.
-If `REMOTE' is non-nil, search on remote host."
-  (if remote
-      (dirvish-fd--find-fd-program remote)
-    dirvish-fd-program))
-
-(defun dirvish-fd--get-ls-program (remote)
-  "Return executable of ls.
-If `REMOTE' is non-nil, search on remote host."
-  (if remote
-      (dirvish-fd--find-ls-program remote)
-    dirvish-fd-ls-program))
-
 ;;;###autoload
 (defun dirvish-fd (dir pattern)
   "Run `fd' on DIR and go into Dired mode on a buffer of the output.
@@ -428,14 +421,13 @@ The command run is essentially:
   (or (file-directory-p dir)
       (user-error "'fd' command requires a directory: %s" dir))
   (let* ((remote (file-remote-p dir))
-         (fd-program (dirvish-fd--get-fd-program remote))
-         (ls-program (dirvish-fd--get-ls-program remote))
+         (fd-program (dirvish-fd--ensure-fd remote))
+         (ls-program (or (and remote (dirvish-fd--find-gnu-ls remote))
+                         dirvish-fd-ls-program))
          (dv (or (dirvish-curr) (progn (dirvish dir) dirvish--this)))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
          (buffer (dirvish--util-buffer 'fd dv nil t)))
-    (unless fd-program
-      (user-error "`dirvish-fd' requires `fd', please install it"))
     (dirvish--kill-buffer (get-buffer (dirvish-fd--bufname pattern dir dv)))
     (with-current-buffer buffer
       (erase-buffer)
@@ -461,8 +453,8 @@ The command run is essentially:
                            "--exec-batch" ,ls-program
                            ,@(or (split-string ls-switches) "")
                            "--quoting-style=literal" "--directory"))))
-        (set-process-filter proc #'dirvish-fd-filter)
-        (set-process-sentinel proc #'dirvish-fd-proc-s)
+        (set-process-filter proc #'dirvish-fd-proc-filter)
+        (set-process-sentinel proc #'dirvish-fd-proc-sentinel)
         (dirvish-fd--argparser (split-string (or fd-switches "")))
         (process-put proc 'info (list pattern dir dv))))
     (dirvish-fd-switch-to-buffer buffer)))

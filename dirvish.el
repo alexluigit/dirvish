@@ -679,7 +679,7 @@ buffer, it defaults to filename under the cursor when it is nil."
       (push (cons key buffer) (dv-roots dv))
       (push (cons key buffer) dired-buffers))
     (with-current-buffer buffer
-      (cond (new-buffer-p)
+      (cond (new-buffer-p nil)
             ((and (not remote) (not (equal flags dired-actual-switches)))
              (dired-sort-other flags))
             ((eq dired-auto-revert-buffer t) (revert-buffer))
@@ -1174,7 +1174,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
     (setq dirvish--this dv)))
 
 (defun dirvish--reuse-or-create (path layout)
-  "Find PATH in a dirvish session with LAYOUT."
+  "Find PATH in a dirvish session and set its layout with LAYOUT."
   (let ((dir (or path default-directory))
         (dv (or dirvish--this (car (dirvish--find-reusable)))))
     (cond (dv (with-selected-window (dirvish--create-root-window dv)
