@@ -1,0 +1,59 @@
+#+AUTHOR: Alex Lu
+#+EMAIL: alexluigit@gmail.com
+#+TITLE: User Guide for Absolute Emacs beginners.
+#+startup: content
+
+If you are *new* to Emacs and consider using Dirvish as your =ranger= or =lf=
+replacement, this guide is for you.
+
+TODO: video demo
+
+-----
+
+* Installation
+
+Install [[https://www.gnu.org/software/emacs/][Emacs]] according to the instructions.  [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Dired.html][Dired]] is the Emacs's inbuilt
+DIRectory EDitor, which doesn't require you to install it separably.  Please
+make sure to install Emacs with major version 28+ (29 are recommended).
+
+#+begin_src bash
+  # Clone the repo
+  git clone https://github.com/alexluigit/dirvish ~/dirvish
+  # Prepare the Emacs config
+  cp ~/dirvish/docs/.emacs.d.example ~/.emacs.d
+  # Start Emacs daemon (wait for the package installation)
+  emacs --daemon
+  # Open Emacs
+  emacsclient -cn
+#+end_src
+
+Now you can =M-x dirvish RET=, enjoy!
+
+See [[https://github.com/alexluigit/dirvish#prerequisites][prerequisites]] for other optional dependencies.
+
+* Quickstart
+** New to Emacs?
+
+- [[https://www.youtube.com/watch?v=48JlgiBpw_I][The Absolute Beginner's Guide to Emacs]]
+
+** Dired Basics
+
+- [[https://www.youtube.com/watch?v=5dlydii7tAU][Basics of the Emacs file manager]]
+- [[https://www.emacswiki.org/emacs/DiredMode#Dired][Wiki: Dired-mode]]
+
+** Customize Dired/Dirvish
+
+See [[https://github.com/alexluigit/dirvish#resources][README]]
+
+* Migrating to Emacs?
+** Starter kits
+
+- [[https://github.com/doomemacs/doomemacs][Doom-Emacs (built-in dirvish support)]]
+- [[https://github.com/syl20bnr/spacemacs][Spacemacs]]
+- [[https://github.com/purcell/.emacs.d][Purcell's Emacs config]]
+- [[https://github.com/seagle0128/.emacs.d][Centaur Emacs]]
+
+** Other Resources
+
+- https://wikemacs.org/wiki/Main_Page
+- https://github.com/emacs-tw/awesome-emacs

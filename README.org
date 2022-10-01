@@ -32,7 +32,7 @@ file manager.
 
 * Prerequisites
 
-This package requires =GNU ls= (~gls~ on some OSs), and /optionally/:
+This package requires =GNU ls= (~gls~ on macOS), and /optionally/:
 
 + =fd= as a faster alternative to =find=
 + =imagemagick= for image preview
@@ -107,11 +107,32 @@ After installation, let Dirvish take over Dired globally:
 + [[file:docs/EXTENSIONS.org][Extensions]]
 + [[file:docs/COMPARISON.org][Related projects]]
 + [[file:docs/CHANGELOG.org][Changelog]]
++ [[file:docs/EMACS-NEWCOMERS.org][Absolute beginner's guide]]
 + [[https://github.com/alexluigit/dirvish/discussions][Discussions]]
 
 * Acknowledgements
 
+This package took inspiration from the terminal file manager [[https://github.com/ranger/ranger][ranger]] and [[https://github.com/Alexander-Miller/treemacs][treemacs]]
+from Alexander Miller.  Some of the extensions was initially a rewrite of
+packages provided by [[https://github.com/Fuco1/dired-hacks][dired-hacks]]. These extensions have been greatly enhanced in
+comparison to the original versions.
+
 Thanks Fox Kiester (@noctuid) for the awesome [[https://github.com/alexluigit/dirvish/issues/34][summary]] of Dirvish.
+
+*Code contributions*:
+
+@@html:<a href="https://github.com/alexluigit/dirvish/graphs/contributors">@@
+  @@html:<img src="https://contrib.rocks/image?repo=alexluigit/dirvish" />@@
+@@html:</a>@@
+
+*Useful advice and discussions*:
+
+- [[https://github.com/noctuid][Fox Kiester]]
+- [[https://github.com/jdtsmith][JD Smith]]
+- [[https://github.com/karthink][karthink]]
+- [[https://github.com/gcv][gcv]]
+- [[https://github.com/aikrahguzar][aikrahguzar]]
+- [[https://github.com/minad][Daniel Mendler]]
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 -----

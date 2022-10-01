@@ -372,6 +372,20 @@ These packages are only listed here for discoverability.
 A [[https://github.com/doomemacs/doomemacs/pull/6760][PR]] to make dirvish as the default file manager in doom-emacs is under review.
 
 * FAQ
+** =listing directory failed but ‘access-file’ worked= error on macOS
+
+1. Install =gls= (GNU ls) from GNU coreutils
+
+#+begin_src bash
+  brew install coreutils
+#+end_src
+
+2. Set ~insert-directory-program~ to =gls=
+
+#+begin_src emacs-lisp
+  (setq insert-directory-program "gls")
+#+end_src
+
 ** How to kill all session buffers on quit?
 
 Set ~dirvish-reuse-session~ to nil.
