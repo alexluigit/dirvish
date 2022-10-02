@@ -9,7 +9,7 @@
 
 ;;; Commentary:
 
-;; This library provided core attributes / mode-line segments / preview
+;; This library provides core attributes / mode-line segments / preview
 ;; dispatchers (fast and non-blocking media files preview) for dirvish.
 ;;
 ;; Attributes:
@@ -66,8 +66,6 @@ variable is nil, the auto caching is disabled."
   "Show media properties automatically in preview window."
   :group 'dirvish :type 'boolean)
 
-(defconst dirvish-media--cache-img-fns
-  (cl-loop for dp in '(image video epub) collect (intern (format "dirvish-%s-preview-dp" dp))))
 (defconst dirvish-media--embedded-video-thumb
   (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defconst dirvish-media--img-max-width 2400)
@@ -443,12 +441,12 @@ GROUP-TITLES is a list of group titles."
               ((< (length files)
                   (or (car dirvish-media-auto-cache-threshold) 0))))
     (cl-loop
+     with fns = '(dirvish-image-dp dirvish-video-dp dirvish-epub-dp)
      for file in (directory-files default-directory t)
      for ext = (downcase (or (file-name-extension file) ""))
-     for (cmd . args) = (cl-loop
-                         for fn in dirvish-media--cache-img-fns
-                         for (type . payload) = (funcall fn file ext win dv)
-                         thereis (and (eq type 'media-cache) payload))
+     for (cmd . args) = (cl-loop for fn in fns
+                                 for (k . v) = (funcall fn file ext win dv)
+                                 thereis (and (eq k 'cache) v))
      when cmd do (push (cons (format "%s-%s-img-cache" file width)
                              (list file width cmd args))
                        dirvish-media--cache-pool))))
@@ -497,15 +495,7 @@ GROUP-TITLES is a list of group titles."
   (format "%s%s" (dirvish-media--group-heading '("PDF info"))
           (dirvish-media--metadata-from-pdfinfo (cdr file))))
 
-(defun dirvish-media--type (ext)
-  "Return media file type from file name extension EXT."
-  (cond ((member ext dirvish-image-exts) 'image)
-        ((member ext dirvish-video-exts) 'video)
-        ((and (memq 'pdf-preface dirvish-preview-dispatchers)
-              (equal ext "pdf") 'pdf))
-        (t (user-error "Not a media file"))))
-
-(cl-defmethod dirvish-preview-dispatch ((recipe (head media-img)) dv)
+(cl-defmethod dirvish-preview-dispatch ((recipe (head img)) dv)
   "Insert RECIPE as an image at preview window of DV."
   (let ((buf (dirvish--util-buffer 'preview dv nil t))
         (img (cdr recipe)))
@@ -525,8 +515,13 @@ GROUP-TITLES is a list of group titles."
             (let* ((beg (progn (goto-char (point-max)) (point)))
                    (file (with-current-buffer (cdr (dv-index dv))
                            (dirvish-prop :index)))
-                   (type (dirvish-media--type
-                          (downcase (or (file-name-extension file) "")))))
+                   (ext (downcase (or (file-name-extension file) "")))
+                   (type (cond ((member ext dirvish-image-exts) 'image)
+                               ((member ext dirvish-video-exts) 'video)
+                               ((and (memq 'pdf-preface
+                                           dirvish-preview-dispatchers)
+                                     (equal ext "pdf") 'pdf))
+                               (t (user-error "Not a media file")))))
               ;; ensure the content is higher than the window height to avoid
               ;; unexpected auto scrolling
               (insert "\n\n\n" (dirvish-media-metadata (cons type file))
@@ -535,7 +530,7 @@ GROUP-TITLES is a list of group titles."
               (goto-char 1)))))
       buf)))
 
-(cl-defmethod dirvish-preview-dispatch ((recipe (head media-cache)) dv)
+(cl-defmethod dirvish-preview-dispatch ((recipe (head cache)) dv)
   "Generate cache image according to RECIPE and session DV."
   (let* ((path (dirvish-prop :index))
          (buf (dirvish--util-buffer 'preview dv nil t))
@@ -571,13 +566,16 @@ Require: `mediainfo' (executable)"
 Require: `convert' (executable from `imagemagick' suite)"
   :require ("convert")
   (when (member ext dirvish-image-exts)
-    (let* ((width (dirvish-media--img-size preview-window))
-           (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
-      (if (file-exists-p cache)
-          `(media-img . ,(create-image cache nil nil :max-width width :max-height height))
-        `(media-cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
-                         ,(number-to-string width) ,cache))))))
+    (let* ((w (dirvish-media--img-size preview-window))
+           (h (dirvish-media--img-size preview-window 'height))
+           (cache (dirvish-media--cache-path file (format "images/%s" w) ".jpg")))
+      (cond ((file-exists-p cache)
+             `(img . ,(create-image cache nil nil :max-width w :max-height h)))
+            ((and (< (file-attribute-size (file-attributes file)) 250000)
+                  (member ext '("jpg" "jpeg" "png" "ico" "icns" "bmp" "svg")))
+             `(img . ,(create-image file nil nil :max-width w :max-height h)))
+            (t `(cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
+                          ,(number-to-string w) ,cache)))))))
 
 (dirvish-define-preview gif (file ext)
   "Preview gif images with animations."
@@ -598,8 +596,8 @@ Require: `ffmpegthumbnailer' (executable)"
            (height (dirvish-media--img-size preview-window 'height))
            (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
       (if (file-exists-p cache)
-          `(media-img . ,(create-image cache nil nil :max-width width :max-height height))
-        `(media-cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s"
+          `(img . ,(create-image cache nil nil :max-width width :max-height height))
+        `(cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s"
                          ,(number-to-string width)
                          ,(if dirvish-media--embedded-video-thumb "-m" "")))))))
 
@@ -612,8 +610,8 @@ Require: `epub-thumbnailer' (executable)"
            (height (dirvish-media--img-size preview-window 'height))
            (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
       (if (file-exists-p cache)
-          `(media-img . ,(create-image cache nil nil :max-width width :max-height height))
-        `(media-cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
+          `(img . ,(create-image cache nil nil :max-width width :max-height height))
+        `(cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
 
 (dirvish-define-preview pdf (file ext)
   "Preview pdf files.
@@ -631,8 +629,8 @@ Require: `pdf-tools' (Emacs package)"
            (cache (dirvish-media--cache-path file (format "images/%s" width)))
            (cache-jpg (concat cache ".jpg")))
       (if (file-exists-p cache-jpg)
-          `(media-img . ,(create-image cache-jpg nil nil :max-width width :max-height height))
-        `(media-cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
+          `(img . ,(create-image cache-jpg nil nil :max-width width :max-height height))
+        `(cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
 
 (dirvish-define-preview archive (file ext)
   "Preview archive files.

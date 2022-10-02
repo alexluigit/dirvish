@@ -320,7 +320,7 @@ A dirvish preview dispatcher is a function consumed by
  the cursor) and `preview-window' as ARGLIST.  DOCSTRING and BODY
  is the docstring and body for this function."
   (declare (indent defun) (doc-string 3))
-  (let* ((dp-name (intern (format "dirvish-%s-preview-dp" name)))
+  (let* ((dp-name (intern (format "dirvish-%s-dp" name)))
          (default-arglist '(file ext preview-window dv))
          (ignore-list (cl-set-difference default-arglist arglist))
          (keywords `(:doc ,docstring)))
@@ -495,7 +495,6 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   (cl-loop with dps = (or dps dirvish-preview-dispatchers)
            with res = (prog1 '() (require 'recentf) (require 'ansi-color))
            with fmt = "[Dirvish]: install '%s' executable to preview %s files."
-           with dp-fmt = "dirvish-%s-preview-dp"
            for dp in (append '(disable) dps '(default))
            for info = (alist-get dp dirvish--available-preview-dispatchers)
            for requirements = (plist-get info :require)
@@ -503,7 +502,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
            do (progn (dolist (pkg requirements)
                        (unless (executable-find pkg)
                          (message fmt pkg dp) (setq met nil)))
-                     (when met (push (intern (format dp-fmt dp)) res)))
+                     (when met (push (intern (format "dirvish-%s-dp" dp)) res)))
            finally return (reverse res)))
 
 (defun dirvish--attrs-expand (attrs)
