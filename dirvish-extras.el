@@ -191,13 +191,12 @@ FN is the original `dired-noselect' closure."
 
 (defun dirvish-tramp--async-p (vec)
   "Return t if tramp connection VEC support async commands."
-  ;; no password needed
-  (and (stringp (tramp-get-connection-property vec "first-password-request" nil))
-       ;; the connection is localhost or support `direct-async-process'
-       (or (tramp-local-host-p vec)
-           (and (tramp-get-method-parameter vec 'tramp-direct-async)
-                (tramp-get-connection-property
-                 vec "direct-async-process" nil)))))
+  (or (tramp-local-host-p vec) ; localhost
+      ;; the connection support `direct-async-process' and no password needed
+      (and (stringp (tramp-get-connection-property
+                     vec "first-password-request" nil))
+           (tramp-get-method-parameter vec 'tramp-direct-async)
+           (tramp-get-connection-property vec "direct-async-process" nil))))
 
 (defun dirvish-tramp-dir-data-proc-s (proc _exit)
   "Sentinel for `dirvish-data-for-dir''s process PROC."
