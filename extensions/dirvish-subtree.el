@@ -174,7 +174,10 @@ creation even the entry is in nested subtree nodes."
   (let ((flags (or dirvish-subtree-listing-switches dired-actual-switches)) str)
     (with-temp-buffer
       (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
-        (dired-insert-directory (file-name-as-directory dir) flags)
+        (save-excursion
+          (dired-insert-directory (file-name-as-directory dir) flags))
+        (when (looking-at-p "  total used in directory")
+          (delete-region (point) (line-beginning-position 2)))
         (setq str (buffer-string))
         (if (or (= (length str) 0) (string-prefix-p "//DIRED-OPTIONS//" str)) ""
           (substring (buffer-string) 0 -1))))))
