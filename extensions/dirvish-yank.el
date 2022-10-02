@@ -66,6 +66,11 @@ The value can be a symbol or a function that returns a fileset."
   "The default options for the rsync command."
   :type 'string :group 'dirvish)
 
+(defcustom dirvish-yank-keep-success-log nil
+  "If t then keep logs of all completed yanks.
+By default only logs for yanks that finished with an error are kept alive.")
+
+
 ;;;###autoload (autoload 'dirvish-yank-menu "dirvish-yank" nil t)
 (defcustom dirvish-yank-keys
   '(("y" "Yank (paste) here"           dirvish-yank)
@@ -158,12 +163,35 @@ RANGE can be `buffer', `session', `frame', `all'."
   "Sentinel for yank task PROC."
   (pcase-let ((proc-buf (process-buffer proc))
               (`(,buffer) (process-get proc 'details))
+              (status (process-status proc))
               (success (eq (process-exit-status proc) 0)))
-    (setq dirvish-yank-log-buffers (remove proc-buf dirvish-yank-log-buffers))
-    (if success (kill-buffer proc-buf) (pop-to-buffer proc-buf))
-    (when (eq buffer (current-buffer))
-      (with-current-buffer buffer
-        (revert-buffer) (dirvish-update-body-h)))))
+    (when (memq status '(exit signal))
+      (if (and success (not dirvish-yank-keep-success-log))
+          (kill-buffer proc-buf)
+        (let ((comp-buffer (get-buffer-create "*Dirvish-complete-yank-log*")))
+          (with-current-buffer comp-buffer
+            (goto-char (point-max))
+            (insert "\n\n")
+            (insert-buffer-substring proc-buf)
+            (kill-buffer proc-buf)
+            ;; truncate old logs
+            (save-excursion
+              (delete-region
+               (point-min)
+               (let ((max (point-max)))
+                 (if (< max 20000)
+                     (point-min)
+                   (goto-char max)
+                   (dotimes (_n 40) (backward-paragraph))
+                   (point)))))
+            (when (not success)
+              (message "Yank finised with an error: see buffer %s for details " "*Dirvish-complete-yank-log*")
+              (pop-to-buffer comp-buffer)))))
+
+      (setq dirvish-yank-log-buffers (remove proc-buf dirvish-yank-log-buffers))
+      (when (eq buffer (current-buffer))
+        (with-current-buffer buffer
+          (revert-buffer) (dirvish-update-body-h))))))
 
 (defun dirvish-yank-proc-filter (proc string)
   "Filter for yank task PROC's STRING."
