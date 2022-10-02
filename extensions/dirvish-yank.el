@@ -48,8 +48,8 @@ The value can be a symbol or a function that returns a fileset."
   :group 'dirvish
   :type '(choice (const :tag "prompt for confirmation" ask)
                  (const :tag "always overwrite" always)
-                 (const :tag "never overwrite, skip transferring this file" skip)
-                 (const :tag "never overwrite, create new file instead" never)))
+                 (const :tag "skip transferring files with same names" skip)
+                 (const :tag "overwrite and backup the original file" backup)))
 
 (defcustom dirvish-yank-new-name-style 'append-to-ext
   "Control the way to compose new filename."
@@ -221,37 +221,58 @@ When BATCH, execute the command using `emacs -q -batch'."
             idx (1+ idx)))
     (cons (expand-file-name base-name dest) (expand-file-name bname~ dest))))
 
-(defun dirvish-yank--new-srcs (srcs dest)
-  "Generate new unique file name pairs from SRCS and DEST."
+(defun dirvish-yank--filename-pairs (method srcs dest)
+  "Generate file name pairs from SRCS and DEST for yank METHOD."
   (cl-loop
    with overwrite = (eq dirvish-yank-overwrite-existing-files 'always)
-   with never = (eq dirvish-yank-overwrite-existing-files 'never)
+   with backup = (eq dirvish-yank-overwrite-existing-files 'backup)
    with skip = (eq dirvish-yank-overwrite-existing-files 'skip)
-   with (skipped to-rename) = ()
+   with (result to-rename) = ()
    with dfiles = (directory-files dest nil nil t)
-   with fmt = "Overwrite `%s'? (y)es (n)o (s)kip (q)uit (Y)es-to-all (N)o-to-all (S)kip-all"
    for src in srcs
+   for help-form = (format-message "\
+File `%s' exists, type one of the following keys to continue.
+
+- `y' or SPC to overwrite this file WITHOUT backup
+- `!' answer `y' (overwrite) for all remaining files
+- `n' or DEL to skip this file
+- `N' answer `n' (skip) for all remaining files
+- `b' to overwrite and backup this files
+- `B' answer `b' (overwrite and backup) for all remaining files
+- `q' or ESC to abort the task" src)
    for base = (file-name-nondirectory src)
    for collision = (member base dfiles) do
    (cond ((equal src (concat dest base))
-          (user-error "Source and target are the same file `%s'" src))
-         (overwrite nil)
-         ((and never collision)
-          (push (dirvish-yank--newbase base dfiles dest) to-rename))
-         ((and skip collision) (push src skipped))
+          ;; user may want to make symlink in the same directory
+          (if (memq method '(dired-make-relative-symlink make-symbolic-link))
+              (push (cons src (cdr (dirvish-yank--newbase base dfiles dest)))
+                    result)
+            (user-error "Source and target are the same file `%s'" src)))
+         (overwrite (push (cons src dest) result))
+         ((and backup collision)
+          (push (dirvish-yank--newbase base dfiles dest) to-rename)
+          (push (cons src dest) result))
+         ((and skip collision))
          (collision
-          (cl-case (read-char-choice (format fmt base) '(?y ?Y ?n ?N ?q))
-            (?y nil)
-            (?n (push (dirvish-yank--newbase base dfiles dest) to-rename))
-            (?s (push src skipped))
-            (?Y (setq overwrite t))
-            (?N (setq never t)
-                (push (dirvish-yank--newbase base dfiles dest) to-rename))
-            (?S (push src skipped) )
-            (?q (user-error "Dirvish[info]: yank task aborted")))))
+          (cl-case (read-char-choice
+                    (concat (format-message "Overwrite `%s'?" base)
+                            (format " [Type yn!bq or %s] "
+                                    (key-description (vector help-char))))
+                    '(?y ?\s ?! ?n ?\177 ?N ?b ?B ?q ?\e))
+            ((?y ?\s) (push (cons src dest) result))
+            (?! (setq overwrite t) (push (cons src dest) result))
+            ((?n ?\177) nil)
+            (?N (setq skip t) nil)
+            (?b (push (dirvish-yank--newbase base dfiles dest) to-rename)
+                (push (cons src dest) result))
+            (?B (setq backup t)
+                (push (dirvish-yank--newbase base dfiles dest) to-rename)
+                (push (cons src dest) result))
+            ((?q ?\e) (user-error "Dirvish[info]: yank task aborted"))))
+         (t (push (cons src dest) result)))
    finally return
-   (progn (cl-loop for (from . to) in to-rename do (rename-file from to))
-          (cl-set-difference srcs skipped :test #'equal))))
+   (prog1 result
+     (cl-loop for (from . to) in to-rename do (rename-file from to)))))
 
 (defun dirvish-yank-inject-env (include-regexp)
   "Return a `setq' form that replicates part of the calling environment.
@@ -300,21 +321,23 @@ This command sync SRCS on SHOST to DEST on DHOST."
     (dirvish-yank--execute cmd (list (current-buffer) srcs dest 'rsync))))
 
 (defun dirvish-yank-default-handler (method srcs dest)
-  "Execute a local yank command with type of METHOD.
-SRCS and DEST have to be in the same HOST (local or remote)."
-  (let* ((srcs (dirvish-yank--new-srcs srcs dest))
-         (cmd `(prog1 (require 'dired-aux)
+  "Execute a local yank command with type of METHOD."
+  (let* ((pairs (dirvish-yank--filename-pairs method srcs dest))
+         (count (float (length pairs)))
+         (cmd `(progn
+                 (require 'dired-aux)
+                 (require 'dired-x)
                  ,(dirvish-yank-inject-env dirvish-yank-env-variables-regexp)
                  (cl-loop
-                  with srcs = '(,@srcs) with count = (float (length srcs))
                   with dired-recursive-copies = 'always
                   with dired-copy-preserve-time = ,dired-copy-preserve-time
-                  for idx from 1 for src in srcs
-                  for percent = (if (eq (float idx) count) 100
-                                  (floor (* (/ idx count) 100)))
+                  for idx from 1
+                  for (from . to) in '(,@pairs)
+                  for percent = (if (eq (float idx) ,count) 100
+                                  (floor (* (/ idx ,count) 100)))
                   do (progn (message "%s%%" percent)
                             (condition-case err
-                                (funcall #',method src ,dest t)
+                                (funcall #',method from to t)
                               (file-error
                                (message "%s: %s\n" (car err) (cdr err)) nil)))
                   finally (cl-loop for b in (buffer-list) thereis
