@@ -79,73 +79,67 @@ RECIPE has the same form as `dirvish-default-layout'."
   (let* ((item (oref obj variable))
          (old-val (purecopy dirvish-attributes))
          (new-val (if (equal value "+") (cl-pushnew item old-val)
-                    (remq item old-val)))
-         (attrs (append '(hl-line symlink-target) new-val)))
+                    (remq item old-val))))
     (mapc #'require '(dirvish-widgets dirvish-vc dirvish-collapse))
     (dirvish--render-attrs 'clear)
-    (setq-local dirvish--working-attrs (dirvish--attrs-expand attrs))
+    (setq-local dirvish-attributes new-val)
+    (setq-local dirvish--working-attrs
+                (dirvish--attrs-expand
+                 (append '(hl-line symlink-target) new-val)))
     (dirvish--render-attrs)))
 
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-extras" nil t)
 (defcustom dirvish-ui-setup-items
-  '(("s"  file-size      attr     "File size")
-    ("t"  file-time      attr     "File modification time")
-    ("c"  collapse       attr     "Collapse unique nested paths"
+  '(("s"  file-size     "File size")
+    ("t"  file-time     "File modification time")
+    ("c"  collapse      "Collapse unique nested paths"
      (not (dirvish-prop :remote)))
-    ("v"  vc-state       attr     "Version control state"
+    ("v"  vc-state      "Version control state"
      (and (display-graphic-p) (dirvish-prop :vc-backend)))
-    ("m"  git-msg        attr     "Git commit messages"
+    ("m"  git-msg       "Git commit messages"
      (and (dirvish-prop :vc-backend) (not (dirvish-prop :remote))))
-    ("1" '(0 nil  0.4)   layout   "     -       | current (60%) | preview (40%)")
-    ("2" '(0 nil  0.8)   layout   "     -       | current (20%) | preview (80%)")
-    ("3" '(1 0.08 0.8)   layout   "parent (8%)  | current (12%) | preview (80%)")
-    ("4" '(1 0.11 0.55)  layout   "parent (11%) | current (33%) | preview (55%)"))
+    ("1" '(0 nil  0.4)  "     -       | current (60%) | preview (40%)")
+    ("2" '(0 nil  0.8)  "     -       | current (20%) | preview (80%)")
+    ("3" '(1 0.08 0.8)  "parent (8%)  | current (12%) | preview (80%)")
+    ("4" '(1 0.11 0.55) "parent (11%) | current (33%) | preview (55%)"))
   "ITEMs for `dirvish-setup-menu'.
-A ITEM is a list consists of (KEY VAR SCOPE DESCRIPTION PRED)
-where KEY is the keybinding for the item, VAR can be valid
-attribute (as in `dirvish-attributes') or a layout recipe (see
-`dirvish-layout-recipes'), SCOPE can be `attr' or `layout'.
-DESCRIPTION is the documentation for the VAR.  PRED, when
-present, is wrapped with a lambda and being put into the `:if'
-keyword in that prefix or infix."
+A ITEM is a list consists of (KEY VAR DESC PRED) where KEY is the
+keybinding for the item, VAR can be a valid `dirvish-attributes'
+or a layout recipe (see `dirvish-layout-recipes'), DESC is the
+documentation for the VAR.  The optional PRED is passed as the
+predicate for that infix."
   :group 'dirvish :type 'alist
   :set
-  (lambda (k v)
-    (set k v)
-    (let ((attr-alist (seq-filter (lambda (i) (eq (nth 2 i) 'attr)) v))
-          (layout-alist (seq-filter (lambda (i) (eq (nth 2 i) 'layout)) v)))
-      (cl-labels ((new-infix (i)
-                    (let* ((infix-var (nth 1 i))
-                           (infix-name (intern (format "dirvish-%s-infix" (nth 1 i))))
-                           (infix-pred (nth 4 i)))
-                      (eval `(transient-define-infix ,infix-name ()
-                               :class 'dirvish-attribute
-                               :variable ',infix-var
-                               :description ,(nth 3 i)
-                               :if (lambda () ,(if infix-pred `,@infix-pred t))))))
-                  (expand-infix (i) (list (car i) (intern (format "dirvish-%s-infix" (nth 1 i)))))
-                  (layout-option (i) (list (car i)
-                                           (propertize (nth 3 i) 'face 'font-lock-doc-face)
-                                           `(lambda () (interactive) (dirvish-layout-switch ,(nth 1 i))))))
-        (mapc #'new-infix attr-alist)
-        (eval
-         `(transient-define-prefix dirvish-setup-menu ()
-            "Configure current Dirvish session."
-            [:description
-             (lambda () (dirvish--format-menu-heading "Setup Dirvish UI"))
-             ["Attributes:"
-              ,@(mapcar #'expand-infix attr-alist)]]
-            ["Switch layouts:"
-             :if (lambda () (car (dv-layout (dirvish-curr))))
-             ,@(mapcar #'layout-option layout-alist)]
-            ["Actions:"
-             ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
-             ("RET" "Quit and revert buffer"
-              (lambda () (interactive) (dirvish--init-session (dirvish-curr)) (revert-buffer)))]
-            (interactive)
-            (if dirvish--props
-                (transient-setup 'dirvish-setup-menu)
-              (user-error "`dirvish-setup-menu' is for Dirvish only"))))))))
+  (lambda (key value)
+    (set key value)
+    (cl-loop
+     with (attrs . layouts) = ()
+     for (k v desc pred) in value
+     for name = (and (symbolp v) (intern (format "dirvish-%s-infix" v)))
+     do (if (not name)
+            (push (list k (propertize desc 'face 'font-lock-doc-face)
+                        `(lambda () (interactive) (dirvish-layout-switch ,v)))
+                  layouts)
+          (eval `(transient-define-infix ,name ()
+                   :class 'dirvish-attribute :variable ',v
+                   :description ,desc :if (lambda () ,(if pred `,@pred t))))
+          (push (list k name) attrs))
+     finally
+     (eval
+      `(transient-define-prefix dirvish-setup-menu ()
+         "Configure current Dirvish session."
+         [:description (lambda () (dirvish--format-menu-heading "Setup Dirvish UI"))
+                       ["Attributes:" ,@attrs]]
+         ["Switch layouts:"
+          :if (lambda () (car (dv-layout (dirvish-curr)))) ,@layouts]
+         ["Actions:"
+          ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
+          ("RET" "Apply current settings to future sessions"
+           (lambda () (interactive)
+             (setq-default dirvish-attributes dirvish-attributes)
+             (setq dirvish-default-layout (cdr (dv-layout (dirvish-curr))))
+             (dirvish--init-session (dirvish-curr))
+             (revert-buffer)))])))))
 
 (defconst dirvish-tramp-preview-cmd
   "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null")
