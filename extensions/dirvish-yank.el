@@ -119,7 +119,7 @@ results of `dirvish-yank--get-remote-port'.")
 
 (defun dirvish-yank--get-srcs (&optional range)
   "Get all marked filenames in RANGE.
-RANGE can be `buffer', `session', `frame', `all'."
+RANGE can be `buffer', `session', `all'."
   (setq range (or range 'buffer))
   (cl-remove-duplicates
    (cl-loop
@@ -139,9 +139,9 @@ RANGE can be `buffer', `session', `frame', `all'."
         (dired-map-over-marks (dired-get-filename) nil))))
    :test #'equal))
 
-(defun dirvish-yank--read-dest (method &optional force)
-  "Read dest dir for METHOD when `current-prefix-arg' or FORCE."
-  (list (when (or current-prefix-arg force)
+(defun dirvish-yank--read-dest (method)
+  "Read dest dir for METHOD when prefixed with `current-prefix-arg'."
+  (list (when current-prefix-arg
           (read-file-name (format "%s files to: " method)
                           (dired-dwim-target-directory)
                           nil nil nil 'file-directory-p))))
@@ -321,7 +321,7 @@ This command sync SRCS on SHOST to DEST on DHOST."
     (dirvish-yank--execute cmd (list (current-buffer) srcs dest 'rsync))))
 
 (defun dirvish-yank-default-handler (method srcs dest)
-  "Execute a local yank command with type of METHOD."
+  "Execute yank METHOD on SRCS to DEST."
   (let* ((pairs (dirvish-yank--filename-pairs method srcs dest))
          (count (float (length pairs)))
          (cmd `(progn
@@ -454,7 +454,7 @@ This command requires proper ssh authentication setup to work
 correctly for file transfer involving remote hosts, because rsync
 command is always run locally, the password prompts may lead to
 unexpected errors."
-  (interactive (dirvish-yank--read-dest 'rsync t))
+  (interactive (dirvish-yank--read-dest 'rsync))
   (setq dest (expand-file-name (or dest (dired-current-directory))))
   (let* ((dvec (and (tramp-tramp-file-p dest) (tramp-dissect-file-name dest)))
          (srcs (or (and (functionp dirvish-yank-sources)
