@@ -196,7 +196,13 @@ creation even the entry is in nested subtree nodes."
            (parent (dirvish-subtree--parent (1- beg)))
            (p-depth (and parent (1+ (overlay-get parent 'dired-subtree-depth))))
            (depth (or p-depth 1))
-           (prefix (apply #'concat (make-list depth dirvish-subtree-prefix))))
+           (prefix (apply #'concat (make-list depth dirvish-subtree-prefix)))
+           (prefix-len (length prefix)))
+      (save-excursion
+        (goto-char beg)
+        (while (< (point) end)
+          (add-text-properties (point) (1+ (point)) `(line-prefix ,prefix-len))
+          (forward-line 1)))
       (overlay-put ov 'line-prefix
                    (propertize prefix 'face 'dirvish-subtree-guide))
       (overlay-put ov 'dired-subtree-name dir)

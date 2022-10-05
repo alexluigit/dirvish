@@ -559,15 +559,13 @@ ARGS is a list of keyword arguments for `dirvish' struct."
        for (k . v) = (funcall fn f-beg f-end f-str f-name
                               f-attrs f-type l-beg l-end hl-face)
        do (pcase k ('ov (overlay-put v ov t))
-                 ('left (push v left)) ('right (push v right)))
+                 ('left (setq left (concat v left)))
+                 ('right (setq right (concat v right))))
        finally
        (prog1 (unless (or left right) (cl-return))
-         (let* ((right (mapconcat #'concat right "")) (len1 (length right))
-                (left (mapconcat #'concat left ""))
-                (remain (cl-loop with maxl = 0 for o in (overlays-at l-beg)
-                                 for pfxl = (length (overlay-get o 'line-prefix))
-                                 do (setq maxl (max maxl pfxl))
-                                 finally return (- width maxl len1)))
+         (let* ((len1 (length right))
+                (remain (- width len1
+                           (or (get-text-property l-beg 'line-prefix) 0)))
                 (len2 (min (length left) (max 0 (- remain f-wid 1))))
                 (ovl (make-overlay f-end f-end))
                 (r-pos (if (> remain f-wid) l-end
@@ -578,7 +576,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
                 (spc (propertize " " 'display spec 'face hl-face))
                 (ovr (make-overlay r-pos r-pos)))
            (overlay-put ovl 'dirvish-l-end-ov t)
-           (overlay-put ovl 'after-string (substring left 0 len2))
+           (overlay-put ovl 'after-string (substring (or left "") 0 len2))
            (overlay-put ovr 'dirvish-r-end-ov t)
            (overlay-put ovr 'after-string (concat spc right))))))
     (forward-line 1)))
