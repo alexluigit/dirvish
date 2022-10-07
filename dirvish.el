@@ -65,6 +65,13 @@ The default value contains:
   "Do not preview files end with these extensions."
   :group 'dirvish :type '(repeat (string :tag "File name extension")))
 
+(defcustom dirvish-preview-environment
+  '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
+    (enable-dir-local-variables . nil) (enable-local-variables . :safe))
+  "Variables which are bound for default file preview dispatcher.
+Credit: copied from `consult-preview-variables' in `consult.el'."
+  :group 'dirvish :type 'alist)
+
 (defcustom dirvish-cache-dir
   (expand-file-name "dirvish/" user-emacs-directory)
   "Preview / thumbnail cache directory for dirvish."
@@ -227,11 +234,8 @@ input for `dirvish-redisplay-debounce' seconds."
     (define-key map (kbd "?") 'dirvish-dispatch)
     (define-key map (kbd "q") 'dirvish-quit) map)
   "Keymap used in dirvish buffers.")
-(defconst dirvish--preview-variables ; Copied from `consult.el'
-  '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
-    (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
-(defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish-redisplay-debounce-timer nil)
+(defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish--selected-window nil)
 (defvar dirvish--mode-line-fmt nil)
 (defvar dirvish--header-line-fmt nil)
@@ -791,7 +795,7 @@ When FORCE, ensure the preview get refreshed."
     (let* ((vc-follow-symlinks t)
            (vars (mapcar (pcase-lambda (`(,k . ,v))
                            (list k v (default-value k) (symbol-value k)))
-                         dirvish--preview-variables))
+                         dirvish-preview-environment))
            (buf (unwind-protect (progn (pcase-dolist (`(,k ,v . ,_) vars)
                                          (set-default k v) (set k v))
                                        (find-file-noselect name 'nowarn))
