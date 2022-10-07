@@ -329,8 +329,7 @@ possibly one or more parent windows."
     (setcar (dv-layout dv) new-layout)
     (with-selected-window (dirvish--create-root-window dv)
       (switch-to-buffer buf)
-      (dirvish--init-session dv)
-      (dirvish-debounce nil (dirvish-preview-update dv)))))
+      (dirvish--init-session dv))))
 
 ;;;###autoload
 (defun dirvish-layout-switch (&optional recipe)

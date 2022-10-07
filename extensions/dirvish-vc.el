@@ -70,7 +70,7 @@ vc-hooks.el) for detail explanation of these states."
     (setq-local dirvish--working-preview-dispathchers
                 (dirvish--preview-dps-validate new-dps))
     (if (not new-layout)
-        (dirvish-preview-update dv)
+        (dirvish--preview-update dv (dirvish-prop :index))
       (quit-window nil (dv-root-window dv))
       (delete-window transient--window)
       (setcar (dv-layout dv) new-layout)

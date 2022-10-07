@@ -163,7 +163,7 @@ RANGE can be `buffer', `session', `all'."
 (defun dirvish-yank-proc-sentinel (proc _exit)
   "Sentinel for yank task PROC."
   (pcase-let ((proc-buf (process-buffer proc))
-              (`(,buffer) (process-get proc 'details))
+              (`(,buffer ,_ ,_ ,method) (process-get proc 'details))
               (status (process-status proc))
               (success (eq (process-exit-status proc) 0)))
     (when (memq status '(exit signal))
@@ -172,7 +172,8 @@ RANGE can be `buffer', `session', `all'."
         (let ((comp-buffer (dirvish--util-buffer "complete-yank-log" nil nil t)))
           (with-current-buffer comp-buffer
             (goto-char (point-max))
-            (insert "\n\n")
+            (insert "\n\n" (format "%s" method)
+                    " finished @ " (current-time-string) "\n")
             (insert-buffer-substring proc-buf)
             (kill-buffer proc-buf)
             ;; truncate old logs
@@ -364,7 +365,7 @@ This command sync SRCS on SHOST to DEST on DHOST."
                   for (from . to) in '(,@pairs)
                   for percent = (if (eq (float idx) ,count) 100
                                   (floor (* (/ idx ,count) 100)))
-                  do (progn (message "%s%%" percent)
+                  do (progn (message "%s -> %s [%s%%]" from to percent)
                             (condition-case err
                                 (funcall #',method from to t)
                               (file-error

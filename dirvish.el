@@ -32,8 +32,17 @@
 (defgroup dirvish nil "A better Dired." :group 'dired)
 
 (defcustom dirvish-attributes '(file-size)
-  "File attributes such as `file-size' showing in Dirvish file lines.
-See `dirvish-define-attribute'."
+  "File attributes showing in file lines.
+Dirvish ships with these attributes:
+
+- `subtree-state': A indicator for directory expanding state.
+- `all-the-icons': File icons provided by `all-the-icons.el'.
+- `vscode-icon': File icons provided by `vscode-icon.el'.
+- `collapse': Collapse unique nested paths.
+- `git-msg': Append git commit message to filename.
+- `vc-state': The version control state at left fringe.
+- `file-size': file size or directories file count at right fringe.
+- `file-time': Show file modification time before the `file-size'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
 (defcustom dirvish-preview-dispatchers '(image gif video audio epub archive pdf)
@@ -87,9 +96,10 @@ The valid value are:
 - nil: hide mode line in dirvish sessions
 - global: display the mode line across all panes
 - t (and others): Display the mode line across directory panes"
-  :group 'dirvish :type '(choice (const :tag "Do not show the mode line" nil)
-                                 (const :tag "Display the mode line across directory panes" t)
-                                 (const :tag "Make the mode line span all panes" global)))
+  :group 'dirvish
+  :type '(choice (const :tag "Do not show the mode line" nil)
+                 (const :tag "Display the mode line across directory panes" t)
+                 (const :tag "Make the mode line span all panes" global)))
 
 (define-obsolete-variable-alias 'dirvish-header-line-position 'dirvish-use-header-line "Aug 5, 2022")
 (defcustom dirvish-use-header-line t
@@ -98,14 +108,12 @@ The valid value are:
 
 (defcustom dirvish-mode-line-height 30
   "Height of Dirvish's mode line.
-The value should be a cons cell (H-DIRED . H-DIRVISH), where
-H-DIRED and H-DIRVISH represent the height in single window
-session and fullscreen session respectively.  If this value is a
+The value should be a cons cell (H-WIN . H-FRAME), where H-WIN
+and H-FRAME represent the height of mode line in single window
+state and fullframe state respectively.  If this value is a
 integer INT, it is seen as a shorthand for (INT . INT)."
   :group 'dirvish
-  :type '(choice (interger :tag "Mode line height in all sessions.")
-                 (cons (integer :tag "Mode line height in fullscreen sessions.")
-                                (integer :tag "Mode line height in single window sessions."))))
+  :type '(choice interger (cons integer integer)))
 
 (defcustom dirvish-header-line-height 30
   "Like `dirvish-mode-line-height', but for header line."
@@ -222,8 +230,6 @@ input for `dirvish-redisplay-debounce' seconds."
 (defconst dirvish--preview-variables ; Copied from `consult.el'
   '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
     (enable-dir-local-variables . nil) (enable-local-variables . :safe)))
-(defconst dirvish--no-update-preview-cmds
-  '(ace-select-window other-window scroll-other-window scroll-other-window-down))
 (defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish-redisplay-debounce-timer nil)
 (defvar dirvish--selected-window nil)
@@ -698,8 +704,9 @@ buffer, it defaults to filename under the cursor when it is nil."
   (ansi-color-apply-on-region
    (goto-char pos) (progn (forward-line (frame-height)) (point))))
 
-(defun dirvish-update-body-h ()
-  "Update UI of current Dirvish."
+(defun dirvish-update-body-h (&optional force)
+  "Update UI of current Dirvish.
+When FORCE, ensure the preview get refreshed."
   (when-let ((dv (dirvish-curr)))
     (cond ((not dirvish-hide-cursor))
           ((eobp) (forward-line -1))
@@ -712,7 +719,8 @@ buffer, it defaults to filename under the cursor when it is nil."
       (dirvish-prop :index filename)
       (let ((h-buf (dirvish--util-buffer 'header dv t))
             (f-buf (dirvish--util-buffer 'footer dv t))
-            (this-cmd this-command))
+            (last-index (dirvish-prop :last-index)))
+        (dirvish-prop :last-index filename)
         (dirvish-debounce nil
           (if (not (car (dv-layout dv)))
               (and (< emacs-major-version 29) (force-mode-line-update))
@@ -720,8 +728,8 @@ buffer, it defaults to filename under the cursor when it is nil."
               (with-current-buffer f-buf (force-mode-line-update)))
             (when (and dirvish-use-header-line (buffer-live-p h-buf))
               (with-current-buffer h-buf (force-mode-line-update)))
-            (unless (memq this-cmd dirvish--no-update-preview-cmds)
-              (dirvish-preview-update dv))))))))
+            (when (or force (not (equal last-index filename)))
+              (dirvish--preview-update dv filename))))))))
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
@@ -755,7 +763,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Restore hidden sessions on buffer switching."
   (let ((dv (dirvish-curr)))
     (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index dv))))
-    (dirvish-update-body-h)))
+    (dirvish-update-body-h 'force-preview-update)))
 
 (defun dirvish-winbuf-change-h (frame-or-window)
   "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
@@ -861,11 +869,10 @@ When PROC finishes, fill preview buffer with process result."
   "Fill DV's preview buffer with output of sh command from RECIPE."
   (dirvish--run-shell-for-preview dv recipe))
 
-(defun dirvish-preview-update (dv &optional index)
+(defun dirvish--preview-update (dv index)
   "Update preview content of INDEX for DV."
   (when-let* ((window (dv-preview-window dv))
               ((window-live-p window))
-              (index (or index (dirvish-prop :index)))
               (orig-bufs (buffer-list))
               (ext (downcase (or (file-name-extension index) "")))
               (buf (cl-loop for fn in dirvish--working-preview-dispathchers

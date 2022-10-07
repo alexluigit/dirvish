@@ -215,7 +215,7 @@ A new directory is created unless NO-MKDIR."
   (when-let* ((dv (or (dirvish-curr) dirvish--this))
               (path (dirvish-prop :index)))
     (and (equal path (process-get proc 'path))
-         (dirvish-debounce nil (dirvish-preview-update dv)))))
+         (dirvish-debounce nil (dirvish--preview-update dv path)))))
 
 (defun dirvish-media--autocache ()
   "Pop and run the cache tasks in `dirvish-media--cache-pool'."
