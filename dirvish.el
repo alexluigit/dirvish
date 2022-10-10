@@ -210,7 +210,7 @@ input for `dirvish-redisplay-debounce' seconds."
   "Executed after the Dired buffer is showed up."
   :group 'dirvish :type 'hook)
 
-(defcustom dirvish-find-entry-hook nil
+(defcustom dirvish-find-entry-hook '(dirvish-insert-entry-h)
   "Executed after finding a entry."
   :group 'dirvish :type 'hook)
 
@@ -235,6 +235,7 @@ input for `dirvish-redisplay-debounce' seconds."
     (define-key map (kbd "q") 'dirvish-quit) map)
   "Keymap used in dirvish buffers.")
 (defvar dirvish-redisplay-debounce-timer nil)
+(defvar dirvish--history nil)
 (defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish--selected-window nil)
 (defvar dirvish--mode-line-fmt nil)
@@ -734,6 +735,12 @@ When FORCE, ensure the preview get refreshed."
               (with-current-buffer h-buf (force-mode-line-update)))
             (when (or force (not (equal last-index filename)))
               (dirvish--preview-update dv filename))))))))
+
+(defun dirvish-insert-entry-h (entry buffer)
+  "Add ENTRY or BUFFER name to `dirvish--history'."
+  (let ((entry (if (string-prefix-p "🔍" entry)
+                   (buffer-name buffer) entry)))
+    (setq dirvish--history (seq-take (push entry dirvish--history) 200))))
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
