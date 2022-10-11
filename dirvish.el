@@ -999,8 +999,7 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-init-dired-buffer ()
   "Initialize a Dired buffer for dirvish."
   (when (file-remote-p default-directory)
-    (setq-local dirvish--working-preview-dispathchers
-                '(dirvish-tramp-preview-dp)))
+    (setq-local dirvish--working-preview-dispathchers '(dirvish-tramp-dp)))
   (use-local-map dirvish-mode-map)
   (dirvish--hide-cursor)
   (dirvish--hide-dired-header)
