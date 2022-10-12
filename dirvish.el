@@ -782,6 +782,10 @@ When FORCE, ensure the preview get refreshed."
     (with-current-buffer (window-buffer win)
       (when-let ((dv (dirvish-curr))) (dirvish--init-session dv)))))
 
+(defun dirvish-tab-new-post-h (_tab)
+  "Do not reuse sessions from other tabs."
+  (setq dirvish--this nil))
+
 ;;;; Preview
 
 (dirvish-define-preview disable (file ext)
@@ -1234,12 +1238,15 @@ the selected window are buried."
                (image-dired-create-thumbnail-buffer dirvish-thumb-buf-a :around)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
                (wdired-change-to-dired-mode dirvish-init-dired-buffer :after)))
-        (h-fn #'dirvish-selection-change-h))
+        (sel-ch #'dirvish-selection-change-h)
+        (tab-post #'dirvish-tab-new-post-h))
     (if dirvish-override-dired-mode
         (progn (pcase-dolist (`(,sym ,fn ,how) ads) (advice-add sym how fn))
-               (add-hook 'window-selection-change-functions h-fn))
+               (add-hook 'window-selection-change-functions sel-ch)
+               (add-hook 'tab-bar-tab-post-open-functions tab-post))
       (pcase-dolist (`(,sym ,fn) ads) (advice-remove sym fn))
-      (remove-hook 'window-selection-change-functions h-fn))))
+      (remove-hook 'window-selection-change-functions sel-ch)
+      (remove-hook 'tab-bar-tab-post-open-functions tab-post))))
 
 ;;;###autoload
 (defun dirvish (&optional path)
