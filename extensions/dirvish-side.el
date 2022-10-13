@@ -38,10 +38,11 @@ The value can be one of:
 - \\='vsplit - open the file in a vertical split window.
 - a function that returns a target window for the file buffer,
   such as `ace-select-window'."
-  :group 'dirvish :type '(choice (const :tag "open the file in the most-recent-used window" mru)
-                                 (const :tag "open the file below the mru window" split)
-                                 (const :tag "open the file in a vertical split window" vsplit)
-                                 (function :tag "custom function")))
+  :group 'dirvish
+  :type '(choice (const :tag "open the file in the most-recent-used window" mru)
+                 (const :tag "open the file below the mru window" split)
+                 (const :tag "open the file in a vertical split window" vsplit)
+                 (function :tag "custom function")))
 
 (defcustom dirvish-side-auto-close nil
   "Whether to auto close the side session after opening a file."
@@ -53,24 +54,6 @@ The value can be one of:
 If non-nil, expand all the parent directories of current buffer's
 filename until the project root when opening a side session."
   :group 'dirvish :type 'boolean)
-
-(defcustom dirvish-side-follow-project-switch t
-  "Whether visible side session update index on project switch.
-If this variable is non-nil, the visible `dirvish-side' session
-will visit the latest `project-root' after executing
-`project-switch-project' or `projectile-switch-project'."
-  :group 'dirvish :type 'boolean
-  :set
-  (lambda (key enabled)
-    (set key enabled)
-    (if enabled
-        (progn
-          (and (fboundp 'project-switch-project)
-               (advice-add 'project-switch-project :after #'dirvish-side--auto-jump))
-          (add-hook 'projectile-after-switch-project-hook #'dirvish-side--auto-jump))
-      (and (fboundp 'project-switch-project)
-           (advice-remove 'project-switch-project #'dirvish-side--auto-jump))
-      (remove-hook 'projectile-after-switch-project-hook #'dirvish-side--auto-jump))))
 
 (defconst dirvish-side-header (dirvish--mode-line-fmt-setter '(project) nil t))
 
@@ -112,20 +95,27 @@ will visit the latest `project-root' after executing
    for dv = (with-current-buffer b (dirvish-curr))
    thereis (and dv (eq 'side (car (dv-type dv))) w)))
 
-(defun dirvish-side--auto-jump (&optional dir)
-  "Visit DIR in current visible `dirvish-side' session."
-  (setq dir (dirvish--get-project-root dir))
-  (when-let* ((win (dirvish-side--session-visible-p))
-              (dv (with-selected-window win
-                    (setq dirvish--this (dirvish-curr))))
-              (file buffer-file-name))
-    (with-selected-window win
-      (when dir (dirvish-find-entry-a dir))
-      (dirvish-prop :cus-header 'dirvish-side-header)
-      (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
-        (dired-goto-file file))
-      (dirvish--setup-mode-line (car (dv-layout dv)))
-      (dirvish-update-body-h))))
+(defun dirvish-side--auto-jump ()
+  "Select latest buffer file in the visible `dirvish-side' session."
+  (run-with-timer
+   0.5 nil
+   (lambda ()
+     (when-let* (((not dirvish--this))
+                 (dir (or (dirvish--get-project-root) default-directory))
+                 (win (dirvish-side--session-visible-p))
+                 (dv (with-selected-window win (dirvish-curr)))
+                 ((not (active-minibuffer-window)))
+                 (file buffer-file-name))
+       (with-selected-window win
+         (when dir
+           (setq dirvish--this dv)
+           (dirvish-find-entry-a dir)
+           (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
+             (dired-goto-file file)))
+         (dirvish-prop :cus-header 'dirvish-side-header)
+         (dirvish--setup-mode-line (car (dv-layout dv)))
+         (dirvish-update-body-h)
+         (setq dirvish--this nil))))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
@@ -156,6 +146,17 @@ will visit the latest `project-root' after executing
     (format " %s %s"
             (propertize "Project:" 'face face)
             (propertize project 'face 'font-lock-string-face))))
+
+;;;###autoload
+(define-minor-mode dirvish-side-follow-mode
+  "Toggle `dirvish-side-follow-mode'.
+When enabled the visible side session will select the current
+buffer's filename.  It will also visits the latest `project-root'
+after switching to a new project."
+  :init-value nil :global t :group 'dirvish
+  (if dirvish-side-follow-mode
+      (add-hook 'buffer-list-update-hook #'dirvish-side--auto-jump)
+    (remove-hook 'buffer-list-update-hook #'dirvish-side--auto-jump)))
 
 ;;;###autoload
 (defun dirvish-side (&optional path)

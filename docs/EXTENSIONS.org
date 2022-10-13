@@ -134,7 +134,10 @@ as a sidebar in the frame.  These customization options are available:
 + ~dirvish-side-width~: Width of the side window.
 + ~dirvish-side-open-file-window-function~: Set window of for opened files.
 + ~dirvish-side-auto-expand~: Whether to auto expand parent directories of current file.
-+ ~dirvish-side-follow-project-switch~: Whether to update the cursor file on project switching.
+
+When ~dirvish-side-follow-mode~ is enabled, the visible side session will select
+the current buffer's filename, similar to ~treemacs-follow-mode~ in =treemacs=. It
+will also visits the latest ~project-root~ after switching to a new project.
 
 * Setup ls switches on the fly (dirvish-ls.el)
 
@@ -238,4 +241,3 @@ If you have [[https://github.com/oantolin/orderless][orderless]] installed, you 
 
 The actual matching styles being applied are determined by your orderless
 config.  Also see ~dirvish-narrow-regex-builder~.
-

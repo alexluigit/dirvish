@@ -263,6 +263,7 @@ The extra commands in this sample config are documented at [[file:EXTENSIONS.org
        ("t" "~/.local/share/Trash/files/" "TrashCan")))
     :config
     ;; (dirvish-peek-mode) ; Preview files in minibuffer
+    ;; (dirvish-side-follow-mode) ; similar to `treemacs-follow-mode'
     (setq dirvish-mode-line-format
           '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
     (setq dirvish-attributes

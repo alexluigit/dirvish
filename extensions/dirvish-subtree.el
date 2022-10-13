@@ -283,8 +283,7 @@ See `dirvish-subtree-file-viewer' for details"
                  (next (car (split-string
                             (substring target (1+ (length file))) "/"))))
              (when (dirvish-subtree--move-to-file next depth)
-               (dirvish-subtree-expand-to target)))
-           (dirvish-subtree-expand-to target))
+               (dirvish-subtree-expand-to target))))
           ((string-prefix-p dir target)
            (let ((depth (dirvish-subtree--depth))
                  (next (car (split-string (substring target (length dir)) "/"))))
