@@ -24,7 +24,8 @@
   "Width of the `dirvish-side' buffer."
   :type 'integer :group 'dirvish)
 
-(defcustom dirvish-side-window-parameters '((no-delete-other-windows . t))
+(defcustom dirvish-side-window-parameters
+  '((no-delete-other-windows . t) (no-other-window . t))
   "Window parameters for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
