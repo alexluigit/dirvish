@@ -109,12 +109,12 @@ filename until the project root when opening a side session."
        (with-selected-window win
          (when dir
            (setq dirvish--this dv)
-           (dirvish-find-entry-a dir)
+           (let (buffer-list-update-hook) (dirvish-find-entry-a dir))
            (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
-             (dired-goto-file file)))
-         (dirvish-prop :cus-header 'dirvish-side-header)
-         (dirvish--setup-mode-line (car (dv-layout dv)))
-         (dirvish-update-body-h)
+             (dired-goto-file file))
+           (dirvish-prop :cus-header 'dirvish-side-header)
+           (dirvish--setup-mode-line (car (dv-layout dv)))
+           (dirvish-update-body-h))
          (setq dirvish--this nil))))))
 
 (defun dirvish-side--new (path)
