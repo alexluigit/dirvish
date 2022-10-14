@@ -1,23 +1,7 @@
 ;;; init.el --- Emacs init file -*- lexical-binding: t -*-
 
-;;;; setup package manager
-(setq
- straight-vc-git-default-clone-depth 1
- straight-check-for-modifications '(check-on-save find-when-checking)
- straight-repository-branch "develop")
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 6))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
 ;;;; install packages
+
 (straight-use-package 'bind-key)
 (straight-use-package 'dirvish)
 (straight-use-package 'all-the-icons)
@@ -52,6 +36,7 @@
 ;;;;; dirvish
 (dirvish-override-dired-mode)
 (dirvish-peek-mode)
+(dirvish-side-follow-mode)
 (setq dirvish-attributes
       '(vc-state file-size git-msg subtree-state all-the-icons collapse file-time))
 (setq dirvish-mode-line-format '(:left (sort symlink) :right (vc-info yank index)))
@@ -59,7 +44,7 @@
 (setq dirvish-side-width 38)
 (setq dirvish-header-line-format '(:left (path) :right (free-space)))
 (setq dired-listing-switches
-      "-g --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
+      "-l --almost-all --human-readable --group-directories-first --no-group")
 (bind-keys ("C-c f" . dirvish-fd)
            :map 'dirvish-mode-map
            ;; left click for expand/collapse dir or open file

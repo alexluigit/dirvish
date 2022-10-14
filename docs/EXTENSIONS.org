@@ -4,7 +4,8 @@
 
 Several small extension packages to Dirvish are maintained in the subdirectory
 /extensions/.  They are installed together with Dirvish if you pull the package
-from MELPA.  All of them are inactive by default.
+from MELPA.  All of these extensions are inactive by default and will be loaded
+on demand (usually you don't have to require them explicitly).
 
 These extensions can augment Dirvish through different ways such as providing
 extra commands/attributes/preview methods, improving UI by the help of

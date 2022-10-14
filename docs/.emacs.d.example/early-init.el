@@ -22,9 +22,23 @@
  custom-file (concat user-emacs-directory "custom.el") ; Place all "custom" code in a temporary file
  use-short-answers t ; y/n for yes/no
  package-quickstart nil ; Prevent package.el loading packages prior to their init-file
- package-enable-at-startup nil)
+ package-enable-at-startup nil
+ straight-vc-git-default-clone-depth 1 ; configure straight.el
+ straight-check-for-modifications '(check-on-save find-when-checking)
+ straight-repository-branch "develop")
 
 (tool-bar-mode -1)                    ; Disable toolbar
 (tooltip-mode -1)                     ; Disable tooltips
 (menu-bar-mode -1)                    ; Disable menu bar
 (scroll-bar-mode -1)                  ; Disable scroll bar
+
+(let ((bootstrap-file
+       (locate-user-emacs-file "straight/repos/straight.el/bootstrap.el")))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))

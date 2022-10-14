@@ -249,14 +249,17 @@ for a directory entry.  On a side note, you can customize the corresponding
 * Sample config
 ** Dirvish
 
-The extra commands in this sample config are documented at [[file:EXTENSIONS.org][Extensions]].
+The extra commands in this sample config are documented at [[file:EXTENSIONS.org][Extensions]].  All of
+these extensions are inactive by default and will be loaded on demand (usually
+you don't have to require them explicitly if you installed dirvish from MELPA or
+=/path/to/dirvish/extensions/= is in your ~load-path~).
 
 #+begin_src emacs-lisp
   (use-package dirvish
     :init
     (dirvish-override-dired-mode)
     :custom
-    (dirvish-quick-access-entries ; It's a :custom option
+    (dirvish-quick-access-entries ; It's a custom option, `setq' won't work
      '(("h" "~/"                          "Home")
        ("d" "~/Downloads/"                "Downloads")
        ("m" "/mnt/"                       "Drives")
@@ -265,12 +268,12 @@ The extra commands in this sample config are documented at [[file:EXTENSIONS.org
     ;; (dirvish-peek-mode) ; Preview files in minibuffer
     ;; (dirvish-side-follow-mode) ; similar to `treemacs-follow-mode'
     (setq dirvish-mode-line-format
-          '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
+          '(:left (sort symlink) :right (omit yank index)))
     (setq dirvish-attributes
-          '(all-the-icons file-size collapse subtree-state vc-state git-msg))
+          '(all-the-icons file-time file-size collapse subtree-state vc-state git-msg))
     (setq delete-by-moving-to-trash t)
     (setq dired-listing-switches
-          "-l --almost-all --human-readable --time-style=long-iso --group-directories-first --no-group")
+          "-l --almost-all --human-readable --group-directories-first --no-group")
     :bind ; Bind `dirvish|dirvish-side|dirvish-dwim' as you see fit
     (("C-c f" . dirvish-fd)
      :map dirvish-mode-map ; Dirvish inherits `dired-mode-map'
@@ -354,7 +357,7 @@ These packages are only listed here for discoverability.
   (use-package diredfl
     :hook
     ((dired-mode . diredfl-mode)
-     ;; highlight parent and preview as well
+     ;; highlight parent and directory preview as well
      (dirvish-directory-view-mode . diredfl-mode))
     :config
     set-face-attribute 'diredfl-dir-name nil :bold t)

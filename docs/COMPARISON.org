@@ -52,29 +52,52 @@ columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.co
 * dired-hacks
 ** dired-ranger
 
-The ~dirvish-yank~ command can do similar things as ~dired-ranger-move/paste~,
+The ~dirvish-yank/move~ command can do similar things as ~dired-ranger-move/paste~,
 meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
 
 - It paste/move files using external processes, hence heavy I/O tasks won't
   block the main process of Emacs.
-- It's much simpler than ~dired-ranger~ because you mark files using built-in
-  Dired commands such as ~dired-mark~, ~dired-mark-extension~.
+- It's much simpler than ~dired-ranger~ because you mark files using inbuilt Dired
+  commands such as ~dired-mark~, ~dired-mark-extension~, to name a few.
 
 ** dired-subtree
 
 Comparing with =dired-subtree=, =dirvish-subtree= has several advantages:
 
-- Small code base: only 200+ lines
+- Small code base: only 300+ lines
 - Way Faster: expands a directory with 50000+ entries almost instantly
+- Provides the ~subtree-state~ attribute
 - Consistency: respects ~dired-actual-switches~
 
 ** dired-filter
 
-TODO
+~dired-filter~ extends the filtering system of Dired on two aspects:
+
+1. Introduces the "filter-stack" concept after =ibuffer=
+
+   Dirvish has no plan on implementing the =ibuffer= like "filter-stack" because
+   IMO the Dired marking system plus different ~dired-listing-switches~ covers
+   almost all the possible file filtering needs.  In terms of filtering files
+   matching multiple criterias, you can always mark files using various
+   ~dired-mark-*~ commands and kill the rest lines.  This also makes
+   ~dirvish-emerge.el~ a relatively small codebase.
+
+2. Allows users to group files via various criteria
+
+   Dirvish implements the second feature as ~dirvish-emerge-mode~. It works in a
+   similar way as ~dired-filter-group-mode~ along with several improvements:
+
+   - File line indexing and reordering happened in one pass (~ 3x faster)
+   - Manage groups using transient menu (~dirvish-emerge-menu~)
+   - Respect configurations in =dir-locals.el=
 
 ** dired-narrow
 
-TODO
+- ~dirvish-narrow~ has (optional) =orderless= integration
+- ~dirvish-narrow~ does not show results from subtrees because it can be confusion
+  sometimes
+
+Other than these, ~dired-narrow~ and ~dirvish-narrow~ works pretty much the same.
 
 ** dired-collapse
 
