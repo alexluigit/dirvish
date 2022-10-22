@@ -514,6 +514,8 @@ Press again to set the value for the group"))
         (add-hook 'dirvish-setup-hook #'dirvish-emerge--apply nil t)
         (unless dirvish-emerge--group-overlays (dirvish-emerge--apply)))
     (remove-hook 'dirvish-setup-hook #'dirvish-emerge--apply t)
+    (mapc #'delete-overlay dirvish-emerge--group-overlays)
+    (setq dirvish-emerge--group-overlays nil)
     (revert-buffer)))
 
 (defun dirvish-emerge--get-group-overlay ()
