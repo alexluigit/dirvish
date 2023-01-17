@@ -618,7 +618,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 ENTRY can be a filename or a string with format of
 `dirvish-fd-bufname' used to query or create a `fd' result
 buffer, it defaults to filename under the cursor when it is nil."
-  (let* ((entry (or entry (dired-get-filename)))
+  (let* ((entry (or entry (dired-get-filename nil t)))
          (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd-find entry))
                        ((file-directory-p entry) (dired-noselect entry)))))
     (if buffer (switch-to-buffer buffer)
