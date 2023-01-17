@@ -248,7 +248,7 @@ GROUP-TITLES is a list of group titles."
 (defun dirvish-media--metadata-from-mediainfo (file)
   "Return result string from command `mediainfo' for FILE."
   (read (format "(%s)" (shell-command-to-string
-                        (format "mediainfo --Output=$'%s' %s"
+                        (format "mediainfo --Output='%s' %s"
                                 dirvish-media--info
                                 (shell-quote-argument file))))))
 
