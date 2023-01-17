@@ -36,7 +36,10 @@
     (let ((path f-name) should-collapse files dirp)
       (while (and (setq dirp (file-directory-p path))
                   (setq files (ignore-errors (directory-files path)))
-                  (= 3 (length files)))
+                  (= 3 (length files))
+                  ;; Don't collapse "." and ".."
+                  (not (or (string-suffix-p ".." path)
+                           (string-suffix-p "/." path))))
         (setq should-collapse t
               path (expand-file-name
                     (thread-last files (remove ".") (remove "..") car)
