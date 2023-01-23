@@ -624,7 +624,10 @@ ENTRY can be a filename or a string with format of
 buffer, it defaults to filename under the cursor when it is nil."
   (let* ((entry (or entry (dired-get-filename nil t)))
          (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd-find entry))
-                       ((file-directory-p entry) (dired-noselect entry)))))
+                       ((file-directory-p entry) (dired-noselect entry))
+                       ((string-suffix-p "/" entry)
+                        (user-error
+                         (concat entry " is not a valid directory"))))))
     (if buffer (switch-to-buffer buffer)
       (let* ((ext (downcase (or (file-name-extension entry) "")))
              (file (expand-file-name entry))

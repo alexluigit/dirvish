@@ -38,10 +38,10 @@ invoke the navigation, PATH is the the argument for command
 
 Here is a sample value for this variable.
 
-\((\"h\"  \"~/\"                   \"Home\")
- (\"t\"  \"~/.local/share/Trash\" \"Trashes\")
- (\"pa\" \"~/Code/proj-a\"        \"Project A\")
- (\"pb\" \"~/Code/proj-b\"        \"Project B\"))"
+\((\"h\"  \"~/\"                    \"Home\")
+ (\"t\"  \"~/.local/share/Trash/\" \"Trashes\")
+ (\"pa\" \"~/Code/proj-a/\"        \"Project A\")
+ (\"pb\" \"~/Code/proj-b/\"        \"Project B\"))"
   :group 'dirvish :type 'alist
   :set
   (lambda (k v)
