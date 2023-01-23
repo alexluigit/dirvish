@@ -111,7 +111,7 @@ To achieve this, the only thing you need to do is put these symbols into
 ~dirvish-attributes~ like this (order doesn't matter):
 
 #+begin_src emacs-lisp
-  ;; Don't worry, Dirvish is still performant even you enable all these attributes
+  ;; Don't worry, Dirvish is still performant even if you enable all these attributes
   (setq dirvish-attributes
         '(vc-state subtree-state all-the-icons collapse git-msg file-time file-size))
 #+end_src
@@ -121,7 +121,7 @@ To achieve this, the only thing you need to do is put these symbols into
 Dirvish uses mode line and header line to display additional information for the
 current directory or session.  The mode line only span the directory panes by
 default, to make them span all panes, just set ~dirvish-use-mode-line~ to ~global~.
-Set the same option to /nil/ hides the mode line in dirvish buffers.
+Setting the same option to /nil/ hides the mode line in dirvish buffers.
 
 To configure the content in the mode line, put the segments you wanted into
 ~dirvish-mode-line-format~.  There is also ~dirvish-mode-line-height~ for you to set

@@ -96,7 +96,7 @@ different ways.  For now we have:
 + ~git-msg~: an attribute to display git commit messages after the file name
 + ~vc-[log|diff|blame]~: VC info preview dispatchers
 
-Besure to put the ~vc-**~ preview dispatcher at the *beginning* of
+Be sure to put the ~vc-**~ preview dispatcher at the *beginning* of
 ~dirvish-preview-dispatchers~ if you want to enable them by default, otherwise the
 preview content might be intercepted by other preview dispatchers.
 
@@ -170,7 +170,7 @@ Too fast? Let's break it down:
 Feel free to experiment with other switches.  A bonus tip: ~dirvish-quicksort~ and
 ~dirvish-ls-switches-menu~ also works in this buffer.
 
-If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have input string looks like /test
+If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have an input string that looks like /test
 ~Emacs .\(py\|yaml\)$/, by doing this you can skip the =-e= and =-E= steps in the
 above example.  The actual matching styles being applied are determined by your
 orderless config.  Also see ~dirvish-fd-regex-builder~.
@@ -233,7 +233,7 @@ state.  Typing =C-g= will cancel the narrowing and restore the original view.  T
 bring it back to the original view after the narrowing, just call ~revert-buffer~
 (usually bound to =g=).
 
-If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have input string looks like /test
+If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have an input string that looks like /test
 ~Emacs .\(py\|yaml\)$/,  meaning:
 
 - match /test/
