@@ -42,7 +42,7 @@
                            (string-suffix-p "/." path))))
         (setq should-collapse t
               path (expand-file-name
-                    (thread-last files (remove ".") (remove "..") car)
+                    (car (remove "." (remove ".." files)))
                     path)))
       (cond
        ((and (eq (length files) 2) (not should-collapse)) (cons 'empty t))
