@@ -226,7 +226,7 @@ When BATCH, execute the command using `emacs -q -batch'."
                (`(,_ ,_ ,dest ,_) details)
                (proc (if batch
                          (let* ((q (if (file-remote-p dest) "-q" "-Q"))
-                                (c (list "emacs" q "-batch" "--eval" cmd)))
+                                (c (list dirvish-emacs-bin q "-batch" "--eval" cmd)))
                            (make-process :name name :buffer buf :command c))
                        (start-process-shell-command name buf cmd))))
     (with-current-buffer buf (dirvish-prop :yank-details details))

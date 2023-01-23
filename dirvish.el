@@ -162,6 +162,10 @@ Set it to nil to use the default `mode-line-format'."
   "Whether to hide cursor in dirvish buffers."
   :group 'dirvish :type 'boolean)
 
+(defconst dirvish-emacs-bin
+  (cond ((eq system-type 'darwin)
+         "/Applications/Emacs.app/Contents/MacOS/Emacs")
+        (t "emacs")))
 (defconst dirvish-image-exts '("webp" "wmf" "pcx" "xif" "wbmp" "vtf" "tap" "s1j" "sjp" "sjpg" "s1g" "sgi" "sgif" "s1n" "spn" "spng" "xyze" "rgbe" "hdr" "b16" "mdi" "apng" "ico" "pgb" "rlc" "mmr" "fst" "fpx" "fbs" "dxf" "dwg" "djv" "uvvg" "uvg" "uvvi" "uvi" "azv" "psd" "tfx" "t38" "svgz" "svg" "pti" "btf" "btif" "ktx2" "ktx" "jxss" "jxsi" "jxsc" "jxs" "jxrs" "jxra" "jxr" "jxl" "jpf" "jpx" "jpgm" "jpm" "jfif" "jhc" "jph" "jpg2" "jp2" "jls" "hsj2" "hej2" "heifs" "heif" "heics" "heic" "fts" "fit" "fits" "emf" "drle" "cgm" "dib" "bmp" "hif" "avif" "avcs" "avci" "exr" "fax" "icon" "ief" "jpg" "macp" "pbm" "pgm" "pict" "png" "pnm" "ppm" "ras" "rgb" "tga" "tif" "tiff" "xbm" "xpm" "xwd" "jpe" "jpeg" "cr2" "arw"))
 (defconst dirvish-audio-exts '("ape" "stm" "s3m" "ra" "rm" "ram" "wma" "wax" "m3u" "med" "669" "mtm" "m15" "uni" "ult" "mka" "flac" "axa" "kar" "midi" "mid" "s1m" "smp" "smp3" "rip" "multitrack" "ecelp9600" "ecelp7470" "ecelp4800" "vbk" "pya" "lvp" "plj" "dtshd" "dts" "mlp" "eol" "uvva" "uva" "koz" "xhe" "loas" "sofa" "smv" "qcp" "psid" "sid" "spx" "opus" "ogg" "oga" "mp1" "mpga" "m4a" "mxmf" "mhas" "l16" "lbc" "evw" "enw" "evb" "evc" "dls" "omg" "aa3" "at3" "atx" "aal" "acn" "awb" "amr" "ac3" "ass" "aac" "adts" "726" "abs" "aif" "aifc" "aiff" "au" "mp2" "mp3" "mp2a" "mpa" "mpa2" "mpega" "snd" "vox" "wav"))
 (defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
@@ -822,10 +826,13 @@ When FORCE, ensure the preview get refreshed."
   (when-let ((attrs (ignore-errors (file-attributes file)))
              (size (file-attribute-size attrs)))
     (cond ((file-directory-p file) ; default directory previewer
-           (let* ((script `(with-current-buffer (dired-noselect ,file "-AlGh")
+           (let* ((script `(with-current-buffer
+                               (progn (setq insert-directory-program
+                                            ,insert-directory-program)
+                                      (dired-noselect ,file "-AlGh"))
                              (buffer-string)))
                   (cmd (format "%S" `(message "\n%s" ,script))))
-             `(dired . ("emacs" "-Q" "-batch" "--eval" ,cmd))))
+             `(dired . (,dirvish-emacs-bin "-Q" "-batch" "--eval" ,cmd))))
           ((> size (or large-file-warning-threshold 10000000))
            `(info . ,(format "File %s is too big for literal preview." file)))
           ((member ext dirvish-media-exts)
@@ -1140,7 +1147,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (let* ((buf (make-temp-name "dir-data-"))
          (c (format "%S" `(message "%s" ,(dirvish--dir-data-getter dir))))
          (proc (make-process :name "dir-data" :connection-type nil :buffer buf
-                             :command (list "emacs" "-Q" "-batch" "--eval" c)
+                             :command (list dirvish-emacs-bin "-Q" "-batch" "--eval" c)
                              :sentinel 'dirvish-dir-data-proc-s)))
     (process-put proc 'meta (cons buffer setup))))
 
