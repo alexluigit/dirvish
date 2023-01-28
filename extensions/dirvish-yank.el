@@ -504,12 +504,8 @@ unexpected errors."
       (dirvish-yank-r2r-handler
        srcs dest (dirvish-yank--extract-host-from-tramp src-0)
        (dirvish-yank--extract-host-from-tramp dest t)))
-     ;; either shost or dhost is localhost
-     ((or (and (not svec) dvec (not (tramp-local-host-p dvec)))
-          (and (not dvec) svec (not (tramp-local-host-p svec))))
-      (dirvish-yank-l2fr-handler srcs dest))
-     ;; using default handler
-     (t (dirvish-yank-default-handler 'dired-copy-file srcs dest)))))
+     ;; either shost, dhost or both are localhost
+     (t (dirvish-yank-l2fr-handler srcs dest)))))
 
 (provide 'dirvish-yank)
 ;;; dirvish-yank.el ends here
