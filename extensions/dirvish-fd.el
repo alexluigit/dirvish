@@ -340,6 +340,8 @@ value 16, let the user choose the root directory of their search."
   (pcase-let* ((buf (process-buffer proc))
                (success (eq (process-exit-status proc) 0))
                (`(,input ,dir ,dv) (process-get proc 'info)))
+    (when (not success)
+      (user-error "Dirvish fd error: %s" dirvish-fd--output))
     (unless (buffer-live-p buf)
       (cl-return-from dirvish-fd-proc-sentinel
         (message "`fd' process terminated")))
