@@ -148,7 +148,7 @@ ssh-agent Environment variables are propagated to emacs."
 
 (defvar dirvish-yank--remote-ssh-args
   "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-  "These args will be used for invoking ssh on remote host (in remote to remote scenario).")
+  "These args will be used for invoking ssh on remote host (in r2r case).")
 
 
 (defvar dirvish-yank--rsync-transient-input-history nil "History list of rsync transient input in the minibuffer.")
@@ -611,12 +611,12 @@ unexpected errors."
      ((and svec dvec (not (tramp-local-host-p svec))
            (not (tramp-local-host-p dvec)))
       (dirvish-yank-r2r-handler
-       srcs dest (dirvish-yank--extract-host-from-tramp src-0)
-       (dirvish-yank--extract-host-from-tramp dest t)))
+       srcs (dirvish-yank--extract-host-from-tramp src-0)
+       (dirvish-yank--extract-host-from-tramp dest)))
      ;; either shost, dhost or both are localhost
      (t (dirvish-yank-l2fr-handler srcs dest)))))
 
-(defun dirvish-yank--rsync-transient-init-value (obj)
+(defun dirvish-yank--rsync-transient-init-value (obj default-value)
   "Select initial values for transient suffixes.
 Use values from the local session or emacs session or saved transient
 values."
