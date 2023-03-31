@@ -9,12 +9,14 @@
 
 ;;; Commentary:
 
-;; Integrate `all-the-icons' and `vscode-icon' with Dirvish.
+;; Integrate `all-the-icons', `emacs-nerd-icons' and `vscode-icon' with Dirvish.
 
 ;;; Code:
 
 (declare-function all-the-icons-icon-for-file "all-the-icons")
 (declare-function all-the-icons-icon-for-dir "all-the-icons")
+(declare-function emacs-nerd-icons-icon-for-file "emacs-nerd-icons")
+(declare-function emacs-nerd-icons-icon-for-dir "emacs-nerd-icons")
 (declare-function vscode-icon-can-scale-image-p "vscode-icon")
 (declare-function vscode-icon-file "vscode-icon")
 (declare-function vscode-icon-dir-exists-p "vscode-icon")
@@ -53,6 +55,25 @@ Values are interpreted as follows:
 - nil, inherit face at point."
   :group 'dirvish :type '(choice face symbol nil))
 
+(defcustom dirvish-emacs-nerd-icons-offset 0.00
+  "Icon's vertical offset used for `emacs-nerd-icons' backend.
+Set it to nil to use the default offset from `emacs-nerd-icons'."
+  :group 'dirvish :type '(choice (float nil)))
+
+(defcustom dirvish-emacs-nerd-icons-height nil
+  "Icon height used for `emacs-nerd-icons' backend.
+The height of the icon is scaled to this value (try 0.8).
+Set it to nil to use the default height from `emacs-nerd-icons'."
+  :group 'dirvish :type '(choice (float nil)))
+
+(defcustom dirvish-emacs-nerd-icons-palette 'emacs-nerd-icons
+  "Coloring style used for file `emacs-nerd-icons' backend.
+Values are interpreted as follows:
+- emacs-nerd-icons, meaning let `emacs-nerd-icons.el' to do the coloring.
+- A face that is used for all the icons.
+- nil, inherit face at point."
+  :group 'dirvish :type '(choice face symbol nil))
+
 (defcustom dirvish-vscode-icon-size 32
   "Icon (image pixel) size used for `vscode-icon' backend.
 The value should be a integer between 23 to 128."
@@ -70,6 +91,23 @@ The value should be a integer between 23 to 128."
          (icon (if (eq (car f-type) 'dir)
                    (apply #'all-the-icons-icon-for-dir f-name icon-attrs)
                  (apply #'all-the-icons-icon-for-file f-str icon-attrs)))
+         (icon-str (concat icon (propertize dirvish-icon-delimiter 'face hl-face)))
+         (ov (make-overlay (1- f-beg) f-beg)))
+    (overlay-put ov 'after-string icon-str)
+    `(ov . ,ov)))
+
+(dirvish-define-attribute emacs-nerd-icons
+  "File icons provided by `emacs-nerd-icons.el'."
+  :width (+ (length dirvish-icon-delimiter) 2)
+  (let* ((offset `(:v-adjust ,dirvish-emacs-nerd-icons-offset))
+         (height `(:height ,dirvish-emacs-nerd-icons-height))
+         (face (cond (hl-face `(:face ,hl-face))
+                     ((eq dirvish-emacs-nerd-icons-palette 'emacs-nerd-icons) nil)
+                     (t `(:face ,dirvish-emacs-nerd-icons-palette))))
+         (icon-attrs (append face offset height))
+         (icon (if (eq (car f-type) 'dir)
+                   (apply #'emacs-nerd-icons-icon-for-dir f-name icon-attrs)
+                 (apply #'emacs-nerd-icons-icon-for-file f-str icon-attrs)))
          (icon-str (concat icon (propertize dirvish-icon-delimiter 'face hl-face)))
          (ov (make-overlay (1- f-beg) f-beg)))
     (overlay-put ov 'after-string icon-str)

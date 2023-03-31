@@ -37,6 +37,7 @@ Dirvish ships with these attributes:
 
 - `subtree-state': A indicator for directory expanding state.
 - `all-the-icons': File icons provided by `all-the-icons.el'.
+- `emacs-nerd-icons': File icons provided by `emacs-nerd-icons.el'.
 - `vscode-icon': File icons provided by `vscode-icon.el'.
 - `collapse': Collapse unique nested paths.
 - `git-msg': Append git commit message to filename.
@@ -228,7 +229,7 @@ input for `dirvish-redisplay-debounce' seconds."
                       file-inode-number file-device-number
                       audio image gif video epub pdf pdf-preface archive)
     (dirvish-vc       vc-state git-msg vc-diff vc-blame vc-log vc-info)
-    (dirvish-icons    all-the-icons vscode-icon)
+    (dirvish-icons    all-the-icons emacs-nerd-icons vscode-icon)
     (dirvish-collapse collapse)
     (dirvish-subtree  subtree-state)
     (dirvish-yank     yank)))
@@ -1041,6 +1042,7 @@ LEVEL is the depth of current window."
         (attrs (append
                 '(hl-line symlink-target)
                 (cond ((memq 'all-the-icons dirvish-attributes) '(all-the-icons))
+                      ((memq 'emacs-nerd-icons dirvish-attributes) '(emacs-nerd-icons))
                       ((memq 'vscode-icon dirvish-attributes) '(vscode-icon))))))
     (with-current-buffer buf
       (dirvish-directory-view-mode)
