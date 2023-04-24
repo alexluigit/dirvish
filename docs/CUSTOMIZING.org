@@ -360,7 +360,7 @@ These packages are only listed here for discoverability.
      ;; highlight parent and directory preview as well
      (dirvish-directory-view-mode . diredfl-mode))
     :config
-    set-face-attribute 'diredfl-dir-name nil :bold t)
+    (set-face-attribute 'diredfl-dir-name nil :bold t))
 
   ;; Use `all-the-icons' as Dirvish's icon backend
   (use-package all-the-icons)
