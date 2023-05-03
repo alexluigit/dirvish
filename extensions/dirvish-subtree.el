@@ -358,8 +358,8 @@ See `dirvish-subtree-file-viewer' for details"
   (if (dirvish-subtree--expanded-p)
       (progn (dired-next-line 1) (dirvish-subtree-remove))
     (condition-case err (dirvish-subtree--insert)
-      ('file-error (dirvish-subtree--view-file))
-      ('error (message "%s" (cdr err))))))
+      (file-error (dirvish-subtree--view-file))
+      (error (message "%s" (cdr err))))))
 
 (defun dirvish-subtree-toggle-or-open (ev)
   "Toggle the subtree if in a dirline, otherwise open the file.
