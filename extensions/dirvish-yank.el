@@ -23,6 +23,7 @@
 ;; - `dirvish-relative-symlink'
 ;; - `dirvish-hardlink'
 ;; - `dirvish-rsync' (requires 'rsync' executable)
+;; - `dirvish-rsync-transient' (requires 'rsync' executable)
 
 ;;; Code:
 
@@ -62,9 +63,9 @@ The value can be a symbol or a function that returns a fileset."
   "The rsync binary that we are going to use."
   :type 'string :group 'dirvish)
 
-(defcustom dirvish-yank-rsync-args "-avz --info=progress2"
+(defcustom dirvish-yank-rsync-args '("--archive" "--verbose" "--compress" "--info=progress2")
   "The default options for the rsync command."
-  :type 'string :group 'dirvish)
+  :type 'list :group 'dirvish)
 
 (defcustom dirvish-yank-keep-success-log nil
   "If t then keep logs of all completed yanks.
@@ -327,6 +328,17 @@ It sets the value for every variable matching INCLUDE-REGEXP."
 
 ;; Thanks to `dired-rsync.el'
 ;; also see: https://unix.stackexchange.com/questions/183504/how-to-rsync-files-between-two-remotes
+
+(defun dirvish-yank--rsync-args ()
+  "Retrieve rsync args for current session or default ones."
+  (or (dirvish-prop :rsync-switches)
+      dirvish-yank-rsync-args))
+
+(defun dirvish-yank--build-rsync-command ()
+  "Compose rsync command and args into the string."
+  (format "%s %s" dirvish-yank-rsync-program
+          (string-join (dirvish-yank--rsync-args) " ")))
+
 (defun dirvish-yank-r2r-handler (srcs dest shost dhost)
   "Construct and trigger an rsync run for remote copy.
 This command sync SRCS on SHOST to DEST on DHOST."
@@ -335,9 +347,8 @@ This command sync SRCS on SHOST to DEST on DHOST."
          (port (dirvish-yank--get-remote-port))
          (dest (shell-quote-argument (file-local-name dest)))
          (rsync-cmd
-          (format "\"%s %s -e \\\"%s\\\" %s %s@localhost:%s\""
-                  dirvish-yank-rsync-program
-                  dirvish-yank-rsync-args
+          (format "\"%s -e \\\"%s\\\" %s %s@localhost:%s\""
+                  (dirvish-yank--build-rsync-command)
                   (format dirvish-yank--remote-portfwd port)
                   (string-join srcs " ") duser dest))
          (bind-addr (format "localhost:%d:%s:22" port dhost))
@@ -349,8 +360,8 @@ This command sync SRCS on SHOST to DEST on DHOST."
   "Execute a local to/from remote rsync command for SRCS and DEST."
   (let* ((srcs (mapcar #'dirvish-yank--filename-for-rsync srcs))
          (dest (dirvish-yank--filename-for-rsync dest))
-         (rsync-cmd (flatten-tree (list dirvish-yank-rsync-program
-                                        dirvish-yank-rsync-args srcs dest)))
+         (rsync-cmd (flatten-tree (list (dirvish-yank--build-rsync-command)
+                                        srcs dest)))
          (cmd (string-join rsync-cmd " ")))
     (dirvish-yank--execute cmd (list (current-buffer) srcs dest 'rsync))))
 
@@ -506,6 +517,82 @@ unexpected errors."
        (dirvish-yank--extract-host-from-tramp dest t)))
      ;; either shost, dhost or both are localhost
      (t (dirvish-yank-l2fr-handler srcs dest)))))
+
+(defun dirvish-yank--rsync-transient-init-value (obj)
+  "Select init values from the local session or emacs session or saved transient values."
+  (if-let ((session-switches (dirvish-prop :rsync-switches)))
+      session-switches
+    ;; dont touch if it is alreday set
+    (if (slot-boundp obj 'value)
+        (oref obj value)
+      ;; check saved values
+      (if-let ((saved (assq (oref obj command) transient-values)))
+          (cdr saved)
+        ;; use flags set via defcustom at last resort
+        dirvish-yank-rsync-args))))
+
+;; inspired by `dired-rsync-transient'
+;;;###autoload (autoload 'dirvish-rsync-transient "dirvish-yank" nil t)
+(transient-define-prefix dirvish-rsync-transient ()
+  "Transient command for `dirvish-rsync'."
+  :init-value (lambda (o) (oset o value (dirvish-yank--rsync-transient-init-value o)))
+  ["Common Arguments"
+   ("-a" "archive mode; equals to -rlptgoD" ("-a" "--archive"))
+   ("-s" "no space-splitting; useful when remote filenames contain spaces" ("-s" "--protect-args") :level 4)
+   ("-r" "recurse into directories" ("-r" "--recursive") :level 5)
+   ("-z" "compress file data during the transfer" ("-z" "--compress"))]
+
+  ["Files selection args"
+   ("-C" "auto-ignore files in the same way CVS does" ("-C" "--cvs-exclude") :level 4)
+   ("=e" "exclude files matching PATTERN" "--exclude="
+    :multi-value repeat :reader dirvish-yank--rsync-transient-read-multiple
+    :prompt "exclude (e.g. ‘*.git’ or ‘*.bin,*.elc’): ")
+   ("=i" "include files matching PATTERN" "--include="
+    :multi-value repeat :reader dirvish-yank--rsync-transient-read-multiple
+    :prompt "include (e.g. ‘*.pdf’ or ‘*.org,*.el’): " :level 5)]
+
+  ["Sender specific args"
+   ("-L" "transform symlink into referent file/dir" ("-L" "--copy-links") :level 4)
+   ("-x" "don't cross filesystem boundaries" ("-x" "--one-file-system") :level 5)
+   ("-l" "copy symlinks as symlinks" ("-l" "--links") :level 5)
+   ("-c" "skip based on checksum, not mod-time & size" ("-c" "--checksum") :level 6)
+   ("-m" "prune empty directory chains from file-list" ("-m" "--prune-empty-dirs") :level 6)
+   ("--size-only" "skip files that match in size" "--size-only" :level 6)]
+  ["Receiver specific args"
+   ("-R" "use relative path names" ("-R" "--relative") :level 4)
+   ("-u" "skip files that are newer on the receiver" ("-u" "--update") :level 4)
+   ("=d" "delete extraneous files from dest dirs" "--delete" :level 4)
+   ("-b" "make backups" ("-b" "--backup") :level 5)
+   ("=bs" "backup suffix" "--suffix="
+    :prompt "backup suffix: "
+    :reader (lambda (prompt &optional _initial-input history)
+              (completing-read prompt nil nil nil nil history))
+    :level 5)
+   ("-num" "don't map uid/gid values by user/group name" "--numeric-ids" :level 5)
+   ("-ex" "skip creating new files on receiver" "--existing" :level 6)
+   ("-K" "treat symlinked dir on receiver as dir" ("-K" "--keep-dirlinks") :level 6)]
+
+  ["Information output"
+   ("-v" "increase verbosity" ("-v" "--verbose"))
+   ("-i" "output a change-summary for all updates" "-i" :level 5)
+   ("-h" "output numbers in a human-readable format" "-h" :level 5)
+   ("=I" "per-file (1) or total transfer (2) progress" "--info="
+    :choices ("progress1" "progress2") :level 4)]
+  ["Action"
+   [("RET" "Apply switches and copy" dirvish-yank--rsync-apply-switches-and-copy)]])
+
+(defun dirvish-yank--rsync-transient-read-multiple (prompt &optional _initial-input history)
+  "Read multiple values after PROMPT with optional INITIAL_INPUT and HISTORY."
+  (let ((crm-separator ","))
+    (completing-read-multiple prompt nil nil nil nil history)))
+
+;;;###autoload
+(defun dirvish-yank--rsync-apply-switches-and-copy (args)
+  "Execute rsync command generated by transient ARGS."
+  (interactive (list (transient-args transient-current-command)))
+  (dirvish-prop :rsync-switches args)
+  (call-interactively #'dirvish-rsync))
+
 
 (provide 'dirvish-yank)
 ;;; dirvish-yank.el ends here
