@@ -358,8 +358,7 @@ value 16, let the user choose the root directory of their search."
                 (propertize (current-time-string)
                             'face (if success 'success 'error))))
       (cond ((not input) (setq input (dirvish-fd--read-input)))
-            ((equal input "") (dirvish-update-body-h))
-            (t (dirvish-fd--narrow input (car (dirvish-prop :fd-arglist)))))
+            (t (dirvish-update-body-h)))
       (when (eq input 'cancelled)
         (cl-return-from dirvish-fd-proc-sentinel (kill-buffer buf)))
       (let ((bufname (dirvish-fd--bufname input dir dv)))
@@ -452,6 +451,7 @@ The command run is essentially:
                          "fd" buffer
                          `(,fd-program "--color=never"
                            ,@(or (split-string fd-switches) "")
+                           ,(or pattern "")
                            "--exec-batch" ,ls-program
                            ,@(or (split-string ls-switches) "")
                            "--quoting-style=literal" "--directory"))))
@@ -460,6 +460,15 @@ The command run is essentially:
         (dirvish-fd--argparser (split-string (or fd-switches "")))
         (process-put proc 'info (list pattern dir dv))))
     (dirvish-fd-switch-to-buffer buffer)))
+
+
+;;;###autoload
+(defun dirvish-fd-ask (dir pattern)
+  "The same as `dirvish-fd' but ask initial `pattern' via prompt. "
+  (interactive (list (and current-prefix-arg
+                          (read-directory-name "Fd target directory: " nil "" t))
+                     (read-from-minibuffer "Pattern: ")))
+  (dirvish-fd dir pattern))
 
 (provide 'dirvish-fd)
 ;;; dirvish-fd.el ends here
