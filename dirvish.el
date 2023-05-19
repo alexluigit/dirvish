@@ -175,7 +175,7 @@ Set it to nil to use the default `mode-line-format'."
 (defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
 (defconst dirvish-media-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts '("pdf" "epub" "gif")))
 (defcustom dirvish-open-with-programs
-  (when-let ((mpv (executable-find "mpv")))
+  (let ((mpv (or (executable-find "mpv") "mpv")))
     `((,dirvish-audio-exts . (,mpv "--profile=builtin-pseudo-gui" "%f"))
       (,dirvish-video-exts . (,mpv "%f"))))
   "Open certain file types using external programs.

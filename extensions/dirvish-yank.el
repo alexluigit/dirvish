@@ -67,8 +67,8 @@ The value can be a symbol or a function that returns a fileset."
   "The default options for the rsync command."
   :type 'list :group 'dirvish)
 
-(defcustom dirvish-yank-keep-success-log nil
-  "If t then keep logs of all completed yanks.
+(defcustom dirvish-yank-keep-success-log t
+  "If non-nil then keep logs of all completed yanks.
 By default only logs for yanks that finished with an error are
 kept alive."
   :type 'boolean :group 'dirvish)
@@ -110,7 +110,9 @@ invoke the CMD, DOC is the documentation string."
 (defconst dirvish-yank-env-variables-regexp
   "\\`\\(tramp-\\(default\\|connection\\|remote\\)\\|ange-ftp\\)-.*"
   "Variables matching this regexp will be loaded on Child Emacs.")
-(defvar dirvish-passphrase-stall-regex "Enter passphrase for key"
+;; matches "Enter passphrase for key ..." (ssh) and "password for ..." (samba)
+(defvar dirvish-passphrase-stall-regex
+  "\\(Enter \\)?[Pp]ass\\(word\\|phrase\\) for\\( key\\)?"
   "A regex to detect passphrase prompts.")
 (defvar dirvish-percent-complete-regex "[[:digit:]]\\{1,3\\}%"
   "A regex to extract the % complete from a file.")
