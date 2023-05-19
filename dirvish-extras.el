@@ -305,7 +305,7 @@ FILESET defaults to `dired-get-marked-files'."
                               (directory-files-recursively f ".*" nil t)))
               (f-size (f) (condition-case nil
                               (file-attribute-size (file-attributes f))
-                            ('file-error 0))))
+                            (file-error 0))))
     (let* ((fileset (or fileset (dired-get-marked-files)))
            (count (propertize (number-to-string (length fileset))
                               'face 'font-lock-builtin-face))
