@@ -15,6 +15,7 @@
 ;;; Code:
 
 (declare-function all-the-icons-octicon "all-the-icons")
+(declare-function nerd-icons-octicon "nerd-icons")
 (declare-function consult-lsp-file-symbols "consult-lsp")
 (declare-function consult-imenu "consult-imenu")
 (declare-function consult-line "consult")
@@ -47,11 +48,12 @@ The prefix is repeated \"depth\" times."
 (defvar dirvish-subtree--state-icons nil)
 (defcustom dirvish-subtree-state-style 'chevron
   "Icon/string used for directory expanded state.
-The value can be one of: `plus', `arrow', `chevron'."
+The value can be one of: `plus', `arrow', `chevron', `nerd'."
   :group 'dirvish :type 'symbol
   :set
   (lambda (k v)
     (and (eq v 'chevron) (not (require 'all-the-icons nil t)) (setq v 'arrow))
+    (and (eq v 'nerd) (not (require 'nerd-icons nil t)) (setq v 'arrow))
     (set k v)
     (setq dirvish-subtree--state-icons
           (pcase (symbol-value k)
@@ -59,6 +61,16 @@ The value can be one of: `plus', `arrow', `chevron'."
                          (propertize "+" 'face 'dirvish-subtree-state)))
             ('arrow (cons (propertize "▾" 'face 'dirvish-subtree-state)
                           (propertize "▸" 'face 'dirvish-subtree-state)))
+            ('nerd
+             (cons
+              (nerd-icons-octicon
+               "nf-oct-chevron_down"
+               :height (* (or (bound-and-true-p dirvish-nerd-icons-height) 1) 0.8)
+               :v-adjust 0.1 :face 'dirvish-subtree-state)
+              (nerd-icons-octicon
+               "nf-oct-chevron_right"
+               :height (* (or (bound-and-true-p dirvish-nerd-icons-height) 1) 0.8)
+               :v-adjust 0.1 :face 'dirvish-subtree-state)))
             ('chevron
              (cons
               (all-the-icons-octicon
