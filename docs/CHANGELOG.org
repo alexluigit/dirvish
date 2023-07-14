@@ -89,7 +89,7 @@
 
 ** Changes since 1.8.14
 
-+ =ls=: apply switches to current session on M-RET ([[https://github.com/alexluigit/dirvish/issus/63][#63]])
++ =ls=: apply switches to current session on M-RET ([[https://github.com/alexluigit/dirvish/issues/63][#63]])
 + =narrow=: C-g to cancel the narrowing / custom regex builder
 + =emerge=:
   - Add ~dirvish-emerge-toggle-current-group~ command to to toggle the visibility of the group
@@ -101,23 +101,23 @@
 
 + =core=:
   - revert to `dirvish-mode` after quit `wdired-mode`
-  - guard `dired-current-directory` in dwim target ([[https://github.com/alexluigit/dirvish/issus/78][#78]])
+  - guard `dired-current-directory` in dwim target ([[https://github.com/alexluigit/dirvish/issues/78][#78]])
   - scroll preview util buffer with `scroll-other-window`
   - set buffer-modified-p to nil at startup
   - kill session util buffers on dirvish-kill-buffer-h
   - rename obsolete command in `dirvish-dispatch`
   - highlight current line in any case
-  - reuse fullscreen sessions unconditionally ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
-  - kill overlapping session correctly ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
+  - reuse fullscreen sessions unconditionally ([[https://github.com/alexluigit/dirvish/issues/64][#64]])
+  - kill overlapping session correctly ([[https://github.com/alexluigit/dirvish/issues/64][#64]])
 + =emerge=:
   - apply changes in transient menu to buffer
   - infinite while loop
   - expunge invisible overlay property
 + =subtree=: revert subtrees after emerging groups
-+ =extras=: increase file size string length to 8 ([[https://github.com/alexluigit/dirvish/issus/77][#77]])
-+ =peek=: get candidate retriever at runtime ([[https://github.com/alexluigit/dirvish/issus/70][#70]])
-+ =bookmark=: void variable error ([[https://github.com/alexluigit/dirvish/issus/75][#75]])
-+ =narrow=: drop the overlay approach, accommodate subtree ([[https://github.com/alexluigit/dirvish/issus/67][#67]])
++ =extras=: increase file size string length to 8 ([[https://github.com/alexluigit/dirvish/issues/77][#77]])
++ =peek=: get candidate retriever at runtime ([[https://github.com/alexluigit/dirvish/issues/70][#70]])
++ =bookmark=: void variable error ([[https://github.com/alexluigit/dirvish/issues/75][#75]])
++ =narrow=: drop the overlay approach, accommodate subtree ([[https://github.com/alexluigit/dirvish/issues/67][#67]])
 
 * 1.8.14
 ** Breaking changes
