@@ -38,7 +38,7 @@ See this [[https://github.com/alexluigit/dirvish/issues/10][discussion]].
 * all-the-icons-dired
 
 I'd advise *against* using this package ([[https://github.com/jtbm37/all-the-icons-dired][all-the-icons-dired]]) along with
-Dirvish. The reason is that it trys to retrive icons for all the files in a
+Dirvish. The reason is that it tries to retrieve icons for all the files in a
 directory /eagerly/, which hangs up Emacs on large directories. Dirvish, on the
 contrary, renders UI elements (including icons of course) *lazily* whenever
 applicable.
@@ -53,7 +53,7 @@ columns in Dirvish on =spacemacs=. A workaround can be found [[https://github.co
 ** dired-ranger
 
 The ~dirvish-yank/move~ command can do similar things as ~dired-ranger-move/paste~,
-meanwhile, it has serveral benefits over ~dired-do-copy~ or ~dired-ranger~:
+meanwhile, it has several benefits over ~dired-do-copy~ or ~dired-ranger~:
 
 - It paste/move files using external processes, hence heavy I/O tasks won't
   block the main process of Emacs.
@@ -78,7 +78,7 @@ Comparing with =dired-subtree=, =dirvish-subtree= has several advantages:
    Dirvish has no plan on implementing the =ibuffer= like "filter-stack" because
    IMO the Dired marking system plus different ~dired-listing-switches~ covers
    almost all the possible file filtering needs.  In terms of filtering files
-   matching multiple criterias, you can always mark files using various
+   matching multiple criteria, you can always mark files using various
    ~dired-mark-*~ commands and kill the rest lines.  This also makes
    ~dirvish-emerge.el~ a relatively small codebase.
 

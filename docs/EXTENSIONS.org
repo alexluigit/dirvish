@@ -50,7 +50,7 @@ This extension lets you split the file list into different groups by various
 criteria.  These groups are then displayed in the same manner as ~ibuffer~.
 
 The variable ~dirvish-emerge-groups~ contains filter criteria of groups.
-Althought you can set this variable globally, a more appropriate way would be
+Although you can set this variable globally, a more appropriate way would be
 set it directory locally.  In that case, it is recommended to compose and save
 this variable to .dir-locals.el by the help of ~dirvish-emerge-menu~, which saves
 the manual editing.

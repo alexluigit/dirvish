@@ -524,7 +524,7 @@ unexpected errors."
   "Select init values from the local session or emacs session or saved transient values."
   (if-let ((session-switches (dirvish-prop :rsync-switches)))
       session-switches
-    ;; dont touch if it is alreday set
+    ;; dont touch if it is already set
     (if (slot-boundp obj 'value)
         (oref obj value)
       ;; check saved values
