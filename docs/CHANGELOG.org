@@ -89,7 +89,7 @@
 
 ** Changes since 1.8.14
 
-+ =ls=: apply switches to current session on M-RET ([[https://github.com/alexluigit/dirvish/issus/63][#63]])
++ =ls=: apply switches to current session on M-RET ([[https://github.com/alexluigit/dirvish/issues/63][#63]])
 + =narrow=: C-g to cancel the narrowing / custom regex builder
 + =emerge=:
   - Add ~dirvish-emerge-toggle-current-group~ command to to toggle the visibility of the group
@@ -101,23 +101,23 @@
 
 + =core=:
   - revert to `dirvish-mode` after quit `wdired-mode`
-  - guard `dired-current-directory` in dwim target ([[https://github.com/alexluigit/dirvish/issus/78][#78]])
+  - guard `dired-current-directory` in dwim target ([[https://github.com/alexluigit/dirvish/issues/78][#78]])
   - scroll preview util buffer with `scroll-other-window`
   - set buffer-modified-p to nil at startup
   - kill session util buffers on dirvish-kill-buffer-h
   - rename obsolete command in `dirvish-dispatch`
   - highlight current line in any case
-  - reuse fullscreen sessions unconditionally ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
-  - kill overlapping session correctly ([[https://github.com/alexluigit/dirvish/issus/64][#64]])
+  - reuse fullscreen sessions unconditionally ([[https://github.com/alexluigit/dirvish/issues/64][#64]])
+  - kill overlapping session correctly ([[https://github.com/alexluigit/dirvish/issues/64][#64]])
 + =emerge=:
   - apply changes in transient menu to buffer
   - infinite while loop
   - expunge invisible overlay property
 + =subtree=: revert subtrees after emerging groups
-+ =extras=: increase file size string length to 8 ([[https://github.com/alexluigit/dirvish/issus/77][#77]])
-+ =peek=: get candidate retriever at runtime ([[https://github.com/alexluigit/dirvish/issus/70][#70]])
-+ =bookmark=: void variable error ([[https://github.com/alexluigit/dirvish/issus/75][#75]])
-+ =narrow=: drop the overlay approach, accommodate subtree ([[https://github.com/alexluigit/dirvish/issus/67][#67]])
++ =extras=: increase file size string length to 8 ([[https://github.com/alexluigit/dirvish/issues/77][#77]])
++ =peek=: get candidate retriever at runtime ([[https://github.com/alexluigit/dirvish/issues/70][#70]])
++ =bookmark=: void variable error ([[https://github.com/alexluigit/dirvish/issues/75][#75]])
++ =narrow=: drop the overlay approach, accommodate subtree ([[https://github.com/alexluigit/dirvish/issues/67][#67]])
 
 * 1.8.14
 ** Breaking changes
@@ -173,7 +173,7 @@ even outperforms Dired in terms of opening big directories.
 + =extras=: add ~dirvish-switch-layout~ command ([[https://github.com/alexluigit/dirvish/issues/33][#33]])
 + =core=: add symlink mode line ([[https://github.com/alexluigit/dirvish/issues/41][#41]])
 + =extras=: make ~file-size~ files count in directories ([[https://github.com/alexluigit/dirvish/issues/40][#40]])
-+ =core=: add ~dirvish-dwim~ commmand
++ =core=: add ~dirvish-dwim~ command
 + =core=: add auto cache facility ([[https://github.com/alexluigit/dirvish/issues/28][#28]])
 + =extras=: add ~dirvish-go-forward/backward-history~ cmds ([[https://github.com/alexluigit/dirvish/issues/32][#32]])
 + =yank=: add ~dirvish-yank-overwrite-existing-files~ option ([[https://github.com/alexluigit/dirvish/issues/38][#38]])
@@ -195,7 +195,7 @@ even outperforms Dired in terms of opening big directories.
 + =core=: remove builtin attributes from dirvish--available-attrs
 + =core=: remove redundant session initialization
 + =core=: find-dired mode-line segment
-+ =core=: retrive path for auto cache correctly
++ =core=: retrieve path for auto cache correctly
 + =extras=: file permission error
 + =yank=: remote-to-remote handler
 + =core=: preserve size of header window when showing transient
@@ -245,7 +245,7 @@ even outperforms Dired in terms of opening big directories.
 + =side=: keep the side window alive on =delete-other-windows=
 + =core=: avoid void session error on window quit
 + =core=: error at initialization when ~dired-hide-details-mode~ is turned off
-+ =core=: ensure retriving dwim-target from live window
++ =core=: ensure retrieving dwim-target from live window
 + =core=: hide cursor in utility buffers
 
 * 1.0.0

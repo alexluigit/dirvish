@@ -524,7 +524,7 @@ unexpected errors."
   "Select init values from the local session or emacs session or saved transient values."
   (if-let ((session-switches (dirvish-prop :rsync-switches)))
       session-switches
-    ;; dont touch if it is alreday set
+    ;; dont touch if it is already set
     (if (slot-boundp obj 'value)
         (oref obj value)
       ;; check saved values
@@ -582,6 +582,8 @@ unexpected errors."
     :choices ("progress1" "progress2") :level 4)]
   ["Action"
    [("RET" "Apply switches and copy" dirvish-yank--rsync-apply-switches-and-copy)]])
+
+(defvar crm-separator)
 
 (defun dirvish-yank--rsync-transient-read-multiple (prompt &optional _initial-input history)
   "Read multiple values after PROMPT with optional INITIAL_INPUT and HISTORY."
