@@ -173,7 +173,7 @@ even outperforms Dired in terms of opening big directories.
 + =extras=: add ~dirvish-switch-layout~ command ([[https://github.com/alexluigit/dirvish/issues/33][#33]])
 + =core=: add symlink mode line ([[https://github.com/alexluigit/dirvish/issues/41][#41]])
 + =extras=: make ~file-size~ files count in directories ([[https://github.com/alexluigit/dirvish/issues/40][#40]])
-+ =core=: add ~dirvish-dwim~ commmand
++ =core=: add ~dirvish-dwim~ command
 + =core=: add auto cache facility ([[https://github.com/alexluigit/dirvish/issues/28][#28]])
 + =extras=: add ~dirvish-go-forward/backward-history~ cmds ([[https://github.com/alexluigit/dirvish/issues/32][#32]])
 + =yank=: add ~dirvish-yank-overwrite-existing-files~ option ([[https://github.com/alexluigit/dirvish/issues/38][#38]])
@@ -195,7 +195,7 @@ even outperforms Dired in terms of opening big directories.
 + =core=: remove builtin attributes from dirvish--available-attrs
 + =core=: remove redundant session initialization
 + =core=: find-dired mode-line segment
-+ =core=: retrive path for auto cache correctly
++ =core=: retrieve path for auto cache correctly
 + =extras=: file permission error
 + =yank=: remote-to-remote handler
 + =core=: preserve size of header window when showing transient
@@ -245,7 +245,7 @@ even outperforms Dired in terms of opening big directories.
 + =side=: keep the side window alive on =delete-other-windows=
 + =core=: avoid void session error on window quit
 + =core=: error at initialization when ~dired-hide-details-mode~ is turned off
-+ =core=: ensure retriving dwim-target from live window
++ =core=: ensure retrieving dwim-target from live window
 + =core=: hide cursor in utility buffers
 
 * 1.0.0

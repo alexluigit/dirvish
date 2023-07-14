@@ -262,7 +262,7 @@ input for `dirvish-redisplay-debounce' seconds."
 ;;;; Macros
 
 (defmacro dirvish-prop (prop &rest body)
-  "Retrive PROP from `dirvish--props'.
+  "Retrieve PROP from `dirvish--props'.
 Set the PROP with BODY if given."
   (declare (indent defun))
   `(let* ((pair (assq ,prop dirvish--props)) (val (cdr pair)))
