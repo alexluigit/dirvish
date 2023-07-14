@@ -939,10 +939,10 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                            `(:eval (,(intern (format "dirvish-%s-ml" s)) (dirvish-curr))))))
               (get-font-scale ()
                 (let* ((face (if header 'header-line 'mode-line-inactive))
-                       (defualt (face-attribute 'default :height))
+                       (default (face-attribute 'default :height))
                        (ml-height (face-attribute face :height)))
                   (cond ((floatp ml-height) ml-height)
-                        ((integerp ml-height) (/ (float ml-height) defualt))
+                        ((integerp ml-height) (/ (float ml-height) default))
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-curr))
