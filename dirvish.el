@@ -121,11 +121,11 @@ and H-FRAME represent the height of mode line in single window
 state and fullframe state respectively.  If this value is a
 integer INT, it is seen as a shorthand for (INT . INT)."
   :group 'dirvish
-  :type '(choice interger (cons integer integer)))
+  :type '(choice integer (cons integer integer)))
 
 (defcustom dirvish-header-line-height 30
   "Like `dirvish-mode-line-height', but for header line."
-  :type '(choice interger (cons integer integer)))
+  :type '(choice integer (cons integer integer)))
 
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
