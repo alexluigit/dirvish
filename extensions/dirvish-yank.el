@@ -65,7 +65,7 @@ The value can be a symbol or a function that returns a fileset."
 
 (defcustom dirvish-yank-rsync-args '("--archive" "--verbose" "--compress" "--info=progress2")
   "The default options for the rsync command."
-  :type 'list :group 'dirvish)
+  :type '(repeat string) :group 'dirvish)
 
 (defcustom dirvish-yank-keep-success-log t
   "If non-nil then keep logs of all completed yanks.

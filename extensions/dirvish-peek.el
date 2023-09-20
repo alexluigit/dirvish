@@ -27,11 +27,11 @@
 If this value is nil, a candidate fetcher function is
 automatically choosed according to your completion framework
 being used at runtime."
-  :group 'dirvish :type '(choice function nil))
+  :group 'dirvish :type '(choice function (const nil)))
 
 (defcustom dirvish-peek-categories '(file project-file library)
   "Minibuffer metadata categories to show file preview."
-  :group 'dirvish :type 'list)
+  :group 'dirvish :type '(repeat symbol))
 
 (defvar dirvish-peek--cand-fetcher nil)
 (defun dirvish-peek--prepare-cand-fetcher ()
