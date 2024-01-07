@@ -936,7 +936,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
   (cl-labels ((expand (segments)
                 (cl-loop for s in segments collect
                          (if (stringp s) s
-                           `(:eval (,(intern (format "dirvish-%s-ml" s)) dv)))))
+                           `(:eval (,(intern (format "dirvish-%s-ml" s)) (dirvish-curr))))))
               (get-font-scale ()
                 (let* ((face (if header 'header-line 'mode-line-inactive))
                        (defualt (face-attribute 'default :height))
