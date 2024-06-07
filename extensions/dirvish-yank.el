@@ -521,7 +521,9 @@ unexpected errors."
      (t (dirvish-yank-l2fr-handler srcs dest)))))
 
 (defun dirvish-yank--rsync-transient-init-value (obj)
-  "Select init values from the local session or emacs session or saved transient values."
+  "Select initial values for transient suffixes.
+Use values from the local session or emacs session or saved transient
+values."
   (if-let ((session-switches (dirvish-prop :rsync-switches)))
       session-switches
     ;; dont touch if it is already set
