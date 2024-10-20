@@ -383,9 +383,10 @@ This command takes a mouse event EV as its argment."
     (select-window win)
     (with-current-buffer (window-buffer win)
       (goto-char pos)
-      (condition-case nil
-          (dirvish-subtree-toggle)
-        (error (dirvish-find-entry-a (dired-get-file-for-visit)))))
+      (when-let ((entry (dired-get-filename nil t)))
+        (if (file-directory-p entry)
+            (dirvish-subtree-toggle)
+          (dirvish-find-entry-a entry))))
     (when (window-live-p win) (select-window win))))
 
 ;;;###autoload (autoload 'dirvish-subtree-menu "dirvish-subtree" nil t)
