@@ -51,7 +51,7 @@ in the buffer are separated and rearranged by the following groups:
 4. files whose extension is \"tex\" or \"bib\"
 5. other files
 
-Althought you can set this variable globally, a more appropriate
+Although you can set this variable globally, a more appropriate
 way would be set it directory locally.  In that case, it is
 recommended to compose and save this variable to .dir-locals.el
 by the help of `dirvish-emerge-menu'."
@@ -117,7 +117,7 @@ turned on in the buffer."
 
 (defmacro dirvish-emerge-define-predicate (name docstring &rest body)
   "Define a group predicate NAME with BODY.
-DOCSTRING is the documention of the predicate.
+DOCSTRING is the documentation of the predicate.
 The predicate takes the following arguments:
 
 - `local-name': output from (file-name-nondirectory FILE)
