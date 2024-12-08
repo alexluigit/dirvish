@@ -1153,6 +1153,8 @@ LEVEL is the depth of current window."
   "Fetch data for files in DIR, stored locally in BUFFER.
 Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (let* ((buf (make-temp-name "dir-data-"))
+         (print-length nil)
+         (print-level nil)
          (c (format "%S" `(message "%s" ,(dirvish--dir-data-getter dir))))
          (proc (make-process :name "dir-data" :connection-type nil :buffer buf
                              :command (list dirvish-emacs-bin "-Q" "-batch" "--eval" c)
