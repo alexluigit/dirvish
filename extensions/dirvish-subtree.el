@@ -375,7 +375,7 @@ See `dirvish-subtree-file-viewer' for details"
 
 (defun dirvish-subtree-toggle-or-open (ev)
   "Toggle the subtree if in a dirline, otherwise open the file.
-This command takes a mouse event EV as its argment."
+This command takes a mouse event EV as its argument."
   (interactive "e")
   (let ((win (posn-window (event-end ev)))
         (pos (posn-point (event-end ev))))
