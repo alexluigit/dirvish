@@ -986,9 +986,9 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   "Hide cursor in dirvish buffer."
   (when dirvish-hide-cursor
     (setq-local cursor-type nil)
-    (cond ((and (boundp 'evil-normal-state-cursor) (featurep 'evil))
+    (cond ((bound-and-true-p evil-normal-state-cursor)
            (setq-local evil-normal-state-cursor '(bar . 0)))
-          ((and (boundp 'meow-cursor-type-default) (featurep 'meow))
+          ((bound-and-true-p meow-cursor-type-default)
            (setq-local meow-cursor-type-motion nil
                        meow-cursor-type-default nil)))))
 
