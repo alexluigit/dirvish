@@ -583,6 +583,8 @@ unexpected errors."
   ["Action"
    [("RET" "Apply switches and copy" dirvish-yank--rsync-apply-switches-and-copy)]])
 
+(defvar crm-separator)
+
 (defun dirvish-yank--rsync-transient-read-multiple (prompt &optional _initial-input history)
   "Read multiple values after PROMPT with optional INITIAL_INPUT and HISTORY."
   (let ((crm-separator ","))
