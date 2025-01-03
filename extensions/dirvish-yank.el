@@ -65,7 +65,7 @@ The value can be a symbol or a function that returns a fileset."
 
 (defcustom dirvish-yank-rsync-args '("--archive" "--verbose" "--compress" "--info=progress2")
   "The default options for the rsync command."
-  :type 'list :group 'dirvish)
+  :type '(repeat string) :group 'dirvish)
 
 (defcustom dirvish-yank-keep-success-log t
   "If non-nil then keep logs of all completed yanks.
@@ -521,10 +521,12 @@ unexpected errors."
      (t (dirvish-yank-l2fr-handler srcs dest)))))
 
 (defun dirvish-yank--rsync-transient-init-value (obj)
-  "Select init values from the local session or emacs session or saved transient values."
+  "Select initial values for transient suffixes.
+Use values from the local session or emacs session or saved transient
+values."
   (if-let ((session-switches (dirvish-prop :rsync-switches)))
       session-switches
-    ;; dont touch if it is alreday set
+    ;; dont touch if it is already set
     (if (slot-boundp obj 'value)
         (oref obj value)
       ;; check saved values
@@ -582,6 +584,8 @@ unexpected errors."
     :choices ("progress1" "progress2") :level 4)]
   ["Action"
    [("RET" "Apply switches and copy" dirvish-yank--rsync-apply-switches-and-copy)]])
+
+(defvar crm-separator)
 
 (defun dirvish-yank--rsync-transient-read-multiple (prompt &optional _initial-input history)
   "Read multiple values after PROMPT with optional INITIAL_INPUT and HISTORY."
