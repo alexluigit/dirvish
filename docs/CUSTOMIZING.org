@@ -189,7 +189,7 @@ want to display preview for epub files via packages like =nov=, just remove the
 #+end_src
 
 Some of preview dispatchers, such as ~image~, generate cache images to improve the
-preview experience.  Everytime you enter a directory, Dirvish scans the the
+preview experience.  Every time you enter a directory, Dirvish scans the the
 content of that directory and computes the fileset of the directory that
 requires cache image generation, the corresponding caches are generated later
 when Emacs is idle.
@@ -353,7 +353,7 @@ These packages are only listed here for discoverability.
     (setq dired-omit-files
           (concat dired-omit-files "\\|^\\..*$")))
 
-  ;; Addtional syntax highlighting for dired
+  ;; Additional syntax highlighting for dired
   (use-package diredfl
     :hook
     ((dired-mode . diredfl-mode)

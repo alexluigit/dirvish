@@ -737,6 +737,5 @@ unexpected errors."
   (dirvish-prop :rsync-switches args)
   (call-interactively #'dirvish-rsync))
 
-
 (provide 'dirvish-yank)
 ;;; dirvish-yank.el ends here

@@ -159,7 +159,7 @@ invoke the sort function, SWITCHES is the the sort flags for
     ""
     "toggles"
     ("r" "Reverse order while sorting" "--reverse")
-    ("d" "List directories ontop" "--group-directories-first")
+    ("d" "List directories on top" "--group-directories-first")
     ("~" "Hide backups files (eg. foo~)" "--ignore-backups")
     ("A" "Show the author" "--author")
     ("C" "Show security context" "--context")

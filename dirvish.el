@@ -121,11 +121,11 @@ and H-FRAME represent the height of mode line in single window
 state and fullframe state respectively.  If this value is a
 integer INT, it is seen as a shorthand for (INT . INT)."
   :group 'dirvish
-  :type '(choice interger (cons integer integer)))
+  :type '(choice integer (cons integer integer)))
 
 (defcustom dirvish-header-line-height 30
   "Like `dirvish-mode-line-height', but for header line."
-  :type '(choice interger (cons integer integer)))
+  :type '(choice integer (cons integer integer)))
 
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
@@ -262,7 +262,7 @@ input for `dirvish-redisplay-debounce' seconds."
 ;;;; Macros
 
 (defmacro dirvish-prop (prop &rest body)
-  "Retrive PROP from `dirvish--props'.
+  "Retrieve PROP from `dirvish--props'.
 Set the PROP with BODY if given."
   (declare (indent defun))
   `(let* ((pair (assq ,prop dirvish--props)) (val (cdr pair)))
@@ -940,10 +940,10 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                            `(:eval (,(intern (format "dirvish-%s-ml" s)) (dirvish-curr))))))
               (get-font-scale ()
                 (let* ((face (if header 'header-line 'mode-line-inactive))
-                       (defualt (face-attribute 'default :height))
+                       (default (face-attribute 'default :height))
                        (ml-height (face-attribute face :height)))
                   (cond ((floatp ml-height) ml-height)
-                        ((integerp ml-height) (/ (float ml-height) defualt))
+                        ((integerp ml-height) (/ (float ml-height) default))
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-curr))
