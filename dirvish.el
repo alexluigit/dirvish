@@ -676,9 +676,10 @@ buffer, it defaults to filename under the cursor when it is nil."
                           (with-current-buffer buf (dirvish--render-attrs)))))))
     (with-current-buffer buf (add-hook 'post-command-hook fun nil t)) buf))
 
-(defun dirvish-dired-noselect-a (fn dir &optional flags)
+(defun dirvish-dired-noselect-a (fn dir-or-list &optional flags)
   "Return buffer for DIR with FLAGS, FN is `dired-noselect'."
-  (let* ((key (file-name-as-directory (expand-file-name dir)))
+  (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
+         (key (file-name-as-directory (expand-file-name dir)))
          (this dirvish--this)
          (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish-new)
                (or this (car (dirvish--find-reusable)) (dirvish-new))))
@@ -691,9 +692,9 @@ buffer, it defaults to filename under the cursor when it is nil."
     (when new-buffer-p
       (if (not remote)
           (let ((dired-buffers nil)) ; disable reuse from dired
-            (setq buffer (apply fn (list dir flags))))
+            (setq buffer (apply fn (list dir-or-list flags))))
         (require 'dirvish-extras)
-        (setq buffer (dirvish-noselect-tramp fn dir flags remote)))
+        (setq buffer (dirvish-noselect-tramp fn dir-or-list flags remote)))
       (with-current-buffer buffer (dirvish-init-dired-buffer))
       (push (cons key buffer) (dv-roots dv))
       (push (cons key buffer) dired-buffers))
@@ -702,8 +703,8 @@ buffer, it defaults to filename under the cursor when it is nil."
             ((and (not remote) (not (equal flags dired-actual-switches)))
              (dired-sort-other flags))
             ((eq dired-auto-revert-buffer t) (revert-buffer))
-	    ((functionp dired-auto-revert-buffer)
-	     (when (funcall dired-auto-revert-buffer dir) (revert-buffer))))
+            ((functionp dired-auto-revert-buffer)
+             (when (funcall dired-auto-revert-buffer dir) (revert-buffer))))
       (dirvish-prop :dv (dv-name dv))
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :remote remote)
