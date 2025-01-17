@@ -140,7 +140,7 @@ Ensure correct DIR when inside of a subtree."
   (if dirvish-subtree--overlays
       (save-excursion
         (and (dirvish-subtree-expand-to file)
-	     (let (buffer-read-only)
+             (let (buffer-read-only)
                (delete-region (line-beginning-position)
                               (line-beginning-position 2)))))
     (funcall fn file)))
@@ -196,11 +196,14 @@ creation even the entry is in nested subtree nodes."
         (if (or (= (length str) 0) (string-prefix-p "//DIRED-OPTIONS//" str)) ""
           (let ((str (substring (buffer-string) 0 -1)))
             (if omit-p
-                (string-join (seq-remove
-                              (lambda (s)
-                                (string-match-p (dired-omit-regexp)
-                                                (substring s (next-single-property-change 0 'dired-filename s))))
-                              (string-split str "\n"))
+                (string-join
+                 (seq-remove
+                  (lambda (s)
+                    (string-match-p
+                     (dired-omit-regexp)
+                     (substring s (next-single-property-change
+                                   0 'dired-filename s))))
+                  (split-string str "\n"))
                              "\n")
               str)))))))
 
@@ -295,8 +298,8 @@ See `dirvish-subtree-file-viewer' for details"
   "Go to line describing TARGET and expand its parent directories."
   (interactive
    (list (directory-file-name (expand-file-name
-	                       (read-file-name "Expand to file: "
-			                       (dired-current-directory))))))
+                               (read-file-name "Expand to file: "
+                                               (dired-current-directory))))))
   (let ((file (dired-get-filename nil t)) (dir (dired-current-directory)))
     (cond ((equal file target) target)
           ((and file (string-prefix-p file target))
