@@ -183,7 +183,9 @@ creation even the entry is in nested subtree nodes."
 
 (defun dirvish-subtree--readin (dir)
   "Readin DIR as a subtree node."
-  (let ((flags (or dirvish-subtree-listing-switches dired-actual-switches)) str)
+  (let ((flags (or dirvish-subtree-listing-switches dired-actual-switches))
+        (omit-p (bound-and-true-p dired-omit-mode))
+        str)
     (with-temp-buffer
       (cl-letf (((symbol-function 'dired-insert-set-properties) #'ignore))
         (save-excursion
@@ -192,7 +194,15 @@ creation even the entry is in nested subtree nodes."
           (delete-region (point) (line-beginning-position 2)))
         (setq str (buffer-string))
         (if (or (= (length str) 0) (string-prefix-p "//DIRED-OPTIONS//" str)) ""
-          (substring (buffer-string) 0 -1))))))
+          (let ((str (substring (buffer-string) 0 -1)))
+            (if omit-p
+                (string-join (seq-remove
+                              (lambda (s)
+                                (string-match-p (dired-omit-regexp)
+                                                (substring s (next-single-property-change 0 'dired-filename s))))
+                              (string-split str "\n"))
+                             "\n")
+              str)))))))
 
 (defun dirvish-subtree--insert ()
   "Insert subtree under this directory."
