@@ -22,14 +22,14 @@
 
 (defcustom dirvish-vc-state-face-alist
   '((up-to-date       . nil)
-    (edited           . vc-edited-state)
-    (added            . vc-locally-added-state)
-    (removed          . vc-removed-state)
-    (missing          . vc-missing-state)
+    (edited           . dirvish-vc-edited-state)
+    (added            . dirvish-vc-added-state)
+    (removed          . dirvish-vc-removed-state)
+    (missing          . dirvish-vc-missing-state)
     (needs-merge      . dirvish-vc-needs-merge-face)
-    (conflict         . vc-conflict-state)
-    (unlocked-changes . vc-locked-state)
-    (needs-update     . vc-needs-update-state)
+    (conflict         . dirvish-vc-conflict-state)
+    (unlocked-changes . dirvish-vc-locked-state)
+    (needs-update     . dirvish-vc-needs-update-state)
     (ignored          . dired-ignored)
     (unregistered     . dirvish-vc-unregistered-face))
   "Alist of (VC-STATE . FACE).
@@ -53,6 +53,41 @@ vc-hooks.el) for detail explanation of these states."
 (defface dirvish-git-commit-message-face
   '((t (:inherit dired-ignored :underline nil :background unspecified)))
   "Face for commit message overlays."
+  :group 'dirvish)
+
+(defface dirvish-vc-edited-state
+  '((t :inherit vc-edited-state))
+  "Face used for `edited' vc state in the Dirvish buffer."
+  :group 'dirvish)
+
+(defface dirvish-vc-added-state
+  '((t :inherit vc-locally-added-state))
+  "Face used for `added' vc state in the Dirvish buffer."
+  :group 'dirvish)
+
+(defface dirvish-vc-removed-state
+  '((t :inherit vc-removed-state))
+  "Face used for `removed' vc state in the Dirvish buffer."
+  :group 'dirvish)
+
+(defface dirvish-vc-missing-state
+  '((t :inherit vc-missing-state))
+  "Face used for `missing' vc state in the Dirvish buffer."
+  :group 'dirvish)
+
+(defface dirvish-vc-conflict-state
+  '((t :inherit vc-conflict-state))
+  "Face used for `conflict' vc state in the Dirvish buffer."
+  :group 'dirvish)
+
+(defface dirvish-vc-locked-state
+  '((t :inherit vc-locked-state))
+  "Face used for `locked' vc state in the Dirvish buffer."
+  :group 'dirvish)
+
+(defface dirvish-vc-needs-update-state
+  '((t :inherit vc-needs-update-state))
+  "Face used for `needs-update' vc state in the Dirvish buffer."
   :group 'dirvish)
 
 (defvar vc-dir-process-buffer)
