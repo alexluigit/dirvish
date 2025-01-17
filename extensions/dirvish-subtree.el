@@ -20,6 +20,7 @@
 (declare-function consult-imenu "consult-imenu")
 (declare-function consult-line "consult")
 (require 'dirvish)
+(require 'dired-x)
 
 (defcustom dirvish-subtree-listing-switches nil
   "Listing SWITCHES used in subtrees.
