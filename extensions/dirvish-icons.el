@@ -53,18 +53,18 @@ Values are interpreted as follows:
 - all-the-icons, meaning let `all-the-icons.el' to do the coloring.
 - A face that is used for all the icons.
 - nil, inherit face at point."
-  :group 'dirvish :type '(choice face symbol nil))
+  :group 'dirvish :type '(choice face symbol (const nil)))
 
 (defcustom dirvish-nerd-icons-offset 0.00
   "Icon's vertical offset used for `nerd-icons' backend.
 Set it to nil to use the default offset from `nerd-icons'."
-  :group 'dirvish :type '(choice (float nil)))
+  :group 'dirvish :type '(choice float (const nil)))
 
 (defcustom dirvish-nerd-icons-height nil
   "Icon height used for `nerd-icons' backend.
 The height of the icon is scaled to this value (try 0.8).
 Set it to nil to use the default height from `nerd-icons'."
-  :group 'dirvish :type '(choice (float nil)))
+  :group 'dirvish :type '(choice float (const nil)))
 
 (defcustom dirvish-nerd-icons-palette 'nerd-icons
   "Coloring style used for file `nerd-icons' backend.
@@ -72,7 +72,7 @@ Values are interpreted as follows:
 - nerd-icons, meaning let `nerd-icons.el' to do the coloring.
 - A face that is used for all the icons.
 - nil, inherit face at point."
-  :group 'dirvish :type '(choice face symbol nil))
+  :group 'dirvish :type '(choice face symbol (const nil)))
 
 (defcustom dirvish-vscode-icon-size 32
   "Icon (image pixel) size used for `vscode-icon' backend.

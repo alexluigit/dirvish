@@ -187,8 +187,8 @@ and its ARGS is issued to open the file externally.  The special
 placeholder \"%f\" in the ARGS is replaced by the FILENAME at
 runtime.  Set it to nil disables this feature."
   :group 'dirvish
-  :type '(alist :key-type ((repeat string) :tag "File extensions")
-                :value-type ((repeat string) :tag "External command and args")))
+  :type '(alist :key-type (repeat :tag "File extensions" string)
+                :value-type (repeat :tag "External command and args" string)))
 
 (defcustom dirvish-reuse-session t
   "Whether to reuse the hidden sessions.

@@ -37,7 +37,7 @@ This value is consumed by `vc-state' attribute in Dirvish.  FACE
 is the face used for that VC-STATE.  See `vc-state' in (in
 vc-hooks.el) for detail explanation of these states."
   :group 'dirvish
-  :type '(alist :key-type symbol :value-type '(symbol :tag "Face")))
+  :type '(alist :key-type symbol :value-type (symbol :tag "Face")))
 
 (defface dirvish-vc-needs-merge-face
   '((((background dark)) (:background "#500f29"))

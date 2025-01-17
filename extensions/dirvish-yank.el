@@ -65,7 +65,7 @@ The value can be a symbol or a function that returns a fileset."
 
 (defcustom dirvish-yank-rsync-args '("--archive" "--verbose" "--compress" "--info=progress2")
   "The default options for the rsync command."
-  :type 'list :group 'dirvish)
+  :type '(repeat string) :group 'dirvish)
 
 (defcustom dirvish-yank-keep-success-log t
   "If non-nil then keep logs of all completed yanks.
@@ -616,8 +616,10 @@ unexpected errors."
      ;; either shost, dhost or both are localhost
      (t (dirvish-yank-l2fr-handler srcs dest)))))
 
-(defun dirvish-yank--rsync-transient-init-value (obj default-value)
-  "Select init values from the local session or emacs session or saved transient values."
+(defun dirvish-yank--rsync-transient-init-value (obj)
+  "Select initial values for transient suffixes.
+Use values from the local session or emacs session or saved transient
+values."
   ;; dont touch if it is alreday set
   (if (and (slot-boundp obj 'value) (oref obj value))
       (oref obj value)
