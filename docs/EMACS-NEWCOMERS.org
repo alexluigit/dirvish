@@ -50,7 +50,7 @@ See [[https://github.com/alexluigit/dirvish#resources][README]]
 
 - [[https://github.com/doomemacs/doomemacs][Doom-Emacs (built-in dirvish support)]]
 - [[https://github.com/syl20bnr/spacemacs][Spacemacs]]
-- [[https://github.com/purcell/.emacs.d][Purcell's Emacs config]]
+- [[https://github.com/purcell/emacs.d][Purcell's Emacs config]]
 - [[https://github.com/seagle0128/.emacs.d][Centaur Emacs]]
 
 ** Other Resources
