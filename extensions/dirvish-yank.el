@@ -98,6 +98,35 @@ invoke the CMD, DOC is the documentation string."
             (transient-setup 'dirvish-yank-menu)
           (user-error "Not in a Dirvish buffer"))))))
 
+
+(defcustom dirvish-yank-ssh-r2r-default-port "22"
+  "Default ssh port of receiver when yanking in remote to remote scenario.
+In this scenario rsync will be run on remote host, so it has no
+access to your ~/.ssh/config file. If you have some settings
+there you have to specify them somehow. One way is to set global
+default values and other way is to set them locally before copying,
+using rsync-transient menu."
+  :type 'string :group 'dirvish)
+
+(defcustom dirvish-yank-ssh-r2r-default-user nil
+  "Default ssh user of receiver when yanking in remote to remote scenario.
+When nil do not specify any user. see
+`dirvish-yank-ssh-r2r-default-port' for more details."
+  :type 'string :group 'dirvish)
+
+(defcustom dirvish-yank-r2r-default-direct-conn nil
+  "When t copy data directly from host1 to host2.
+If this is not possible, for example when host2 is not reacheable
+from host1 set this option to nil. When it is nil the tunnel will be
+created between host1 and host2, using running machine as proxy.
+For both cases make sure that you have passwordless access to both
+hosts and that ssh-agent is properly set-up. For checking that,
+everything works try to execute a command \"ssh -A host1 ssh -o
+StrictHostKeyChecking=no host2 hostname\". Also make sure that
+ssh-agent Environment variables are propagated to emacs."
+  :type 'string :group 'dirvish)
+
+
 (defconst dirvish-yank-fn-string
   '((dired-copy-file . "Copying")
     (dired-rename-file . "Moving")
@@ -116,11 +145,18 @@ invoke the CMD, DOC is the documentation string."
   "A regex to detect passphrase prompts.")
 (defvar dirvish-percent-complete-regex "[[:digit:]]\\{1,3\\}%"
   "A regex to extract the % complete from a file.")
-(defvar dirvish-yank--remote-portfwd
-  "ssh -p %d -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-  "An explicit ssh command for rsync to use port forwarded proxy.
-The string is treated as a format string where %d is replaced with the
-results of `dirvish-yank--get-remote-port'.")
+
+(defvar dirvish-yank--remote-ssh-args
+  "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  "These args will be used for invoking ssh on remote host (in remote to remote scenario).")
+
+
+(defvar dirvish-yank--rsync-transient-input-history nil "History list of rsync transient input in the minibuffer.")
+
+(defvar-local dirvish-yank--r2r-direct-conn nil "Local value for enabling direct copy in r2r case.")
+(defvar-local dirvish-yank--ssh-r2r-receiver-host nil "Local value of r2r receiver host.")
+(defvar-local dirvish-yank--ssh-r2r-receiver-port nil "Local value of r2r receiver port.")
+(defvar-local dirvish-yank--ssh-r2r-receiver-user nil "Local value of r2r receiver user.")
 
 (defun dirvish-yank--get-remote-port ()
   "Return the remote port we shall use for the reverse port-forward."
@@ -341,21 +377,81 @@ It sets the value for every variable matching INCLUDE-REGEXP."
   (format "%s %s" dirvish-yank-rsync-program
           (string-join (dirvish-yank--rsync-args) " ")))
 
-(defun dirvish-yank-r2r-handler (srcs dest shost dhost)
+(defun dirvish-yank--build-local-ssh-args (host-info)
+  "Compose ssh args used for sshing to source host. HOST-INFO is a
+list of host/user/port parsed from the tramp string."
+  (let* ((port (cl-third host-info))
+         (port-str (if port (concat "-p" port) ""))
+         (user (cl-second host-info))
+         (user-str (if user (concat user "@") "")))
+    (concat port-str " " user-str (cl-first host-info))))
+
+(defun dirvish-yank--r2r-escape-single-quote (str)
+  "Properly escape all single quotes in STR.
+STR should be processed by shell-quote-argument already.
+Single quotes require special care since we wrap remote command with them.
+Bash doesn't allow nesting of single quotes (even escaped ones),
+so we need to turn string into multiple concatenated strings."
+  ;; use string-replace from emacs-28.1 when support of older versions is dropped
+  (replace-regexp-in-string "'" "'\"'\"'" str t t))
+
+(defun dirvish-yank-r2r-handler (srcs shost-info dhost-info)
   "Construct and trigger an rsync run for remote copy.
-This command sync SRCS on SHOST to DEST on DHOST."
-  (let* ((duser (with-parsed-tramp-file-name dest tfop
-                  (or tfop-user (getenv "USER"))))
-         (port (dirvish-yank--get-remote-port))
-         (dest (shell-quote-argument (file-local-name dest)))
-         (rsync-cmd
-          (format "\"%s -e \\\"%s\\\" %s %s@localhost:%s\""
-                  (dirvish-yank--build-rsync-command)
-                  (format dirvish-yank--remote-portfwd port)
-                  (string-join srcs " ") duser dest))
-         (bind-addr (format "localhost:%d:%s:22" port dhost))
-         (cmd (string-join
-               (list "ssh" "-A" "-R" bind-addr shost rsync-cmd) " ")))
+This command sync SRCS on SHOST to DEST on DHOST. SHOST-INFO and
+DHOST-INFO are lists containing host,user,port,localname
+extracted from the tramp string."
+  (let* ((srcs (mapcar (lambda (x) (thread-last x
+                                                file-local-name shell-quote-argument
+                                                dirvish-yank--r2r-escape-single-quote)) srcs))
+         (src-str (string-join srcs " "))
+         (shost (cl-first shost-info))
+         (dhost (cl-first dhost-info))
+         (dhost-real (or dirvish-yank--ssh-r2r-receiver-host
+                         (cl-first dhost-info)))
+         (duser (or dirvish-yank--ssh-r2r-receiver-user
+                    (cl-second dhost-info)
+                    dirvish-yank-ssh-r2r-default-user))
+         (dport (or dirvish-yank--ssh-r2r-receiver-port
+                    (cl-third dhost-info)
+                    dirvish-yank-ssh-r2r-default-port))
+         (dest (thread-last (cl-fourth dhost-info)
+                            shell-quote-argument dirvish-yank--r2r-escape-single-quote))
+
+         ;; 1. dhost == shost
+         ;; ssh [-p dport] [duser@]dhost 'rsync <rsync-args> <srcs> <dest>'
+         ;; 2. dhost != shost and dirvish-yank-r2r-direct-conn == t
+         ;; ssh -A [-p sport] [suser@]shost 'rsync <rsync-args> -e "ssh <ssh-remote-opts> [-p dport]" <srcs> [duser@]dhost:<dest> '
+         ;; 3. dhost != shost and dirvish-yank-r2r-direct-conn == nil
+         ;; ssh -A -R <bind-addr> [-p sport] [suser@]shost 'rsync <rsync-args> -e "ssh <ssh-remote-opts> -p <tunnel_port>" <srcs> [duser@]localhost:<dest>'
+         (cmd (cond ((equal shost dhost)
+                     (string-join (list "ssh" (dirvish-yank--build-local-ssh-args dhost-info)
+                                        "'" (dirvish-yank--build-rsync-command) src-str dest "'")
+                                  " "))
+
+                    ((if dirvish-yank--r2r-direct-conn
+                         (equal dirvish-yank--r2r-direct-conn "yes")
+                       dirvish-yank-r2r-default-direct-conn)
+                     (string-join (list "ssh -A " (dirvish-yank--build-local-ssh-args shost-info)
+                                        " '" (dirvish-yank--build-rsync-command)
+                                        (format " -e \"ssh %s %s\" "
+                                                (if dport (concat "-p" dport) "")
+                                                dirvish-yank--remote-ssh-args)
+                                        src-str
+                                        " "
+                                        (if duser (format "%s@%s" duser dhost-real) dhost-real) ":" dest
+                                        "'")
+                                  ))
+                    (t
+                     (let* ((port (dirvish-yank--get-remote-port))
+                            (bind-addr (format "localhost:%d:%s:%s" port dhost-real dport)))
+                       (string-join (list "ssh -A -R " bind-addr " "
+                                          (dirvish-yank--build-local-ssh-args shost-info)
+                                          " '" (dirvish-yank--build-rsync-command)
+                                          (format " -e \"ssh -p %s %s\" " port dirvish-yank--remote-ssh-args)
+                                          src-str
+                                          " "
+                                          (if duser (format "%s@localhost" duser) "localhost") ":" dest
+                                          "'")))))))
     (dirvish-yank--execute cmd (list (current-buffer) srcs dest 'rsync))))
 
 (defun dirvish-yank-l2fr-handler (srcs dest)
@@ -395,13 +491,13 @@ This command sync SRCS on SHOST to DEST on DHOST."
      (format "%S" cmd) (list (current-buffer) srcs dest method) 'batch)))
 
 ;; copied from `dired-rsync'
-(defun dirvish-yank--extract-host-from-tramp (file-or-path &optional split-user)
+(defun dirvish-yank--extract-host-from-tramp (file-or-path)
   "Extract the tramp host part of FILE-OR-PATH.
-It SPLIT-USER is set we remove the user@ part as well.  We assume
-hosts don't need quoting."
+Returns list that contains (host user port localname)."
   (with-parsed-tramp-file-name file-or-path tfop
-    (if (or split-user (not tfop-user)) tfop-host
-      (format "%s@%s" tfop-user tfop-host))))
+    (when tfop-hop
+      (user-error "Dirvish-yank: Paths with hop are not supported!"))
+    (list tfop-host tfop-user tfop-port tfop-localname)))
 
 (defun dirvish-yank--extract-remote (files)
   "Get string identifying the remote connection of FILES."
@@ -520,24 +616,66 @@ unexpected errors."
      ;; either shost, dhost or both are localhost
      (t (dirvish-yank-l2fr-handler srcs dest)))))
 
-(defun dirvish-yank--rsync-transient-init-value (obj)
+(defun dirvish-yank--rsync-transient-init-value (obj default-value)
   "Select init values from the local session or emacs session or saved transient values."
-  (if-let ((session-switches (dirvish-prop :rsync-switches)))
-      session-switches
-    ;; dont touch if it is alreday set
-    (if (slot-boundp obj 'value)
-        (oref obj value)
-      ;; check saved values
-      (if-let ((saved (assq (oref obj command) transient-values)))
-          (cdr saved)
-        ;; use flags set via defcustom at last resort
-        dirvish-yank-rsync-args))))
+  ;; dont touch if it is alreday set
+  (if (and (slot-boundp obj 'value) (oref obj value))
+      (oref obj value)
+    ;; check saved values
+    (if-let ((saved (assq (oref obj command) transient-values)))
+        (cdr saved)
+      ;; use default value at last resort
+      default-value)))
+
+(defun dirvish-yank--rsync-transient-init-rsync-switches (obj)
+  (or (dirvish-prop :rsync-switches)
+      (dirvish-yank--rsync-transient-init-value obj dirvish-yank-rsync-args)))
+
+(transient-define-infix dirvish-yank--r2r-ssh-host ()
+  "Set ssh host of receiver in remote to remote case."
+  :description "Ssh host of receiver"
+  :class 'transient-lisp-variable
+  :variable 'dirvish-yank--ssh-r2r-receiver-host
+  :reader (lambda (_prompt _init _hist)
+            (completing-read "Ssh receiver host: "
+                             nil nil nil dirvish-yank--rsync-transient-input-history)))
+
+(transient-define-infix dirvish-yank--r2r-ssh-port ()
+  "Set ssh port of receiver in remote to remote case."
+  :description "Ssh port of receiver"
+  :class 'transient-lisp-variable
+  :variable 'dirvish-yank--ssh-r2r-receiver-port
+  :reader (lambda (_prompt _init _hist)
+            (completing-read "Ssh receiver port: "
+                             nil nil nil dirvish-yank--rsync-transient-input-history)))
+
+(transient-define-infix dirvish-yank--r2r-ssh-user ()
+  "Set ssh user of receiver in remote to remote case."
+  :description "Ssh user of receiver"
+  :class 'transient-lisp-variable
+  :variable 'dirvish-yank--ssh-r2r-receiver-user
+  :reader (lambda (_prompt _init _hist)
+            (completing-read "Ssh receiver user: "
+                             nil nil nil dirvish-yank--rsync-transient-input-history)))
+
+(transient-define-infix dirvish-yank--r2r-direct-conn ()
+  :class 'transient-lisp-variable
+  :variable 'dirvish-yank--r2r-direct-conn
+  :reader (lambda (_prompt _init _hist) (completing-read "direct: " '(yes no) nil t)))
+
+(transient-define-prefix dirvish-rsync-transient-configure ()
+  "Configure variables for `dirvish-rsync'."
+  ["Remote to remote"
+   ("rh" "Receiver host" dirvish-yank--r2r-ssh-host)
+   ("rp" "Receiver port" dirvish-yank--r2r-ssh-port)
+   ("ru" "Receiver user" dirvish-yank--r2r-ssh-user)
+   ("rd" "Direct connection" dirvish-yank--r2r-direct-conn)])
 
 ;; inspired by `dired-rsync-transient'
 ;;;###autoload (autoload 'dirvish-rsync-transient "dirvish-yank" nil t)
 (transient-define-prefix dirvish-rsync-transient ()
   "Transient command for `dirvish-rsync'."
-  :init-value (lambda (o) (oset o value (dirvish-yank--rsync-transient-init-value o)))
+  :init-value (lambda (o) (oset o value (dirvish-yank--rsync-transient-init-rsync-switches o)))
   ["Common Arguments"
    ("-a" "archive mode; equals to -rlptgoD" ("-a" "--archive"))
    ("-s" "no space-splitting; useful when remote filenames contain spaces" ("-s" "--protect-args") :level 4)
@@ -580,13 +718,15 @@ unexpected errors."
    ("-h" "output numbers in a human-readable format" "-h" :level 5)
    ("=I" "per-file (1) or total transfer (2) progress" "--info="
     :choices ("progress1" "progress2") :level 4)]
+  ["Configure"
+   ("C" "Set variables..."  dirvish-rsync-transient-configure)]
   ["Action"
    [("RET" "Apply switches and copy" dirvish-yank--rsync-apply-switches-and-copy)]])
 
-(defun dirvish-yank--rsync-transient-read-multiple (prompt &optional _initial-input history)
+(defun dirvish-yank--rsync-transient-read-multiple (prompt &optional _initial-input _history)
   "Read multiple values after PROMPT with optional INITIAL_INPUT and HISTORY."
   (let ((crm-separator ","))
-    (completing-read-multiple prompt nil nil nil nil history)))
+    (completing-read-multiple prompt nil nil nil nil dirvish-yank--rsync-transient-input-history)))
 
 ;;;###autoload
 (defun dirvish-yank--rsync-apply-switches-and-copy (args)
