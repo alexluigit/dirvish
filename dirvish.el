@@ -25,7 +25,7 @@
 (require 'transient)
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd-find "dirvish-fd")
-(declare-function dirvish-noselect-tramp "dirvish-extras")
+(declare-function dirvish-tramp-noselect "dirvish-tramp")
 
 ;;;; User Options
 
@@ -698,8 +698,8 @@ buffer, it defaults to filename under the cursor when it is nil."
       (if (not remote)
           (let ((dired-buffers nil)) ; disable reuse from dired
             (setq buffer (apply fn (list dir-or-list flags))))
-        (require 'dirvish-extras)
-        (setq buffer (dirvish-noselect-tramp fn dir-or-list flags remote)))
+        (require 'dirvish-tramp)
+        (setq buffer (dirvish-tramp-noselect fn dir-or-list flags remote)))
       (with-current-buffer buffer (dirvish-init-dired-buffer))
       (push (cons key buffer) (dv-roots dv))
       (push (cons key buffer) dired-buffers))
