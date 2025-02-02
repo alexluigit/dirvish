@@ -51,6 +51,24 @@ FN is the original `dired-noselect' closure."
            (tramp-get-method-parameter vec 'tramp-direct-async)
            (tramp-get-connection-property vec "direct-async-process" nil))))
 
+(defun dirvish-tramp--ls-parser (entry output)
+  "Parse ls OUTPUT for ENTRY and store it in `dirvish--attrs-hash'."
+  (dolist (file (and (> (length output) 2) (cl-subseq output 2 -1)))
+    (cl-destructuring-bind
+        (inode priv lnum user group size mon day time &rest path)
+        (split-string file)
+      (let* ((sym (cl-position "->" path :test #'equal))
+             (f-name (string-join (cl-subseq path 0 sym) " "))
+             (f-mtime (concat mon " " day " " time))
+             (f-truename (and sym (string-join (cl-subseq path (1+ sym)) " ")))
+             (f-dirp (string-prefix-p "d" priv))
+             (f-type (or f-truename f-dirp)))
+        (puthash (intern (secure-hash 'md5 (expand-file-name f-name entry)))
+                 `(:builtin ,(list f-type lnum user group nil
+                                   f-mtime nil size priv nil inode)
+                   :type ,(cons (if f-dirp 'dir 'file) f-truename))
+                 dirvish--attrs-hash)))))
+
 (defun dirvish-tramp-dir-data-proc-s (proc _exit)
   "Sentinel for `dirvish-data-for-dir''s process PROC."
   (unwind-protect
@@ -60,7 +78,7 @@ FN is the original `dired-noselect' closure."
                    (data (split-string str "\n")))
         (when (buffer-live-p buf)
           (with-current-buffer buf
-            (dirvish-ls-output-parser dir data)
+            (dirvish-tramp--ls-parser dir data)
             (when setup (run-hooks 'dirvish-setup-hook))
             (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
     (dirvish--kill-buffer (process-buffer proc))))
