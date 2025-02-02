@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'dirvish-extras)
 (require 'tramp)
 
 (defconst dirvish-tramp-preview-cmd
