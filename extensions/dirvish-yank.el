@@ -518,6 +518,9 @@ Returns list that contains (host user port localname)."
 
 (dirvish-define-mode-line yank
   "Progress of yank tasks."
+  (setq dirvish-yank-log-buffers
+        (cl-remove-if-not ; user may kill yank buffers
+         (lambda (buf) (buffer-live-p buf)) dirvish-yank-log-buffers))
   (let ((number-of-tasks (length dirvish-yank-log-buffers)))
     (cond ((= number-of-tasks 0))
           ((= number-of-tasks 1)
