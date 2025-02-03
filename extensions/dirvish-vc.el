@@ -20,6 +20,13 @@
 (defclass dirvish-vc-preview (transient-switches) ()
   "Class for dirvish vc-* preview dispatchers.")
 
+(defcustom dirvish-vc-state-fringe 3
+  "The width of the fringe used to display the vc state indicator.
+It is recommended to make this value greater than
+`dirvish-window-fringe', which ensures that the `vc-state' attribute is
+displayed properly."
+  :group 'dirvish :type 'integer)
+
 (defcustom dirvish-vc-state-face-alist
   '((up-to-date       . nil)
     (edited           . dirvish-vc-edited-state)
@@ -30,12 +37,12 @@
     (conflict         . dirvish-vc-conflict-state)
     (unlocked-changes . dirvish-vc-locked-state)
     (needs-update     . dirvish-vc-needs-update-state)
-    (ignored          . dired-ignored)
+    (ignored          . nil)
     (unregistered     . dirvish-vc-unregistered-face))
   "Alist of (VC-STATE . FACE).
-This value is consumed by `vc-state' attribute in Dirvish.  FACE
-is the face used for that VC-STATE.  See `vc-state' in (in
-vc-hooks.el) for detail explanation of these states."
+This value is consumed by `vc-state' attribute in Dirvish.  FACE is the
+face used for that VC-STATE.  See `vc-state' in (in vc-hooks.el) for
+detail explanation of these states."
   :group 'dirvish
   :type '(alist :key-type symbol :value-type (symbol :tag "Face")))
 
@@ -120,16 +127,19 @@ vc-hooks.el) for detail explanation of these states."
   :choices '("log" "diff" "blame"))
 
 (dirvish-define-attribute vc-state
-  "The version control state at left fringe."
-  :when (and (dirvish-prop :vc-backend)
-             (or (set-window-fringes nil 5 1) t))
-  (let* ((state (dirvish-attribute-cache f-name :vc-state))
-         (face (alist-get state dirvish-vc-state-face-alist))
-         (display (and face `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
-         (gutter-str (and display (propertize "!" 'display display))) ov)
-    (when gutter-str
-      (prog1 `(ov . ,(setq ov (make-overlay f-beg f-beg)))
-        (overlay-put ov 'before-string gutter-str)))))
+  "The version control state at left fringe.
+This attribute only works on graphic displays."
+  ;; Avoid setting fringes constantly, which is expensive and slows down Emacs.
+  (unless (= (car (window-fringes)) dirvish-vc-state-fringe)
+    (set-window-fringes nil dirvish-vc-state-fringe dirvish-window-fringe))
+  (let ((ov (make-overlay l-beg l-beg)))
+    (when-let* (((dirvish-prop :vc-backend))
+                (state (dirvish-attribute-cache f-name :vc-state))
+                (face (alist-get state dirvish-vc-state-face-alist))
+                (display `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
+      (overlay-put
+       ov 'before-string (propertize " " 'display display)))
+    `(ov . ,ov)))
 
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."

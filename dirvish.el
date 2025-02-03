@@ -212,6 +212,10 @@ The UI of dirvish is refreshed only when there has not been new
 input for `dirvish-redisplay-debounce' seconds."
   :group 'dirvish :type 'float)
 
+(defcustom dirvish-window-fringe 1
+  "Window fringe for dirvish windows."
+  :group 'dirvish :type 'integer)
+
 (cl-defgeneric dirvish-clean-cache () "Clean cache for selected files." nil)
 (cl-defgeneric dirvish-build-cache () "Build cache for current directory." nil)
 
@@ -1082,14 +1086,15 @@ LEVEL is the depth of current window."
     (when-let (fixed (nth 1 (dv-type dv))) (setq window-size-fixed fixed))
     (set-window-dedicated-p
      nil (and (or (car (dv-layout dv)) (nth 2 (dv-type dv))) t))
-    (set-window-fringes nil 1 1)
+    (set-window-fringes nil dirvish-window-fringe dirvish-window-fringe)
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
       (push (cons current parent) parent-dirs)
       (setq current (dirvish--get-parent-path current))
       (setq parent (dirvish--get-parent-path parent)))
     (when (> depth 0)
-      (cl-loop with layout = (car (dv-layout dv)) with parent-width = (nth 1 layout)
+      (cl-loop with layout = (car (dv-layout dv))
+               with parent-width = (nth 1 layout)
                with remain = (- 1 (nth 2 layout) parent-width)
                with width = (min (/ remain depth) parent-width)
                for level from 1 for (current . parent) in parent-dirs
@@ -1099,7 +1104,9 @@ LEVEL is the depth of current window."
                for b = (dirvish--create-parent-buffer dv parent current level)
                for w = (display-buffer b `(dirvish--display-buffer . ,args)) do
                (with-selected-window w
-                 (set-window-fringes nil 1 1) (set-window-dedicated-p w t))))))
+                 (set-window-fringes
+                  nil dirvish-window-fringe dirvish-window-fringe)
+                 (set-window-dedicated-p w t))))))
 
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."
