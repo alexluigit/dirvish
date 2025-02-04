@@ -797,11 +797,10 @@ When FORCE, ensure the preview get refreshed."
     (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index dv))))
     (dirvish-update-body-h 'force-preview-update)))
 
-(defun dirvish-winbuf-change-h (frame-or-window)
-  "Rebuild layout once buffer in FRAME-OR-WINDOW changed."
-  (let ((win (frame-selected-window frame-or-window)))
-    (with-current-buffer (window-buffer win)
-      (when-let ((dv (dirvish-curr))) (dirvish--init-session dv)))))
+(defun dirvish-winbuf-change-h (window)
+  "Rebuild layout once buffer in WINDOW changed."
+  (with-current-buffer (window-buffer window)
+    (when-let* ((dv (dirvish-curr))) (dirvish--init-session dv))))
 
 (defun dirvish-tab-new-post-h (_tab)
   "Do not reuse sessions from other tabs."

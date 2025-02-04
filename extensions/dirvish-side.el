@@ -113,7 +113,8 @@ filename until the project root when opening a side session."
         (dirvish-prop :cus-header 'dirvish-side-header)
         (dirvish--setup-mode-line (car (dv-layout dv)))
         (dirvish-update-body-h))
-      (setq dirvish--this nil))))
+      (setq dirvish--this nil))
+    (set-window-dedicated-p win t)))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
