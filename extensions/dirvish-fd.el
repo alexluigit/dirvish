@@ -1,6 +1,6 @@
 ;;; dirvish-fd.el --- find-dired alternative using fd  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2022 Alex Lu
+;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
 ;; Version: 2.0.53
 ;; Keywords: files, convenience
@@ -231,7 +231,7 @@ Raise an error if fd executable is not available."
             (propertize "FD" 'face face)
             (if (not (dirvish-prop :fd-time))
                 (substitute-command-keys
-		 "Processing... press \\[dirvish-fd-kill] to abort the search")
+                 "Processing... press \\[dirvish-fd-kill] to abort the search")
               (format "%s \"%s\" | %s %s | %s %s | %s %s | %s %s | %s %s |"
                       (propertize (if globp "glob:" "regex:") 'face face)
                       (propertize (or dirvish-fd--input "")

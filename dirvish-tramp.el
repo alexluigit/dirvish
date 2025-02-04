@@ -1,4 +1,4 @@
-;;; dirvish-tramp.el ---  Dirvish tramp integration  -*- lexical-binding: t -*-
+;;; dirvish-tramp.el --- Dirvish tramp integration  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>

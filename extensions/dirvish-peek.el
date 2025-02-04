@@ -1,6 +1,6 @@
 ;;; dirvish-peek.el --- Minibuffer file preview powered by Dirvish -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2022 Alex Lu
+;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
 ;; Version: 2.0.53
 ;; Keywords: files, convenience
