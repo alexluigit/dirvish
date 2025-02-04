@@ -98,25 +98,22 @@ filename until the project root when opening a side session."
 
 (defun dirvish-side--auto-jump ()
   "Select latest buffer file in the visible `dirvish-side' session."
-  (run-with-timer
-   0.5 nil
-   (lambda ()
-     (when-let* (((not dirvish--this))
-                 (dir (or (dirvish--get-project-root) default-directory))
-                 (win (dirvish-side--session-visible-p))
-                 (dv (with-selected-window win (dirvish-curr)))
-                 ((not (active-minibuffer-window)))
-                 (file buffer-file-name))
-       (with-selected-window win
-         (when dir
-           (setq dirvish--this dv)
-           (let (buffer-list-update-hook) (dirvish-find-entry-a dir))
-           (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
-             (dired-goto-file file))
-           (dirvish-prop :cus-header 'dirvish-side-header)
-           (dirvish--setup-mode-line (car (dv-layout dv)))
-           (dirvish-update-body-h))
-         (setq dirvish--this nil))))))
+  (when-let* (((not dirvish--this))
+              (dir (or (dirvish--get-project-root) default-directory))
+              (win (dirvish-side--session-visible-p))
+              (dv (with-selected-window win (dirvish-curr)))
+              ((not (active-minibuffer-window)))
+              (file buffer-file-name))
+    (with-selected-window win
+      (when dir
+        (setq dirvish--this dv)
+        (let (buffer-list-update-hook) (dirvish-find-entry-a dir))
+        (if dirvish-side-auto-expand (dirvish-subtree-expand-to file)
+          (dired-goto-file file))
+        (dirvish-prop :cus-header 'dirvish-side-header)
+        (dirvish--setup-mode-line (car (dv-layout dv)))
+        (dirvish-update-body-h))
+      (setq dirvish--this nil))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
