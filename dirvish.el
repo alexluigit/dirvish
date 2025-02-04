@@ -1127,6 +1127,10 @@ LEVEL is the depth of current window."
      (let ((hash (make-hash-table))
            (bk ,(and (featurep 'dirvish-vc)
                      `(ignore-errors (vc-responsible-backend ,dir)))))
+       ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
+       (advice-add 'vc-git--git-status-to-vc-state :around
+                   (lambda (fn code-list)
+                     (apply fn (list (delete-dups code-list)))))
        (dolist (file (directory-files ,dir t nil t))
          (let* ((attrs (file-attributes file))
                 (state (and bk (vc-state-refresh file bk)))
