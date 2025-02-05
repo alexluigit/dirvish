@@ -495,8 +495,10 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   "Kill the dirvish instance DV."
   (let ((index (cdr (dv-index dv))))
     (if (not (car (dv-layout dv)))
-        (cl-loop for (_d . b) in (dv-roots dv) when
-                 (not (get-buffer-window b)) do (kill-buffer b)
+        (cl-loop for (_d . b) in (dv-roots dv)
+                 when (and (not (get-buffer-window b))
+                           (not (with-current-buffer b server-buffer-clients)))
+                 do (kill-buffer b)
                  finally (setf (dv-index dv) (car (dv-roots dv))))
       (when dirvish-use-header-line
         (with-current-buffer index
