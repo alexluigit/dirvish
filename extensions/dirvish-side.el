@@ -16,7 +16,7 @@
 (require 'dirvish-subtree)
 
 (defcustom dirvish-side-display-alist
-  '((side . left) (slot . -1))
+  '((side . left) (slot . -1) (dedicated . t))
   "Display alist for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
