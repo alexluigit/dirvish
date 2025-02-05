@@ -503,7 +503,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
           (setq header-line-format dirvish--header-line-fmt)))
       (cl-loop for (_d . b) in (dv-roots dv)
                when (not (eq b index)) do (kill-buffer b))
-      (when-let ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
+      (when-let* ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
     (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
              (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-name dv)) bn)
@@ -674,7 +674,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 
 (defun dirvish-thumb-buf-a (fn)
   "Advice for FN `image-dired-create-thumbnail-buffer'."
-  (when-let ((dv dirvish--this) ((dv-preview-window dv)))
+  (when-let* ((dv dirvish--this) ((dv-preview-window dv)))
     (dirvish--init-session dv)
     (with-selected-window (dv-preview-window dv)
       (switch-to-buffer image-dired-thumbnail-buffer)))
@@ -686,7 +686,7 @@ buffer, it defaults to filename under the cursor when it is nil."
     (with-current-buffer buf (add-hook 'post-command-hook fun nil t)) buf))
 
 (defun dirvish-dired-noselect-a (fn dir-or-list &optional flags)
-  "Return buffer for DIR with FLAGS, FN is `dired-noselect'."
+  "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
          (this dirvish--this)
@@ -733,7 +733,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-update-body-h (&optional force)
   "Update UI of current Dirvish.
 When FORCE, ensure the preview get refreshed."
-  (when-let ((dv (dirvish-curr)))
+  (when-let* ((dv (dirvish-curr)))
     (cond ((not dirvish-hide-cursor))
           ((eobp) (forward-line -1))
           ((cdr dired-subdir-alist))
@@ -741,7 +741,7 @@ When FORCE, ensure the preview get refreshed."
            (goto-char (dirvish-prop :content-begin))))
     (when dirvish-hide-cursor (dired-move-to-filename))
     (dirvish--render-attrs)
-    (when-let ((filename (dired-get-filename nil t)))
+    (when-let* ((filename (dired-get-filename nil t)))
       (dirvish-prop :index filename)
       (let ((h-buf (dirvish--util-buffer 'header dv t))
             (f-buf (dirvish--util-buffer 'footer dv t))
@@ -765,14 +765,14 @@ When FORCE, ensure the preview get refreshed."
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
-  (when-let ((dv (dirvish-curr)) (buf (current-buffer)))
+  (when-let* ((dv (dirvish-curr)) (buf (current-buffer)))
     (let ((win (get-buffer-window buf)))
       (when (window-live-p win) (set-window-dedicated-p win nil)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
     (unless (dv-roots dv)
-      (when-let ((layout (car (dv-layout dv)))
-                 (wconf (dv-winconf dv))
-                 ((eq buf (window-buffer (selected-window)))))
+      (when-let* ((layout (car (dv-layout dv)))
+                  (wconf (dv-winconf dv))
+                  ((eq buf (window-buffer (selected-window)))))
         (set-window-configuration wconf))
       (remhash (dv-name dv) dirvish--session-hash)
       (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
@@ -839,8 +839,8 @@ When FORCE, ensure the preview get refreshed."
 
 (dirvish-define-preview default (file ext)
   "Default preview dispatcher for FILE."
-  (when-let ((attrs (ignore-errors (file-attributes file)))
-             (size (file-attribute-size attrs)))
+  (when-let* ((attrs (ignore-errors (file-attributes file)))
+              (size (file-attribute-size attrs)))
     (cond ((file-directory-p file) ; default directory previewer
            (let* ((script `(with-current-buffer
                                (progn (setq insert-directory-program
@@ -873,7 +873,7 @@ When FORCE, ensure the preview get refreshed."
 (defun dirvish-shell-preview-proc-s (proc _exitcode)
   "A sentinel for dirvish preview process.
 When PROC finishes, fill preview buffer with process result."
-  (when-let ((dv (or (dirvish-curr) dirvish--this)))
+  (when-let* ((dv (or (dirvish-curr) dirvish--this)))
     (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
       (erase-buffer) (remove-overlays)
       (insert (with-current-buffer (process-buffer proc) (buffer-string)))
@@ -890,7 +890,7 @@ When PROC finishes, fill preview buffer with process result."
 
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
-  (when-let ((proc (get-buffer-process (get-buffer " *Dirvish-temp*"))))
+  (when-let* ((proc (get-buffer-process (get-buffer " *Dirvish-temp*"))))
     (delete-process proc))
   (let ((buf (dirvish--util-buffer 'preview dv nil t))
         (proc (make-process :name "sh-out" :connection-type nil
@@ -1082,7 +1082,7 @@ LEVEL is the depth of current window."
          (depth (or (caar (dv-layout dv)) 0))
          (i 0))
     (dirvish--setup-mode-line (car (dv-layout dv)))
-    (when-let (fixed (nth 1 (dv-type dv))) (setq window-size-fixed fixed))
+    (when-let* ((fixed (nth 1 (dv-type dv)))) (setq window-size-fixed fixed))
     (set-window-dedicated-p
      nil (and (or (car (dv-layout dv)) (nth 2 (dv-type dv))) t))
     (set-window-fringes nil dirvish-window-fringe dirvish-window-fringe)

@@ -102,7 +102,7 @@ FN is the original `dired-noselect' closure."
       (let ((process-connection-type nil)
             (localname (file-remote-p file 'localname))
             (buf (dirvish--util-buffer 'preview dv nil t)) proc)
-        (when-let ((proc (get-buffer-process buf))) (delete-process proc))
+        (when-let* ((proc (get-buffer-process buf))) (delete-process proc))
         (setq proc (start-file-process-shell-command
                     (buffer-name buf) buf
                     (format dirvish-tramp-preview-cmd localname localname)))

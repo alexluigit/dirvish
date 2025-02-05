@@ -328,7 +328,7 @@ See `dirvish-subtree-file-viewer' for details"
 (defun dirvish-subtree-up ()
   "Jump to beginning of current subtree."
   (interactive)
-  (when-let ((ov (dirvish-subtree--parent)))
+  (when-let* ((ov (dirvish-subtree--parent)))
     (goto-char (overlay-start ov))
     (dired-previous-line 1)))
 
@@ -397,7 +397,7 @@ This command takes a mouse event EV as its argument."
     (select-window win)
     (with-current-buffer (window-buffer win)
       (goto-char pos)
-      (when-let ((entry (dired-get-filename nil t)))
+      (when-let* ((entry (dired-get-filename nil t)))
         (if (file-directory-p entry)
             (dirvish-subtree-toggle)
           (dirvish-find-entry-a entry))))

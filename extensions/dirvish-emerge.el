@@ -108,7 +108,7 @@ turned on in the buffer."
 
 (cl-defmethod transient-infix-set ((obj dirvish-emerge-group) _value)
   "Set value for OBJ."
-  (if-let ((sel (oref obj selected)))
+  (if-let* ((sel (oref obj selected)))
       (dirvish-emerge-read-recipe (oref obj recipe) obj)
     (oset obj selected t)))
 
@@ -435,8 +435,8 @@ PREDS are locally composed predicates."
         (max-idx (length preds))
         (dir (file-local-name (dired-current-directory))))
     (while (< (point) end)
-      (when-let ((f-beg (dired-move-to-filename))
-                 (f-end (dired-move-to-end-of-filename)))
+      (when-let* ((f-beg (dired-move-to-filename))
+                  (f-end (dired-move-to-end-of-filename)))
         (let* ((l-beg (line-beginning-position))
                (l-end (1+ (line-end-position)))
                (local (buffer-substring-no-properties f-beg f-end))
@@ -458,7 +458,7 @@ PREDS are locally composed predicates."
                  (< (hash-table-count dirvish--attrs-hash)
                     dirvish-emerge-max-file-count)))
     (dirvish-emerge--readin-groups)
-    (when-let ((preds (dirvish-prop :emerge-preds)))
+    (when-let* ((preds (dirvish-prop :emerge-preds)))
       (dirvish-emerge--apply-1 preds))))
 
 ;;;; Interactive commands

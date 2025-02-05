@@ -637,7 +637,7 @@ values."
   (if (and (slot-boundp obj 'value) (oref obj value))
       (oref obj value)
     ;; check saved values
-    (if-let ((saved (assq (oref obj command) transient-values)))
+    (if-let* ((saved (assq (oref obj command) transient-values)))
         (cdr saved)
       ;; use default value at last resort
       default-value)))
