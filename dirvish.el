@@ -396,6 +396,13 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
+(defun dirvish--switch-to-buffer (buffer)
+  "Switch to BUFFER with window undedicated."
+  (let ((dedicated (window-dedicated-p)) (win (selected-window)))
+    (set-window-dedicated-p win nil)
+    (prog1 (switch-to-buffer buffer)
+      (set-window-dedicated-p win dedicated))))
+
 (defun dirvish--kill-buffer (buffer)
   "Kill BUFFER without side effects."
   (and (buffer-live-p buffer)
@@ -641,7 +648,7 @@ buffer, it defaults to filename under the cursor when it is nil."
                        ((string-suffix-p "/" entry)
                         (user-error
                          (concat entry " is not a valid directory"))))))
-    (if buffer (switch-to-buffer buffer)
+    (if buffer (dirvish--switch-to-buffer buffer)
       (let* ((ext (downcase (or (file-name-extension entry) "")))
              (file (expand-file-name entry))
              (process-connection-type nil)
@@ -677,7 +684,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   (when-let* ((dv dirvish--this) ((dv-preview-window dv)))
     (dirvish--init-session dv)
     (with-selected-window (dv-preview-window dv)
-      (switch-to-buffer image-dired-thumbnail-buffer)))
+      (dirvish--switch-to-buffer image-dired-thumbnail-buffer)))
   (let ((buf (funcall fn))
         (fun (lambda () (let ((buf (get-text-property
                                (point) 'associated-dired-buffer)))
@@ -785,7 +792,7 @@ When FORCE, ensure the preview get refreshed."
   (let* ((w (frame-selected-window)) (b (window-buffer w)) (dv (dirvish-curr)))
     (cond ((and dv (minibufferp (window-buffer dirvish--selected-window)))
            (with-selected-window (dirvish--create-root-window dv)
-             (switch-to-buffer b)
+             (dirvish--switch-to-buffer b)
              (dirvish--init-session dv)))
           ((active-minibuffer-window))
           (t (setq dirvish--this dv)))
