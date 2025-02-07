@@ -808,7 +808,7 @@ When FORCE, ensure the preview get refreshed."
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
-  (with-current-buffer (window-buffer window)
+  (with-selected-window window
     (when-let* ((dv (dirvish-curr)))
       (let ((saved-layout (car (dv-layout dv)))
             (saved-winconf (dv-winconf dv)))

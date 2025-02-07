@@ -129,7 +129,7 @@ detail explanation of these states."
 (dirvish-define-attribute vc-state
   "The version control state at left fringe.
 This attribute only works on graphic displays."
-  ;; Avoid setting fringes constantly, which is expensive and slows down Emacs.
+  ;; Avoid setting fringes constantly
   (unless (= (car (window-fringes)) dirvish-vc-state-fringe)
     (set-window-fringes nil dirvish-vc-state-fringe dirvish-window-fringe))
   (let ((ov (make-overlay l-beg l-beg)))
@@ -137,7 +137,7 @@ This attribute only works on graphic displays."
                 (state (dirvish-attribute-cache f-name :vc-state))
                 (face (alist-get state dirvish-vc-state-face-alist))
                 (display `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
-      (overlay-put
+      (overlay-put ; TODO: very slow when the directory doesn't have any commit
        ov 'before-string (propertize " " 'display display)))
     `(ov . ,ov)))
 
