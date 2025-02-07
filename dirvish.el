@@ -363,7 +363,7 @@ A dirvish preview dispatcher is a function consumed by
   "Define a mode line segment NAME with BODY and DOCSTRING."
   (declare (indent defun) (doc-string 2))
   (let ((ml-name (intern (format "dirvish-%s-ml" name))))
-    `(defun ,ml-name (dv) ,docstring (ignore dv) ,@body)))
+    `(defun ,ml-name () ,docstring ,@body)))
 
 ;;;; Helpers
 
@@ -565,8 +565,8 @@ ARGS is a list of keyword arguments for `dirvish' struct."
      (when (or m-attr feat-in-lib) (require lib))
      (and m-attr (setq attrs (append attrs m-attr))))
    finally
-   (setf dirvish--mode-line-fmt (dirvish--mode-line-fmt-setter ml-l ml-r))
-   (setf dirvish--header-line-fmt (dirvish--mode-line-fmt-setter hl-l hl-r t))
+   (setf dirvish--mode-line-fmt (dirvish--mode-line-composer ml-l ml-r))
+   (setf dirvish--header-line-fmt (dirvish--mode-line-composer hl-l hl-r t))
    (setf dirvish--working-preview-dispathchers (dirvish--preview-dps-validate))
    (setf dirvish--working-attrs (dirvish--attrs-expand attrs))))
 
@@ -959,52 +959,54 @@ This attribute is enabled when `dirvish-hide-cursor' is non-nil."
     (let ((ov (make-overlay f-end l-end)))
       (overlay-put ov 'invisible t) `(ov . ,ov))))
 
-(defun dirvish--mode-line-fmt-setter (left right &optional header)
-  "Set the `dirvish--mode-line-fmt'.
+(defun dirvish--mode-line-composer (left right &optional header)
+  "Set `dirvish--mode-line-fmt'.
 LEFT and RIGHT are segments aligned to left/right respectively.
 If HEADER, set the `dirvish--header-line-fmt' instead."
-  (cl-labels ((expand (segments)
-                (cl-loop for s in segments collect
-                         (if (stringp s) s
-                           `(:eval (,(intern (format "dirvish-%s-ml" s)) (dirvish-curr))))))
-              (get-font-scale ()
-                (let* ((face (if header 'header-line 'mode-line-inactive))
-                       (default (face-attribute 'default :height))
-                       (ml-height (face-attribute face :height)))
-                  (cond ((floatp ml-height) ml-height)
-                        ((integerp ml-height) (/ (float ml-height) default))
-                        (t 1)))))
-    `((:eval
-       (let* ((dv (dirvish-curr))
-              (buf (and (car (dv-layout dv)) (cdr (dv-index dv))))
-              (scale ,(get-font-scale))
-              (win-width (floor (/ (window-width) scale)))
-              (str-l (format-mode-line
-                      ',(or (expand left) mode-line-format) nil nil buf))
-              (str-r (format-mode-line ',(expand right) nil nil buf))
-              (len-r (string-width str-r)))
-         (concat
-          (dirvish--bar-image (car (dv-layout dv)) ,header)
-          (if (< (+ (string-width str-l) len-r) win-width)
-              str-l
-            (let ((trim (1- (- win-width len-r))))
-              (if (>= trim 0)
-                  (substring str-l 0 (min trim (1- (length str-l))))
-                "")))
-          (propertize
-           " " 'display
-           `((space :align-to (- (+ right right-fringe right-margin)
-                                 ,(ceiling (* scale (string-width str-r)))))))
-          str-r))))))
+  `((:eval
+     (let* ((dv (dirvish-curr))
+            (buf (and (car (dv-layout dv)) (cdr (dv-index dv))))
+            (expand
+             (lambda (segs)
+               (cl-loop for s in segs collect
+                        (if (stringp s) s
+                          `(:eval (,(intern (format "dirvish-%s-ml" s))))))))
+            (face ',(if header 'header-line 'mode-line-inactive))
+            (default (face-attribute 'default :height))
+            (ml-height (face-attribute face :height))
+            (scale (cond ((floatp ml-height) ml-height)
+                         ((integerp ml-height) (/ (float ml-height) default))
+                         (t 1)))
+            (win-width (floor (/ (window-width) scale)))
+            (str-l "DIRVISH: Context buffer is not a live buffer")
+            (str-r (propertize "WARNING" 'face 'dired-warning))
+            (len-r 7))
+       (when (buffer-live-p buf)
+         (setq str-l (format-mode-line (funcall expand ',left) nil nil buf))
+         (setq str-r (format-mode-line (funcall expand ',right) nil nil buf))
+         (setq len-r (string-width str-r)))
+       (concat
+        (dirvish--bar-image fullframe-p ,header)
+        (if (< (+ (string-width str-l) len-r) win-width)
+            str-l
+          (let ((trim (1- (- win-width len-r))))
+            (if (>= trim 0)
+                (substring str-l 0 (min trim (1- (length str-l))))
+              "")))
+        (propertize
+         " " 'display
+         `((space :align-to (- (+ right right-fringe right-margin)
+                               ,(ceiling (* scale (string-width str-r)))))))
+        str-r)))))
 
 ;; Thanks to `doom-modeline'.
-(defun dirvish--bar-image (fullscreenp header)
+(defun dirvish--bar-image (fullframe-p header)
   "Create a bar image with height of `dirvish-mode-line-height'.
-If FULLSCREENP, use the `cdr' of the value as height, otherwise
+If FULLFRAME-P, use the `cdr' of the value as height, otherwise
 use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   (when (and (display-graphic-p) (image-type-available-p 'pbm))
     (let* ((hv (if header dirvish-header-line-height dirvish-mode-line-height))
-           (ht (cond ((numberp hv) hv) (fullscreenp (cdr hv)) (t (car hv)))))
+           (ht (cond ((numberp hv) hv) (fullframe-p (cdr hv)) (t (car hv)))))
       (propertize
        " " 'display
        (ignore-errors

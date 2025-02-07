@@ -307,6 +307,7 @@ GROUP-TITLES is a list of group titles."
 (dirvish-define-mode-line path
   "Path of file under the cursor."
   (let* ((directory-abbrev-alist nil) ; TODO: support custom `directory-abbrev-alist'
+         (dv (dirvish-curr))
          (index (dired-current-directory))
          (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow))
          (rmt (dirvish-prop :remote))

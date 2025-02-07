@@ -56,7 +56,7 @@ If non-nil, expand all the parent directories of current buffer's
 filename until the project root when opening a side session."
   :group 'dirvish :type 'boolean)
 
-(defconst dirvish-side-header (dirvish--mode-line-fmt-setter '(project) nil t))
+(defconst dirvish-side-header (dirvish--mode-line-composer '(project) nil t))
 
 (defun dirvish-side-file-open-fn ()
   "Called before opening a file in side sessions."
@@ -145,7 +145,7 @@ filename until the project root when opening a side session."
 (dirvish-define-mode-line project
   "Return a string showing current project."
   (let ((project (dirvish--get-project-root))
-        (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow)))
+        (face (if (dirvish--window-selected-p (dirvish-curr)) 'dired-header 'shadow)))
     (if project
         (setq project (file-name-base (directory-file-name project)))
       (setq project "-"))

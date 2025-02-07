@@ -75,7 +75,7 @@ should return a list of regular expressions."
 
 (defconst dirvish-fd-bufname "🔍%s📁%s📁%s")
 (defconst dirvish-fd-header
-  (dirvish--mode-line-fmt-setter '(fd-switches) '(fd-timestamp fd-pwd " ") t))
+  (dirvish--mode-line-composer '(fd-switches) '(fd-timestamp fd-pwd " ") t))
 (defvar dirvish-fd-input-history nil "History list of fd input in the minibuffer.")
 (defvar dirvish-fd-debounce-timer nil)
 (defvar-local dirvish-fd--output "")
@@ -218,7 +218,7 @@ Raise an error if fd executable is not available."
   "Return a formatted string showing the DIRVISH-FD-ACTUAL-SWITCHES."
   (pcase-let ((`(,globp ,casep ,ign-range ,types ,exts ,excludes)
                (dirvish-prop :fd-arglist))
-              (face (if (dirvish--window-selected-p dv)
+              (face (if (dirvish--window-selected-p (dirvish-curr))
                         'dired-header 'shadow)))
     (format "  %s | %s"
             (propertize "FD" 'face face)
@@ -246,7 +246,7 @@ Raise an error if fd executable is not available."
 
 (dirvish-define-mode-line fd-timestamp
   "Timestamp of search finished."
-  (when (car (dv-layout dv)) (dirvish-prop :fd-time)))
+  (when (car (dv-layout (dirvish-curr))) (dirvish-prop :fd-time)))
 
 (dirvish-define-mode-line fd-pwd
   "Current working directory."
