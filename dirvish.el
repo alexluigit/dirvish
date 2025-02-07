@@ -810,7 +810,18 @@ When FORCE, ensure the preview get refreshed."
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
   (with-current-buffer (window-buffer window)
-    (when-let* ((dv (dirvish-curr))) (dirvish--init-session dv))))
+    (when-let* ((dv (dirvish-curr)))
+      (let ((saved-layout (car (dv-layout dv)))
+            (saved-winconf (dv-winconf dv)))
+        ;; rebuild a fullframe session as a single pane session temporarily, for
+        ;; cases when a buried dirvish buffers is selected by minibuffer
+        ;; commands such as `consult-buffer'.
+        (cond ((and (active-minibuffer-window) saved-layout)
+               (setcar (dv-layout dv) nil)
+               (dirvish--init-session dv)
+               (setcar (dv-layout dv) saved-layout)
+               (setf (dv-winconf dv) saved-winconf))
+              (t (dirvish--init-session dv)))))))
 
 (defun dirvish-tab-new-post-h (_tab)
   "Do not reuse sessions from other tabs."
