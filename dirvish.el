@@ -862,12 +862,17 @@ When FORCE, ensure the preview get refreshed."
   (when-let* ((attrs (ignore-errors (file-attributes file)))
               (size (file-attribute-size attrs)))
     (cond ((file-directory-p file) ; default directory previewer
-           (let* ((script `(with-current-buffer
-                               (progn (setq insert-directory-program
-                                            ,insert-directory-program)
-                                      (dired-noselect ,file "-AlGh"))
-                             (buffer-string)))
-                  (cmd (format "%S" `(message "\n%s" ,script))))
+           (let* ((script
+                   `(with-current-buffer
+                        (let ((non-essential t)
+                              (delay-mode-hooks t)
+                              (enable-local-variables :safe)
+                              enable-dir-local-variables)
+                          (setq insert-directory-program
+                                ,insert-directory-program)
+                          (dired-noselect ,file "-AlGh"))
+                      (buffer-string)))
+                  (cmd (prin1-to-string `(message "\n%s" ,script))))
              `(dired . (,dirvish-emacs-bin "-Q" "-batch" "--eval" ,cmd))))
           ((> size (or large-file-warning-threshold 10000000))
            `(info . ,(format "File %s is too big for literal preview." file)))
