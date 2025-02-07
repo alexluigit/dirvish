@@ -109,8 +109,9 @@ filename until the project root when opening a side session."
                  (win (dirvish-side--session-visible-p))
                  (dv (with-selected-window win (dirvish-curr)))
                  (dir (or (dirvish--get-project-root) default-directory))
-                 (prev (with-selected-window win (dired-get-filename nil t)))
+                 (prev (with-selected-window win (dirvish-prop :index)))
                  (curr buffer-file-name)
+                 ((not (string-suffix-p "COMMIT_EDITMSG" curr)))
                  ((not (equal prev curr))))
        (with-selected-window win
          (setq dirvish--this dv)
