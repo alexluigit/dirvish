@@ -431,10 +431,12 @@ ALIST is window arguments passed to `window--display-buffer'."
           entry
         (complete-with-action action completions string pred)))))
 
-(defun dirvish--window-selected-p (dv)
-  "Return t if session DV is selected."
-  (eq (if (car (dv-layout dv)) (dv-root-window dv) (frame-selected-window))
-      dirvish--selected-window))
+(defun dirvish--selected-p (&optional dv)
+  "Return t if session DV is selected.
+DV defaults to `dirvish-curr'."
+  (let ((dv (or dv (dirvish-curr))))
+    (eq (if (car (dv-layout dv)) (dv-root-window dv) (frame-selected-window))
+        dirvish--selected-window)))
 
 (defun dirvish--scopes ()
   "Return computed scopes according to `dirvish-scopes'."

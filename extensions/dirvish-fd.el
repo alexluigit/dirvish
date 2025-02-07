@@ -218,8 +218,7 @@ Raise an error if fd executable is not available."
   "Return a formatted string showing the DIRVISH-FD-ACTUAL-SWITCHES."
   (pcase-let ((`(,globp ,casep ,ign-range ,types ,exts ,excludes)
                (dirvish-prop :fd-arglist))
-              (face (if (dirvish--window-selected-p (dirvish-curr))
-                        'dired-header 'shadow)))
+              (face (if (dirvish--selected-p) 'dired-header 'shadow)))
     (format "  %s | %s"
             (propertize "FD" 'face face)
             (if (not (dirvish-prop :fd-time))
