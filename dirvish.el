@@ -367,6 +367,10 @@ A dirvish preview dispatcher is a function consumed by
 
 ;;;; Helpers
 
+(defsubst dirvish-curr ()
+  "Return Dirvish session attached to current buffer, if there is any."
+  (gethash (dirvish-prop :dv) dirvish--session-hash))
+
 (defun dirvish--hide-dired-header ()
   "Hide the Dired header."
   (remove-overlays (point-min) (point) 'dired-header t)
@@ -432,11 +436,9 @@ ALIST is window arguments passed to `window--display-buffer'."
         (complete-with-action action completions string pred)))))
 
 (defun dirvish--selected-p (&optional dv)
-  "Return t if session DV is selected.
-DV defaults to `dirvish-curr'."
+  "Return t if session DV (defaults to `dirvish-curr') is selected."
   (let ((dv (or dv (dirvish-curr))))
-    (eq (if (car (dv-layout dv)) (dv-root-window dv) (frame-selected-window))
-        dirvish--selected-window)))
+    (eq (dv-root-window dv) dirvish--selected-window)))
 
 (defun dirvish--scopes ()
   "Return computed scopes according to `dirvish-scopes'."
@@ -454,12 +456,6 @@ When NOTE is non-nil, append it the next line."
                         'display '(space :align-to right))
             (propertize (if note (concat "\n" note) "") 'face 'font-lock-doc-face))))
 
-;;;; Core
-
-(defsubst dirvish-curr ()
-  "Get selected Dirvish session."
-  (gethash (dirvish-prop :dv) dirvish--session-hash))
-
 (defun dirvish--util-buffer (type &optional dv no-create inhibit-hiding)
   "Return session DV's utility buffer of TYPE (defaults to `temp').
 If NO-CREATE is non-nil, do not create the buffer.
@@ -467,6 +463,8 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
   (let* ((id (if dv (format "-%s*" (dv-name dv)) "*"))
          (name (format "%s*Dirvish-%s%s" (if inhibit-hiding "" " ") type id)))
     (if no-create (get-buffer name) (get-buffer-create name))))
+
+;;;; Core
 
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish data type."
@@ -789,16 +787,10 @@ When FORCE, ensure the preview get refreshed."
                do (dirvish--kill-buffer b))
       (setq dirvish--this nil))))
 
-(defun dirvish-selection-change-h (&optional _frame-or-window)
-  "Save current session to frame parameters."
-  (let* ((w (frame-selected-window)) (b (window-buffer w)) (dv (dirvish-curr)))
-    (cond ((and dv (minibufferp (window-buffer dirvish--selected-window)))
-           (with-selected-window (dirvish--create-root-window dv)
-             (dirvish--switch-to-buffer b)
-             (dirvish--init-session dv)))
-          ((active-minibuffer-window))
-          (t (setq dirvish--this dv)))
-    (setq dirvish--selected-window w)))
+(defun dirvish-selection-change-h (&rest _)
+  "Record `dirvish--selected-window' and `dirvish--this'."
+  (unless (active-minibuffer-window) (setq dirvish--this (dirvish-curr)))
+  (setq dirvish--selected-window (frame-selected-window)))
 
 (defun dirvish-winconf-change-h ()
   "Restore hidden sessions on buffer switching."
@@ -1244,7 +1236,6 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
                    (footer (side . below) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))))
          (w-order (and layout (dirvish--window-split-order))) util-windows)
-    (setq dirvish--selected-window (selected-window))
     (dirvish--init-util-buffers dv)
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
