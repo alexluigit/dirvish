@@ -510,9 +510,6 @@ ARGS is a list of keyword arguments for `dirvish' struct."
                            (not (with-current-buffer b server-buffer-clients)))
                  do (kill-buffer b)
                  finally (setf (dv-index dv) (car (dv-roots dv))))
-      (when dirvish-use-header-line
-        (with-current-buffer index
-          (setq header-line-format dirvish--header-line-fmt)))
       (cl-loop for (_d . b) in (dv-roots dv)
                when (not (eq b index)) do (kill-buffer b))
       (when-let* ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
@@ -762,9 +759,9 @@ When FORCE, ensure the preview get refreshed."
         (dirvish-debounce nil
           (if (not (car (dv-layout dv)))
               (and (< emacs-major-version 29) (force-mode-line-update))
-            (when (and dirvish-use-mode-line (buffer-live-p f-buf))
+            (when (buffer-live-p f-buf)
               (with-current-buffer f-buf (force-mode-line-update)))
-            (when (and dirvish-use-header-line (buffer-live-p h-buf))
+            (when (buffer-live-p h-buf)
               (with-current-buffer h-buf (force-mode-line-update)))
             (when (or force (not (equal last-index filename)))
               (dirvish--preview-update dv filename))))))))
@@ -967,7 +964,8 @@ LEFT and RIGHT are segments aligned to left/right respectively.
 If HEADER, set the `dirvish--header-line-fmt' instead."
   `((:eval
      (let* ((dv (dirvish-curr))
-            (buf (and (car (dv-layout dv)) (cdr (dv-index dv))))
+            (fullframe-p (car (dv-layout dv)))
+            (buf (cdr (dv-index dv)))
             (expand
              (lambda (segs)
                (cl-loop for s in segs collect
@@ -1026,14 +1024,28 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
            (setq-local meow-cursor-type-motion nil
                        meow-cursor-type-default nil)))))
 
-(defun dirvish--setup-mode-line (layout)
-  "Setup the mode/header line according to LAYOUT."
-  (setq mode-line-format
-        (unless (or layout (not dirvish-use-mode-line))
-          dirvish--mode-line-fmt)
-        header-line-format
-        (cond ((or layout (not dirvish-use-header-line)) nil)
-              (t (or (dirvish-prop :cus-header) dirvish--header-line-fmt)))))
+(defun dirvish--setup-mode-line (dv)
+  "Setup the mode/header line for dirvish DV."
+  (let* ((idx-buf (cdr (dv-index dv)))
+         (hl (or (dirvish-prop :cus-header) dirvish--header-line-fmt))
+         (ml dirvish--mode-line-fmt)
+         (fullframe-p (car (dv-layout dv))))
+    (cond ; setup `header-line-format'
+     ((and fullframe-p (not dirvish-use-header-line)))
+     (fullframe-p
+      (with-current-buffer idx-buf (setq header-line-format nil))
+      (with-current-buffer (dirvish--util-buffer 'header dv)
+        (setq header-line-format hl)))
+     (dirvish-use-header-line
+      (with-current-buffer idx-buf (setq header-line-format hl))))
+    (cond ; setup `mode-line-format'
+     ((and fullframe-p (not dirvish-use-mode-line)))
+     (fullframe-p
+      (with-current-buffer idx-buf (setq mode-line-format nil))
+      (with-current-buffer (dirvish--util-buffer 'footer dv)
+        (setq mode-line-format ml)))
+     (dirvish-use-mode-line
+      (with-current-buffer idx-buf (setq mode-line-format ml))))))
 
 (defun dirvish-revert (&optional ignore-auto _noconfirm)
   "Reread the Dirvish buffer.
@@ -1106,7 +1118,6 @@ LEVEL is the depth of current window."
          (parent-dirs ())
          (depth (or (caar (dv-layout dv)) 0))
          (i 0))
-    (dirvish--setup-mode-line (car (dv-layout dv)))
     (when-let* ((fixed (nth 1 (dv-type dv)))) (setq window-size-fixed fixed))
     (set-window-dedicated-p
      nil (and (or (car (dv-layout dv)) (nth 2 (dv-type dv))) t))
@@ -1139,11 +1150,12 @@ LEVEL is the depth of current window."
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
   (with-current-buffer (dirvish--util-buffer 'header dv)
     (dirvish-prop :dv (dv-name dv))
-    (setq cursor-type nil window-size-fixed 'height mode-line-format nil))
+    (setq cursor-type nil window-size-fixed 'height
+          mode-line-format nil header-line-format nil))
   (with-current-buffer (dirvish--util-buffer 'footer dv)
     (dirvish-prop :dv (dv-name dv))
-    (setq cursor-type nil window-size-fixed 'height)
-    (setq header-line-format nil mode-line-format dirvish--mode-line-fmt)))
+    (setq cursor-type nil window-size-fixed 'height
+          mode-line-format nil header-line-format nil)))
 
 (defsubst dirvish--dir-data-getter (dir)
   "Script for DIR data retrieving."
@@ -1229,6 +1241,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
          (w-order (and layout (dirvish--window-split-order))) util-windows)
     (setq dirvish--selected-window (selected-window))
     (dirvish--init-util-buffers dv)
+    (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dolist (pane w-order)
       (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
@@ -1238,15 +1251,12 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
               (t (set-window-dedicated-p win t) (push win util-windows)))
         (set-window-buffer win buf)))
     (dirvish--create-parent-windows dv)
-    (let ((h-fmt (or (dirvish-prop :cus-header) dirvish--header-line-fmt)))
-      (with-current-buffer (dirvish--util-buffer 'header dv)
-        (setq header-line-format h-fmt))
-      (when (and (display-graphic-p) (> emacs-major-version 28))
-        (let ((window-safe-min-height 0) (window-resize-pixelwise t))
-          (dolist (win util-windows) (fit-window-to-buffer win 2 1))))
-      (unless (dirvish-prop :cached)
-        (dirvish-data-for-dir default-directory (current-buffer) t)
-        (dirvish-prop :cached t)))
+    (when (and (display-graphic-p) (> emacs-major-version 28))
+      (let ((window-safe-min-height 0) (window-resize-pixelwise t))
+        (dolist (win util-windows) (fit-window-to-buffer win 2 1))))
+    (unless (dirvish-prop :cached)
+      (dirvish-data-for-dir default-directory (current-buffer) t)
+      (dirvish-prop :cached t))
     (setq dirvish--this dv)))
 
 (defun dirvish--reuse-or-create (path layout)
