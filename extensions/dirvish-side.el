@@ -15,8 +15,7 @@
 
 (require 'dirvish-subtree)
 
-(defcustom dirvish-side-display-alist
-  '((side . left) (slot . -1) (dedicated . t))
+(defcustom dirvish-side-display-alist '((side . left) (slot . -1))
   "Display alist for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
@@ -77,7 +76,8 @@ filename until the project root when opening a side session."
 (defun dirvish-side-root-window-fn ()
   "Create root window according to `dirvish-side-display-alist'."
   (let ((win (display-buffer-in-side-window
-              (dirvish--util-buffer "temp") dirvish-side-display-alist)))
+              (dirvish--util-buffer "temp")
+              (append '((dedicated . t)) dirvish-side-display-alist))))
     (cl-loop for (key . value) in dirvish-side-window-parameters
              do (set-window-parameter win key value))
     (with-selected-window win

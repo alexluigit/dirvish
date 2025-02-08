@@ -168,6 +168,10 @@ Set it to nil to use the default `mode-line-format'."
   "Whether to hide cursor in dirvish buffers."
   :group 'dirvish :type 'boolean)
 
+(defcustom dirvish-window-fringe 1
+  "Window fringe for dirvish windows."
+  :group 'dirvish :type 'integer)
+
 (defconst dirvish-emacs-bin
   (cond
    ((and invocation-directory invocation-name)
@@ -212,9 +216,13 @@ The UI of dirvish is refreshed only when there has not been new
 input for `dirvish-redisplay-debounce' seconds."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-window-fringe 1
-  "Window fringe for dirvish windows."
-  :group 'dirvish :type 'integer)
+(defcustom dirvish-ensure-up-dir-undedicated t
+  "If t, `dired-up-directory' uses the same window when if it is dedicated."
+  :group 'dirvish :type 'boolean
+  :set
+  (lambda (k v) (set k v)
+    (if v (advice-add 'dired-up-directory :around #'dirvish-save-dedication-a)
+      (advice-remove 'dired-up-directory #'dirvish-save-dedication-a))))
 
 (cl-defgeneric dirvish-clean-cache () "Clean cache for selected files." nil)
 (cl-defgeneric dirvish-build-cache () "Build cache for current directory." nil)
@@ -293,6 +301,14 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
     `(progn
        (and (timerp ,timer) (cancel-timer ,timer))
        (setq ,timer (run-with-idle-timer ,debounce nil ,fn)))))
+
+(defmacro dirvish-save-dedication (&rest body)
+  "Run BODY after undedicating window, restore dedication afterwards."
+  (declare (debug (&rest form)))
+  `(progn
+     (let ((dedicated (window-dedicated-p)))
+       (set-window-dedicated-p nil nil)
+       (prog1 ,@body (set-window-dedicated-p nil dedicated)))))
 
 (defmacro dirvish-define-attribute (name docstring &rest body)
   "Define a Dirvish attribute NAME.
@@ -401,13 +417,6 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--switch-to-buffer (buffer)
-  "Switch to BUFFER with window undedicated."
-  (let ((dedicated (window-dedicated-p)) (win (selected-window)))
-    (set-window-dedicated-p win nil)
-    (prog1 (switch-to-buffer buffer)
-      (set-window-dedicated-p win dedicated))))
-
 (defun dirvish--kill-buffer (buffer)
   "Kill BUFFER without side effects."
   (and (buffer-live-p buffer)
@@ -467,7 +476,7 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
 ;;;; Core
 
 (cl-defstruct (dirvish (:conc-name dv-))
-  "Define dirvish session ('DV' for short) struct."
+  "Define dirvish session (`DV' for short) struct."
   (type ()                :documentation "is the type of DV.")
   (root-window ()         :documentation "is the root/main window of DV.")
   (dedicated ()           :documentation "passes to `set-window-dedicated-p' for ROOT-WINDOW.")
@@ -479,7 +488,7 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
    dirvish-default-layout :documentation "is a full-frame layout recipe.")
   (ls-switches
    dired-listing-switches :documentation "is the directory listing switches.")
-  (scopes ()              :documentation "are the 'environments' such as init frame of DV.")
+  (scopes ()              :documentation "are the environment of DV such as its init frame.")
   (preview-buffers ()     :documentation "holds all file preview buffers of DV.")
   (preview-window ()      :documentation "is the window to display preview buffer.")
   (name (cl-gensym)       :documentation "is an unique symbol to identify DV.")
@@ -645,6 +654,10 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 
 ;;;; Advices
 
+(defun dirvish-save-dedication-a (fn args)
+  "Ensure FN and ARGS applied with window undedicated."
+  (dirvish-save-dedication (apply fn args)))
+
 (defun dirvish-find-entry-a (&optional entry)
   "Find ENTRY in current dirvish session.
 ENTRY can be a filename or a string with format of
@@ -656,7 +669,7 @@ buffer, it defaults to filename under the cursor when it is nil."
                        ((string-suffix-p "/" entry)
                         (user-error
                          (concat entry " is not a valid directory"))))))
-    (if buffer (dirvish--switch-to-buffer buffer)
+    (if buffer (dirvish-save-dedication (switch-to-buffer buffer))
       (let* ((ext (downcase (or (file-name-extension entry) "")))
              (file (expand-file-name entry))
              (process-connection-type nil)
@@ -692,7 +705,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   (when-let* ((dv dirvish--this) ((dv-preview-window dv)))
     (dirvish--init-session dv)
     (with-selected-window (dv-preview-window dv)
-      (dirvish--switch-to-buffer image-dired-thumbnail-buffer)))
+      (switch-to-buffer image-dired-thumbnail-buffer)))
   (let ((buf (funcall fn))
         (fun (lambda () (let ((buf (get-text-property
                                (point) 'associated-dired-buffer)))

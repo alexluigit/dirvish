@@ -228,7 +228,7 @@ possibly one or more parent windows."
       (with-selected-window (dv-root-window dv) (quit-window)))
     (setf (dv-curr-layout dv) new-layout)
     (with-selected-window (dirvish--create-root-window dv)
-      (dirvish--switch-to-buffer buf)
+      (dirvish-save-dedication (switch-to-buffer buf))
       (dirvish--init-session dv))))
 
 ;;;###autoload

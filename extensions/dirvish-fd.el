@@ -339,7 +339,7 @@ value 16, let the user choose the root directory of their search."
         (message "`fd' process terminated")))
     (with-selected-window (dv-root-window dv)
       (unless (eq (current-buffer) buf)
-        (dirvish--switch-to-buffer buf)))
+        (dirvish-save-dedication (switch-to-buffer buf))))
     (with-current-buffer buf
       (setq-local dirvish-fd--input input
                   dirvish-fd--output (dirvish-fd--parse-output)
@@ -451,7 +451,7 @@ The command run is essentially:
         (set-process-sentinel proc #'dirvish-fd-proc-sentinel)
         (dirvish-fd--argparser (split-string (or fd-switches "")))
         (process-put proc 'info (list pattern dir dv))))
-    (dirvish--switch-to-buffer buffer)))
+    (dirvish-save-dedication (switch-to-buffer buffer))))
 
 
 ;;;###autoload
