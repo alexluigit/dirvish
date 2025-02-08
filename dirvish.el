@@ -793,7 +793,7 @@ When FORCE, ensure the preview get refreshed."
   (setq dirvish--selected-window (frame-selected-window)))
 
 (defun dirvish-winconf-change-h ()
-  "Restore hidden sessions on buffer switching."
+  "Record root window and update its UI for current dirvish session."
   (let ((dv (dirvish-curr)))
     (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index dv))))
     (dirvish-update-body-h 'force-preview-update)))
@@ -856,10 +856,9 @@ When FORCE, ensure the preview get refreshed."
     (cond ((file-directory-p file) ; default directory previewer
            (let* ((script
                    `(with-current-buffer
-                        (let ((non-essential t)
-                              (delay-mode-hooks t)
-                              (enable-local-variables :safe)
-                              enable-dir-local-variables)
+                        (let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
+                                      (remove (cons 'inhibit-message t)
+                                              dirvish-preview-environment))
                           (setq insert-directory-program
                                 ,insert-directory-program)
                           (dired-noselect ,file "-AlGh"))
@@ -991,9 +990,8 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                 (substring str-l 0 (min trim (1- (length str-l))))
               "")))
         (propertize
-         " " 'display
-         `((space :align-to (- (+ right right-fringe right-margin)
-                               ,(ceiling (* scale (string-width str-r)))))))
+         " " 'display `((space :align-to (- (+ right right-fringe right-margin)
+                                            ,(ceiling (* scale len-r))))))
         str-r)))))
 
 ;; Thanks to `doom-modeline'.
