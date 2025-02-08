@@ -58,9 +58,9 @@ filename until the project root when opening a side session."
 
 (defconst dirvish-side-header (dirvish--mode-line-composer '(project) nil t))
 
-(defun dirvish-side-file-open-fn ()
+(defun dirvish-side-open-file-fn ()
   "Called before opening a file in side sessions."
-  (let* ((dv (dirvish-curr)) (layout (car (dv-layout dv)))
+  (let* ((dv (dirvish-curr)) (layout (dv-curr-layout dv))
          (mru (get-mru-window nil nil t)))
     (if layout (dirvish-kill dv)
       (when dirvish-side-auto-close
@@ -94,7 +94,7 @@ filename until the project root when opening a side session."
    for w in (window-list)
    for b = (window-buffer w)
    for dv = (with-current-buffer b (dirvish-curr))
-   thereis (and dv (eq 'side (car (dv-type dv))) w)))
+   thereis (and dv (eq 'side (dv-type dv)) w)))
 
 (defun dirvish-side--auto-jump ()
   "Select latest buffer file in the visible `dirvish-side' session."
@@ -127,9 +127,12 @@ filename until the project root when opening a side session."
   "Open a side session in PATH."
   (let* ((bname buffer-file-name)
          (dv (or (car (dirvish--find-reusable 'side))
-                 (dirvish-new :type '(side width dedicated
-                                      dirvish-side-root-window-fn
-                                      dirvish-side-file-open-fn))))
+                 (dirvish-new
+                  :type 'side
+                  :size-fixed 'width
+                  :dedicated t
+                  :root-window-fn #'dirvish-side-root-window-fn
+                  :open-file-fn #'dirvish-side-open-file-fn)))
          (r-win (dv-root-window dv)))
     (unless (window-live-p r-win) (setq r-win (dirvish--create-root-window dv)))
     (with-selected-window r-win
@@ -177,7 +180,7 @@ If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Open sidetree: "))))
-  (let ((fullframep (when-let* ((dv (dirvish-curr))) (car (dv-layout dv))))
+  (let ((fullframep (when-let* ((dv (dirvish-curr))) (dv-curr-layout dv)))
         (visible (dirvish-side--session-visible-p))
         (path (or path (dirvish--get-project-root) default-directory)))
     (cond (fullframep (user-error "Can not create side session here"))

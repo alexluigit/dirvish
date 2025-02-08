@@ -433,7 +433,7 @@ GROUP-TITLES is a list of group titles."
   "Cache image/video-thumbnail when `DISPLAY-GRAPHIC-P'."
   (when-let* ((dv (dirvish-curr))
               ((not (dirvish-prop :remote)))
-              ((car (dv-layout dv)))
+              ((dv-curr-layout dv))
               (win (dv-preview-window dv))
               ((window-live-p win))
               (width (window-width win))

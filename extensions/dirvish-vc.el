@@ -104,8 +104,8 @@ detail explanation of these states."
   (oset obj value value)
   (let* ((dv (dirvish-curr))
          (buf (current-buffer))
-         (old-layout (car (dv-layout dv)))
-         (new-layout (unless old-layout (cdr (dv-layout dv))))
+         (old-layout (dv-curr-layout dv))
+         (new-layout (unless old-layout (dv-ff-layout dv)))
          (new-dps (seq-difference
                    dirvish-preview-dispatchers '(vc-diff vc-log vc-blame))))
     (when value (push (intern (format "%s" value)) new-dps))
@@ -115,7 +115,7 @@ detail explanation of these states."
         (dirvish--preview-update dv (dirvish-prop :index))
       (quit-window nil (dv-root-window dv))
       (delete-window transient--window)
-      (setcar (dv-layout dv) new-layout)
+      (setf (dv-curr-layout dv) new-layout)
       (switch-to-buffer buf)
       (dirvish--init-session dv))))
 

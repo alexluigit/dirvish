@@ -129,13 +129,13 @@ predicate for that infix."
          [:description (lambda () (dirvish--format-menu-heading "Setup Dirvish UI"))
                        ["Attributes:" ,@attrs]]
          ["Switch layouts:"
-          :if (lambda () (car (dv-layout (dirvish-curr)))) ,@layouts]
+          :if (lambda () (dv-curr-layout (dirvish-curr))) ,@layouts]
          ["Actions:"
           ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
           ("RET" "Apply current settings to future sessions"
            (lambda () (interactive)
              (setq-default dirvish-attributes dirvish-attributes)
-             (setq dirvish-default-layout (cdr (dv-layout (dirvish-curr))))
+             (setq dirvish-default-layout (dv-ff-layout (dirvish-curr)))
              (dirvish--init-session (dirvish-curr))
              (revert-buffer)))])))))
 
@@ -221,12 +221,12 @@ A session with layout means it has a companion preview window and
 possibly one or more parent windows."
   (interactive)
   (let* ((dv (or (dirvish-curr) (user-error "Not a dirvish buffer")))
-         (old-layout (car (dv-layout dv)))
-         (new-layout (unless old-layout (cdr (dv-layout dv))))
+         (old-layout (dv-curr-layout dv))
+         (new-layout (unless old-layout (dv-ff-layout dv)))
          (buf (current-buffer)))
     (if old-layout (set-window-configuration (dv-winconf dv))
       (with-selected-window (dv-root-window dv) (quit-window)))
-    (setcar (dv-layout dv) new-layout)
+    (setf (dv-curr-layout dv) new-layout)
     (with-selected-window (dirvish--create-root-window dv)
       (dirvish--switch-to-buffer buf)
       (dirvish--init-session dv))))
@@ -240,10 +240,10 @@ current layout defined in `dirvish-layout-recipes'."
   (cl-loop
    with dv = (let ((dv (dirvish-curr)))
                (unless dv (user-error "Not in a Dirvish session"))
-               (unless (car (dv-layout dv))
+               (unless (dv-curr-layout dv)
                  (dirvish-layout-toggle)
                  (user-error "Dirvish: entering fullscreen")) dv)
-   with old-recipe = (car (dv-layout dv))
+   with old-recipe = (dv-curr-layout dv)
    with recipes = (if recipe (list recipe) dirvish-layout-recipes)
    with l-length = (length recipes)
    for idx from 1
@@ -252,7 +252,8 @@ current layout defined in `dirvish-layout-recipes'."
    return
    (let* ((new-idx (if (> idx (1- l-length)) 0 idx))
           (new-recipe (nth new-idx recipes)))
-     (setf (dv-layout dv) (cons new-recipe new-recipe))
+     (setf (dv-curr-layout dv) new-recipe)
+     (setf (dv-ff-layout dv) new-recipe)
      (dirvish--init-session dv))))
 
 (defun dirvish-rename-space-to-underscore ()

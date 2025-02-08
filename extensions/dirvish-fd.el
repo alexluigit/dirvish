@@ -245,7 +245,7 @@ Raise an error if fd executable is not available."
 
 (dirvish-define-mode-line fd-timestamp
   "Timestamp of search finished."
-  (when (car (dv-layout (dirvish-curr))) (dirvish-prop :fd-time)))
+  (when (dv-curr-layout (dirvish-curr)) (dirvish-prop :fd-time)))
 
 (dirvish-define-mode-line fd-pwd
   "Current working directory."
