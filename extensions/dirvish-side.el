@@ -62,9 +62,9 @@ filename until the project root when opening a side session."
   "Called before opening a file in side sessions."
   (let* ((dv (dirvish-curr)) (layout (dv-curr-layout dv))
          (mru (get-mru-window nil nil t)))
-    (if layout (dirvish-kill dv)
+    (if layout (dirvish--clear-session dv)
       (when dirvish-side-auto-close
-        (dirvish-kill dv)
+        (dirvish--clear-session dv)
         (when dirvish-reuse-session (quit-window)))
       (select-window (cond ((functionp dirvish-side-open-file-action)
                             (funcall dirvish-side-open-file-action))
@@ -127,7 +127,7 @@ filename until the project root when opening a side session."
   "Open a side session in PATH."
   (let* ((bname buffer-file-name)
          (dv (or (car (dirvish--find-reusable 'side))
-                 (dirvish-new
+                 (dirvish--new
                   :type 'side
                   :size-fixed 'width
                   :dedicated t

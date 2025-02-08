@@ -487,16 +487,7 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
   (index ()               :documentation "is the current (cwd-str . buffer-obj) cons within ROOT-WINDOW.")
   (roots ()               :documentation "is all the history INDEX entries in DV."))
 
-(defun dirvish--find-reusable (&optional type)
-  "Return the first matched reusable session with TYPE."
-  (when dirvish-reuse-session
-    (cl-loop with scopes = (dirvish--scopes)
-             for dv in (hash-table-values dirvish--session-hash)
-             when (and (eq type (dv-type dv))
-                       (equal (dv-scopes dv) scopes))
-             collect dv)))
-
-(defun dirvish-new (&rest args)
+(defun dirvish--new (&rest args)
   "Create and save a new dirvish struct to `dirvish--session-hash'.
 ARGS is a list of keyword arguments for `dirvish' struct."
   (let (slots new)
@@ -506,8 +497,17 @@ ARGS is a list of keyword arguments for `dirvish' struct."
     (dirvish--check-deps)
     (dirvish--create-root-window new) new))
 
-(defun dirvish-kill (dv)
-  "Kill the dirvish instance DV."
+(defun dirvish--find-reusable (&optional type)
+  "Return the first matched reusable session with TYPE."
+  (when dirvish-reuse-session
+    (cl-loop with scopes = (dirvish--scopes)
+             for dv in (hash-table-values dirvish--session-hash)
+             when (and (eq type (dv-type dv))
+                       (equal (dv-scopes dv) scopes))
+             collect dv)))
+
+(defun dirvish--clear-session (dv)
+  "Reset DV's slot and kill its buffers."
   (let ((index (cdr (dv-index dv))))
     (if (not (dv-curr-layout dv))
         (cl-loop for (_d . b) in (dv-roots dv)
@@ -669,7 +669,7 @@ buffer, it defaults to filename under the cursor when it is nil."
         (if ex (apply #'start-process "" nil "nohup"
                       (cl-substitute file "%f" ex :test 'string=))
           (let* ((dv (dirvish-curr)) (fn (dv-open-file-fn dv)))
-            (if fn (funcall fn) (dirvish-kill dv)))
+            (if fn (funcall fn) (dirvish--clear-session dv)))
           (find-file file))))))
 
 (defun dirvish-insert-subdir-a (dirname &rest _)
@@ -705,8 +705,8 @@ buffer, it defaults to filename under the cursor when it is nil."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
          (this dirvish--this)
-         (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish-new)
-               (or this (car (dirvish--find-reusable)) (dirvish-new))))
+         (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish--new)
+               (or this (car (dirvish--find-reusable)) (dirvish--new))))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
@@ -990,7 +990,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
          (setq str-r (format-mode-line (funcall expand ',right) nil nil buf))
          (setq len-r (string-width str-r)))
        (concat
-        (dirvish--bar-image fullframe-p ,header)
+        (dirvish--mode-line-bar-img fullframe-p ,header)
         (if (< (+ (string-width str-l) len-r) win-width)
             str-l
           (let ((trim (1- (- win-width len-r))))
@@ -1003,7 +1003,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
         str-r)))))
 
 ;; Thanks to `doom-modeline'.
-(defun dirvish--bar-image (fullframe-p header)
+(defun dirvish--mode-line-bar-img (fullframe-p header)
   "Create a bar image with height of `dirvish-mode-line-height'.
 If FULLFRAME-P, use the `cdr' of the value as height, otherwise
 use `car'.  If HEADER, use `dirvish-header-line-height' instead."
@@ -1272,7 +1272,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
                  (if (or path (not (eq dirvish-reuse-session 'resume))) dir
                    (car (dv-index dv))))
                 (dirvish--init-session dv)))
-          (t (dirvish-new :curr-layout layout)
+          (t (dirvish--new :curr-layout layout)
              (dirvish-find-entry-a dir)))))
 
 (define-derived-mode dirvish-directory-view-mode
@@ -1292,7 +1292,7 @@ the selected window are buried."
   (interactive)
   (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
         (win (selected-window)) (frame (selected-frame)))
-    (dirvish-kill dv)
+    (dirvish--clear-session dv)
     (while (and (dirvish-curr) (eq (selected-window) win)
                 (<= (cl-incf ct) (length lst)))
       (quit-window))
