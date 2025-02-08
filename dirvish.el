@@ -712,7 +712,6 @@ buffer, it defaults to filename under the cursor when it is nil."
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
          (new-buffer-p (not buffer)))
-    (if this (set-window-dedicated-p nil nil) (setf (dv-curr-layout dv) nil))
     (when new-buffer-p
       (if (not remote)
           (let ((dired-buffers nil)) ; disable reuse from dired
@@ -781,8 +780,6 @@ When FORCE, ensure the preview get refreshed."
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
   (when-let* ((dv (dirvish-curr)) (buf (current-buffer)))
-    (let ((win (get-buffer-window buf)))
-      (when (window-live-p win) (set-window-dedicated-p win nil)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
     (unless (dv-roots dv)
       (when-let* ((layout (dv-curr-layout dv))
@@ -1122,8 +1119,8 @@ LEVEL is the depth of current window."
          (depth (or (car (dv-curr-layout dv)) 0))
          (i 0))
     (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
-    (set-window-dedicated-p
-     nil (and (or (dv-curr-layout dv) (dv-dedicated dv)) t))
+    (when (or (dv-curr-layout dv) (dv-dedicated dv))
+      (set-window-dedicated-p nil t))
     (set-window-fringes nil dirvish-window-fringe dirvish-window-fringe)
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
