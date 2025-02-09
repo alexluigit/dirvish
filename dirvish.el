@@ -26,6 +26,7 @@
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd-find "dirvish-fd")
 (declare-function dirvish-tramp-noselect "dirvish-tramp")
+(declare-function project-roots "project")
 
 ;;;; User Options
 
@@ -427,8 +428,8 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--get-project-root (&optional directory)
   "Get project root path of DIRECTORY."
   (when-let* ((pj (project-current nil directory))
-              (pj-root (car (with-no-warnings (project-roots pj)))))
-    (expand-file-name pj-root)))
+              (pj-roots (project-roots pj)))
+    (expand-file-name (car pj-roots))))
 
 (defun dirvish--get-parent-path (path)
   "Get parent directory of PATH."
@@ -587,7 +588,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish--render-attrs-1 (height width pos remote fns ov align-to)
   "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO."
   (forward-line (- 0 height))
-  (cl-dotimes (_ (* (if (eq major-mode 'dired-mode) 2 5) height))
+  (cl-dotimes (_ (* 2 height))
     (when (eobp) (cl-return))
     (let ((f-beg (dired-move-to-filename))
           (f-end (dired-move-to-end-of-filename t))
@@ -965,7 +966,7 @@ This attribute is enabled when `dirvish-hide-cursor' is non-nil."
 
 (dirvish-define-attribute symlink-target
   "Hide symlink target."
-  :when (or (eq major-mode 'dirvish-directory-view-mode)
+  :when (or (derived-mode-p 'dirvish-directory-view-mode)
             (and dired-hide-details-mode
                  (default-value 'dired-hide-details-hide-symlink-targets)))
   (when (< (+ f-end 4) l-end)
@@ -1177,7 +1178,7 @@ LEVEL is the depth of current window."
            (bk ,(and (featurep 'dirvish-vc)
                      `(ignore-errors (vc-responsible-backend ,dir)))))
        ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
-       (advice-add 'vc-git--git-status-to-vc-state :around
+       (advice-add #'vc-git--git-status-to-vc-state :around
                    (lambda (fn code-list)
                      (apply fn (list (delete-dups code-list)))))
        (dolist (file (directory-files ,dir t nil t))
@@ -1294,11 +1295,10 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 
 (defun dirvish-quit ()
   "Quit current Dirvish session.
-If the session is a full-framed one, the window layout is
-restored.  If `dirvish-reuse-session' is nil, all Dired buffers
-in the session are killed, otherwise only the invisible Dired
-buffers within the session are killed and the Dired buffer(s) in
-the selected window are buried."
+If the session is a full-framed one, the window layout is restored.  If
+`dirvish-reuse-session' is nil, all Dired buffers in the session are
+killed, otherwise only the invisible Dired buffers within the session
+are killed and the Dired buffer(s) in the selected window are buried."
   (interactive)
   (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
         (win (selected-window)) (frame (selected-frame)))

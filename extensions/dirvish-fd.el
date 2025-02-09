@@ -456,7 +456,7 @@ The command run is essentially:
 
 ;;;###autoload
 (defun dirvish-fd-ask (dir pattern)
-  "The same as `dirvish-fd' but ask initial `pattern' via prompt. "
+  "The same as `dirvish-fd' but ask initial DIR and PATTERN via prompt."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Fd target directory: " nil "" t))
                      (read-from-minibuffer "Pattern: ")))

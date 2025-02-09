@@ -120,8 +120,7 @@ filename until the project root when opening a side session."
            (dired-goto-file curr))
          (dirvish-prop :cus-header 'dirvish-side-header)
          (dirvish-update-body-h)
-         (setq dirvish--this nil))
-       (set-window-dedicated-p win t)))))
+         (setq dirvish--this nil))))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
