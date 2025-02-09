@@ -139,6 +139,4 @@ mesh well with =dirvish-subtree= nor =dired-subtree=.
 
 * dired-rsync
 
-~dirvish-rsync~ command has feature parity of ~dired-rsync~.  A exclusive feature in
-~dirvish-rsync~ is that it can collect all marked files across different Dired
-buffers as the source files.
+See: [[file:EXTENSIONS.org][dirvish-rsync section in Extensions.org]]

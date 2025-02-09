@@ -33,24 +33,45 @@ buffers into a single "clipboard", then copy or move all of them to the target
 location.
 #+end_quote
 
-Multi-stage copy/paste, asynchronous I/O, work with TRAMP, =dirvish-yank= has all
-of them.  This package also provides the ~dirvish-rsync~ command, which can be
-seen as a alternative to =dired-rsync= package.  =dirvish-yank= and friends also
-handles file operations on the same remote host, see:
-https://github.com/stsquad/dired-rsync/issues/24.
-
-To copy/move/symlink/hardlink files from A to B, just mark the files in A, go to
-B, and paste them with ~dirvish-yank/move/symlink/hardlink~.
+In addition to implementing the core logic described above, this extension also
+supports several frequently used commands.  To transfer files from source to
+destination, mark the desired files, navigate to the destination, and use one of
+the =dirvish-yank=, =dirvish-move=, =dirvish-symlink=, =dirvish-relative-symlink= or
+=dirvish-hardlink= commands to complete the transfer.  All of these commands are
+executed *ASYNCHRONOUSLY* without any extra setups.
 
 See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#dired-ranger][comparison with dired-ranger]]
 
 * Integration with *rsync* command (dirvish-rsync.el)
 
 This extension introduces =dirvish-rsync=, which requires [[https://github.com/RsyncProject/rsync][rsync]] executable,
-mirroring the functionality of Alex Bennée's =dired-rsync=.  Uniquely,
-=dirvish-rsync= gathers marked files from multiple Dired buffers.  It also
-provides a transient menu =dirvish-rsync-menu=, for temporary adjustments to
+mirroring the functionality of Alex Bennée's =dired-rsync=.  It also provides a
+transient menu =dirvish-rsync-switches-menu=, for temporary adjustments to
 =dirvish-rsync-args=.
+
+** Compare to =dired-rsync=
+
++ =dirvish-rsync= also handles file operations on the same remote host.
+  See: https://github.com/stsquad/dired-rsync/issues/24.
+
++ =dirvish-rsync= takes advantages of the same multi-stage action mechanism in
+  =dirvish-yank=.  Meaning that you should mark files first then goto target
+  directory and invoke =dirvish-rsync= there, instead of trying to do it in the
+  way of =dired-do-copy=.
+
++ It gathers marked files from multiple Dired buffers.
+
+** User options
+
+Configure ~dirvish-rsync-program~ and ~dirvish-rsync-args~ to specify the executable
+path and command line arguments of =rsync=.
+
+~dirvish-rsync-r2r-ssh-port~, ~dirvish-rsync-r2r-ssh-user~ and
+~dirvish-rsync-r2r-use-direct-connection~ are provided to deal with the remote to
+remote connections (thanks to @dvzubarev).
+
+Use ~dirvish-rsync-shortcut-key-for-yank-menu~ and ~dirvish-rsync-use-yank-menu~ to
+adjust the shortcut key of =dirvish-rsync= in =dirvish-yank-menu=.
 
 * Group files with custom filter stack (dirvish-emerge.el)
 

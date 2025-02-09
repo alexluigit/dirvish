@@ -12,8 +12,8 @@
 ;; This extension introduces `dirvish-rsync' command (which requires `rsync'
 ;; executable), mirroring the functionality of Alex Bennée's `dired-rsync'.
 ;; Uniquely, `dirvish-rsync' gathers marked files from multiple Dired buffers.
-;; It also provides a transient menu `dirvish-rsync-menu', for temporary
-;; adjustments to `dirvish-rsync-args'.
+;; It also provides a transient menu `dirvish-rsync-switches-menu', for
+;; temporary adjustments to `dirvish-rsync-args'.
 
 ;;; Code:
 
@@ -304,7 +304,7 @@ values."
             (completing-read "direct: " '(yes no) nil t)))
 
 (transient-define-prefix dirvish-rsync-transient-configure ()
-  "Configure variables for `dirvish-rsync'."
+  "Configure romete-to-remote connections for `dirvish-rsync'."
   ["Remote to remote"
    ("rh" "Receiver host" dirvish-rsync--r2r-ssh-host)
    ("rp" "Receiver port" dirvish-rsync--r2r-ssh-port)
@@ -312,10 +312,10 @@ values."
    ("rd" "Direct connection" dirvish-rsync--r2r-direct-conn)])
 
 ;; inspired by `dired-rsync-transient'
-(define-obsolete-function-alias 'dirvish-rsync-transient #'dirvish-rsync-menu "Feb 09, 2025")
-;;;###autoload (autoload 'dirvish-rsync-menu "dirvish-rsync" nil t)
-(transient-define-prefix dirvish-rsync-menu ()
-  "Transient command for `dirvish-rsync'."
+(define-obsolete-function-alias 'dirvish-rsync-transient #'dirvish-rsync-switches-menu "Feb 09, 2025")
+;;;###autoload (autoload 'dirvish-rsync-switches-menu "dirvish-rsync" nil t)
+(transient-define-prefix dirvish-rsync-switches-menu ()
+  "Transient menu for `dirvish-rsync'."
   :init-value (lambda (o)
                 (oset o value (dirvish-rsync--transient-init-rsync-switches o)))
   ["Common Arguments"

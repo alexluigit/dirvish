@@ -1353,7 +1353,14 @@ If `one-window-p' returns nil, open PATH using regular Dired."
   [:description
    (lambda () (dirvish--format-menu-heading
           "Dirvish main menu"
-          "Press ? to see more info for the current menu"))
+          "NOTICE: these commands require relevant Dirvish extensions"))
+   "" "Actions & Essential commands"
+   ("u" "User interface setup"   dirvish-setup-menu)
+   ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)
+   ("/" "Perform fd search"      dirvish-fd)
+   ("@" "Find all dirs by fd"    dirvish-fd-jump)
+   ("R" "Rsync marked files"     dirvish-rsync)
+   ("n" "Live narrowing"         dirvish-narrow)
    "Transient commands"
    ("a" "Quick access"           dirvish-quick-access)
    ("h" "Go to history entries"  dirvish-history-menu)
@@ -1361,19 +1368,14 @@ If `one-window-p' returns nil, open PATH using regular Dired."
    ("l" "Setup listing switches" dirvish-ls-switches-menu)
    ("f" "Setup fd-find switches" dirvish-fd-switches-menu
     :if (lambda () (dirvish-prop :fd-arglist)))
+   ("S" "Setup rsync switches"   dirvish-rsync-switches-menu)
    ("m" "Manage marks"           dirvish-mark-menu)
    ("e" "Manage emerged groups"  dirvish-emerge-menu)
    ("t" "Manage subtrees"        dirvish-subtree-menu)
    ("r" "Rename files"           dirvish-renaming-menu)
    ("v" "Version control system" dirvish-vc-menu)
    ("y" "Yank marked files"      dirvish-yank-menu)
-   ("i" "Get file information"   dirvish-file-info-menu)
-   "" "Actions | Essential commands"
-   ("/" "Perform fd search"      dirvish-fd)
-   ("@" "Find all dirs by fd"    dirvish-fd-jump)
-   ("n" "Live narrowing"         dirvish-narrow)
-   ("u" "User interface setup"   dirvish-setup-menu)
-   ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)])
+   ("i" "Get file information"   dirvish-file-info-menu)])
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
