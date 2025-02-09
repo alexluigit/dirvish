@@ -44,6 +44,14 @@ B, and paste them with ~dirvish-yank/move/symlink/hardlink~.
 
 See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#dired-ranger][comparison with dired-ranger]]
 
+* Integration with *rsync* command (dirvish-rsync.el)
+
+This extension introduces =dirvish-rsync=, which requires [[https://github.com/RsyncProject/rsync][rsync]] executable,
+mirroring the functionality of Alex Bennée's =dired-rsync=.  Uniquely,
+=dirvish-rsync= gathers marked files from multiple Dired buffers.  It also
+provides a transient menu =dirvish-rsync-menu=, for temporary adjustments to
+=dirvish-rsync-args=.
+
 * Group files with custom filter stack (dirvish-emerge.el)
 
 This extension lets you split the file list into different groups by various
@@ -87,7 +95,7 @@ of the peek window.
 
 ~dirvish-peek-mode~ currently supports =vertico=, =selectrum=, =ivy= and =icomplete[-vertical]=.
 
-* Version-control (git) integration (dirvish-vc.el)
+* Version-control (*git*) integration (dirvish-vc.el)
 
 This extension gives Dirvish the ablity to display version-control data in
 different ways.  For now we have:
@@ -149,7 +157,7 @@ breeze. No manual editing anymore!
 
 *Figure 3*. left: ~dirvish-quicksort~  right: ~dirvish-ls-switches-menu~
 
-* Dirvish as the interface of fd (dirvish-fd.el)
+* Dirvish as the interface of *fd* command (dirvish-fd.el)
 
 This is the BEST =fd= frontend, period.
 
@@ -188,7 +196,7 @@ You can use ~dirvish-subtree-toggle~ to toggle the directory under the cursor as
 subtree.  Add ~subtree-state~ to ~dirvish-attributes~ gives you an indicator about
 whether the directory is expanded or not.
 
-* History navigation commands (dirvish-history.el)
+* History navigation (dirvish-history.el)
 
 |-----------------------------+---------------------------------------|
 | Command                     | Description                           |

@@ -23,6 +23,7 @@
 
 (require 'dired)
 (require 'transient)
+(eval-when-compile (require 'subr-x))
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd-find "dirvish-fd")
 (declare-function dirvish-tramp-noselect "dirvish-tramp")
