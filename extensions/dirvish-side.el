@@ -28,7 +28,6 @@
   "Window parameters for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
-(define-obsolete-variable-alias 'dirvish-side-open-file-window-function 'dirvish-side-open-file-action "Sep 23, 2022")
 (defcustom dirvish-side-open-file-action 'mru
   "The action of how to open a file in side window.
 The value can be one of:
@@ -48,7 +47,6 @@ The value can be one of:
   "Whether to auto close the side session after opening a file."
   :group 'dirvish :type 'boolean)
 
-(define-obsolete-variable-alias 'dirvish-side-follow-buffer-file 'dirvish-side-auto-expand "Sep 15, 2022")
 (defcustom dirvish-side-auto-expand t
   "Whether to auto expand parent directories of current file.
 If non-nil, expand all the parent directories of current buffer's

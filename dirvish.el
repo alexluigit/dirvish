@@ -104,7 +104,6 @@ allocated to preview window.  The default value provides a
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
-(define-obsolete-variable-alias 'dirvish-mode-line-position 'dirvish-use-mode-line "Aug 5, 2022")
 (defcustom dirvish-use-mode-line t
   "Whether to display mode line in dirvish buffers.
 The valid value are:
@@ -116,7 +115,6 @@ The valid value are:
                  (const :tag "Display the mode line across directory panes" t)
                  (const :tag "Make the mode line span all panes" global)))
 
-(define-obsolete-variable-alias 'dirvish-header-line-position 'dirvish-use-header-line "Aug 5, 2022")
 (defcustom dirvish-use-header-line t
   "Like `dirvish-use-mode-line', but for header line."
   :group 'dirvish :type 'symbol)

@@ -60,7 +60,6 @@ variable is nil, the auto caching is disabled."
            (setq dirvish-media--auto-cache-timer
                  (run-with-timer 0 0.25 #'dirvish-media--autocache)))))
 
-(define-obsolete-variable-alias 'dirvish-media-auto-properties 'dirvish-show-media-properties "Sep 28, 2022")
 (defcustom dirvish-show-media-properties
   (and (executable-find "mediainfo") (executable-find "pdfinfo") t)
   "Show media properties automatically in preview window."

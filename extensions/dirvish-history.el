@@ -15,11 +15,6 @@
 
 (require 'dirvish)
 
-(define-obsolete-function-alias 'dirvish-show-history #'dirvish-history-jump "Jun 08, 2022")
-(define-obsolete-function-alias 'dirvish-other-buffer #'dirvish-history-last "Jun 08, 2022")
-(define-obsolete-function-alias 'dirvish-go-forward-history #'dirvish-history-go-forward "Jun 08, 2022")
-(define-obsolete-function-alias 'dirvish-go-backward-history #'dirvish-history-go-backward "Jun 08, 2022")
-
 ;;;###autoload
 (defun dirvish-history-jump ()
   "Open a target directory from `dirvish--history'."

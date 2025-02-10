@@ -251,8 +251,6 @@ Raise an error if fd executable is not available."
   "Current working directory."
   (propertize (abbreviate-file-name default-directory) 'face 'dired-directory))
 
-(define-obsolete-function-alias 'dirvish-roam #'dirvish-fd-jump "Jun 08, 2022")
-(define-obsolete-function-alias 'dirvish-fd-roam #'dirvish-fd-jump "Jul 17, 2022")
 ;;;###autoload
 (defun dirvish-fd-jump (&optional current-dir-p)
   "Browse directories using `fd' command.

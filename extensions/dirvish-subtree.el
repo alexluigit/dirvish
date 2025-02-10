@@ -28,7 +28,6 @@ The value may be a string of options or nil which means the
 working switches of current buffer will be used."
   :type '(choice symbol string) :group 'dirvish)
 
-(define-obsolete-variable-alias 'dirvish-subtree-line-prefix 'dirvish-subtree-prefix "Sep 1, 2022")
 (defcustom dirvish-subtree-prefix " │"
   "A string put into each nested subtree.
 The prefix is repeated \"depth\" times."
