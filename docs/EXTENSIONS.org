@@ -103,9 +103,10 @@ saved to .dir-locals.el using ~dirvish-emerge-menu~):
 
 * Minibuffer file preview (dirvish-peek.el)
 
-~dirvish-peek-mode~ gives you a preview window when narrowing file candidates
-using minibuffer. It displays file preview for all of the file name narrowing
-commands in the same way as =dirvish= command.
+This extension introduces =dirvish-peek-mode=, a minor mode that enables file
+previews within the minibuffer as you narrow down candidates.  By leveraging
+=dirvish.el= for its core functionality, it delivers a seamless and consistent
+preview experience.
 
 https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-908e-f5d91ba316a6.mp4
 
