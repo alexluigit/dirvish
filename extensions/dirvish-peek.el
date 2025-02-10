@@ -72,10 +72,13 @@ one of categories in `dirvish-peek-categories'."
         (setf (dv-preview-window new-dv)
               (or (minibuffer-selected-window) (next-window)))))))
 
+(defvar dirvish-peek--prev-cand nil)
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
   (when-let* ((dirvish-peek--curr-category)
-              (cand (funcall dirvish-peek--cand-fetcher)))
+              (cand (funcall dirvish-peek--cand-fetcher))
+              ((not (string= cand dirvish-peek--prev-cand))))
+    (setq dirvish-peek--prev-cand cand)
     (pcase dirvish-peek--curr-category
       ('file
        (setq cand (expand-file-name cand)))
@@ -94,7 +97,8 @@ one of categories in `dirvish-peek-categories'."
   (dolist (dv (hash-table-values dirvish--session-hash))
     (when (eq (dv-type dv) 'peek)
       (dirvish--clear-session dv)
-      (remhash (dv-name dv) dirvish--session-hash))))
+      (remhash (dv-name dv) dirvish--session-hash)))
+  (setq dirvish-peek--prev-cand nil))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode
