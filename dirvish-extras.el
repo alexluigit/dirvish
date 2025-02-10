@@ -136,7 +136,7 @@ predicate for that infix."
            (lambda () (interactive)
              (setq-default dirvish-attributes dirvish-attributes)
              (setq dirvish-default-layout (dv-ff-layout (dirvish-curr)))
-             (dirvish--init-session (dirvish-curr))
+             (dirvish--build-layout (dirvish-curr))
              (revert-buffer)))])))))
 
 (defun dirvish-find-file-true-path ()
@@ -229,7 +229,7 @@ possibly one or more parent windows."
     (setf (dv-curr-layout dv) new-layout)
     (with-selected-window (dirvish--create-root-window dv)
       (dirvish-save-dedication (switch-to-buffer buf))
-      (dirvish--init-session dv))))
+      (dirvish--build-layout dv))))
 
 ;;;###autoload
 (defun dirvish-layout-switch (&optional recipe)
@@ -254,7 +254,7 @@ current layout defined in `dirvish-layout-recipes'."
           (new-recipe (nth new-idx recipes)))
      (setf (dv-curr-layout dv) new-recipe)
      (setf (dv-ff-layout dv) new-recipe)
-     (dirvish--init-session dv))))
+     (dirvish--build-layout dv))))
 
 (defun dirvish-rename-space-to-underscore ()
   "Rename marked files by replacing space to underscore."

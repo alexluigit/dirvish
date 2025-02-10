@@ -117,7 +117,7 @@ detail explanation of these states."
       (delete-window transient--window)
       (setf (dv-curr-layout dv) new-layout)
       (switch-to-buffer buf)
-      (dirvish--init-session dv))))
+      (dirvish--build-layout dv))))
 
 (transient-define-infix dirvish-vc-preview-ifx ()
   :description "Preview style"

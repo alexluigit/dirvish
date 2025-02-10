@@ -163,12 +163,25 @@ Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist)
 
 (defcustom dirvish-hide-details t
-  "Whether to hide detailed information on session startup."
-  :group 'dirvish :type 'boolean)
+  "Whether to hide detailed information in Dirvish buffers.
+When sets to t, it hide detailed listing info for all Dirvish buffers.
+
+Alternatively, the value can be a list of symbols to instruct Dirvish in
+what contexts they should be hided.  The accepted values are:
+ - `dired':        when opening a directory using `dired-*' commands.
+ - `dirvish':      when opening full-frame Dirvish.
+ - `dirvish-fd':   when the buffer is create by `dirvish-fd*' commands.
+ - `dirvish-side': when opening Dirvish in the sidebar."
+  :group 'dirvish
+  :type '(choice (boolean :tag "Apply to all Dirvish buffers")
+                 (repeat :tag "Apply to a list of buffer types: 'dired, 'dirvish, 'dirvish-fd or 'dirvish-side" symbol)))
 
 (defcustom dirvish-hide-cursor t
-  "Whether to hide cursor in dirvish buffers."
-  :group 'dirvish :type 'boolean)
+  "Whether to hide cursor in dirvish buffers.
+Works all the same as `dirvish-hide-details' but for cursor."
+  :group 'dirvish
+  :type '(choice (boolean :tag "Apply to all Dirvish buffers")
+                 (repeat :tag "Apply to a list of buffer types: 'dired, 'dirvish, 'dirvish-fd or 'dirvish-side" symbol)))
 
 (defcustom dirvish-window-fringe 1
   "Window fringe for dirvish windows."
@@ -586,8 +599,8 @@ ARGS is a list of keyword arguments for `dirvish' struct."
    (setf dirvish--working-preview-dispathchers (dirvish--preview-dps-validate))
    (setf dirvish--working-attrs (dirvish--attrs-expand attrs))))
 
-(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to)
-  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO."
+(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to no-hl)
+  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL."
   (forward-line (- 0 height))
   (cl-dotimes (_ (* 2 height))
     (when (eobp) (cl-return))
@@ -595,8 +608,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
           (f-end (dired-move-to-end-of-filename t))
           (l-beg (line-beginning-position)) (l-end (line-end-position))
           (f-wid 0) f-str f-name f-attrs f-type hl-face left right)
-      (setq hl-face
-            (and (eq (or f-beg l-beg) pos) dirvish-hide-cursor 'dirvish-hl-line))
+      (setq hl-face (and (eq (or f-beg l-beg) pos) no-hl 'dirvish-hl-line))
       (when f-beg
         (setq f-str (buffer-substring f-beg f-end)
               f-wid (string-width f-str)
@@ -639,6 +651,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   "Render or CLEAR attributes in DV's dirvish buffer."
   (cl-loop with remote = (dirvish-prop :remote) with gui = (dirvish-prop :gui)
            with fns = () with height = (frame-height)
+           with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
            with remain = (- (window-width) (if gui 1 2))
            for (_ width pred render ov) in dirvish--working-attrs
            do (remove-overlays (point-min) (point-max) ov t)
@@ -652,7 +665,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
              (unless clear
                (save-excursion
                  (dirvish--render-attrs-1 height remain (point)
-                                          remote fns ov (if gui 0 2)))))))
+                                          remote fns ov (if gui 0 2) no-hl))))))
 
 ;;;; Advices
 
@@ -694,10 +707,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
-  (when dirvish-hide-cursor (dired-move-to-end-of-filename t))
-  (setq-local cursor-type 'hollow)
-  (when (boundp 'evil-normal-state-cursor)
-    (setq-local evil-normal-state-cursor 'hollow))
+  (let (dirvish-hide-cursor) (dirvish--maybe-toggle-cursor 'hollow))
   (dirvish--render-attrs 'clear)
   (remove-hook 'window-configuration-change-hook #'dirvish-winconf-change-h t)
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
@@ -705,7 +715,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-thumb-buf-a (fn)
   "Advice for FN `image-dired-create-thumbnail-buffer'."
   (when-let* ((dv dirvish--this) ((dv-preview-window dv)))
-    (dirvish--init-session dv)
+    (dirvish--build-layout dv)
     (with-selected-window (dv-preview-window dv)
       (switch-to-buffer image-dired-thumbnail-buffer)))
   (let ((buf (funcall fn))
@@ -763,12 +773,13 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Update UI of current Dirvish.
 When FORCE, ensure the preview get refreshed."
   (when-let* ((dv (dirvish-curr)))
-    (cond ((not dirvish-hide-cursor))
+    (cond ((not (dirvish--apply-hiding-p dirvish-hide-cursor)))
           ((eobp) (forward-line -1))
           ((cdr dired-subdir-alist))
           ((and (bobp) dirvish-use-header-line)
            (goto-char (dirvish-prop :content-begin))))
-    (when dirvish-hide-cursor (dired-move-to-filename))
+    (when (dirvish--apply-hiding-p dirvish-hide-cursor)
+      (dired-move-to-filename))
     (dirvish--render-attrs)
     (when-let* ((filename (dired-get-filename nil t)))
       (dirvish-prop :index filename)
@@ -829,10 +840,10 @@ When FORCE, ensure the preview get refreshed."
         ;; commands such as `consult-buffer'.
         (cond ((and (active-minibuffer-window) saved-layout)
                (setf (dv-curr-layout dv) nil)
-               (dirvish--init-session dv)
+               (dirvish--build-layout dv)
                (setf (dv-curr-layout dv) saved-layout)
                (setf (dv-winconf dv) saved-winconf))
-              (t (dirvish--init-session dv)))))))
+              (t (dirvish--build-layout dv)))))))
 
 (defun dirvish-tab-new-post-h (_tab)
   "Do not reuse sessions from other tabs."
@@ -960,7 +971,7 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-attribute hl-line
   "Highlight current line.
-This attribute is enabled when `dirvish-hide-cursor' is non-nil."
+This attribute is disabled when cursor is visible."
   (when hl-face
     (let ((ov (make-overlay l-beg (1+ l-end))))
       (overlay-put ov 'face hl-face) `(ov . ,ov))))
@@ -1029,15 +1040,37 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
           (concat (format "P1\n%i %i\n" 2 ht) (make-string (* 2 ht) ?1) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
-(defun dirvish--hide-cursor ()
-  "Hide cursor in dirvish buffer."
-  (when dirvish-hide-cursor
-    (setq-local cursor-type nil)
-    (cond ((bound-and-true-p evil-normal-state-cursor)
-           (setq-local evil-normal-state-cursor '(bar . 0)))
-          ((bound-and-true-p meow-cursor-type-default)
-           (setq-local meow-cursor-type-motion nil
-                       meow-cursor-type-default nil)))))
+(defun dirvish--apply-hiding-p (ctx)
+  "Return t when it should hide cursor/details within context CTX."
+  (cond ((booleanp ctx) ctx)
+        ((dirvish-prop :fd-switches)
+         (memq 'dirvish-fd ctx))
+        ((and dirvish--this (dv-curr-layout dirvish--this))
+         (memq 'dirvish ctx))
+        ((and dirvish--this (eq (dv-type dirvish--this) 'side))
+         (memq 'dirvish-side ctx))
+        (t (memq 'dired ctx))))
+
+(defun dirvish--maybe-toggle-cursor (&optional cursor)
+  "Toggle cursor's invisibility according to context.
+Optionally, use CURSOR as the enabled cursor type."
+  (if (dirvish--apply-hiding-p dirvish-hide-cursor)
+      (prog1 (setq-local cursor-type nil)
+        (cond ((bound-and-true-p evil-local-mode)
+               (setq-local evil-normal-state-cursor '(bar . 0)))
+              ((bound-and-true-p meow-motion-mode)
+               (setq-local meow-cursor-type-motion nil))))
+    (setq-local cursor-type (or cursor '(box . 4)))
+    (cond ((bound-and-true-p evil-local-mode)
+           (setq-local evil-normal-state-cursor (or cursor '(box . 4))))
+          ((bound-and-true-p meow-motion-mode)
+           (setq-local meow-cursor-type-motion (or cursor '(box . 4)))))))
+
+(defun dirvish--maybe-toggle-details ()
+  "Toggle `dired-hide-details-mode' according to context."
+  (if (dirvish--apply-hiding-p dirvish-hide-details)
+      (dired-hide-details-mode 1)
+    (dired-hide-details-mode -1)))
 
 (defun dirvish--setup-mode-line (dv)
   "Setup the mode/header line for dirvish DV."
@@ -1076,13 +1109,11 @@ Dirvish sets `revert-buffer-function' to this function."
   (run-hooks 'dirvish-after-revert-hook))
 
 (defun dirvish-init-dired-buffer ()
-  "Initialize a Dired buffer for dirvish."
+  "Initialize a Dired buffer for Dirvish."
   (when (file-remote-p default-directory)
     (setq-local dirvish--working-preview-dispathchers '(dirvish-tramp-dp)))
   (use-local-map dirvish-mode-map)
-  (dirvish--hide-cursor)
   (dirvish--hide-dired-header)
-  (and dirvish-hide-details (dired-hide-details-mode t))
   (setq-local dirvish--attrs-hash (or dirvish--attrs-hash (make-hash-table))
               revert-buffer-function #'dirvish-revert
               tab-bar-new-tab-choice "*scratch*"
@@ -1121,7 +1152,7 @@ LEVEL is the depth of current window."
                   '(dired-font-lock-keywords t nil nil beginning-of-line))
       (font-lock-mode 1)
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
-      (dirvish--hide-cursor)
+      (dirvish--maybe-toggle-cursor '(box . 0)) ; always hide cursor in parents
       (setq-local dirvish--attrs-hash (make-hash-table)
                   dirvish--working-attrs (dirvish--attrs-expand attrs))
       (dirvish--render-attrs) buf)))
@@ -1242,7 +1273,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
          (key (string-to-number (format "%s%s" (or h-pos 1) (or m-pos 1)))))
     (cdr (assq key ord))))
 
-(defun dirvish--init-session (dv)
+(defun dirvish--build-layout (dv)
   "Build layout for Dirvish session DV."
   (setf (dv-scopes dv) (dirvish--scopes))
   (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
@@ -1271,7 +1302,9 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
     (unless (dirvish-prop :cached)
       (dirvish-data-for-dir default-directory (current-buffer) t)
       (dirvish-prop :cached t))
-    (setq dirvish--this dv)))
+    (setq dirvish--this dv)
+    (dirvish--maybe-toggle-cursor)
+    (dirvish--maybe-toggle-details)))
 
 (defun dirvish--reuse-or-create (path layout)
   "Find PATH in a dirvish session and set its layout with LAYOUT."
@@ -1283,7 +1316,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
                 (dirvish-find-entry-a
                  (if (or path (not (eq dirvish-reuse-session 'resume))) dir
                    (car (dv-index dv))))
-                (dirvish--init-session dv)))
+                (dirvish--build-layout dv)))
           (t (dirvish--new :curr-layout layout)
              (dirvish-find-entry-a dir)))))
 
