@@ -616,8 +616,10 @@ Require: `epub-thumbnailer' (executable)"
   "Preview pdf files.
 Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
-    (if (featurep 'pdf-tools) (dirvish--find-file-temporarily file)
-      '(info . "Emacs package 'pdf-tools' is required to preview pdf documents"))))
+    (if (and (require 'pdf-tools nil t)
+             (file-exists-p pdf-info-epdfinfo-program))
+        (dirvish--find-file-temporarily file)
+      '(info . "`epdfinfo' program required to preview pdfs; run `M-x pdf-tools-install'"))))
 
 (dirvish-define-preview pdf-preface (file ext preview-window)
   "Display the preface image as preview for pdf files."
@@ -637,6 +639,9 @@ Require: `zipinfo' (executable)
 Require: `tar' (executable)"
   :require ("zipinfo" "tar")
   (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
+        ;; Emacs source code files
+        ((string-suffix-p ".el.gz" file)
+         (dirvish--find-file-temporarily file))
         ((member ext '("tar" "zst" "bz2" "bz" "gz" "xz" "tgz"))
          `(shell . ("tar" "-tvf" ,file)))))
 

@@ -1205,8 +1205,7 @@ LEVEL is the depth of current window."
   "Script for DIR data retrieving."
   `(with-temp-buffer
      (let ((hash (make-hash-table))
-           (bk ,(and (featurep 'dirvish-vc)
-                     `(ignore-errors (vc-responsible-backend ,dir)))))
+           (bk (ignore-errors (vc-responsible-backend ,dir))))
        ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
        (advice-add #'vc-git--git-status-to-vc-state :around
                    (lambda (fn code-list)
@@ -1214,7 +1213,9 @@ LEVEL is the depth of current window."
        (dolist (file (directory-files ,dir t nil t))
          (let* ((attrs (file-attributes file))
                 (state (and bk (vc-state-refresh file bk)))
-                (git (and (eq bk 'Git) ; TODO: refactor this
+                ;; TODO: eventually this should belong to `dirvish-vc'
+                ;; we spawn a separate process to deal with git stuff.
+                (git (and (eq bk 'Git)
                           (shell-command-to-string
                            (format "git log -1 --pretty=%%s %s"
                                    (shell-quote-argument file)))))
