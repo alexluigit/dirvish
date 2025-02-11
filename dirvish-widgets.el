@@ -617,6 +617,7 @@ Require: `epub-thumbnailer' (executable)"
 Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
     (if (and (require 'pdf-tools nil t)
+             (bound-and-true-p pdf-info-epdfinfo-program)
              (file-exists-p pdf-info-epdfinfo-program))
         (dirvish--find-file-temporarily file)
       '(info . "`epdfinfo' program required to preview pdfs; run `M-x pdf-tools-install'"))))
