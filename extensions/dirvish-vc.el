@@ -99,6 +99,48 @@ detail explanation of these states."
 
 (defvar vc-dir-process-buffer)
 
+(cl-defmethod dirvish-data-for-dir
+  (dir buffer inhibit-setup
+       &context ((dirvish-prop :vc-backend) symbol)
+       &context ((dirvish-prop :remote) boolean))
+  "Fetch data for DIR in BUFFER.
+It is called when `:vc-backend' is included in DIRVISH-PROPs while
+`:remote' is not, i.e. a local version-controlled directory.  Run
+`dirvish-setup-hook' after data parsing unless INHIBIT-SETUP is non-nil."
+  (dirvish--make-proc
+   `(prin1
+     (let ((hs (make-hash-table)) (bk ',(dirvish-prop :vc-backend)))
+       ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
+       (advice-add #'vc-git--git-status-to-vc-state :around
+                   (lambda (fn codes) (apply fn (list (delete-dups codes)))))
+       (dolist (file (directory-files ,dir t nil t))
+         (let ((state (vc-state-refresh file bk))
+               (msg (and (eq bk 'Git)
+                         (shell-command-to-string
+                          (format "git log -1 --pretty=%%s %s"
+                                  (shell-quote-argument file))))))
+           (puthash (intern (secure-hash 'md5 file))
+                    `(:vc-state ,state :git-msg ,msg) hs)))
+       hs))
+   (lambda (p _)
+     (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
+                 (data (with-current-buffer (process-buffer p)
+                         (read (buffer-string)))))
+       (when (buffer-live-p buf)
+         (with-current-buffer buf
+           (maphash
+            (lambda (k v)
+              (let ((orig (gethash k dirvish--attrs-hash)))
+                (setf (plist-get orig :vc-state) (plist-get v :vc-state))
+                (setf (plist-get orig :git-msg) (plist-get v :git-msg))
+                (puthash k orig dirvish--attrs-hash)))
+            data)
+           (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h))
+           (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))))
+     (delete-process p)
+     (dirvish--kill-buffer (process-buffer p)))
+   nil 'meta (cons buffer inhibit-setup)))
+
 (cl-defmethod transient-infix-set ((obj dirvish-vc-preview) value)
   "Set relevant value in DIRVISH-VC-PREVIEW instance OBJ to VALUE."
   (oset obj value value)
@@ -137,8 +179,7 @@ This attribute only works on graphic displays."
                 (state (dirvish-attribute-cache f-name :vc-state))
                 (face (alist-get state dirvish-vc-state-face-alist))
                 (display `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
-      (overlay-put ; TODO: very slow when the directory doesn't have any commit
-       ov 'before-string (propertize " " 'display display)))
+      (overlay-put ov 'before-string (propertize " " 'display display)))
     `(ov . ,ov)))
 
 (dirvish-define-attribute git-msg

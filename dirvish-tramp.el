@@ -72,26 +72,29 @@ FN is the original `dired-noselect' closure."
 (defun dirvish-tramp-dir-data-proc-s (proc _exit)
   "Sentinel for `dirvish-data-for-dir''s process PROC."
   (unwind-protect
-      (pcase-let* ((`(,dir ,buf ,setup) (process-get proc 'meta))
+      (pcase-let* ((`(,dir ,buf ,inhibit-setup) (process-get proc 'meta))
                    (str (with-current-buffer (process-buffer proc)
                           (substring-no-properties (buffer-string))))
                    (data (split-string str "\n")))
         (when (buffer-live-p buf)
           (with-current-buffer buf
             (dirvish-tramp--ls-parser dir data)
-            (when setup (run-hooks 'dirvish-setup-hook))
+            (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
             (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
     (dirvish--kill-buffer (process-buffer proc))))
 
 (cl-defmethod dirvish-data-for-dir
-  (dir buffer setup &context ((dirvish-prop :remote) string))
-  "DIR BUFFER SETUP DIRVISH-PROP."
+  (dir buffer inhibit-setup &context ((dirvish-prop :remote) string))
+  "Fetch data for DIR in BUFFER.
+It is called when DIRVISH-PROP has key `:remote' as a string, which
+means DIR is in a remote host.  Run `dirvish-setup-hook' after data
+parsing unless INHIBIT-SETUP is non-nil."
   (when (dirvish-tramp--async-p (dirvish-prop :tramp))
     (let* ((process-connection-type nil)
-           (buf (dirvish--util-buffer (make-temp-name "dir-data-")))
+           (buf (dirvish--util-buffer (make-temp-name "dir-tramp-")))
            (cmd (format "ls -1lahi %s" (file-local-name dir)))
            (proc (start-file-process-shell-command (buffer-name buf) buf cmd)))
-      (process-put proc 'meta (list dir buffer setup))
+      (process-put proc 'meta (list dir buffer inhibit-setup))
       (set-process-sentinel proc #'dirvish-tramp-dir-data-proc-s))))
 
 (dirvish-define-preview tramp (file _ dv)

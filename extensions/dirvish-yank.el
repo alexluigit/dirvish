@@ -334,9 +334,10 @@ It sets the value for every variable matching INCLUDE-REGEXP."
                   finally (cl-loop for b in (buffer-list) thereis
                                    (and (string-match "\\`\\*ftp.*"
                                                       (buffer-name b))
-                                        (prog1 b (kill-buffer b))))))))
+                                        (prog1 b (kill-buffer b)))))))
+         print-level print-length)
     (dirvish-yank--execute
-     (format "%S" cmd) (list (current-buffer) srcs dest method) 'batch)))
+     (prin1-to-string cmd) (list (current-buffer) srcs dest method) 'batch)))
 
 (defun dirvish-yank--apply (method dest)
   "Apply yank METHOD to DEST."

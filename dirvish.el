@@ -486,6 +486,18 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
          (name (format "%s*Dirvish-%s%s" (if inhibit-hiding "" " ") type id)))
     (if no-create (get-buffer name) (get-buffer-create name))))
 
+(defun dirvish--make-proc (form sentinel buffer-or-name &rest puts)
+  "Make process for shell or batch FORM in BUFFER-OR-NAME.
+Set process's SENTINEL had PUTS accordingly."
+  (let* ((buf (or buffer-or-name (make-temp-name "*dirvish-batch*")))
+         (print-length nil) (print-level nil)
+         (cmd (if (stringp (car form)) form
+                (list dirvish-emacs-bin
+                      "-Q" "-batch" "--eval" (prin1-to-string form))))
+         (proc (make-process :name "dirvish" :connection-type nil :buffer buf
+                             :command cmd :sentinel sentinel)))
+    (while-let ((k (pop puts)) (v (pop puts))) (process-put proc k v))))
+
 ;;;; Core
 
 (cl-defstruct (dirvish (:conc-name dv-))
@@ -701,7 +713,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-insert-subdir-a (dirname &rest _)
   "Setup newly inserted subdir DIRNAME for this Dirvish buffer."
   (dirvish--hide-dired-header)
-  (dirvish-data-for-dir dirname (current-buffer) nil))
+  (dirvish--dir-data-async dirname (current-buffer) t))
 
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
@@ -883,17 +895,14 @@ When FORCE, ensure the preview get refreshed."
   (when-let* ((attrs (ignore-errors (file-attributes file)))
               (size (file-attribute-size attrs)))
     (cond ((file-directory-p file) ; default directory previewer
-           (let* ((script
-                   `(with-current-buffer
-                        (let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
-                                      (remove (cons 'inhibit-message t)
-                                              dirvish-preview-environment))
-                          (setq insert-directory-program
-                                ,insert-directory-program)
-                          (dired-noselect ,file "-AlGh"))
-                      (buffer-string)))
-                  (cmd (prin1-to-string `(message "\n%s" ,script))))
-             `(dired . (,dirvish-emacs-bin "-Q" "-batch" "--eval" ,cmd))))
+           (let ((script
+                  `(let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
+                                 (remove (cons 'inhibit-message t)
+                                         dirvish-preview-environment))
+                     (setq insert-directory-program ,insert-directory-program)
+                     (with-current-buffer (dired-noselect ,file "-AlGh")
+                       (message "\n%s" (buffer-string))))))
+             `(dired . ,script)))
           ((> size (or large-file-warning-threshold 10000000))
            `(info . ,(format "File %s is too big for literal preview." file)))
           ((member ext dirvish-media-exts)
@@ -935,13 +944,12 @@ When PROC finishes, fill preview buffer with process result."
 
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
-  (when-let* ((proc (get-buffer-process (get-buffer " *Dirvish-temp*"))))
-    (delete-process proc))
-  (let ((buf (dirvish--util-buffer 'preview dv nil t))
-        (proc (make-process :name "sh-out" :connection-type nil
-                            :buffer " *Dirvish-temp*" :command (cdr recipe)
-                            :sentinel 'dirvish-shell-preview-proc-s)))
-    (process-put proc 'cmd-info (car recipe))
+  (let ((proc (get-buffer-process (get-buffer " *dirvish-sh*")))
+        (buf (dirvish--util-buffer 'preview dv nil t)))
+    (when proc (delete-process proc))
+    (dirvish--make-proc
+     (cdr recipe) 'dirvish-shell-preview-proc-s " *dirvish-sh*"
+     'cmd-info (car recipe))
     (with-current-buffer buf (erase-buffer) (remove-overlays) buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head shell)) dv)
@@ -1103,7 +1111,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (dirvish--hide-dired-header)
   (when ignore-auto ; meaning it is called interactively from user
     (setq-local dirvish--attrs-hash (make-hash-table))
-    (dirvish-data-for-dir default-directory (current-buffer) t))
+    (dirvish--dir-data-async default-directory (current-buffer)))
   (run-hooks 'dirvish-after-revert-hook))
 
 (defun dirvish-init-dired-buffer ()
@@ -1201,63 +1209,50 @@ LEVEL is the depth of current window."
     (setq cursor-type nil window-size-fixed 'height
           mode-line-format nil header-line-format nil)))
 
-(defsubst dirvish--dir-data-getter (dir)
-  "Script for DIR data retrieving."
-  `(with-temp-buffer
-     (let ((hash (make-hash-table))
-           (bk (ignore-errors (vc-responsible-backend ,dir))))
-       ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
-       (advice-add #'vc-git--git-status-to-vc-state :around
-                   (lambda (fn code-list)
-                     (apply fn (list (delete-dups code-list)))))
-       (dolist (file (directory-files ,dir t nil t))
-         (let* ((attrs (file-attributes file))
-                (state (and bk (vc-state-refresh file bk)))
-                ;; TODO: eventually this should belong to `dirvish-vc'
-                ;; we spawn a separate process to deal with git stuff.
-                (git (and (eq bk 'Git)
-                          (shell-command-to-string
-                           (format "git log -1 --pretty=%%s %s"
-                                   (shell-quote-argument file)))))
-                (tp (nth 0 attrs)))
-           (cond
-            ((eq t tp) (setq tp '(dir . nil)))
-            (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
-            (t (setq tp '(file . nil))))
+(defun dirvish--dir-data-async (dir buffer &optional inhibit-setup)
+  "Asynchronously fetch metadata for DIR, stored locally in BUFFER.
+INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
+  (dirvish--make-proc
+   `(prin1
+     (let* ((hs (make-hash-table))
+            (remote? (file-remote-p ,dir))
+            (bk (unless remote? (vc-responsible-backend ,dir t))))
+       (dolist (file (unless remote? (directory-files ,dir t nil t)))
+         (let* ((attrs (file-attributes file)) (tp (nth 0 attrs)))
+           (cond ((eq t tp) (setq tp '(dir . nil)))
+                 (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
+                 (t (setq tp '(file . nil))))
            (puthash (intern (secure-hash 'md5 file))
-                    `(:builtin ,attrs :type ,tp
-                               ,@(and state (list :vc-state state))
-                               ,@(and git (list :git-msg git)))
-                    hash)))
-       (prin1 (cons bk hash) (current-buffer)))
-     (buffer-substring-no-properties (point-min) (point-max))))
+                    `(:builtin ,attrs :type ,tp) hs)))
+       (cons bk hs)))
+   (lambda (p _)
+     (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
+                 (`(,vc . ,data)
+                  (with-current-buffer (process-buffer p)
+                    (read (buffer-string)))))
+       (when (buffer-live-p buf)
+         (with-current-buffer buf
+           (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) data)
+           (dirvish-prop :vc-backend vc)
+           (dirvish-data-for-dir dir buf inhibit-setup))))
+     (delete-process p)
+     (dirvish--kill-buffer (process-buffer p)))
+   nil 'meta (cons buffer inhibit-setup)))
 
-(defun dirvish-dir-data-proc-s (proc _exit)
-  "Parse the directory metadata from PROC's output STR."
-  (pcase-let ((`(,buf . ,setup) (process-get proc 'meta))
-              (`(,vc . ,data) (with-current-buffer (process-buffer proc)
-                                (read (buffer-string)))))
-    (when (buffer-live-p buf)
-      (with-current-buffer buf
-        (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) data)
-        (when setup
-          (dirvish-prop :vc-backend vc)
-          (run-hooks 'dirvish-setup-hook))
-        (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
-  (delete-process proc)
-  (dirvish--kill-buffer (process-buffer proc)))
+(cl-defgeneric dirvish-data-for-dir (dir buffer inhibit-setup)
+  "Fetch data for DIR in BUFFER, maybe INHIBIT-SETUP.")
 
-(cl-defgeneric dirvish-data-for-dir (dir buffer setup)
-  "Fetch data for files in DIR, stored locally in BUFFER.
-Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
-  (let* ((buf (make-temp-name "dir-data-"))
-         (print-length nil)
-         (print-level nil)
-         (c (format "%S" `(message "%s" ,(dirvish--dir-data-getter dir))))
-         (proc (make-process :name "dir-data" :connection-type nil :buffer buf
-                             :command (list dirvish-emacs-bin "-Q" "-batch" "--eval" c)
-                             :sentinel 'dirvish-dir-data-proc-s)))
-    (process-put proc 'meta (cons buffer setup))))
+(cl-defmethod dirvish-data-for-dir
+  (dir buffer inhibit-setup
+       &context ((dirvish-prop :vc-backend) boolean)
+       &context ((dirvish-prop :remote) boolean))
+  "Fetch data for DIR in BUFFER.
+It is called when neither `:vc-backend' nor `:remote' is included in
+DIRVISH-PROPs, i.e. DIR is in localhost and is not being
+version-controlled.  Run `dirvish-setup-hook' after data parsing unless
+INHIBIT-SETUP is non-nil."
+  (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h))
+  (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))
 
 (defun dirvish--window-split-order ()
   "Compute the window split order."
@@ -1299,7 +1294,7 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
       (let ((window-safe-min-height 0) (window-resize-pixelwise t))
         (dolist (win util-windows) (fit-window-to-buffer win 2 1))))
     (unless (dirvish-prop :cached)
-      (dirvish-data-for-dir default-directory (current-buffer) t)
+      (dirvish--dir-data-async default-directory (current-buffer))
       (dirvish-prop :cached t))
     (setq dirvish--this dv)
     (dirvish--maybe-toggle-cursor)
