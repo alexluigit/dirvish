@@ -102,7 +102,7 @@ detail explanation of these states."
 (cl-defmethod dirvish-data-for-dir
   (dir buffer inhibit-setup
        &context ((dirvish-prop :vc-backend) symbol)
-       &context ((dirvish-prop :remote) boolean))
+       &context ((dirvish-prop :remote) symbol))
   "Fetch data for DIR in BUFFER.
 It is called when `:vc-backend' is included in DIRVISH-PROPs while
 `:remote' is not, i.e. a local version-controlled directory.  Run

@@ -1251,6 +1251,7 @@ It is called when neither `:vc-backend' nor `:remote' is included in
 DIRVISH-PROPs, i.e. DIR is in localhost and is not being
 version-controlled.  Run `dirvish-setup-hook' after data parsing unless
 INHIBIT-SETUP is non-nil."
+  (ignore dir buffer)
   (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h))
   (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))
 
