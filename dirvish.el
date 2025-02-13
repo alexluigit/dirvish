@@ -48,7 +48,8 @@ Dirvish ships with these attributes:
 - `file-time': Show file modification time before the `file-size'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
-(defcustom dirvish-preview-dispatchers '(image gif video audio epub archive pdf)
+(defcustom dirvish-preview-dispatchers
+  '(image gif video audio epub archive pdf dired)
   "List of preview dispatchers.
 Each dispatcher in this list handles the validation and preview
 content generation for the corresponding filetype.
@@ -61,7 +62,8 @@ The default value contains:
 - audio: preview audio files with metadata, requires `mediainfo'.
 - epub: preview epub documents, requires `epub-thumbnailer'.
 - pdf: preview pdf documents via `pdf-tools'.
-- archive: preview archive files such as .tar, .zip, requires `tar' / `unzip'."
+- archive: preview archive files such as .tar, .zip, requires `tar' / `unzip'.
+- dired: preview directories using `emacs --batch'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish preview methods")))
 
 (defcustom dirvish-preview-disabled-exts '("iso" "bin" "exe" "gpg" "elc" "eln")
@@ -161,11 +163,11 @@ Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist)
 
 (defcustom dirvish-hide-details t
-  "Whether to hide detailed information in Dirvish buffers.
-When sets to t, it hide detailed listing info for all Dirvish buffers.
+  "Whether to enable `dired-hide-details-mode' in Dirvish buffers.
+When sets to t, it is enabled for all Dirvish buffers.
 
 Alternatively, the value can be a list of symbols to instruct Dirvish in
-what contexts they should be hided.  The accepted values are:
+what contexts it should be enabled.  The accepted values are:
  - `dired':        when opening a directory using `dired-*' commands.
  - `dirvish':      when opening full-frame Dirvish.
  - `dirvish-fd':   when the buffer is create by `dirvish-fd*' commands.
@@ -180,6 +182,11 @@ Works all the same as `dirvish-hide-details' but for cursor."
   :group 'dirvish
   :type '(choice (boolean :tag "Apply to all Dirvish buffers")
                  (repeat :tag "Apply to a list of buffer types: 'dired, 'dirvish, 'dirvish-fd or 'dirvish-side" symbol)))
+
+(defcustom dirvish-preview-dired-sync-omit nil
+  "If non-nil, `dired' preview buffers sync `dired-omit-mode' from root window.
+Notice that it only take effects on the built-in `dired' preview dispatcher."
+  :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-window-fringe 1
   "Window fringe for dirvish windows."
@@ -488,7 +495,7 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
 
 (defun dirvish--make-proc (form sentinel buffer-or-name &rest puts)
   "Make process for shell or batch FORM in BUFFER-OR-NAME.
-Set process's SENTINEL had PUTS accordingly."
+Set process's SENTINEL and PUTS accordingly."
   (let* ((buf (or buffer-or-name (make-temp-name "*dirvish-batch*")))
          (print-length nil) (print-level nil)
          (cmd (if (stringp (car form)) form
@@ -572,7 +579,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   (cl-loop with dps = (or dps dirvish-preview-dispatchers)
            with res = (prog1 '() (require 'recentf) (require 'ansi-color))
            with fmt = "[Dirvish]: install '%s' executable to preview %s files."
-           for dp in (append '(disable) dps '(default))
+           for dp in (append '(disable) dps '(fallback))
            for info = (alist-get dp dirvish--available-preview-dispatchers)
            for requirements = (plist-get info :require)
            for met = t
@@ -861,16 +868,6 @@ When FORCE, ensure the preview get refreshed."
 
 ;;;; Preview
 
-(dirvish-define-preview disable (file ext)
-  "Disable preview in some cases."
-  (cond
-   ((not (file-exists-p file))
-    `(info . ,(format "%s does not exist" file)))
-   ((not (file-readable-p file))
-    `(info . ,(format "%s is not readable" file)))
-   ((member ext dirvish-preview-disabled-exts)
-    `(info . ,(format "Preview for %s has been disabled" file)))))
-
 (defun dirvish--find-file-temporarily (name)
   "Open file NAME temporarily for preview."
   (cl-letf (((symbol-function 'recentf-track-opened-file) #'ignore)
@@ -887,24 +884,45 @@ When FORCE, ensure the preview get refreshed."
                     (set-default k d) (set k v)))))
       (cond ((ignore-errors (buffer-local-value 'so-long-detected-p buf))
              (kill-buffer buf)
-             `(info . ,(format "File `%s' with long lines not previewed" name)))
+             `(info . ,(format "File [ %s ] contains very long lines" name)))
             (t `(buffer . ,buf))))))
 
-(dirvish-define-preview default (file ext)
-  "Default preview dispatcher for FILE."
-  (when-let* ((attrs (ignore-errors (file-attributes file)))
-              (size (file-attribute-size attrs)))
-    (cond ((file-directory-p file) ; default directory previewer
-           (let ((script
-                  `(let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
-                                 (remove (cons 'inhibit-message t)
-                                         dirvish-preview-environment))
-                     (setq insert-directory-program ,insert-directory-program)
-                     (with-current-buffer (dired-noselect ,file "-AlGh")
-                       (message "\n%s" (buffer-string))))))
-             `(dired . ,script)))
+(dirvish-define-preview disable (file ext)
+  "Disable preview in some cases."
+  (cond
+   ((not (file-exists-p file))
+    `(info . ,(format "[ %s ] does not exist" file)))
+   ((not (file-readable-p file))
+    `(info . ,(format "[ %s ] is not readable" file)))
+   ((member ext dirvish-preview-disabled-exts)
+    `(info . ,(format "Preview for filetype [ %s ] has been disabled" ext)))))
+
+(dirvish-define-preview dired (file)
+  "Preview dispatcher for directory FILE."
+  (when (file-directory-p file)
+    `(dired . (let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
+                            (remove (cons 'inhibit-message t)
+                                    dirvish-preview-environment))
+                (setq insert-directory-program ,insert-directory-program)
+                (setq dired-listing-switches ,dired-listing-switches)
+                (setq dired-omit-verbose ,(bound-and-true-p dired-omit-verbose))
+                (setq dired-omit-files ,(bound-and-true-p dired-omit-files))
+                (with-current-buffer (dired-noselect ,file)
+                  ,(and dirvish-preview-dired-sync-omit
+                        (bound-and-true-p dired-omit-mode)
+                        `(dired-omit-mode))
+                  (message "\n%s" (buffer-string)))))))
+
+(dirvish-define-preview fallback (file ext)
+  "Fallback preview dispatcher for FILE."
+  (let* ((attrs (ignore-errors (file-attributes file)))
+         (size (file-attribute-size attrs)))
+    (cond ((not attrs)
+           `(info . ,(format "Can not get attributes of [ %s ]." file)))
+          ((not size)
+           `(info . ,(format "Can not get file size of [ %s ]." file)))
           ((> size (or large-file-warning-threshold 10000000))
-           `(info . ,(format "File %s is too big for literal preview." file)))
+           `(info . ,(format "File [ %s ] is too big for literal preview." file)))
           ((member ext dirvish-media-exts)
            `(info . "Preview disabled for media files"))
           (t (dirvish--find-file-temporarily file)))))
