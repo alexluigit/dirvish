@@ -1233,19 +1233,13 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
        (when (buffer-live-p buf)
          (with-current-buffer buf
            (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) data)
-           (dirvish-prop :vc-backend vc)
+           (dirvish-prop :vc-backend (or vc 0)) ; for &context compat
            (dirvish-data-for-dir dir buf inhibit-setup))))
      (delete-process p)
      (dirvish--kill-buffer (process-buffer p)))
    nil 'meta (cons buffer inhibit-setup)))
 
 (cl-defgeneric dirvish-data-for-dir (dir buffer inhibit-setup)
-  "Fetch data for DIR in BUFFER, maybe INHIBIT-SETUP.")
-
-(cl-defmethod dirvish-data-for-dir
-  (dir buffer inhibit-setup
-       &context ((dirvish-prop :vc-backend) boolean)
-       &context ((dirvish-prop :remote) boolean))
   "Fetch data for DIR in BUFFER.
 It is called when neither `:vc-backend' nor `:remote' is included in
 DIRVISH-PROPs, i.e. DIR is in localhost and is not being

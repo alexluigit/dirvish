@@ -175,7 +175,7 @@ This attribute only works on graphic displays."
   (unless (= (car (window-fringes)) dirvish-vc-state-fringe)
     (set-window-fringes nil dirvish-vc-state-fringe dirvish-window-fringe))
   (let ((ov (make-overlay l-beg l-beg)))
-    (when-let* (((dirvish-prop :vc-backend))
+    (when-let* (((symbolp (dirvish-prop :vc-backend)))
                 (state (dirvish-attribute-cache f-name :vc-state))
                 (face (alist-get state dirvish-vc-state-face-alist))
                 (display `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
@@ -196,7 +196,7 @@ This attribute only works on graphic displays."
 
 (dirvish-define-preview vc-diff (ext)
   "Use output of `vc-diff' as preview."
-  (when (and (dirvish-prop :vc-backend)
+  (when (and (symbolp (dirvish-prop :vc-backend))
              (not (member ext dirvish-media-exts))
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
                        ((symbol-function 'message) #'ignore))
@@ -205,7 +205,7 @@ This attribute only works on graphic displays."
 
 (dirvish-define-preview vc-log ()
   "Use output of `vc-print-log' as preview."
-  (when (and (dirvish-prop :vc-backend)
+  (when (and (symbolp (dirvish-prop :vc-backend))
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore))
                (prog1 t (vc-print-log))))
     '(buffer . "*vc-change-log*")))
@@ -213,6 +213,7 @@ This attribute only works on graphic displays."
 (dirvish-define-preview vc-blame (file ext preview-window dv)
   "Use output of `vc-annotate' (file) or `vc-dir' (dir) as preview."
   (when-let* ((bk (dirvish-prop :vc-backend))
+              ((symbolp bk))
               (orig-buflist (buffer-list))
               (display-buffer-alist
                '(("\\*\\(Annotate \\|vc-dir\\).*\\*"
@@ -241,6 +242,7 @@ This attribute only works on graphic displays."
   "Version control info such as git branch."
   (when-let* (((> (window-width) 30))
               (bk (dirvish-prop :vc-backend))
+              ((symbolp bk))
               (ml-str (vc-call-backend bk 'mode-line-string default-directory))
               (bk-str (format "%s:" bk)))
     (format " %s %s "
@@ -257,9 +259,9 @@ This attribute only works on graphic displays."
   [:description
    (lambda () (dirvish--format-menu-heading "Version control commands"))
    ("v" dirvish-vc-preview-ifx
-    :if (lambda () (dirvish-prop :vc-backend)))
+    :if (lambda () (symbolp (dirvish-prop :vc-backend))))
    ("n" "Do the next action" dired-vc-next-action
-    :if (lambda () (dirvish-prop :vc-backend)))
+    :if (lambda () (symbolp (dirvish-prop :vc-backend))))
    ("c" "Create repo" vc-create-repo)])
 
 (provide 'dirvish-vc)
