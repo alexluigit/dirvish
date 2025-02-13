@@ -232,14 +232,14 @@ Dired, you can create a directory previewer that utilizes the ~eza~ command:
 
 #+begin_src emacs-lisp
 (dirvish-define-preview eza (file)
-  "Use `exa' to generate directory preview."
+  "Use `eza' to generate directory preview."
   :require ("eza") ; tell Dirvish to check if we have the executable
   (when (file-directory-p file) ; we only interest in directories here
     `(shell . ("eza" "-al" "--color=always" "--icons=always"
                "--group-directories-first" ,file))))
 
 (setq dirvish-preview-dispatchers
-      (cl-substitute 'dired 'exa dirvish-preview-dispatchers))
+      (cl-substitute 'eza 'dired dirvish-preview-dispatchers))
 #+end_src
 
 This makes Dirvish use the output from ~exa~ shell command as your preview content

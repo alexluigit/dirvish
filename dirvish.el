@@ -1015,8 +1015,8 @@ LEFT and RIGHT are segments aligned to left/right respectively.
 If HEADER, set the `dirvish--header-line-fmt' instead."
   `((:eval
      (let* ((dv (dirvish-curr))
-            (fullframe-p (dv-curr-layout dv))
-            (buf (cdr (dv-index dv)))
+            (fullframe-p (and dv (dv-curr-layout dv)))
+            (buf (and dv (cdr (dv-index dv))))
             (expand
              (lambda (segs)
                (cl-loop for s in segs collect
@@ -1029,7 +1029,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                          ((integerp ml-height) (/ (float ml-height) default))
                          (t 1)))
             (win-width (floor (/ (window-width) scale)))
-            (str-l "DIRVISH: Context buffer is not a live buffer")
+            (str-l "DIRVISH: Context buffer is not a Dirvish buffer")
             (str-r (propertize "WARNING" 'face 'dired-warning))
             (len-r 7))
        (when (buffer-live-p buf)
