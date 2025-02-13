@@ -80,8 +80,8 @@ one of categories in `dirvish-peek-categories'."
   (when-let* ((category (dirvish-prop :peek-category))
               (cand-fetcher (dirvish-prop :peek-fetcher))
               (cand (funcall cand-fetcher))
-              ((not (string= cand (dirvish-prop :index)))))
-    (dirvish-prop :index cand)
+              ((not (string= cand (dirvish-prop :peek-last)))))
+    (dirvish-prop :peek-last cand)
     (pcase category
       ('file (setq cand (expand-file-name cand)))
       ('project-file
@@ -90,6 +90,7 @@ one of categories in `dirvish-peek-categories'."
                             (car (minibuffer-history-value))))))
       ('library (setq cand (file-truename
                             (or (ignore-errors (find-library-name cand)) "")))))
+    (dirvish-prop :index cand)
     (unless (file-remote-p cand)
       (dirvish-debounce nil
         (dirvish--preview-update dirvish--this cand)))))
@@ -100,7 +101,7 @@ one of categories in `dirvish-peek-categories'."
     (when (eq (dv-type dv) 'peek)
       (dirvish--clear-session dv)
       (remhash (dv-name dv) dirvish--session-hash)))
-  (dirvish-prop :index nil))
+  (dirvish-prop :peek-last nil))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode
