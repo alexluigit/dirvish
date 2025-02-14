@@ -6,7 +6,7 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "27.1") (transient "0.3.7"))
+;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -235,14 +235,6 @@ argument is specified via prompt."
 The UI of dirvish is refreshed only when there has not been new
 input for `dirvish-redisplay-debounce' seconds."
   :group 'dirvish :type 'float)
-
-(defcustom dirvish-ensure-up-dir-undedicated t
-  "If t, `dired-up-directory' uses the same window when if it is dedicated."
-  :group 'dirvish :type 'boolean
-  :set
-  (lambda (k v) (set k v)
-    (if v (advice-add 'dired-up-directory :around #'dirvish-save-dedication-a)
-      (advice-remove 'dired-up-directory #'dirvish-save-dedication-a))))
 
 (cl-defgeneric dirvish-clean-cache () "Clean cache for selected files." nil)
 (cl-defgeneric dirvish-build-cache () "Build cache for current directory." nil)
@@ -684,11 +676,19 @@ ARGS is a list of keyword arguments for `dirvish' struct."
                  (dirvish--render-attrs-1 height remain (point)
                                           remote fns ov (if gui 0 2) no-hl))))))
 
+(defun dirvish--only-index ()
+  "If `dired-kill-when-opening-new-dired-buffer', only keep session index."
+  (when-let* (((default-value 'dired-kill-when-opening-new-dired-buffer))
+              (dv (dirvish-curr)) (index-buf (cdr (dv-index dv))))
+    (cl-loop for (_d . b) in (dv-roots dv)
+             unless (eq index-buf b) do (kill-buffer b))))
+
 ;;;; Advices
 
-(defun dirvish-save-dedication-a (fn args)
+(defun dirvish-up-dir-a (fn args)
   "Ensure FN and ARGS applied with window undedicated."
-  (dirvish-save-dedication (apply fn args)))
+  (dirvish-save-dedication (apply fn args))
+  (dirvish--only-index))
 
 (cl-defun dirvish-find-entry-a (&optional entry)
   "Find ENTRY in current dirvish session.
@@ -703,8 +703,8 @@ buffer, it defaults to filename under the cursor when it is nil."
                     ((string-suffix-p "/" entry)
                      (user-error (concat entry " is not a directory")))))
          (dv (dirvish-curr)) process-connection-type file)
-    (when buf (cl-return-from dirvish-find-entry-a
-                (dirvish-save-dedication (switch-to-buffer buf))))
+    (when buf (dirvish-save-dedication (switch-to-buffer buf))
+          (cl-return-from dirvish-find-entry-a (dirvish--only-index)))
     (setq file (expand-file-name entry))
     (cl-loop with e = (downcase (or (file-name-extension entry) ""))
              for (es . (c . a)) in dirvish-open-with-programs
@@ -842,7 +842,7 @@ When FORCE, ensure the preview get refreshed."
 
 (defun dirvish-winconf-change-h ()
   "Record root window and update its UI for current dirvish session."
-  (let ((dv (dirvish-curr)))
+  (when-let* ((dv (dirvish-curr)))
     (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index dv))))
     (dirvish-update-body-h 'force-preview-update)))
 
@@ -1354,6 +1354,7 @@ are killed and the Dired buffer(s) in the selected window are buried."
   "Let Dirvish take over Dired globally."
   :group 'dirvish :global t
   (let ((ads '((dired-find-file dirvish-find-entry-a :override)
+               (dired-up-directory dirvish-up-dir-a :around)
                (dired-noselect dirvish-dired-noselect-a :around)
                (dired-insert-subdir dirvish-insert-subdir-a :after)
                (image-dired-create-thumbnail-buffer dirvish-thumb-buf-a :around)

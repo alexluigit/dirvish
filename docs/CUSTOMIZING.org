@@ -54,12 +54,24 @@ correctly, there are a few rules here:
 
 ** Buffer management
 
-A Dirvish session holds a set of Dired buffers and preview buffers that are
-/always/ reused during the session. The ~dired-find-alternate-file~ command and
-~dired-kill-when-opening-new-dired-buffer~ option is ignored in Dirvish.
+A Dirvish session maintains a collection of Dired and preview buffers that are
+reused throughout the session.
 
-Open a file using ~dired-find-file~ quits the session. Alternatively, you can
-quit it explicitly using ~dirvish-quit~ (bound to =q= by default) command.
+When you quit a Dirvish session, either by using ~dirvish-quit~ command (bound to
+=q=) or by opening a file (which automatically quits the session), all Dired
+buffers except the index buffer are killed.
+
+The ~dired-find-alternate-file~ command is ignored within Dirvish, but this should
+not be a concern, as Dirvish eliminates the need for manual Dired buffer
+management.
+
+From Dirvish v2.1 onwards, the ~dired-kill-when-opening-new-dired-buffer~ option
+is honored.  This means that opening a new Dired buffer within a Dirvish session
+will kill the previous one, ensuring that each session primarily retains only
+its index buffer.
+
+If you prefer Dirvish to kill all Dired buffers when quitting, instead of
+leaving the last index buffer open, set ~dirvish-reuse-session~ to =nil=.
 
 See: [[https://github.com/alexluigit/dirvish/discussions/102#discussioncomment-3205349][the rationale behind buffer management in Dirvish]]
 
