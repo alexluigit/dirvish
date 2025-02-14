@@ -85,6 +85,12 @@ Apart from the hooks provided by Dired, Dirvish got some additions.
 | ~dirvish-find-entry-hook~   | Executed after finding a entry.          |
 |---------------------------+------------------------------------------|
 
+** =find-dired= integration
+
+=find-dired= should work seamlessly with Dirvish. However, there are currently no
+plans to integrate Dirvish further into its output buffer, as =dirvish-fd= offers
+a superior alternative.  See [[file:EXTENSIONS.org][Extensions:dirvish-fd.el]] for more information.
+
 * Dirvish "attributes"
 
 A Dirvish attribute is a visual element that shows up within the file line,
@@ -281,8 +287,8 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
     (setq delete-by-moving-to-trash t)
     (setq dired-listing-switches
           "-l --almost-all --human-readable --group-directories-first --no-group")
-    :bind ; Bind `dirvish|dirvish-side|dirvish-dwim' as you see fit
-    (("C-c f" . dirvish-fd)
+    :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
+    (("C-c f" . dirvish)
      :map dirvish-mode-map ; Dirvish inherits `dired-mode-map'
      ("a"   . dirvish-quick-access)
      ("f"   . dirvish-file-info-menu)

@@ -117,19 +117,15 @@ a visual indicator for files that has unique nested paths.
 
 * find-dired | fd-dired
 
-Dirvish has no plan to support =find-dired= or =fd-dired= since we have the far
-better option =dirvish-fd=.  The advantages of using =dirvish-fd= over =find/fd-dired=
-including but not limited to:
+Compared to =find/fd-dired=, =dirvish-fd= offers several advantages:
 
-1. File preview works for ~dirvish-fd~ as well.
-2. ~dirvish-fd-switches-menu~ allows us to change the =fd= flags interactively.
-3. ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works in the result
-   buffer of ~dirvish-fd~.
-4. The result buffer of ~dirvish-fd~ is added to Dirvish's local history, which
-   means commands like ~dirvish-history-go-forward/backward~ works seamlessly with
-   ~dirvish-fd~.
-
-   ...
++ File previews are supported.
++ The =dirvish-fd-switches-menu= allows interactive modification of =fd= flags.
++ =dirvish-quicksort= and =dirvish-ls-switches-menu= are fully functional within the
+  =dirvish-fd= result buffer.
++ The =dirvish-fd= result buffer is integrated into Dirvish's local history,
+  enabling seamless navigation with commands like =dirvish-history-go-forward= and
+  =dirvish-history-go-backward=.
 
 * dired-git-info | diff-hl | dired-k
 

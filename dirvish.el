@@ -690,32 +690,32 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   "Ensure FN and ARGS applied with window undedicated."
   (dirvish-save-dedication (apply fn args)))
 
-(defun dirvish-find-entry-a (&optional entry)
+(cl-defun dirvish-find-entry-a (&optional entry)
   "Find ENTRY in current dirvish session.
 ENTRY can be a filename or a string with format of
 `dirvish-fd-bufname' used to query or create a `fd' result
 buffer, it defaults to filename under the cursor when it is nil."
   (let* ((entry (or entry (dired-get-filename nil t)))
-         (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd-find entry))
-                       ((file-directory-p entry) (dired-noselect entry))
-                       ((string-suffix-p "/" entry)
-                        (user-error
-                         (concat entry " is not a valid directory"))))))
-    (if buffer (dirvish-save-dedication (switch-to-buffer buffer))
-      (let* ((ext (downcase (or (file-name-extension entry) "")))
-             (file (expand-file-name entry))
-             (process-connection-type nil)
-             (ex (cl-loop
-                  for (exts . (cmd . args)) in dirvish-open-with-programs
-                  thereis (and (not (dirvish-prop :remote))
-                               (executable-find cmd)
-                               (member ext exts)
-                               (append (list cmd) args)))))
-        (if ex (apply #'start-process "" nil "nohup"
-                      (cl-substitute file "%f" ex :test 'string=))
-          (let* ((dv (dirvish-curr)) (fn (dv-open-file-fn dv)))
-            (if fn (funcall fn) (dirvish--clear-session dv)))
-          (find-file file))))))
+         (buf (cond ((string-prefix-p "🔍" entry)
+                     (dirvish-fd-find entry))
+                    ((file-directory-p entry)
+                     (dired-noselect entry))
+                    ((string-suffix-p "/" entry)
+                     (user-error (concat entry " is not a directory")))))
+         (dv (dirvish-curr)) process-connection-type file)
+    (when buf (cl-return-from dirvish-find-entry-a
+                (dirvish-save-dedication (switch-to-buffer buf))))
+    (setq file (expand-file-name entry))
+    (cl-loop with e = (downcase (or (file-name-extension entry) ""))
+             for (es . (c . a)) in dirvish-open-with-programs
+             when (and (member e es) (executable-find c)) do
+             (cl-return-from dirvish-find-entry-a
+               (let ((a (cl-substitute file "%f" a :test #'string=)))
+                 (apply #'start-process "" nil "nohup" (append (list c) a)))))
+    (unless dv (cl-return-from dirvish-find-entry-a (find-file file)))
+    (if-let* ((fn (dv-open-file-fn dv))) (funcall fn)
+      (dirvish--clear-session dv))
+    (find-file file)))
 
 (defun dirvish-insert-subdir-a (dirname &rest _)
   "Setup newly inserted subdir DIRNAME for this Dirvish buffer."
