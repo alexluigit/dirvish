@@ -1,3 +1,46 @@
+* 2.1.0
+
+** What's changed
+
++ Fixed incorrect vc states https://github.com/alexluigit/dirvish/issues/224
++ ~dirvish-hide-cursors~ and ~dirvish-hide-details~ now support list of symbols
++ A lot of window dedication issues fixed (#194 #258 #262 #264 #293)
++ Mode line errors (#233)
++ Modular directory data fetching (#162 #238)
++ Fixed image preview with ~dirvish-peek~.
++ Performance imporvements with ~dirvish-side~.
++ Respect ~dired-kill-when-opening-new-dired-buffer~.
++ Fixed compatibility issue with =find-dired=.
+
+** Fixes from community
+
++ Fix #158 : Delete emerge overlays when turning off the mode by @aikrahguzar in https://github.com/alexluigit/dirvish/pull/159
++ docs: fix some typos by @feltcat in https://github.com/alexluigit/dirvish/pull/176
++ fix(core): don't quote conditions in condition-case by @tarsius in https://github.com/alexluigit/dirvish/pull/206
++ add nerd-icons support by @rainstormstudio in https://github.com/alexluigit/dirvish/pull/201
++ fix(core): resolve emacs binary path in a more reliable way by @isamert in https://github.com/alexluigit/dirvish/pull/192
++ Report error from fd to user by @dvzubarev in https://github.com/alexluigit/dirvish/pull/178
++ Use rsync for local file copying in dirvish-rsync by @dvzubarev in https://github.com/alexluigit/dirvish/pull/180
++ Add rsync transient map by @dvzubarev in https://github.com/alexluigit/dirvish/pull/181
++ fd: add function that reads pattern from user by @dvzubarev in https://github.com/alexluigit/dirvish/pull/187
++ Update CUSTOMIZING.org by @liguangsheng in https://github.com/alexluigit/dirvish/pull/198
++ Fix an error: void-variable dv in Emacs-30.0.50 by @dvzubarev in https://github.com/alexluigit/dirvish/pull/251
++ Remove the restriction on printing for `dirvish-data-for-dir` by @isamert in https://github.com/alexluigit/dirvish/pull/266
++ Define new faces for all VC states by @protesilaos in https://github.com/alexluigit/dirvish/pull/222
++ fix(dired-noselect): Support both lists and strings by @jcf in https://github.com/alexluigit/dirvish/pull/257
++ subtree respect dired-omit-mode now by @eki3z in https://github.com/alexluigit/dirvish/pull/268
++ refactor(yank): rework copying r2r case for rsync by @dvzubarev in https://github.com/alexluigit/dirvish/pull/215
++ fix(subtree): "toggle or open" should open file, not view it by @brownts in https://github.com/alexluigit/dirvish/pull/281
++ fix(yank): silence byte-compiler by @tarsius in https://github.com/alexluigit/dirvish/pull/220
++ Fix typos by @tarsius in https://github.com/alexluigit/dirvish/pull/227
++ Fix custom type specifications by @tarsius in https://github.com/alexluigit/dirvish/pull/239
++ yank: fixes for recent r2r refactor commit by @dvzubarev in https://github.com/alexluigit/dirvish/pull/287
++ Fix broken link to purcell's emacs in EMACS-NEWCOMERS.org by @LV in https://github.com/alexluigit/dirvish/pull/278
++ docs: document the nil case for dirvish-default-layout. by @nicolas-graves in https://github.com/alexluigit/dirvish/pull/231
++ Split dirvish-yank--execute into two functions by @dvzubarev in https://github.com/alexluigit/dirvish/pull/290
++ fix: prevent killing emacsclient started on a directory by @prati0100 in https://github.com/alexluigit/dirvish/pull/293
++ perf(dirvish-peek): prevent redundant updates by tracking previous candidate by @zsxh in https://github.com/alexluigit/dirvish/pull/297
+
 * 2.0.53
 
 ** Breaking changes
