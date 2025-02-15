@@ -254,8 +254,10 @@ Raise an error if fd executable is not available."
 ;;;###autoload
 (defun dirvish-fd-jump (&optional current-dir-p)
   "Browse directories using `fd' command.
-This command takes a while to index all the directories the first
-time you run it.  After the indexing, it fires up instantly.
+This command takes a while to index all the directories the first time
+you run it.  After the indexing, it fires up instantly except for those
+huge directories such as root.  It is recommended to setup your
+.fdignore properly before using this command.
 
 If called with \\`C-u' or if CURRENT-DIR-P holds the value 4,
 search for directories in the current directory.  Otherwise,

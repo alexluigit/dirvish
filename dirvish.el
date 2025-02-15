@@ -27,7 +27,7 @@
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd-find "dirvish-fd")
 (declare-function dirvish-tramp-noselect "dirvish-tramp")
-(declare-function project-roots "project")
+(declare-function project-root "project")
 
 ;;;; User Options
 
@@ -439,8 +439,8 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--get-project-root (&optional directory)
   "Get project root path of DIRECTORY."
   (when-let* ((pj (project-current nil directory))
-              (pj-roots (project-roots pj)))
-    (expand-file-name (car pj-roots))))
+              (pj-root (project-root pj)))
+    (expand-file-name pj-root)))
 
 (defun dirvish--get-parent-path (path)
   "Get parent directory of PATH."
