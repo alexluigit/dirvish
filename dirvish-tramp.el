@@ -27,11 +27,11 @@
 Save the REMOTE host to `dirvish-tramp-hosts'.
 FN is the original `dired-noselect' closure."
   (let* ((saved-flags (cdr (assoc remote dirvish-tramp-hosts #'equal)))
-         (ftp? (tramp-ftp-file-name-p dir))
+         (doesnt-support-ls? (or (tramp-ftp-file-name-p dir) (tramp-gvfs-file-name-p dir)))
          (short-flags "-Alh")
          (default-directory dir)
          (dired-buffers nil)
-         (buffer (cond (ftp? (funcall fn dir short-flags))
+         (buffer (cond (doesnt-support-ls? (funcall fn dir short-flags))
                        (saved-flags (funcall fn dir saved-flags))
                        ((= (process-file "ls" nil nil nil "--version") 0)
                         (push (cons remote flags) dirvish-tramp-hosts)
