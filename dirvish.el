@@ -49,7 +49,8 @@ Dirvish ships with these attributes:
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
 (defcustom dirvish-preview-dispatchers
-  '(image gif video audio epub archive pdf dired)
+  `(,(if (memq system-type '(ms-dos windows-nt)) 'video-mtn 'video)
+    image gif audio epub archive pdf dired)
   "List of preview dispatchers.
 Each dispatcher in this list handles the validation and preview
 content generation for the corresponding filetype.
@@ -58,7 +59,8 @@ The default value contains:
 
 - image: preview image files, requires `imagemagick'.
 - gif: preview GIF image files with animation.
-- video: preview videos files with thumbnail, requires `ffmpegthumbnailer'.
+- video: preview videos files with thumbnail.
+    requires `ffmpegthumbnailer' on Linux/macOS | `mtn' on Windows
 - audio: preview audio files with metadata, requires `mediainfo'.
 - epub: preview epub documents, requires `epub-thumbnailer'.
 - pdf: preview pdf documents via `pdf-tools'.

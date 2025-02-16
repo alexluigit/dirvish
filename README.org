@@ -37,7 +37,7 @@ This package requires =GNU ls= (~gls~ on macOS), and /optionally/:
 + =fd= as a faster alternative to =find=
 + =imagemagick= for image preview
 + =poppler= | =pdf-tools= for pdf preview
-+ =ffmpegthumbnailer= for video preview
++ =ffmpegthumbnailer= (Linux/macOS) | =mtn= (Windows) for video preview
 + =mediainfo= for audio/video metadata generation
 + =tar= and =unzip= for archive files preview
 
@@ -64,11 +64,13 @@ This package requires =GNU ls= (~gls~ on macOS), and /optionally/:
   pkg install gnuls fd-find poppler ffmpegthumbnailer ImageMagick7 gtar
 #+end_src
 
-@@html:<h2>@@Windows (untested)@@html:</h2>@@
+@@html:<h2>@@Windows@@html:</h2>@@
 #+begin_src bash
   # install via Scoop: https://scoop.sh/
   scoop install coreutils fd poppler imagemagick unzip
 #+end_src
+
+You might also want to install [[https://gitlab.com/movie_thumbnailer/mtn][mtn]] for video preview.
 
 @@html:</details>@@
 

@@ -61,7 +61,7 @@ variable is nil, the auto caching is disabled."
                  (run-with-timer 0 0.25 #'dirvish-media--autocache)))))
 
 (defcustom dirvish-show-media-properties
-  (and (executable-find "mediainfo") (executable-find "pdfinfo") t)
+  (and (executable-find "mediainfo") t)
   "Show media properties automatically in preview window."
   :group 'dirvish :type 'boolean)
 
@@ -562,8 +562,8 @@ Require: `mediainfo' (executable)"
 
 (dirvish-define-preview image (file ext preview-window)
   "Preview image files.
-Require: `convert' (executable from `imagemagick' suite)"
-  :require ("convert")
+Require: `magick' (executable from `imagemagick' suite)"
+  :require ("magick")
   (when (member ext dirvish-image-exts)
     (let* ((w (dirvish-media--img-size preview-window))
            (h (dirvish-media--img-size preview-window 'height))
@@ -573,7 +573,7 @@ Require: `convert' (executable from `imagemagick' suite)"
             ((and (< (file-attribute-size (file-attributes file)) 250000)
                   (member ext '("jpg" "jpeg" "png" "ico" "icns" "bmp" "svg")))
              `(img . ,(create-image file nil nil :max-width w :max-height h)))
-            (t `(cache . ("convert" ,file "-define" "jpeg:extent=300kb" "-resize"
+            (t `(cache . ("magick" ,file "-define" "jpeg:extent=300kb" "-resize"
                           ,(number-to-string w) ,cache)))))))
 
 (dirvish-define-preview gif (file ext)
@@ -599,6 +599,21 @@ Require: `ffmpegthumbnailer' (executable)"
         `(cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s"
                          ,(number-to-string width)
                          ,(if dirvish-media--embedded-video-thumb "-m" "")))))))
+
+(dirvish-define-preview video-mtn (file ext preview-window)
+  "Preview video files on MS-Windows.
+Require: `mtn' (executable)"
+  :require ("mtn")
+  (when (member ext dirvish-video-exts)
+    (let* ((width (dirvish-media--img-size preview-window))
+           (height (dirvish-media--img-size preview-window 'height))
+           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg"))
+           (path (dirvish--get-parent-path cache)))
+      (if (file-exists-p cache)
+          `(img . ,(create-image cache nil nil :max-width width :max-height height))
+        `(cache . ("mtn" "-P" "-i" "-c" "1" "-r" "1" "-O" ,path ,file "-o"
+                   ,(format ".%s.jpg" ext) "-w"
+                   ,(number-to-string width)))))))
 
 (dirvish-define-preview epub (file preview-window)
   "Preview epub files.

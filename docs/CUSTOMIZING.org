@@ -188,7 +188,9 @@ dispatchers, has the default value looks like:
 
 + ~image~: preview image files, requires =imagemagick=
 + ~gif~: preview GIF image files with animation
-+ ~video~: preview videos files with thumbnail, requires =ffmpegthumbnailer=
++ ~video~: preview videos files with thumbnail,
+    requires =ffmpegthumbnailer= on Linux/macOS
+    requires =mtn= on Windows (special thanks to @samb233!)
 + ~audio~: preview audio files with metadata, requires =mediainfo=
 + ~epub~: preview epub documents, requires [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]]
 + ~pdf~: preview pdf documents via =pdf-tools=
@@ -295,7 +297,7 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
     (setq dirvish-mode-line-format
           '(:left (sort symlink) :right (omit yank index)))
     (setq dirvish-attributes
-          '(all-the-icons file-time file-size collapse subtree-state vc-state git-msg))
+          '(nerd-icons file-time file-size collapse subtree-state vc-state git-msg))
     (setq delete-by-moving-to-trash t)
     (setq dired-listing-switches
           "-l --almost-all --human-readable --group-directories-first --no-group")
@@ -387,8 +389,8 @@ These packages are only listed here for discoverability.
     :config
     (set-face-attribute 'diredfl-dir-name nil :bold t))
 
-  ;; Use `all-the-icons' as Dirvish's icon backend
-  (use-package all-the-icons)
+  ;; Use `nerd-icons' as Dirvish's icon backend
+  (use-package nerd-icons)
 
   ;; Or, use `vscode-icon' instead
   ;; (use-package vscode-icon
