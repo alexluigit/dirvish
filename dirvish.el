@@ -1138,6 +1138,7 @@ Dirvish sets `revert-buffer-function' to this function."
     (setq-local dirvish--working-preview-dispathchers '(dirvish-tramp-dp)))
   (use-local-map dirvish-mode-map)
   (dirvish--hide-dired-header)
+  (dirvish--maybe-toggle-cursor 'box) ; restore from `wdired'
   (setq-local dirvish--attrs-hash (or dirvish--attrs-hash (make-hash-table))
               revert-buffer-function #'dirvish-revert
               tab-bar-new-tab-choice "*scratch*"
