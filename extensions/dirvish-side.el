@@ -102,7 +102,7 @@ filename until the project root when opening a side session."
   (run-with-timer
    0.01 nil
    (lambda ()
-     (when-let* (((not dirvish--this))
+     (when-let* (((not (dirvish-curr)))
                  ((not (active-minibuffer-window)))
                  (win (dirvish-side--session-visible-p))
                  (dv (with-selected-window win (dirvish-curr)))
@@ -112,18 +112,16 @@ filename until the project root when opening a side session."
                  ((not (string-suffix-p "COMMIT_EDITMSG" curr)))
                  ((not (equal prev curr))))
        (with-selected-window win
-         (setq dirvish--this dv)
          (let (buffer-list-update-hook) (dirvish-find-entry-a dir))
          (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
            (dired-goto-file curr))
          (dirvish-prop :cus-header 'dirvish-side-header)
-         (dirvish-update-body-h)
-         (setq dirvish--this nil))))))
+         (dirvish-update-body-h))))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
   (let* ((bname buffer-file-name)
-         (dv (or (car (dirvish--find-reusable 'side))
+         (dv (or (dirvish--get-session 'type 'side)
                  (dirvish--new
                   :type 'side
                   :size-fixed 'width
@@ -133,7 +131,6 @@ filename until the project root when opening a side session."
          (r-win (dv-root-window dv)))
     (unless (window-live-p r-win) (setq r-win (dirvish--create-root-window dv)))
     (with-selected-window r-win
-      (setq dirvish--this dv)
       (dirvish-find-entry-a path)
       (cond ((not bname) nil)
             (dirvish-side-auto-expand

@@ -316,7 +316,7 @@ value 16, let the user choose the root directory of their search."
 
 (defun dirvish-fd-find (entry)
   "Run fd accroring to ENTRY."
-  (let* ((dv (or dirvish--this (dirvish-curr)))
+  (let* ((dv (dirvish-curr))
          (roots (and dv (dv-roots dv)))
          (buf (and roots (alist-get entry roots nil nil #'equal))))
     (or buf
@@ -352,7 +352,9 @@ value 16, let the user choose the root directory of their search."
       (cond ((not input) (setq input (dirvish-fd--read-input)))
             (t (dirvish-update-body-h)))
       (when (eq input 'cancelled)
-        (cl-return-from dirvish-fd-proc-sentinel (kill-buffer buf)))
+        (kill-buffer buf)
+        (setf (dv-index dv) (car (dv-roots dv)))
+        (cl-return-from dirvish-fd-proc-sentinel))
       (let ((bufname (dirvish-fd--bufname input dir dv)))
         (dirvish-prop :root bufname)
         (setf (dv-index dv) (cons bufname buf))
@@ -417,7 +419,7 @@ The command run is essentially:
          (fd-program (dirvish-fd--ensure-fd remote))
          (ls-program (or (and remote (dirvish-fd--find-gnu-ls remote))
                          dirvish-fd-ls-program))
-         (dv (or (dirvish-curr) (progn (dirvish dir) dirvish--this)))
+         (dv (or (dirvish-curr) (progn (dirvish dir) (dirvish--get-session))))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
          (buffer (dirvish--util-buffer 'fd dv nil t)))
@@ -439,6 +441,8 @@ The command run is essentially:
       (dirvish-prop :cus-header 'dirvish-fd-header)
       (dirvish-prop :remote remote)
       (dirvish-prop :global-header t)
+      (cl-loop for (k v) on dirvish-scopes by 'cddr
+               do (dirvish-prop k (and (functionp v) (funcall v))))
       (let ((proc (apply #'start-file-process
                          "fd" buffer
                          `(,fd-program "--color=never"

@@ -68,12 +68,12 @@ one of categories in `dirvish-peek-categories'."
       (dirvish-peek--prepare-cand-fetcher)
       (add-hook 'post-command-hook #'dirvish-peek-update-h 90 t)
       (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h nil t)
-      (unless (and dirvish--this (dv-preview-window dirvish--this))
-        (setq new-dv (dirvish--new :type 'peek))
-        ;; `dirvish-image-dp' needs this.
-        (setf (dv-index new-dv) (cons default-directory (current-buffer)))
-        (setf (dv-preview-window new-dv)
-              (or (minibuffer-selected-window) (next-window)))))))
+      (setq new-dv (dirvish--new :type 'peek))
+      ;; `dirvish-image-dp' needs this.
+      (setf (dv-index new-dv) (cons default-directory (current-buffer)))
+      (setf (dv-preview-window new-dv)
+            (or (minibuffer-selected-window) (next-window)))
+      (dirvish-prop :dv (dv-name new-dv)))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
@@ -93,7 +93,7 @@ one of categories in `dirvish-peek-categories'."
     (dirvish-prop :index cand)
     (unless (file-remote-p cand)
       (dirvish-debounce nil
-        (dirvish--preview-update dirvish--this cand)))))
+        (dirvish--preview-update (dirvish-curr) cand)))))
 
 (defun dirvish-peek-exit-h ()
   "Hook for `minibuffer-exit-hook' to destroy peek session."
