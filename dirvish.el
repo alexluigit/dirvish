@@ -84,18 +84,24 @@ Credit: copied from `consult-preview-variables' in `consult.el'."
   :group 'dirvish :type 'string)
 
 (defcustom dirvish-default-layout '(1 0.11 0.55)
-  "Default layout recipe for fullscreen Dirvish sessions.
-The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH),
-if not nil.  Neither the parent windows or the preview windows are
-shown if the value is nil.
+  "Default layout recipe for Dirvish sessions.
+The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH).
 
-DEPTH controls the number of windows displaying parent
-directories.  It can be 0 if you don't need the parent
-directories.  MAX-PARENT-WIDTH controls the max width allocated
-to each parent windows.  PREVIEW-WIDTH controls the width
-allocated to preview window.  The default value provides a
-1:3:5 (approximately) pane ratio.  Also see
-`dirvish-layout-recipes' in `dirvish-extras.el'."
+- DEPTH controls the number of windows displaying parent directories, it
+can be 0 if you don't need the parent directories.
+- MAX-PARENT-WIDTH controls the max width allocated to each parent windows.
+- PREVIEW-WIDTH controls the width allocated to preview window.
+
+The default value provides a 1:3:5 (approximately) pane ratio.  Also see
+`dirvish-layout-recipes' in `dirvish-extras.el'.
+
+Alternatively, set this to nil to hide both the parent and preview
+windows.  In this case, '(1 0.11 0.55) will be used as the fallback
+full-frame recipe.  This is useful when you want to use `dirvish'
+exclusively for directory entries without `dired' or similar commands,
+and want to prevent the preview from appearing at startup.  You can
+still use `dirvish-layout-toggle' or `dirvish-layout-switch' to display
+the full-frame layout when file previews are needed."
   :group 'dirvish
   :type '(choice (const :tag "no default layout" nil)
                  (list (integer :tag "number of parent windows")
@@ -520,6 +526,8 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   (let (slots new)
     (while (keywordp (car args)) (dotimes (_ 2) (push (pop args) slots)))
     (setq new (apply #'make-dirvish (reverse slots)))
+    ;; ensure we have a fallback fullframe layout
+    (unless dirvish-default-layout (setf (dv-ff-layout new) '(1 0.11 0.55)))
     (puthash (dv-id new) new dirvish--session-hash)
     (dirvish--check-deps)
     (dirvish--create-root-window new) new))
@@ -1339,7 +1347,7 @@ INHIBIT-SETUP is non-nil."
   (let ((dir (or path default-directory))
         (dv (or (dirvish-curr) (dirvish--get-session))))
     (cond (dv (with-selected-window (dirvish--create-root-window dv)
-                (setf (dv-curr-layout dv) layout)
+                (setf (dv-curr-layout dv) (or (dv-curr-layout dv) layout))
                 (dirvish-find-entry-a
                  (if (or path (not (eq dirvish-reuse-session 'resume))) dir
                    (car (dv-index dv))))
