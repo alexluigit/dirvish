@@ -96,7 +96,7 @@ The default value provides a 1:3:5 (approximately) pane ratio.  Also see
 `dirvish-layout-recipes' in `dirvish-extras.el'.
 
 Alternatively, set this to nil to hide both the parent and preview
-windows.  In this case, '(1 0.11 0.55) will be used as the fallback
+windows.  In this case, \\='(1 0.11 0.55) will be used as the fallback
 full-frame recipe.  This is useful when you want to use `dirvish'
 exclusively for directory entries without `dired' or similar commands,
 and want to prevent the preview from appearing at startup.  You can
