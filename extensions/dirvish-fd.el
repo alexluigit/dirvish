@@ -14,6 +14,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 
 (defcustom dirvish-fd-switches ""
   "Fd arguments inserted before user input."

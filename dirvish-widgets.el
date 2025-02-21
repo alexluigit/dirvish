@@ -436,8 +436,7 @@ GROUP-TITLES is a list of group titles."
               (win (dv-preview-window dv))
               ((window-live-p win))
               (width (window-width win))
-              (files (hash-table-keys dirvish--attrs-hash))
-              ((< (length files)
+              ((< (hash-table-count dirvish--attrs-hash)
                   (or (car dirvish-media-auto-cache-threshold) 0))))
     (cl-loop
      with fns = '(dirvish-image-dp dirvish-video-dp dirvish-epub-dp)

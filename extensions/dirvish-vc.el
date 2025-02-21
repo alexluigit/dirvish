@@ -15,6 +15,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 (define-fringe-bitmap 'dirvish-vc-gutter [250] nil nil '(center repeated))
 
 (defclass dirvish-vc-preview (transient-switches) ()

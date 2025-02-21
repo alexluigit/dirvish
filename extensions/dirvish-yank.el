@@ -27,6 +27,7 @@
 
 (require 'dired-aux)
 (require 'dirvish)
+(require 'transient)
 
 (defcustom dirvish-yank-sources 'all
   "The way to collect source files.

@@ -14,6 +14,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 
 (defun dirvish-ls--clear-switches-choices ()
   "Reload the listing switches setup UI."

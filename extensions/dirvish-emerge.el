@@ -17,6 +17,7 @@
 
 (declare-function dirvish-emerge--menu "dirvish-emerge")
 (require 'dirvish)
+(require 'transient)
 
 (defun dirvish-emerge-safe-groups-p (groups)
   "Return t if GROUPS is a list and has less than 100 items."

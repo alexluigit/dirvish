@@ -21,6 +21,7 @@
 (declare-function consult-line "consult")
 (require 'dirvish)
 (require 'dired-x)
+(require 'transient)
 
 (defcustom dirvish-subtree-listing-switches nil
   "Listing SWITCHES used in subtrees.

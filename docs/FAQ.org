@@ -1,0 +1,52 @@
+#+AUTHOR: Alex Lu
+#+EMAIL: alexluigit@gmail.com
+#+startup: content
+
+* =listing directory failed but ‘access-file’ worked= error on macOS
+
+1. Install =gls= (GNU ls) from GNU coreutils
+
+#+begin_src bash
+  brew install coreutils
+#+end_src
+
+2. Set ~insert-directory-program~ to =gls=
+
+#+begin_src emacs-lisp
+  (setq insert-directory-program "gls")
+#+end_src
+
+* How to hide the parent directory?
+
+#+begin_src emacs-lisp
+  (setq dirvish-default-layout '(0 0.4 0.6))
+#+end_src
+
+* How to hide continuation lines?
+
+Do not display continuation lines globally:
+
+#+begin_src emacs-lisp
+  (setq-default truncate-lines t)
+#+end_src
+
+Or disable it only in dirvish:
+
+#+begin_src emacs-lisp
+  (add-hook 'dirvish-find-entry-hook
+            (lambda (&rest _) (setq-local truncate-lines t)))
+#+end_src
+
+Also see https://github.com/alexluigit/dirvish/issues/33
+
+* How to kill all session buffers on quit?
+
+Set ~dirvish-reuse-session~ to nil.
+
+* Dirvish does not respect listing switches?
+
+See [[file:CUSTOMIZING.org][Parsing switches]] and [[file:CUSTOMIZING.org][sample config]].
+
+* Why do I have duplicate icon columns?
+
+Disable =all-the-icons-dired= and =treemacs-icons-dired=.

@@ -76,24 +76,15 @@ You might also want to install [[https://gitlab.com/movie_thumbnailer/mtn][mtn]]
 
 * Installation
 
-Dirvish is available on [[https://melpa.org/#/dirvish][Melpa]].  Just type =M-x package-install RET dirvish RET=
-into Emacs 27.1+.  =el-get= users can get the recipe from [[https://github.com/alexluigit/dirvish/issues/90][here]].
-
-For straight.el users, it is simply:
-#+begin_src emacs-lisp
-  (straight-use-package 'dirvish)
-#+end_src
+Dirvish is available from [[https://elpa.nongnu.org/nongnu/dirvish.html][Nongnu-Elpa]] and [[https://melpa.org/#/dirvish][Melpa]].  You can install it directly
+via =M-x package-install RET dirvish RET= on Emacs 28.1+.  After installation,
+activate Dirvish globally with =M-x dirvish-override-dired-mode RET=.
 
 * Quickstart
 
-After installation, let Dirvish take over Dired globally:
-#+begin_src emacs-lisp
-(dirvish-override-dired-mode)
-#+end_src
-
 + =M-x dirvish RET=
 
-  Welcome to Dirvish!  Press =?= for help.
+  Welcome to Dirvish!  Use your favorite dired commands here!
 
 + =M-x dired= | =dired-jump= | ... =RET=
 
@@ -103,13 +94,28 @@ After installation, let Dirvish take over Dired globally:
 
   If the selected window is the only window, open Dirvish, otherwise open Dired.
 
-* Resources
++ =M-x dirvish-dispatch RET=
+
+  This is a help/cheatsheet menu powered by ~transient.el~, the same library used
+  to implement keyboard-driven menus in Magit and many Dirvish extensions.  If
+  you prefer this interaction style, consider binding these menus to
+  ~dirvish-mode-map~.  See [[file:docs/CUSTOMIZING.org][example config]] for details.
+
+* Documentation
+
+For more dirvish customization options and features, see our documentation:
 
 + [[file:docs/CUSTOMIZING.org][Customizing]]
 + [[file:docs/EXTENSIONS.org][Extensions]]
++ [[file:docs/FAQ.org][FAQ]]
++ [[file:docs/EMACS-NEWCOMERS.org][Absolute beginner's guide]]
+
+* Resources
+
+To delve deeper into Dirvish, explore these resources:
+
 + [[file:docs/COMPARISON.org][Related projects]]
 + [[file:docs/CHANGELOG.org][Changelog]]
-+ [[file:docs/EMACS-NEWCOMERS.org][Absolute beginner's guide]]
 + [[https://github.com/alexluigit/dirvish/discussions][Discussions]]
 
 * Acknowledgements
@@ -138,6 +144,7 @@ Thanks Fox Kiester (@noctuid) for the awesome [[https://github.com/alexluigit/di
 
 The name *dirvish* is a tribute to [[https://github.com/justinmk/vim-dirvish][vim-dirvish]].
 -----
+[[https://elpa.nongnu.org/nongnu/dirvish.html][file:https://elpa.nongnu.org/nongnu/dirvish.svg]]
 [[https://melpa.org/#/dirvish][file:https://melpa.org/packages/dirvish-badge.svg]]
 [[https://stable.melpa.org/#/dirvish][file:https://stable.melpa.org/packages/dirvish-badge.svg]]
 [[https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml][file:https://github.com/alexluigit/dirvish/actions/workflows/melpazoid.yml/badge.svg]]

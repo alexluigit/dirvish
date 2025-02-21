@@ -14,6 +14,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 
 ;;;###autoload
 (defun dirvish-history-jump ()

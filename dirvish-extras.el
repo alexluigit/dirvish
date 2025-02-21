@@ -29,10 +29,13 @@
 ;; - `dirvish-mark-menu'
 ;; - `dirvish-epa-dired-menu'
 ;; - `dirvish-setup-menu'
+;; - `dirvish-dired-cheatsheet'
+;; - `dirvish-dispatch'
 
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 (declare-function tramp-file-name-user "tramp")
 (declare-function tramp-file-name-host "tramp")
 
@@ -370,6 +373,7 @@ current layout defined in `dirvish-layout-recipes'."
   (require 'dired-aux)
   (transient-setup 'dirvish-mark-menu))
 
+;;;###autoload (autoload 'dirvish-renaming-menu "dirvish-extras" nil t)
 (transient-define-prefix dirvish-renaming-menu ()
   "Help Menu for file renaming in Dired."
   [:description
@@ -414,6 +418,36 @@ current layout defined in `dirvish-layout-recipes'."
    ("s" "  Manage subdirs"         dirvish-subdir-menu)
    (":" "  GnuPG helpers"          dirvish-epa-dired-menu)
    ("h" "  More info about Dired"  describe-mode)])
+
+;;;###autoload (autoload 'dirvish-dispatch "dirvish-extras" nil t)
+(transient-define-prefix dirvish-dispatch ()
+  "Main menu for Dired/Dirvish."
+  [:description
+   (lambda () (dirvish--format-menu-heading
+          "Dirvish main menu"
+          "NOTICE: these commands require relevant Dirvish extensions"))
+   "" "Actions & Essential commands"
+   ("u" "User interface setup"   dirvish-setup-menu)
+   ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)
+   ("/" "Perform fd search"      dirvish-fd)
+   ("@" "Find all dirs by fd"    dirvish-fd-jump)
+   ("R" "Rsync marked files"     dirvish-rsync)
+   ("n" "Live narrowing"         dirvish-narrow)
+   "Transient commands"
+   ("a" "Quick access"           dirvish-quick-access)
+   ("h" "Go to history entries"  dirvish-history-menu)
+   ("s" "Sort current buffer"    dirvish-quicksort)
+   ("l" "Setup listing switches" dirvish-ls-switches-menu)
+   ("f" "Setup fd-find switches" dirvish-fd-switches-menu
+    :if (lambda () (dirvish-prop :fd-arglist)))
+   ("S" "Setup rsync switches"   dirvish-rsync-switches-menu)
+   ("m" "Manage marks"           dirvish-mark-menu)
+   ("e" "Manage emerged groups"  dirvish-emerge-menu)
+   ("t" "Manage subtrees"        dirvish-subtree-menu)
+   ("r" "Rename files"           dirvish-renaming-menu)
+   ("v" "Version control system" dirvish-vc-menu)
+   ("y" "Yank marked files"      dirvish-yank-menu)
+   ("i" "Get file information"   dirvish-file-info-menu)])
 
 (provide 'dirvish-extras)
 ;;; dirvish-extras.el ends here

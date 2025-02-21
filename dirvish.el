@@ -22,7 +22,7 @@
 ;;; Code:
 
 (require 'dired)
-(require 'transient)
+(require 'cl-lib)
 (eval-when-compile (require 'project))
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd-find "dirvish-fd")
@@ -269,7 +269,6 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map dired-mode-map)
-    (define-key map (kbd "?") 'dirvish-dispatch)
     (define-key map (kbd "q") 'dirvish-quit) map)
   "Keymap used in dirvish buffers.")
 (defvar dirvish-redisplay-debounce-timer nil)
@@ -1401,35 +1400,6 @@ If `one-window-p' returns nil, open PATH using regular Dired."
   (dirvish--reuse-or-create
    path (if (dirvish-curr) (dv-curr-layout (dirvish-curr))
           (and (one-window-p) dirvish-default-layout))))
-
-(transient-define-prefix dirvish-dispatch ()
-  "Main menu for Dired/Dirvish."
-  [:description
-   (lambda () (dirvish--format-menu-heading
-          "Dirvish main menu"
-          "NOTICE: these commands require relevant Dirvish extensions"))
-   "" "Actions & Essential commands"
-   ("u" "User interface setup"   dirvish-setup-menu)
-   ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)
-   ("/" "Perform fd search"      dirvish-fd)
-   ("@" "Find all dirs by fd"    dirvish-fd-jump)
-   ("R" "Rsync marked files"     dirvish-rsync)
-   ("n" "Live narrowing"         dirvish-narrow)
-   "Transient commands"
-   ("a" "Quick access"           dirvish-quick-access)
-   ("h" "Go to history entries"  dirvish-history-menu)
-   ("s" "Sort current buffer"    dirvish-quicksort)
-   ("l" "Setup listing switches" dirvish-ls-switches-menu)
-   ("f" "Setup fd-find switches" dirvish-fd-switches-menu
-    :if (lambda () (dirvish-prop :fd-arglist)))
-   ("S" "Setup rsync switches"   dirvish-rsync-switches-menu)
-   ("m" "Manage marks"           dirvish-mark-menu)
-   ("e" "Manage emerged groups"  dirvish-emerge-menu)
-   ("t" "Manage subtrees"        dirvish-subtree-menu)
-   ("r" "Rename files"           dirvish-renaming-menu)
-   ("v" "Version control system" dirvish-vc-menu)
-   ("y" "Yank marked files"      dirvish-yank-menu)
-   ("i" "Get file information"   dirvish-file-info-menu)])
 
 (provide 'dirvish)
 ;;; dirvish.el ends here
