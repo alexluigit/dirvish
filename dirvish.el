@@ -216,20 +216,22 @@ the EXTS using `dired-find-file', a subprocess according to CMD
 and its ARGS is issued to open the file externally.  The special
 placeholder \"%f\" in the ARGS is replaced by the FILENAME at
 runtime.  Set it to nil disables this feature."
-  :group 'dirvish
-  :type '(alist :key-type (repeat :tag "File extensions" string)
-                :value-type (repeat :tag "External command and args" string)))
+  :group 'dirvish :type '(alist :key-type (repeat :tag "File extensions" string)
+                                :value-type (repeat :tag "External command and args" string)))
 
 (defcustom dirvish-reuse-session t
-  "Whether to reuse the hidden sessions.
-If non-nil, Dirvish keeps the session's last buffer alive on
-exit.  The hidden session can be reused in the future by command
-`dirvish' and friends.  If the value is \\='resume, dirvish
-exhibits the last entry of the hidden session unless the PATH
-argument is specified via prompt."
-  :group 'dirvish :type '(choice (const :tag "Do not reuse the session, quit it completely" nil)
-                                 (const :tag "Reuse the session and open new path when reusing" t)
-                                 (const :tag "Reuse the session and resume its last entry when reusing" resume)))
+  "Whether to keep the latest session index buffer for later reuse.
+The valid values are:
+- t:      keep index buffer on both `dirvish-quit' and file open
+- `resume': keep and resume to the index when using `dirvish' w/o specify a path
+- `quit':   only keep index after `dirvish-quit'
+- `open':   only keep index after open a file
+- nil:    never keep any index buffers on `dirvish-quit' or open files"
+  :group 'dirvish :type '(choice (const :tag "keep index buffer on both `dirvish-quit' and file open" t)
+                                 (const :tag "keep and resume to the index when using `dirvish' w/o specify a path" resume)
+                                 (const :tag "only keep index after `dirvish-quit'" quit)
+                                 (const :tag "only keep index after open a file" open)
+                                 (const :tag "never keep any index buffer" nil)))
 
 (defcustom dirvish-redisplay-debounce 0.02
   "Input debounce for dirvish UI redisplay.
@@ -539,8 +541,9 @@ ARGS is a list of keyword arguments for `dirvish' struct."
                              (res (eq val res)))))
            return dv))
 
-(defun dirvish--clear-session (dv)
-  "Reset DV's slot and kill its buffers."
+(defun dirvish--clear-session (dv &optional from-quit)
+  "Reset DV's slot and kill its buffers.
+FROM-QUIT is used to signify the calling command."
   (let ((index (cdr (dv-index dv))))
     (if (not (dv-curr-layout dv))
         (cl-loop for (_d . b) in (dv-roots dv)
@@ -556,8 +559,10 @@ ARGS is a list of keyword arguments for `dirvish' struct."
              (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-id dv)) bn)
              do (dirvish--kill-buffer b))
     (setq dirvish--parent-hash (make-hash-table :test #'equal))
-    (cond (dirvish-reuse-session (setf (dv-winconf dv) nil))
-          (t (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv))))))
+    (setf (dv-winconf dv) nil)
+    (when (or (null dirvish-reuse-session)
+              (eq dirvish-reuse-session (if from-quit 'open 'quit)))
+      (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv)))))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -1358,7 +1363,7 @@ are killed and the Dired buffer(s) in the selected window are buried."
   (interactive)
   (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
         (win (selected-window)) (frame (selected-frame)))
-    (dirvish--clear-session dv)
+    (dirvish--clear-session dv t)
     (while (and (dirvish-curr) (eq (selected-window) win)
                 (<= (cl-incf ct) (length lst)))
       (quit-window))
