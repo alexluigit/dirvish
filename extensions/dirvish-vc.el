@@ -119,7 +119,7 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
                          (shell-command-to-string
                           (format "git log -1 --pretty=%%s %s"
                                   (shell-quote-argument file))))))
-           (puthash (intern (secure-hash 'md5 file))
+           (puthash (secure-hash 'md5 file)
                     `(:vc-state ,state :git-msg ,msg) hs)))
        hs))
    (lambda (p _)

@@ -97,7 +97,7 @@ Raise an error if fd executable is not available."
   "Return fd buffer name of DV with user INPUT at DIR."
   (format dirvish-fd-bufname (or input "")
           (file-name-nondirectory (directory-file-name dir))
-          (dv-name dv)))
+          (dv-id dv)))
 
 (defun dirvish-fd--apply-switches ()
   "Apply fd SWITCHES to current buffer."
@@ -435,7 +435,7 @@ The command run is essentially:
         (set-keymap-parent map (current-local-map))
         (define-key map "\C-c\C-k" #'dirvish-fd-kill)
         (use-local-map map))
-      (dirvish-prop :dv (dv-name dv))
+      (dirvish-prop :dv (dv-id dv))
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :fd-switches fd-switches)
       (dirvish-prop :cus-header 'dirvish-fd-header)

@@ -73,7 +73,7 @@ one of categories in `dirvish-peek-categories'."
       (setf (dv-index new-dv) (cons default-directory (current-buffer)))
       (setf (dv-preview-window new-dv)
             (or (minibuffer-selected-window) (next-window)))
-      (dirvish-prop :dv (dv-name new-dv)))))
+      (dirvish-prop :dv (dv-id new-dv)))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
@@ -100,7 +100,7 @@ one of categories in `dirvish-peek-categories'."
   (dolist (dv (hash-table-values dirvish--session-hash))
     (when (eq (dv-type dv) 'peek)
       (dirvish--clear-session dv)
-      (remhash (dv-name dv) dirvish--session-hash)))
+      (remhash (dv-id dv) dirvish--session-hash)))
   (dirvish-prop :peek-last nil))
 
 ;;;###autoload
