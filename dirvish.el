@@ -499,7 +499,7 @@ Set process's SENTINEL and PUTS accordingly."
                              :command cmd :sentinel sentinel)))
     (while-let ((k (pop puts)) (v (pop puts))) (process-put proc k v))))
 
-;;;; Core
+;;;; Session Struct
 
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish session (`DV' for short) struct."
@@ -619,74 +619,6 @@ FROM-QUIT is used to signify the calling command."
    (setf dirvish--header-line-fmt (dirvish--mode-line-composer hl-l hl-r t))
    (setf dirvish--working-preview-dispathchers (dirvish--preview-dps-validate))
    (setf dirvish--working-attrs (dirvish--attrs-expand attrs))))
-
-(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to no-hl)
-  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL."
-  (forward-line (- 0 height))
-  (cl-dotimes (_ (* 2 height))
-    (when (eobp) (cl-return))
-    (let ((f-beg (dired-move-to-filename))
-          (f-end (dired-move-to-end-of-filename t))
-          (l-beg (line-beginning-position)) (l-end (line-end-position))
-          (f-wid 0) f-str f-name f-attrs f-type hl-face left right)
-      (setq hl-face (and (eq (or f-beg l-beg) pos) no-hl 'dirvish-hl-line))
-      (when f-beg
-        (setq f-str (buffer-substring f-beg f-end)
-              f-wid (string-width f-str)
-              f-name (concat (dired-current-directory) f-str)
-              f-attrs (dirvish-attribute-cache f-name :builtin
-                        (unless remote (file-attributes f-name)))
-              f-type (dirvish-attribute-cache f-name :type
-                       (let ((ch (progn (back-to-indentation) (char-after))))
-                         `(,(if (eq ch 100) 'dir 'file) . nil))))
-        (unless (get-text-property f-beg 'mouse-face)
-          (dired-insert-set-properties l-beg l-end)))
-      (cl-loop
-       for fn in (if f-beg fns '(dirvish-attribute-hl-line-rd))
-       for (k . v) = (funcall fn f-beg f-end f-str f-name
-                              f-attrs f-type l-beg l-end hl-face)
-       do (pcase k ('ov (overlay-put v ov t))
-                 ('left (setq left (concat v left)))
-                 ('right (setq right (concat v right))))
-       finally
-       (prog1 (unless (or left right) (cl-return))
-         (let* ((len1 (length right))
-                (remain (- width len1
-                           (or (get-text-property l-beg 'line-prefix) 0)))
-                (len2 (min (length left) (max 0 (- remain f-wid 1))))
-                (ovl (make-overlay f-end f-end))
-                (r-pos (if (> remain f-wid) l-end
-                         (let ((end (+ f-beg remain))
-                               (offset (- f-wid (length f-str))))
-                           (- end offset))))
-                (spec `(space :align-to (- right-fringe ,len1 ,align-to)))
-                (spc (propertize " " 'display spec 'face hl-face))
-                (ovr (make-overlay r-pos r-pos)))
-           (overlay-put ovl 'dirvish-l-end-ov t)
-           (overlay-put ovl 'after-string (substring (or left "") 0 len2))
-           (overlay-put ovr 'dirvish-r-end-ov t)
-           (overlay-put ovr 'after-string (concat spc right))))))
-    (forward-line 1)))
-
-(defun dirvish--render-attrs (&optional clear)
-  "Render or CLEAR attributes in DV's dirvish buffer."
-  (cl-loop with remote = (dirvish-prop :remote) with gui = (dirvish-prop :gui)
-           with fns = () with height = (frame-height)
-           with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
-           with remain = (- (window-width) (if gui 1 2))
-           for (_ width pred render ov) in dirvish--working-attrs
-           do (remove-overlays (point-min) (point-max) ov t)
-           when (eval pred `((win-width . ,remain)))
-           do (setq remain (- remain width)) (push render fns)
-           initially
-           (remove-overlays (point-min) (point-max) 'dirvish-l-end-ov t)
-           (remove-overlays (point-min) (point-max) 'dirvish-r-end-ov t)
-           finally
-           (with-silent-modifications
-             (unless clear
-               (save-excursion
-                 (dirvish--render-attrs-1 height remain (point)
-                                          remote fns ov (if gui 0 2) no-hl))))))
 
 (defun dirvish--only-index ()
   "If `dired-kill-when-opening-new-dired-buffer', only keep session index."
@@ -1020,7 +952,75 @@ When PROC finishes, fill preview buffer with process result."
     (set-window-buffer window buf)
     (unless (memq buf orig-bufs) (push buf (dv-preview-buffers dv)))))
 
-;;;; Builder
+;;;; Attributes
+
+(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to no-hl)
+  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL."
+  (forward-line (- 0 height))
+  (cl-dotimes (_ (* 2 height))
+    (when (eobp) (cl-return))
+    (let ((f-beg (dired-move-to-filename))
+          (f-end (dired-move-to-end-of-filename t))
+          (l-beg (line-beginning-position)) (l-end (line-end-position))
+          (f-wid 0) f-str f-name f-attrs f-type hl-face left right)
+      (setq hl-face (and (eq (or f-beg l-beg) pos) no-hl 'dirvish-hl-line))
+      (when f-beg
+        (setq f-str (buffer-substring f-beg f-end)
+              f-wid (string-width f-str)
+              f-name (concat (dired-current-directory) f-str)
+              f-attrs (dirvish-attribute-cache f-name :builtin
+                        (unless remote (file-attributes f-name)))
+              f-type (dirvish-attribute-cache f-name :type
+                       (let ((ch (progn (back-to-indentation) (char-after))))
+                         `(,(if (eq ch 100) 'dir 'file) . nil))))
+        (unless (get-text-property f-beg 'mouse-face)
+          (dired-insert-set-properties l-beg l-end)))
+      (cl-loop
+       for fn in (if f-beg fns '(dirvish-attribute-hl-line-rd))
+       for (k . v) = (funcall fn f-beg f-end f-str f-name
+                              f-attrs f-type l-beg l-end hl-face)
+       do (pcase k ('ov (overlay-put v ov t))
+                 ('left (setq left (concat v left)))
+                 ('right (setq right (concat v right))))
+       finally
+       (prog1 (unless (or left right) (cl-return))
+         (let* ((len1 (length right))
+                (remain (- width len1
+                           (or (get-text-property l-beg 'line-prefix) 0)))
+                (len2 (min (length left) (max 0 (- remain f-wid 1))))
+                (ovl (make-overlay f-end f-end))
+                (r-pos (if (> remain f-wid) l-end
+                         (let ((end (+ f-beg remain))
+                               (offset (- f-wid (length f-str))))
+                           (- end offset))))
+                (spec `(space :align-to (- right-fringe ,len1 ,align-to)))
+                (spc (propertize " " 'display spec 'face hl-face))
+                (ovr (make-overlay r-pos r-pos)))
+           (overlay-put ovl 'dirvish-l-end-ov t)
+           (overlay-put ovl 'after-string (substring (or left "") 0 len2))
+           (overlay-put ovr 'dirvish-r-end-ov t)
+           (overlay-put ovr 'after-string (concat spc right))))))
+    (forward-line 1)))
+
+(defun dirvish--render-attrs (&optional clear)
+  "Render or CLEAR attributes in DV's dirvish buffer."
+  (cl-loop with remote = (dirvish-prop :remote) with gui = (dirvish-prop :gui)
+           with fns = () with height = (frame-height)
+           with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
+           with remain = (- (window-width) (if gui 1 2))
+           for (_ width pred render ov) in dirvish--working-attrs
+           do (remove-overlays (point-min) (point-max) ov t)
+           when (eval pred `((win-width . ,remain)))
+           do (setq remain (- remain width)) (push render fns)
+           initially
+           (remove-overlays (point-min) (point-max) 'dirvish-l-end-ov t)
+           (remove-overlays (point-min) (point-max) 'dirvish-r-end-ov t)
+           finally
+           (with-silent-modifications
+             (unless clear
+               (save-excursion
+                 (dirvish--render-attrs-1 height remain (point)
+                                          remote fns ov (if gui 0 2) no-hl))))))
 
 (dirvish-define-attribute hl-line
   "Highlight current line.
@@ -1037,6 +1037,8 @@ This attribute is disabled when cursor is visible."
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end)))
       (overlay-put ov 'invisible t) `(ov . ,ov))))
+
+;;;; Mode Line | Header Line
 
 (defun dirvish--mode-line-composer (left right &optional header)
   "Set `dirvish--mode-line-fmt'.
@@ -1094,6 +1096,29 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
           (concat (format "P1\n%i %i\n" 2 ht) (make-string (* 2 ht) ?1) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
+(defun dirvish--setup-mode-line (dv)
+  "Setup the mode/header line for dirvish DV."
+  (let* ((idx-buf (cdr (dv-index dv)))
+         (hl (or (dirvish-prop :cus-header) dirvish--header-line-fmt))
+         (ml dirvish--mode-line-fmt)
+         (fullframe-p (dv-curr-layout dv)))
+    (cond ; setup `header-line-format'
+     ((and fullframe-p (not dirvish-use-header-line)))
+     (fullframe-p
+      (with-current-buffer idx-buf (setq header-line-format nil))
+      (with-current-buffer (dirvish--util-buffer 'header dv)
+        (setq header-line-format hl)))
+     (dirvish-use-header-line
+      (with-current-buffer idx-buf (setq header-line-format hl))))
+    (cond ; setup `mode-line-format'
+     ((and fullframe-p (not dirvish-use-mode-line)))
+     (fullframe-p
+      (with-current-buffer idx-buf (setq mode-line-format nil))
+      (with-current-buffer (dirvish--util-buffer 'footer dv)
+        (setq mode-line-format ml)))
+     (dirvish-use-mode-line
+      (with-current-buffer idx-buf (setq mode-line-format ml))))))
+
 (defun dirvish--apply-hiding-p (ctx)
   "Return t when it should hide cursor/details within context CTX."
   (cond ((booleanp ctx) ctx)
@@ -1126,28 +1151,7 @@ Optionally, use CURSOR as the enabled cursor type."
       (dired-hide-details-mode 1)
     (dired-hide-details-mode -1)))
 
-(defun dirvish--setup-mode-line (dv)
-  "Setup the mode/header line for dirvish DV."
-  (let* ((idx-buf (cdr (dv-index dv)))
-         (hl (or (dirvish-prop :cus-header) dirvish--header-line-fmt))
-         (ml dirvish--mode-line-fmt)
-         (fullframe-p (dv-curr-layout dv)))
-    (cond ; setup `header-line-format'
-     ((and fullframe-p (not dirvish-use-header-line)))
-     (fullframe-p
-      (with-current-buffer idx-buf (setq header-line-format nil))
-      (with-current-buffer (dirvish--util-buffer 'header dv)
-        (setq header-line-format hl)))
-     (dirvish-use-header-line
-      (with-current-buffer idx-buf (setq header-line-format hl))))
-    (cond ; setup `mode-line-format'
-     ((and fullframe-p (not dirvish-use-mode-line)))
-     (fullframe-p
-      (with-current-buffer idx-buf (setq mode-line-format nil))
-      (with-current-buffer (dirvish--util-buffer 'footer dv)
-        (setq mode-line-format ml)))
-     (dirvish-use-mode-line
-      (with-current-buffer idx-buf (setq mode-line-format ml))))))
+;;;; Layout Builder
 
 (defun dirvish-revert (&optional ignore-auto _noconfirm)
   "Reread the Dirvish buffer.

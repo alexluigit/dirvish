@@ -19,7 +19,15 @@
 * How to hide the parent directory?
 
 #+begin_src emacs-lisp
-  (setq dirvish-default-layout '(0 0.4 0.6))
+(setq dirvish-default-layout '(0 0.4 0.6))
+#+end_src
+
+* How to startup dirvish without preview and parent windows?
+
+
+#+begin_src emacs-lisp
+;; consult its docstring for more info
+(setq dirvish-default-layout nil)
 #+end_src
 
 * How to hide continuation lines?
@@ -50,3 +58,12 @@ See [[file:CUSTOMIZING.org][Parsing switches]] and [[file:CUSTOMIZING.org][sampl
 * Why do I have duplicate icon columns?
 
 Disable =all-the-icons-dired= and =treemacs-icons-dired=.
+
+* Can not get access to commands in =dirvish-mode-map=?
+
+It happend for some evil users, you can try [[https://github.com/alexluigit/dirvish/issues/188][this]]:
+
+#+begin_src emacs-lisp
+;; setting it after dirvish to ensure `dirvish-mode-map' is loaded
+(evil-make-overriding-map dirvish-mode-map 'normal)
+#+end_src
