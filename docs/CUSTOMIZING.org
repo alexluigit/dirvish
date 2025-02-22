@@ -357,17 +357,16 @@ your ssh authentication properly to avoid being stuck with a prompt you will not
 be able to answer to in the child emacs.
 
 #+begin_src emacs-lisp
-  (use-package tramp
-    :config
-    ;; Enable full-featured Dirvish over TRAMP on certain connections
-    ;; https://www.gnu.org/software/tramp/#Improving-performance-of-asynchronous-remote-processes-1.
-    (add-to-list 'tramp-connection-properties
-                 (list (regexp-quote "/ssh:YOUR_HOSTNAME:")
-                       "direct-async-process" t))
-    ;; Tips to speed up connections
-    (setq tramp-verbose 0)
-    (setq tramp-chunksize 2000)
-    (setq tramp-use-ssh-controlmaster-options nil))
+(use-package tramp
+  :config
+  ;; Enable full-featured Dirvish over TRAMP on certain connections
+  ;; https://www.gnu.org/software/tramp/#Improving-performance-of-asynchronous-remote-processes-1.
+  (add-to-list 'tramp-connection-properties
+               (list (regexp-quote "/ssh:YOUR_HOSTNAME:")
+                     "direct-async-process" t))
+  ;; Tips to speed up connections
+  (setq tramp-verbose 0)
+  (setq tramp-chunksize 2000))
 #+end_src
 
 ** Complementary packages
@@ -398,7 +397,3 @@ These packages are only listed here for discoverability.
   ;;   :config
   ;;   (push '("jpg" . "image") vscode-icon-file-alist))
 #+end_src
-
-** Working with Doom Emacs (WIP)
-
-A [[https://github.com/doomemacs/doomemacs/pull/6760][PR]] to make dirvish as the default file manager in doom-emacs is under review.
