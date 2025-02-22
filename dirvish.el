@@ -504,7 +504,7 @@ Set process's SENTINEL and PUTS accordingly."
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish session (`DV' for short) struct."
   (id (format-time-string "%D|%T")    :documentation "is the created time stamp of DV, used as its unique id.")
-  (type ()                            :documentation "is the type of DV.")
+  (type 'default                      :documentation "is the type of DV.")
   (root-window ()                     :documentation "is the root/main window of DV.")
   (dedicated ()                       :documentation "passes to `set-window-dedicated-p' for ROOT-WINDOW.")
   (size-fixed ()                      :documentation "passes to `window-size-fixed' for ROOT-WINDOW.")
@@ -532,21 +532,19 @@ ARGS is a list of keyword arguments for `dirvish' struct."
     (dirvish--check-deps)
     (dirvish--create-root-window new) new))
 
-(defun dirvish--get-session (&optional key val)
+(defun dirvish--get-session (key val)
   "Return the first matched session has KEY of VAL."
   (cl-loop for dv being the hash-values of dirvish--session-hash
            for b = (cdr (dv-index dv)) when (not (buffer-live-p b)) return dv
            with (fr tab psp) = (cl-loop for (_ v) on dirvish-scopes by 'cddr
                                         collect (and (functionp v) (funcall v)))
-           when (and (eq (with-current-buffer b (dirvish-prop :tab)) tab)
-                     (eq (with-current-buffer b (dirvish-prop :frame)) fr)
-                     (eq (with-current-buffer b (dirvish-prop :persp)) psp)
-                     (let* ((fn (and key (intern (format "dv-%s" key))))
-                            (res (and fn (funcall fn dv))))
-                       (cond ((not fn) t)
-                             ((eq key 'roots)
-                              (memq val (mapcar #'cdr res)))
-                             (res (eq val res)))))
+           if (eq (with-current-buffer b (dirvish-prop :tab)) tab)
+           if (eq (with-current-buffer b (dirvish-prop :frame)) fr)
+           if (eq (with-current-buffer b (dirvish-prop :persp)) psp)
+           if (let* ((fn (intern (format "dv-%s" key)))
+                     (res (and (functionp fn) (funcall fn dv))))
+                (if (eq key 'roots) (memq val (mapcar #'cdr res))
+                  (eq val res)))
            return dv))
 
 (defun dirvish--clear-session (dv &optional from-quit)
@@ -690,7 +688,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
-         (reuse? (or (dirvish-curr) (dirvish--get-session)))
+         (reuse? (or (dirvish-curr) (dirvish--get-session 'type 'default)))
          (dv (or reuse? (dirvish--new)))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
@@ -1349,7 +1347,7 @@ INHIBIT-SETUP is non-nil."
 (defun dirvish--reuse-or-create (path layout)
   "Find PATH in a dirvish session and set its layout with LAYOUT."
   (let ((dir (or path default-directory))
-        (dv (or (dirvish-curr) (dirvish--get-session))))
+        (dv (or (dirvish-curr) (dirvish--get-session 'type 'default))))
     (cond (dv (with-selected-window (dirvish--create-root-window dv)
                 (setf (dv-curr-layout dv) (or (dv-curr-layout dv) layout))
                 (dirvish-find-entry-a
