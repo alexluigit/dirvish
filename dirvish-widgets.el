@@ -20,8 +20,8 @@
 ;; `file-user', `file-group', `file-time', `file-size', `file-modes',
 ;; `file-inode-number', `file-device-number'
 ;;
-;; Preview dispatchers (all enabled by default):
-;; `image', `gif', `video', `epub', `archive', `pdf'
+;; Preview dispatchers:
+;; `audio' `image', `gif', `video', `video-mtn', `epub', `archive', `pdf', `pdf-preface'
 
 ;;; Code:
 
@@ -39,6 +39,56 @@ The value is a list with 3 elements:
 - icon for root directory [/]
 - icon for path separators [/]"
   :group 'dirvish :type '(repeat (string :tag "path separator")))
+
+(defcustom dirvish-magick-program "magick"
+  "Absolute or reletive name of the `magick' program.
+This is used to generate image thumbnails."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-ffmpegthumbnailer-program "ffmpegthumbnailer"
+  "Absolute or reletive name of the `ffmpegthumbnailer' program.
+This is used to generate video thumbnails on macOS/Linux."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-mtn-program "mtn"
+  "Absolute or reletive name of the `mtn' program.
+This is used to generate video thumbnails on Windows."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-epub-thumbnailer-program "epub-thumbnailer"
+  "Absolute or reletive name of the `epub-thumbnailer' program.
+This is used to generate thumbnail for epub files."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-mediainfo-program "mediainfo"
+  "Absolute or reletive name of the `mediainfo' program.
+This is used to retrieve metadata for multiple types of media files."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-pdfinfo-program "pdfinfo"
+  "Absolute or reletive name of the `pdfinfo' program.
+This is used to retrieve pdf metadata."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-pdftoppm-program "pdftoppm"
+  "Absolute or reletive name of the `pdftoppm' program.
+This is used to generate thumbnails for pdf files."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-zipinfo-program "zipinfo"
+  "Absolute or reletive name of the `zipinfo' program.
+This is used to list files and their attributes for .zip archives."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-tar-program "tar"
+  "Absolute or reletive name of the `tar' program.
+This is used to list files and their attributes for .tar, .gz etc. archives."
+  :group 'dirvish :type 'string)
+
+(defcustom dirvish-show-media-properties
+  (and (executable-find dirvish-mediainfo-program) t)
+  "Show media properties automatically in preview window."
+  :group 'dirvish :type 'boolean)
 
 (defvar dirvish-media--cache-pool '())
 (defvar dirvish-media--auto-cache-timer nil)
@@ -60,13 +110,6 @@ variable is nil, the auto caching is disabled."
            (setq dirvish-media--auto-cache-timer
                  (run-with-timer 0 0.25 #'dirvish-media--autocache)))))
 
-(defcustom dirvish-show-media-properties
-  (and (executable-find "mediainfo") t)
-  "Show media properties automatically in preview window."
-  :group 'dirvish :type 'boolean)
-
-(defconst dirvish-media--embedded-video-thumb
-  (string-match "prefer embedded image" (shell-command-to-string "ffmpegthumbnailer -h")))
 (defconst dirvish-media--img-max-width 2400)
 (defconst dirvish-media--img-scale-h 0.75)
 (defconst dirvish-media--img-scale-w 0.92)
@@ -247,14 +290,15 @@ GROUP-TITLES is a list of group titles."
 (defun dirvish-media--metadata-from-mediainfo (file)
   "Return result string from command `mediainfo' for FILE."
   (read (format "(%s)" (shell-command-to-string
-                        (format "mediainfo --Output='%s' %s"
+                        (format "%s --Output='%s' %s"
+                                dirvish-mediainfo-program
                                 dirvish-media--info
                                 (shell-quote-argument file))))))
 
 (defun dirvish-media--metadata-from-pdfinfo (file)
   "Return result string from command `pdfinfo' for FILE."
   (cl-loop with out = (shell-command-to-string
-                       (format "pdfinfo %s" (shell-quote-argument file)))
+                       (format "%s %s" dirvish-pdfinfo-program (shell-quote-argument file)))
            with lines = (remove "" (split-string out "\n"))
            for line in lines
            for (title content) = (split-string line ":\s+")
@@ -556,23 +600,26 @@ GROUP-TITLES is a list of group titles."
 (dirvish-define-preview audio (file ext)
   "Preview audio files by printing its metadata.
 Require: `mediainfo' (executable)"
-  :require ("mediainfo")
-  (when (member ext dirvish-audio-exts) `(shell . ("mediainfo" ,file))))
+  :require (dirvish-mediainfo-program)
+  (when (member ext dirvish-audio-exts)
+    `(shell . (,dirvish-mediainfo-program ,file))))
 
 (dirvish-define-preview image (file ext preview-window)
   "Preview image files.
 Require: `magick' (executable from `imagemagick' suite)"
-  :require ("magick")
+  :require (dirvish-magick-program)
   (when (member ext dirvish-image-exts)
     (let* ((w (dirvish-media--img-size preview-window))
            (h (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" w) ".jpg")))
+           (cache (dirvish-media--cache-path
+                   file (format "images/%s" w) ".jpg")))
       (cond ((file-exists-p cache)
              `(img . ,(create-image cache nil nil :max-width w :max-height h)))
             ((and (< (file-attribute-size (file-attributes file)) 250000)
                   (member ext '("jpg" "jpeg" "png" "ico" "icns" "bmp" "svg")))
              `(img . ,(create-image file nil nil :max-width w :max-height h)))
-            (t `(cache . ("magick" ,file "-define" "jpeg:extent=300kb" "-resize"
+            (t `(cache . (,dirvish-magick-program
+                          ,file "-define" "jpeg:extent=300kb" "-resize"
                           ,(number-to-string w) ,cache)))))))
 
 (dirvish-define-preview gif (file ext)
@@ -588,21 +635,20 @@ Require: `magick' (executable from `imagemagick' suite)"
 (dirvish-define-preview video (file ext preview-window)
   "Preview video files.
 Require: `ffmpegthumbnailer' (executable)"
-  :require ("ffmpegthumbnailer")
+  :require (dirvish-ffmpegthumbnailer-program)
   (when (member ext dirvish-video-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
            (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
       (if (file-exists-p cache)
           `(img . ,(create-image cache nil nil :max-width width :max-height height))
-        `(cache . ("ffmpegthumbnailer" "-i" ,file "-o" ,cache "-s"
-                         ,(number-to-string width)
-                         ,(if dirvish-media--embedded-video-thumb "-m" "")))))))
+        `(cache . (,dirvish-ffmpegthumbnailer-program "-i" ,file "-o" ,cache "-s"
+                         ,(number-to-string width) "-m"))))))
 
 (dirvish-define-preview video-mtn (file ext preview-window)
   "Preview video files on MS-Windows.
 Require: `mtn' (executable)"
-  :require ("mtn")
+  :require (dirvish-mtn-program)
   (when (member ext dirvish-video-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
@@ -610,21 +656,21 @@ Require: `mtn' (executable)"
            (path (dirvish--get-parent-path cache)))
       (if (file-exists-p cache)
           `(img . ,(create-image cache nil nil :max-width width :max-height height))
-        `(cache . ("mtn" "-P" "-i" "-c" "1" "-r" "1" "-O" ,path ,file "-o"
+        `(cache . (,dirvish-mtn-program "-P" "-i" "-c" "1" "-r" "1" "-O" ,path ,file "-o"
                    ,(format ".%s.jpg" ext) "-w"
                    ,(number-to-string width)))))))
 
 (dirvish-define-preview epub (file preview-window)
   "Preview epub files.
 Require: `epub-thumbnailer' (executable)"
-  :require ("epub-thumbnailer")
+  :require (dirvish-epub-thumbnailer-program)
   (when (equal ext "epub")
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
            (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
       (if (file-exists-p cache)
           `(img . ,(create-image cache nil nil :max-width width :max-height height))
-        `(cache . ("epub-thumbnailer" ,file ,cache ,(number-to-string width)))))))
+        `(cache . (,dirvish-epub-thumbnailer-program ,file ,cache ,(number-to-string width)))))))
 
 (dirvish-define-preview pdf (file ext)
   "Preview pdf files.
@@ -638,7 +684,7 @@ Require: `pdf-tools' (Emacs package)"
 
 (dirvish-define-preview pdf-preface (file ext preview-window)
   "Display the preface image as preview for pdf files."
-  :require ("pdftoppm")
+  :require (dirvish-pdftoppm-program)
   (when (equal ext "pdf")
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
@@ -646,19 +692,19 @@ Require: `pdf-tools' (Emacs package)"
            (cache-jpg (concat cache ".jpg")))
       (if (file-exists-p cache-jpg)
           `(img . ,(create-image cache-jpg nil nil :max-width width :max-height height))
-        `(cache . ("pdftoppm" "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
+        `(cache . (,dirvish-pdftoppm-program "-jpeg" "-f" "1" "-singlefile" ,file ,cache))))))
 
 (dirvish-define-preview archive (file ext)
   "Preview archive files.
 Require: `zipinfo' (executable)
 Require: `tar' (executable)"
-  :require ("zipinfo" "tar")
-  (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
+  :require (dirvish-zipinfo-program dirvish-tar-program)
+  (cond ((equal ext "zip") `(shell . (,dirvish-zipinfo-program ,file)))
         ;; Emacs source code files
         ((string-suffix-p ".el.gz" file)
          (dirvish--find-file-temporarily file))
         ((member ext '("tar" "zst" "bz2" "bz" "gz" "xz" "tgz"))
-         `(shell . ("tar" "-tvf" ,file)))))
+         `(shell . (,dirvish-tar-program "-tvf" ,file)))))
 
 (provide 'dirvish-widgets)
 ;;; dirvish-widgets.el ends here
