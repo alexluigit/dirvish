@@ -210,13 +210,19 @@ to any directory in the file system using results from =fd= command as completio
 
 * Turn Dirvish into a tree browser (dirvish-subtree.el)
 
-This extension gives Dirvish the ability to toggle a directory as subtree
-(~dirvish-subtree-toggle~), which can be seen as a stripped-down version of
-=dired-subtree=.
+This extension enhances Dirvish with the ~dirvish-subtree-toggle~ command, a
+streamlined alternative to =dired-subtree= for toggling a directory under the
+cursor as a subtree.
 
-You can use ~dirvish-subtree-toggle~ to toggle the directory under the cursor as a
-subtree.  Add ~subtree-state~ to ~dirvish-attributes~ gives you an indicator about
-whether the directory is expanded or not.
++ To visually indicate the expansion state of directories, add ~subtree-state~ to
+  ~dirvish-attributes~.
+
++ Customize the appearance of the expansion indicator using
+  ~dirvish-subtree-state-style~ and ~dirvish-subtree-icon-scale-factor~ to adjust
+  its displacement and size.
+
++ To hide the indicator when no directories are expanded, set
+  ~dirvish-subtree-always-show-state~ to nil.
 
 * History navigation (dirvish-history.el)
 
