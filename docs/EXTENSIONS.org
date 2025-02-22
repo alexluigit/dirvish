@@ -219,7 +219,7 @@ cursor as a subtree.
 
 + Customize the appearance of the expansion indicator using
   ~dirvish-subtree-state-style~ and ~dirvish-subtree-icon-scale-factor~ to adjust
-  its displacement and size.
+  its placement and size.  See this [[https://github.com/alexluigit/dirvish/issues/185][related issue]]
 
 + To hide the indicator when no directories are expanded, set
   ~dirvish-subtree-always-show-state~ to nil.
