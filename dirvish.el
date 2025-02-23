@@ -465,7 +465,7 @@ ALIST is window arguments passed to `window--display-buffer'."
 
 (defun dirvish--selected-p (&optional dv)
   "Return t if session DV (defaults to `dirvish-curr') is selected."
-  (let ((dv (or dv (dirvish-curr))))
+  (when-let* ((dv (or dv (dirvish-curr))))
     (eq (dv-root-window dv) dirvish--selected-window)))
 
 (defun dirvish--format-menu-heading (title &optional note)
@@ -809,7 +809,7 @@ When FORCE, ensure the preview get refreshed."
      ;; by `*-other-tab|frame'
      ((or (null (equal old-frame frame)) (null (equal old-tab tab)))
       (with-selected-window (dirvish--create-root-window dv)
-        (setq dirvish--selected-window (selected-window))
+        (setq dirvish--selected-window (frame-selected-window))
         (dirvish-save-dedication
          (switch-to-buffer (get-buffer-create "*scratch*")))
         (setf (dv-winconf dv) (current-window-configuration))
@@ -1177,6 +1177,7 @@ Dirvish sets `revert-buffer-function' to this function."
               tab-bar-new-tab-choice "*scratch*"
               dired-hide-details-hide-symlink-targets nil
               dired-kill-when-opening-new-dired-buffer nil)
+  (add-hook 'window-selection-change-functions #'dirvish-selection-change-h nil t)
   (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
   (add-hook 'window-configuration-change-hook #'dirvish-winconf-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
@@ -1327,6 +1328,7 @@ INHIBIT-SETUP is non-nil."
     (dirvish--init-util-buffers dv)
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
+    (setq dirvish--selected-window (frame-selected-window))
     (dolist (pane w-order)
       (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
              (args (alist-get pane w-args))
@@ -1389,13 +1391,10 @@ are killed and the Dired buffer(s) in the selected window are buried."
                (dired-insert-subdir dirvish-insert-subdir-a :after)
                (image-dired-create-thumbnail-buffer dirvish-thumb-buf-a :around)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
-               (wdired-change-to-dired-mode dirvish-init-dired-buffer :after)))
-        (sel-ch #'dirvish-selection-change-h))
+               (wdired-change-to-dired-mode dirvish-init-dired-buffer :after))))
     (if dirvish-override-dired-mode
-        (progn (pcase-dolist (`(,sym ,fn ,how) ads) (advice-add sym how fn))
-               (add-hook 'window-selection-change-functions sel-ch))
-      (pcase-dolist (`(,sym ,fn) ads) (advice-remove sym fn))
-      (remove-hook 'window-selection-change-functions sel-ch))))
+        (pcase-dolist (`(,sym ,fn ,how) ads) (advice-add sym how fn))
+      (pcase-dolist (`(,sym ,fn) ads) (advice-remove sym fn)))))
 
 ;;;###autoload
 (defun dirvish (&optional path)
