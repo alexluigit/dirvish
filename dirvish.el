@@ -195,10 +195,6 @@ Works all the same as `dirvish-hide-details' but for cursor."
 Notice that it only take effects on the built-in `dired' preview dispatcher."
   :group 'dirvish :type 'boolean)
 
-(defcustom dirvish-window-fringe 1
-  "Window fringe for dirvish windows."
-  :group 'dirvish :type 'integer)
-
 (defconst dirvish-emacs-bin
   (cond
    ((and invocation-directory invocation-name)
@@ -550,7 +546,9 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish--clear-session (dv &optional from-quit)
   "Reset DV's slot and kill its buffers.
 FROM-QUIT is used to signify the calling command."
-  (let ((index (cdr (dv-index dv))))
+  (let ((index (cdr (dv-index dv)))
+        (fringe (dirvish-prop :fringe)))
+    (when fringe (set-window-fringes nil fringe) (dirvish-prop :fringe nil))
     (if (not (dv-curr-layout dv))
         (cl-loop for (_d . b) in (dv-roots dv)
                  when (and (not (get-buffer-window b))
@@ -1226,7 +1224,6 @@ LEVEL is the depth of current window."
     (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
     (if (dv-curr-layout dv) (set-window-dedicated-p nil nil)
       (and (dv-dedicated dv) (set-window-dedicated-p nil t)))
-    (set-window-fringes nil dirvish-window-fringe dirvish-window-fringe)
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
       (push (cons current parent) parent-dirs)
@@ -1243,10 +1240,7 @@ LEVEL is the depth of current window."
                             (window-parameters . ((no-other-window . t))))
                for b = (dirvish--create-parent-buffer dv parent current level)
                for w = (display-buffer b `(dirvish--display-buffer . ,args)) do
-               (with-selected-window w
-                 (set-window-fringes
-                  nil dirvish-window-fringe dirvish-window-fringe)
-                 (set-window-dedicated-p w t))))))
+               (with-selected-window w (set-window-dedicated-p w t))))))
 
 (defun dirvish--init-util-buffers (dv)
   "Initialize util buffers for DV."

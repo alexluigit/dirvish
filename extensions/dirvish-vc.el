@@ -22,10 +22,7 @@
   "Class for dirvish vc-* preview dispatchers.")
 
 (defcustom dirvish-vc-state-fringe 3
-  "The width of the fringe used to display the vc state indicator.
-It is recommended to make this value greater than
-`dirvish-window-fringe', which ensures that the `vc-state' attribute is
-displayed properly."
+  "The width of the fringe used to display the vc state indicator."
   :group 'dirvish :type 'integer)
 
 (defcustom dirvish-vc-state-face-alist
@@ -172,9 +169,10 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
 (dirvish-define-attribute vc-state
   "The version control state at left fringe.
 This attribute only works on graphic displays."
-  ;; Avoid setting fringes constantly
-  (unless (= (car (window-fringes)) dirvish-vc-state-fringe)
-    (set-window-fringes nil dirvish-vc-state-fringe dirvish-window-fringe))
+  ;; Avoid setting fringes repeatedly
+  :when (prog1 t (unless (dirvish-prop :fringe)
+                   (dirvish-prop :fringe (car (window-fringes)))
+                   (set-window-fringes nil dirvish-vc-state-fringe)))
   (let ((ov (make-overlay l-beg l-beg)))
     (when-let* (((symbolp (dirvish-prop :vc-backend)))
                 (state (dirvish-attribute-cache f-name :vc-state))
