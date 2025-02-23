@@ -107,7 +107,9 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
 `dirvish-setup-hook' after data parsing unless INHIBIT-SETUP is non-nil."
   (dirvish--make-proc
    `(prin1
-     (let ((hs (make-hash-table)) (bk ',(dirvish-prop :vc-backend)))
+     (let* ((hs (make-hash-table))
+            (bk ',(dirvish-prop :vc-backend))
+            (info (vc-call-backend bk 'mode-line-string ,dir)))
        ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
        (advice-add #'vc-git--git-status-to-vc-state :around
                    (lambda (fn codes) (apply fn (list (delete-dups codes)))))
@@ -119,11 +121,11 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
                                   (shell-quote-argument file))))))
            (puthash (secure-hash 'md5 file)
                     `(:vc-state ,state :git-msg ,msg) hs)))
-       hs))
+       (cons info hs)))
    (lambda (p _)
      (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
-                 (data (with-current-buffer (process-buffer p)
-                         (read (buffer-string)))))
+                 (`(,info . ,data) (with-current-buffer (process-buffer p)
+                                     (read (buffer-string)))))
        (when (buffer-live-p buf)
          (with-current-buffer buf
            (maphash
@@ -133,6 +135,7 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
                 (setf (plist-get orig :git-msg) (plist-get v :git-msg))
                 (puthash k orig dirvish--attrs-hash)))
             data)
+           (dirvish-prop :vc-info info)
            (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h))
            (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))))
      (delete-process p)
@@ -240,14 +243,11 @@ This attribute only works on graphic displays."
 (dirvish-define-mode-line vc-info
   "Version control info such as git branch."
   (when-let* (((> (window-width) 30))
-              (bk (dirvish-prop :vc-backend))
-              ((symbolp bk))
-              (ml-str (vc-call-backend bk 'mode-line-string default-directory))
-              (bk-str (format "%s:" bk)))
-    (format " %s %s "
-            (propertize bk-str 'face 'bold)
-            (propertize (substring ml-str (length bk-str))
-                        'face 'font-lock-builtin-face))))
+              (info-seq (dirvish-prop :vc-info))
+              (info (copy-sequence info-seq)))
+    (unless (dirvish--selected-p)
+      (put-text-property 0 (length info) 'face 'shadow info))
+    info))
 
 ;;;###autoload (autoload 'dirvish-vc-menu "dirvish-vc" nil t)
 (transient-define-prefix dirvish-vc-menu ()
