@@ -142,7 +142,7 @@ filename until the project root when opening a side session."
 (dirvish-define-mode-line project
   "Return a string showing current project."
   (let ((project (dirvish--get-project-root))
-        (face (if (dirvish--selected-p) 'dired-header 'shadow)))
+        (face (if (dirvish--selected-p) 'dired-header 'dirvish-inactive)))
     (if project
         (setq project (file-name-base (directory-file-name project)))
       (setq project "-"))

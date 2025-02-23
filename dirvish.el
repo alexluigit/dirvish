@@ -110,7 +110,12 @@ the full-frame layout when file previews are needed."
 
 (defface dirvish-hl-line
   '((t :inherit highlight :extend t))
-  "Face for Dirvish line highlighting."
+  "Face used for Dirvish line highlighting."
+  :group 'dirvish)
+
+(defface dirvish-inactive
+  '((t :inherit shadow))
+  "Face used for inactive Dirvish windows."
   :group 'dirvish)
 
 (defcustom dirvish-use-mode-line t
@@ -1249,10 +1254,12 @@ LEVEL is the depth of current window."
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
   (with-current-buffer (dirvish--util-buffer 'header dv)
     (dirvish-prop :dv (dv-id dv))
+    (setq-local face-remapping-alist '((header-line-inactive header-line)))
     (setq cursor-type nil window-size-fixed 'height
           mode-line-format nil header-line-format nil))
   (with-current-buffer (dirvish--util-buffer 'footer dv)
     (dirvish-prop :dv (dv-id dv))
+    (setq-local face-remapping-alist '((mode-line-inactive mode-line)))
     (setq cursor-type nil window-size-fixed 'height
           mode-line-format nil header-line-format nil)))
 

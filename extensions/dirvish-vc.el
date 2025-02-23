@@ -246,7 +246,7 @@ This attribute only works on graphic displays."
               (info-seq (dirvish-prop :vc-info))
               (info (copy-sequence info-seq)))
     (unless (dirvish--selected-p)
-      (put-text-property 0 (length info) 'face 'shadow info))
+      (put-text-property 0 (length info) 'face 'dirvish-inactive info))
     info))
 
 ;;;###autoload (autoload 'dirvish-vc-menu "dirvish-vc" nil t)

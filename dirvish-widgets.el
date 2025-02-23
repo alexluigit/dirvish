@@ -231,14 +231,16 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
                        dirvish-time-format-string
                        (file-attribute-modification-time attrs))))))
 
-(defun dirvish--format-file-attr (attr-name)
-  "Return a string of cursor file's attribute ATTR-NAME."
-  (when-let* ((name (dirvish-prop :index))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (attr-getter (intern (format "file-attribute-%s" attr-name)))
-              (attr-face (intern (format "dirvish-file-%s" attr-name)))
-              (attr-val (and attrs (funcall attr-getter attrs))))
-    (propertize (format "%s" attr-val) 'face attr-face)))
+(defun dirvish--format-file-attr (name &optional suffix)
+  "Return a (ATTR . FACE) cons of index's attribute NAME.
+Use optional SUFFIX or NAME to intern the face symbol."
+  (when-let* ((fname (dirvish-prop :index))
+              (attrs (dirvish-attribute-cache fname :builtin))
+              (attr-getter (intern (format "file-attribute-%s" name)))
+              (a-face (intern (format "dirvish-file-%s" (or suffix name))))
+              (face (if (dirvish--selected-p) a-face 'dirvish-inactive))
+              (attr (and attrs (funcall attr-getter attrs))))
+    (cons attr face)))
 
 (defun dirvish-media--cache-path (file &optional base ext no-mkdir)
   "Get FILE's cache path.
@@ -351,7 +353,7 @@ GROUP-TITLES is a list of group titles."
   "Path of file under the cursor."
   (let* ((directory-abbrev-alist nil) ; TODO: support custom `directory-abbrev-alist'
          (index (dired-current-directory))
-         (face (if (dirvish--selected-p) 'dired-header 'shadow))
+         (face (if (dirvish--selected-p) 'dired-header 'dirvish-inactive))
          (rmt (dirvish-prop :remote))
          (abvname (if rmt (file-local-name index) (abbreviate-file-name index)))
          (host (propertize (if rmt (concat " " (substring rmt 1)) "")
@@ -376,6 +378,7 @@ GROUP-TITLES is a list of group titles."
 (dirvish-define-mode-line sort
   "Current sort criteria."
   (let* ((switches (split-string dired-actual-switches))
+         (unfocused (unless (dirvish--selected-p) 'dirvish-inactive))
          (crit (cond (dired-sort-inhibit "DISABLED")
                      ((member "--sort=none" switches) "none")
                      ((member "--sort=time" switches) "time")
@@ -390,9 +393,9 @@ GROUP-TITLES is a list of group titles."
                      (t "mtime")))
          (rev (if (member "--reverse" switches) "↓" "↑")))
     (format " %s %s|%s "
-            (propertize rev 'face 'font-lock-constant-face)
-            (propertize crit 'face 'font-lock-type-face)
-            (propertize time 'face 'font-lock-doc-face))))
+            (propertize rev 'face (or unfocused 'font-lock-constant-face))
+            (propertize crit 'face (or unfocused 'font-lock-type-face))
+            (propertize time 'face (or unfocused 'font-lock-doc-face)))))
 
 (dirvish-define-mode-line omit
   "A `dired-omit-mode' indicator."
@@ -403,15 +406,19 @@ GROUP-TITLES is a list of group titles."
   "Show the truename of symlink file under the cursor."
   (when-let* ((name (dirvish-prop :index))
               (truename (cdr (dirvish-attribute-cache name :type))))
-    (format " %s %s "
-            (propertize "→" 'face 'font-lock-comment-delimiter-face)
+    (format "%s %s"
+            (propertize "→ " 'face 'font-lock-comment-delimiter-face)
             (propertize truename 'face 'dired-symlink))))
 
 (dirvish-define-mode-line index
   "Current file's index and total files count."
-  (let ((cur-pos (- (line-number-at-pos (point)) 1))
-        (fin-pos (number-to-string (- (line-number-at-pos (point-max)) 2))))
-    (format " %d / %s " cur-pos (propertize fin-pos 'face 'bold))))
+  (let ((cur-pos (format "%3d " (- (line-number-at-pos (point)) 1)))
+        (fin-pos (format "/%3d " (- (line-number-at-pos (point-max)) 2))))
+    (if (dirvish--selected-p)
+        (put-text-property 0 (length fin-pos) 'face 'bold fin-pos)
+      (put-text-property 0 (length cur-pos) 'face 'dirvish-inactive cur-pos)
+      (put-text-property 0 (length fin-pos) 'face 'dirvish-inactive fin-pos))
+    (format "%s%s" cur-pos fin-pos)))
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."
@@ -423,33 +430,28 @@ GROUP-TITLES is a list of group titles."
 
 (dirvish-define-mode-line file-link-number
   "Number of links to file."
-  (dirvish--format-file-attr 'link-number))
+  (pcase-let ((`(,lk . ,face) (dirvish--format-file-attr 'link-number)))
+    (propertize (format "%s" lk) 'face face)))
 
 (dirvish-define-mode-line file-user
   "User name of file."
-  (when-let* ((name (dirvish-prop :index))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (uid (and attrs (file-attribute-user-id attrs)))
-              (uname (if (dirvish-prop :remote) uid (user-login-name uid))))
-    (propertize uname 'face 'dirvish-file-user-id)))
+  (pcase-let ((`(,uid . ,face) (dirvish--format-file-attr 'user-id)))
+    (unless (dirvish-prop :remote) (setq uid (user-login-name uid)))
+    (propertize (format "%s" uid) 'face face)))
 
 (dirvish-define-mode-line file-group
   "Group name of file."
-  (when-let* ((name (dirvish-prop :index))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (gid (file-attribute-group-id attrs))
-              (gname (if (dirvish-prop :remote) gid (group-name gid))))
-    (propertize gname 'face 'dirvish-file-group-id)))
+  (pcase-let ((`(,gid . ,face) (dirvish--format-file-attr 'group-id)))
+    (unless (dirvish-prop :remote) (setq gid (group-name gid)))
+    (propertize (format "%s" gid) 'face face)))
 
 (dirvish-define-mode-line file-time
   "Last modification time of file."
-  (when-let* ((name (dirvish-prop :index))
-              (attrs (dirvish-attribute-cache name :builtin))
-              (f-mtime (file-attribute-modification-time attrs))
-              (time-string
-               (if (dirvish-prop :remote) f-mtime
-                 (format-time-string dirvish-time-format-string f-mtime))))
-    (format "%s" (propertize time-string 'face 'dirvish-file-time))))
+  (pcase-let ((`(,time . ,face)
+               (dirvish--format-file-attr 'modification-time 'time)))
+    (unless (dirvish-prop :remote)
+      (setq time (format-time-string dirvish-time-format-string time)))
+    (propertize (format "%s" time) 'face face)))
 
 (dirvish-define-mode-line file-size
   "File size of files or file count of directories."
@@ -460,15 +462,18 @@ GROUP-TITLES is a list of group titles."
 
 (dirvish-define-mode-line file-modes
   "File modes, as a string of ten letters or dashes as in ls -l."
-  (dirvish--format-file-attr 'modes))
+  (pcase-let ((`(,modes . ,face) (dirvish--format-file-attr 'modes)))
+    (propertize (format "%s" modes) 'face face)))
 
 (dirvish-define-mode-line file-inode-number
   "File's inode number, as a nonnegative integer."
-  (dirvish--format-file-attr 'inode-number))
+  (pcase-let ((`(,attr . ,face) (dirvish--format-file-attr 'inode-number)))
+    (propertize (format "%s" attr) 'face face)))
 
 (dirvish-define-mode-line file-device-number
   "Filesystem device number, as an integer."
-  (dirvish--format-file-attr 'device-number))
+  (pcase-let ((`(,attr . ,face) (dirvish--format-file-attr 'device-number)))
+    (propertize (format "%s" attr) 'face face)))
 
 ;;;; Preview dispatchers
 
