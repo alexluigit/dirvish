@@ -21,7 +21,7 @@
 (defclass dirvish-vc-preview (transient-switches) ()
   "Class for dirvish vc-* preview dispatchers.")
 
-(defcustom dirvish-vc-state-fringe 3
+(defcustom dirvish-vc-state-fringe 2
   "The width of the fringe used to display the vc state indicator."
   :group 'dirvish :type 'integer)
 

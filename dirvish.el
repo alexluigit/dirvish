@@ -555,9 +555,9 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish--clear-session (dv &optional from-quit)
   "Reset DV's slot and kill its buffers.
 FROM-QUIT is used to signify the calling command."
-  (let ((index (cdr (dv-index dv)))
-        (fringe (dirvish-prop :fringe)))
-    (when fringe (set-window-fringes nil fringe) (dirvish-prop :fringe nil))
+  (let ((index (cdr (dv-index dv))))
+    (when (dirvish-prop :fringe)
+      (set-window-fringes nil (frame-parameter nil 'left-fringe)))
     (if (not (dv-curr-layout dv))
         (cl-loop for (_d . b) in (dv-roots dv)
                  when (and (not (get-buffer-window b))
@@ -1321,6 +1321,7 @@ INHIBIT-SETUP is non-nil."
     (dirvish--init-util-buffers dv)
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
+    (dirvish-prop :fringe nil)
     (dirvish--change-selected)
     (dolist (pane w-order)
       (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
