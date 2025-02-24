@@ -22,6 +22,7 @@
 ;;
 ;; Preview dispatchers:
 ;; `audio' `image', `gif', `video', `video-mtn', `epub', `archive', `pdf', `pdf-preface'
+;; TODO: add `image-dired' preview dispatcher
 
 ;;; Code:
 

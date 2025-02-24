@@ -464,6 +464,10 @@ ALIST is window arguments passed to `window--display-buffer'."
           entry
         (complete-with-action action completions string pred)))))
 
+(defun dirvish--change-selected (&rest _)
+  "Record `dirvish--selected-window'."
+  (setq dirvish--selected-window (frame-selected-window)))
+
 (defun dirvish--selected-p (&optional dv)
   "Return t if session DV (defaults to `dirvish-curr') is selected."
   (when-let* ((dv (or dv (dirvish-curr))))
@@ -781,10 +785,6 @@ When FORCE, ensure the preview get refreshed."
                (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-id dv)) bn)
                do (dirvish--kill-buffer b)))))
 
-(defun dirvish-selection-change-h (&rest _)
-  "Record `dirvish--selected-window'."
-  (setq dirvish--selected-window (frame-selected-window)))
-
 (defun dirvish-winconf-change-h ()
   "Update UI for dirvish session."
   (dirvish-update-body-h 'force-preview-update))
@@ -812,20 +812,12 @@ When FORCE, ensure the preview get refreshed."
      ;; by `*-other-tab|frame'
      ((or (null (equal old-frame frame)) (null (equal old-tab tab)))
       (with-selected-window (dirvish--create-root-window dv)
-        (setq dirvish--selected-window (frame-selected-window))
         (dirvish-save-dedication
          (switch-to-buffer (get-buffer-create "*scratch*")))
         (setf (dv-winconf dv) (current-window-configuration))
         (dirvish-save-dedication (switch-to-buffer (dired-noselect dir)))
         (cl-loop for (k v) on sc by 'cddr do (dirvish-prop k v))
         (dirvish--build-layout dv)))
-     ;; rebuild a fullframe session as a single pane temporarily, for cases when
-     ;; a buried buffer is selected in minibuffer, e.g. using `consult-buffer'.
-     ((and (active-minibuffer-window) layout)
-      (setf (dv-curr-layout dv) nil)
-      (with-selected-window window (dirvish--build-layout dv))
-      (setf (dv-curr-layout dv) layout)
-      (setf (dv-winconf dv) winconf))
      (t (with-selected-window window (dirvish--build-layout dv))))))
 
 ;;;; Preview
@@ -1180,9 +1172,9 @@ Dirvish sets `revert-buffer-function' to this function."
               tab-bar-new-tab-choice "*scratch*"
               dired-hide-details-hide-symlink-targets nil
               dired-kill-when-opening-new-dired-buffer nil)
-  (add-hook 'window-selection-change-functions #'dirvish-selection-change-h nil t)
-  (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
+  (add-hook 'window-selection-change-functions #'dirvish--change-selected nil t)
   (add-hook 'window-configuration-change-hook #'dirvish-winconf-change-h nil t)
+  (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
   (set-buffer-modified-p nil))
@@ -1329,7 +1321,7 @@ INHIBIT-SETUP is non-nil."
     (dirvish--init-util-buffers dv)
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
-    (setq dirvish--selected-window (frame-selected-window))
+    (dirvish--change-selected)
     (dolist (pane w-order)
       (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
              (args (alist-get pane w-args))
@@ -1348,7 +1340,7 @@ INHIBIT-SETUP is non-nil."
     (dirvish--maybe-toggle-details)))
 
 (defun dirvish--reuse-or-create (path &optional dwim)
-  "Find PATH in dirvish , check `one-window-p' if DWIM."
+  "Find PATH in dirvish, check `one-window-p' for DWIM."
   (let* ((dir (or path default-directory))
          (visible? (cl-loop for w in (window-list)
                             for b = (window-buffer w)
@@ -1417,7 +1409,6 @@ are killed and the Dired buffer(s) in the selected window are buried."
                (dired-up-directory dirvish-up-dir-a :around)
                (dired-noselect dirvish-dired-noselect-a :around)
                (dired-insert-subdir dirvish-insert-subdir-a :after)
-               (image-dired-create-thumbnail-buffer dirvish-thumb-buf-a :around)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
                (wdired-change-to-dired-mode dirvish-init-dired-buffer :after))))
     (if dirvish-override-dired-mode
@@ -1427,16 +1418,16 @@ are killed and the Dired buffer(s) in the selected window are buried."
 ;;;###autoload
 (defun dirvish (&optional path)
   "Open PATH in a fullframe Dirvish session.
-With \\[universal-arguments], prompt for a PATH; otherwise, PATH default
-to `default-directory'."
+Prompt for PATH if called with \\[universal-arguments], otherwise PATH
+defaults to `default-directory'."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
   (dirvish--reuse-or-create path))
 
 ;;;###autoload
 (defun dirvish-dwim (&optional path)
   "Open PATH in a fullframe session if selected window is the only window.
-With \\[universal-arguments], prompt for a PATH; otherwise, PATH default
-to `default-directory'.  If there are other windows exist in the
+Prompt for PATH if called with \\[universal-arguments], otherwise PATH
+defaults to `default-directory'.  If there are other windows exist in the
 selected frame, the session occupies only the selected window."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
   (dirvish--reuse-or-create path 'dwim))
