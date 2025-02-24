@@ -1347,17 +1347,28 @@ INHIBIT-SETUP is non-nil."
     (dirvish--maybe-toggle-cursor)
     (dirvish--maybe-toggle-details)))
 
-(defun dirvish--reuse-or-create (path layout)
-  "Find PATH in a dirvish session and set its layout with LAYOUT."
-  (let ((dir (or path default-directory))
-        (dv (or (dirvish-curr) (dirvish--get-session 'type 'default))))
-    (cond (dv (with-selected-window (dirvish--create-root-window dv)
-                (setf (dv-curr-layout dv) (or (dv-curr-layout dv) layout))
-                (dirvish-find-entry-a
-                 (if (or path (not (eq dirvish-reuse-session 'resume))) dir
-                   (car (dv-index dv))))
-                (dirvish--build-layout dv)))
-          (t (dirvish--new :curr-layout layout)
+(defun dirvish--reuse-or-create (path &optional dwim)
+  "Find PATH in dirvish , check `one-window-p' if DWIM."
+  (let* ((dir (or path default-directory))
+         (visible? (cl-loop for w in (window-list)
+                            for b = (window-buffer w)
+                            for dv = (with-current-buffer b (dirvish-curr))
+                            thereis (and dv (eq 'default (dv-type dv)) dv)))
+         (reuse? (unless visible? (dirvish--get-session 'type 'default))))
+    (cond (visible?
+           (select-window (dv-root-window visible?))
+           (unless (or (dv-curr-layout visible?) dwim) (dirvish-layout-toggle))
+           (dirvish-find-entry-a dir))
+          (reuse?
+           (with-selected-window (dirvish--create-root-window reuse?)
+             (setf (dv-curr-layout reuse?)
+                   (or (dv-curr-layout reuse?) dirvish-default-layout))
+             (and dwim (not (one-window-p)) (setf (dv-curr-layout reuse?) nil))
+             (if (eq dirvish-reuse-session 'resume) (dirvish--build-layout reuse?)
+               (dirvish-find-entry-a dir))))
+          (t (dirvish--new
+              :curr-layout (if dwim (and (one-window-p) dirvish-default-layout)
+                             dirvish-default-layout))
              (dirvish-find-entry-a dir)))))
 
 (define-derived-mode dirvish-directory-view-mode
@@ -1366,6 +1377,22 @@ INHIBIT-SETUP is non-nil."
   :group 'dirvish :interactive nil)
 
 ;;;; Commands
+
+(defun dirvish-layout-toggle ()
+  "Toggle layout of current Dirvish session.
+A session with layout means it has a companion preview window and
+possibly one or more parent windows."
+  (interactive)
+  (let* ((dv (or (dirvish-curr) (user-error "Not a dirvish buffer")))
+         (old-layout (dv-curr-layout dv))
+         (new-layout (unless old-layout (dv-ff-layout dv)))
+         (buf (current-buffer)))
+    (if old-layout (set-window-configuration (dv-winconf dv))
+      (with-selected-window (dv-root-window dv) (quit-window)))
+    (setf (dv-curr-layout dv) new-layout)
+    (with-selected-window (dirvish--create-root-window dv)
+      (dirvish-save-dedication (switch-to-buffer buf))
+      (dirvish--build-layout dv))))
 
 (defun dirvish-quit ()
   "Quit current Dirvish session.
@@ -1399,22 +1426,20 @@ are killed and the Dired buffer(s) in the selected window are buried."
 
 ;;;###autoload
 (defun dirvish (&optional path)
-  "Start a full frame Dirvish session with optional PATH.
-If called with \\[universal-arguments], prompt for PATH,
-otherwise it defaults to `default-directory'."
+  "Open PATH in a fullframe Dirvish session.
+With \\[universal-arguments], prompt for a PATH; otherwise, PATH default
+to `default-directory'."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
-  (dirvish--reuse-or-create path dirvish-default-layout))
+  (dirvish--reuse-or-create path))
 
 ;;;###autoload
 (defun dirvish-dwim (&optional path)
-  "Start a fullframe session only when `one-window-p'.
-If called with \\[universal-arguments], prompt for PATH,
-otherwise it defaults to `default-directory'.
-If `one-window-p' returns nil, open PATH using regular Dired."
+  "Open PATH in a fullframe session if selected window is the only window.
+With \\[universal-arguments], prompt for a PATH; otherwise, PATH default
+to `default-directory'.  If there are other windows exist in the
+selected frame, the session occupies only the selected window."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
-  (dirvish--reuse-or-create
-   path (if (dirvish-curr) (dv-curr-layout (dirvish-curr))
-          (and (one-window-p) dirvish-default-layout))))
+  (dirvish--reuse-or-create path 'dwim))
 
 (provide 'dirvish)
 ;;; dirvish.el ends here

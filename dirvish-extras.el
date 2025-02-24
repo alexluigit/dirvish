@@ -218,23 +218,6 @@ FILESET defaults to `dired-get-marked-files'."
       (message "%s" (format "Total size of %s entries: %s" count size)))))
 
 ;;;###autoload
-(defun dirvish-layout-toggle ()
-  "Toggle layout of current Dirvish session.
-A session with layout means it has a companion preview window and
-possibly one or more parent windows."
-  (interactive)
-  (let* ((dv (or (dirvish-curr) (user-error "Not a dirvish buffer")))
-         (old-layout (dv-curr-layout dv))
-         (new-layout (unless old-layout (dv-ff-layout dv)))
-         (buf (current-buffer)))
-    (if old-layout (set-window-configuration (dv-winconf dv))
-      (with-selected-window (dv-root-window dv) (quit-window)))
-    (setf (dv-curr-layout dv) new-layout)
-    (with-selected-window (dirvish--create-root-window dv)
-      (dirvish-save-dedication (switch-to-buffer buf))
-      (dirvish--build-layout dv))))
-
-;;;###autoload
 (defun dirvish-layout-switch (&optional recipe)
   "Switch Dirvish layout according to RECIPE.
 If RECIPE is not provided, switch to the recipe next to the
