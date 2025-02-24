@@ -674,9 +674,7 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
   (let (dirvish-hide-cursor) (dirvish--maybe-toggle-cursor 'hollow))
-  (dirvish--render-attrs 'clear)
-  (remove-hook 'window-configuration-change-hook #'dirvish-winconf-change-h t)
-  (remove-hook 'post-command-hook #'dirvish-update-body-h t))
+  (dirvish--render-attrs 'clear))
 
 (defun dirvish-thumb-buf-a (fn)
   "Advice for FN `image-dired-create-thumbnail-buffer'."
@@ -737,10 +735,9 @@ buffer, it defaults to filename under the cursor when it is nil."
   (ansi-color-apply-on-region
    (goto-char pos) (progn (forward-line (frame-height)) (point))))
 
-(defun dirvish-update-body-h (&optional force)
-  "Update UI of current Dirvish.
-When FORCE, ensure the preview get refreshed."
-  (when-let* ((dv (dirvish-curr)))
+(defun dirvish-update-body-h ()
+  "Update UI of current Dirvish."
+  (when-let* ((dv (dirvish-curr)) ((null (derived-mode-p 'wdired-mode))))
     (cond ((not (dirvish--apply-hiding-p dirvish-hide-cursor)))
           ((eobp) (forward-line -1))
           ((cdr dired-subdir-alist))
@@ -752,18 +749,14 @@ When FORCE, ensure the preview get refreshed."
     (when-let* ((filename (dired-get-filename nil t)))
       (dirvish-prop :index filename)
       (let ((h-buf (dirvish--util-buffer 'header dv t))
-            (f-buf (dirvish--util-buffer 'footer dv t))
-            (last-index (dirvish-prop :last-index)))
-        (dirvish-prop :last-index filename)
+            (f-buf (dirvish--util-buffer 'footer dv t)))
         (dirvish-debounce nil
-          (if (not (dv-curr-layout dv))
-              (and (< emacs-major-version 29) (force-mode-line-update))
+          (when (dv-curr-layout dv)
             (when (buffer-live-p f-buf)
               (with-current-buffer f-buf (force-mode-line-update)))
             (when (buffer-live-p h-buf)
               (with-current-buffer h-buf (force-mode-line-update)))
-            (when (or force (not (equal last-index filename)))
-              (dirvish--preview-update dv filename))))))))
+            (dirvish--preview-update dv filename)))))))
 
 (defun dirvish-insert-entry-h (entry buffer)
   "Add ENTRY or BUFFER name to `dirvish--history'."
@@ -784,10 +777,6 @@ When FORCE, ensure the preview get refreshed."
       (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
                (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-id dv)) bn)
                do (dirvish--kill-buffer b)))))
-
-(defun dirvish-winconf-change-h ()
-  "Update UI for dirvish session."
-  (dirvish-update-body-h 'force-preview-update))
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
@@ -1173,7 +1162,7 @@ Dirvish sets `revert-buffer-function' to this function."
               dired-hide-details-hide-symlink-targets nil
               dired-kill-when-opening-new-dired-buffer nil)
   (add-hook 'window-selection-change-functions #'dirvish--change-selected nil t)
-  (add-hook 'window-configuration-change-hook #'dirvish-winconf-change-h nil t)
+  (add-hook 'window-configuration-change-hook #'dirvish-update-body-h nil t)
   (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
   (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
@@ -1286,13 +1275,12 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
 
 (cl-defgeneric dirvish-data-for-dir (dir buffer inhibit-setup)
   "Fetch data for DIR in BUFFER.
-It is called when neither `:vc-backend' nor `:remote' is included in
-DIRVISH-PROPs, i.e. DIR is in localhost and is not being
+It is called when DIR is in localhost and is not being
 version-controlled.  Run `dirvish-setup-hook' after data parsing unless
 INHIBIT-SETUP is non-nil."
   (ignore dir buffer)
-  (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h))
-  (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))
+  (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
+  (dirvish-update-body-h))
 
 (defun dirvish--window-split-order ()
   "Compute the window split order."

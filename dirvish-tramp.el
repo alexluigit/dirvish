@@ -80,7 +80,7 @@ FN is the original `dired-noselect' closure."
           (with-current-buffer buf
             (dirvish-tramp--ls-parser dir data)
             (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
-            (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
+            (dirvish-update-body-h))))
     (dirvish--kill-buffer (process-buffer proc))))
 
 (cl-defmethod dirvish-data-for-dir
