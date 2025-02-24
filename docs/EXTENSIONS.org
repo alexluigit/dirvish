@@ -75,30 +75,41 @@ adjust the shortcut key of =dirvish-rsync= in =dirvish-yank-menu=.
 
 * Group files with custom filter stack (dirvish-emerge.el)
 
-This extension lets you split the file list into different groups by various
-criteria.  These groups are then displayed in the same manner as ~ibuffer~.
-
-The variable ~dirvish-emerge-groups~ contains filter criteria of groups.
-Although you can set this variable globally, a more appropriate way would be
-set it directory locally.  In that case, it is recommended to compose and save
-this variable to .dir-locals.el by the help of ~dirvish-emerge-menu~, which saves
-the manual editing.
-
-Placing the point on the group header and hitting ~TAB~ folds it. Hitting ~TAB~
-again expands it.  Here is a quick demo.
+This extension organizes your file list into groups based on your chosen
+criteria, presented similarly to ~ibuffer~.  You can collapse and expand these
+groups by pressing ~TAB~ on the group header. For a quick demonstration, see this
+video:
 
 https://user-images.githubusercontent.com/16313743/190387614-16f8d660-7e48-483b-ae54-db471324b4e0.mp4
 
-The ~dirvish-emerge-groups~ used in the above video is the following (compose and
-saved to .dir-locals.el using ~dirvish-emerge-menu~):
+The variable ~dirvish-emerge-groups~ specifies filter criteria for groups. In the
+video, the value used appears to be:
 
 #+begin_src emacs-lisp
-  '(("Recent files" (predicate . recent-files-2h))
-    ("Documents" (extensions "pdf" "tex" "bib" "epub"))
-    ("Video" (extensions "mp4" "mkv" "webm"))
-    ("Pictures" (extensions "jpg" "png" "svg" "gif"))
-    ("Audio" (extensions "mp3" "flac" "wav" "ape" "aac"))
-    ("Archives" (extensions "gz" "rar" "zip")))
+;; Header string |    Type    |    Criterias
+'(("Recent files"  (predicate . recent-files-2h))
+  ("Documents"     (extensions "pdf" "tex" "bib" "epub"))
+  ("Video"         (extensions "mp4" "mkv" "webm"))
+  ("Pictures"      (extensions "jpg" "png" "svg" "gif"))
+  ("Audio"         (extensions "mp3" "flac" "wav" "ape" "aac"))
+  ("Archives"      (extensions "gz" "rar" "zip")))
+#+end_src
+
+Avoid manually editing this variable. The recommended way to modify, compose,
+apply, or save it (to *.dir-locals.el*) is with the ~dirvish-emerge-menu~ transient
+menu, which is how the value above was created.
+
+While you can set this variable globally, saving it to *.dir-locals.el* is more
+preferable because:
+
++ Different directory types may require different groups to be emerged.
++ Applying these filters in large directories can take a significant amount of time.
+
+To ensure the groups defined in ~dirvish-emerge-groups~ are emerged upon entering
+a directory, add ~dirvish-emerge-mode~ to ~dirvish-setup-hook~.
+
+#+begin_src emacs-lisp
+(add-hook 'dirvish-setup-hook 'dirvish-emerge-mode)
 #+end_src
 
 * Minibuffer file preview (dirvish-peek.el)
