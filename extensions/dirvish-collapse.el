@@ -30,6 +30,10 @@
   "Face used for files in `collapse' attribute."
   :group 'dirvish)
 
+(defcustom dirvish-collapse-separator "|"
+  "Separator string for `collapse' attribute."
+  :group 'dirvish :type 'string)
+
 (defun dirvish-collapse--cache (f-name)
   "Cache collapse state for file F-NAME."
   (dirvish-attribute-cache f-name :collapse
@@ -49,12 +53,18 @@
        (should-collapse
         (let* ((path (substring path (1+ (length f-name))))
                (segs (split-string path "/"))
-               (head (format "|%s|" (mapconcat #'concat (butlast segs) "|")))
+               (head (format "%s%s%s" dirvish-collapse-separator
+                             (mapconcat #'concat (butlast segs)
+                                        dirvish-collapse-separator)
+                             dirvish-collapse-separator))
                (tail (car (last segs)))
-               (tail-face
-                (if dirp 'dirvish-collapse-dir-face 'dirvish-collapse-file-face)))
-          (and (equal head "||") (setq head "|"))
-          (add-face-text-property 0 (length head) 'dirvish-collapse-dir-face nil head)
+               (tail-face (if dirp 'dirvish-collapse-dir-face
+                            'dirvish-collapse-file-face)))
+          (and (equal head (format "%s%s" dirvish-collapse-separator
+                                   dirvish-collapse-separator))
+               (setq head dirvish-collapse-separator))
+          (add-face-text-property
+           0 (length head) 'dirvish-collapse-dir-face nil head)
           (add-face-text-property 0 (length tail) tail-face nil tail)
           (cons head tail)))
        (t (cons nil nil))))))
