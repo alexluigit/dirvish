@@ -130,8 +130,11 @@ filename until the project root when opening a side session."
                   :open-file-fn #'dirvish-side-open-file-fn)))
          (r-win (dv-root-window dv)))
     (unless (window-live-p r-win) (setq r-win (dirvish--create-root-window dv)))
-    (with-selected-window r-win
+    (with-selected-window r-win ; `dirvish-curr' returns nil in this temp buffer
+      ;; so set the prop to let `dired-noselect' get `dirvish-curr' correctly
+      (dirvish-prop :dv (dv-id dv))
       (dirvish-find-entry-a path)
+      (kill-buffer (dirvish--util-buffer "temp")) ; remove `:dv' prop in it
       (cond ((not bname) nil)
             (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))
