@@ -471,7 +471,8 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--selected-p (&optional dv)
   "Return t if session DV (defaults to `dirvish-curr') is selected."
   (when-let* ((dv (or dv (dirvish-curr))))
-    (eq (dv-root-window dv) dirvish--selected-window)))
+    (if (dv-curr-layout dv) (eq (dv-root-window dv) dirvish--selected-window)
+      (eq (frame-selected-window) dirvish--selected-window))))
 
 (defun dirvish--format-menu-heading (title &optional note)
   "Format TITLE as a menu heading.
@@ -768,7 +769,14 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Remove buffer from session's buffer list."
   (when-let* ((dv (dirvish-curr)) (buf (current-buffer)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
-    (unless (dv-roots dv)
+    (if (dv-roots dv) ; it might be killed by user in a fullframe session
+        (when-let* (((eq (cdr (dv-index dv)) buf))
+                    ((dv-curr-layout dv))
+                    (win (dv-root-window dv))
+                    ((window-live-p win)))
+          (setf (dv-index dv) (car (dv-roots dv)))
+          (with-selected-window win ; we have to prevend this window get deleted
+            (dirvish-save-dedication (switch-to-buffer (cdr (dv-index dv))))))
       (when-let* ((layout (dv-curr-layout dv))
                   (wconf (dv-winconf dv))
                   ((eq buf (window-buffer (selected-window)))))
@@ -878,7 +886,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   (let ((buf (dirvish--util-buffer 'preview dv nil t)))
     (with-current-buffer buf
       (erase-buffer) (remove-overlays) (font-lock-mode -1)
-      (insert (cdr recipe)) buf)))
+      (insert "\n\n  " (cdr recipe)) buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head buffer)) dv)
   "Use payload of RECIPE as preview buffer of DV directly."
@@ -1029,7 +1037,7 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
   `((:eval
      (let* ((dv (dirvish-curr))
             (fullframe-p (and dv (dv-curr-layout dv)))
-            (buf (and dv (cdr (dv-index dv))))
+            (buf (if fullframe-p (cdr (dv-index dv)) (current-buffer)))
             (expand
              (lambda (segs)
                (cl-loop for s in segs collect
@@ -1207,9 +1215,6 @@ LEVEL is the depth of current window."
          (parent-dirs ())
          (depth (or (car (dv-curr-layout dv)) 0))
          (i 0))
-    (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
-    (if (dv-curr-layout dv) (set-window-dedicated-p nil nil)
-      (and (dv-dedicated dv) (set-window-dedicated-p nil t)))
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
       (push (cons current parent) parent-dirs)
@@ -1311,6 +1316,9 @@ INHIBIT-SETUP is non-nil."
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dirvish-prop :fringe nil)
     (dirvish--change-selected)
+    (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
+    (when (or (dv-curr-layout dv) (dv-dedicated dv))
+      (set-window-dedicated-p nil t))
     (dolist (pane w-order)
       (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
              (args (alist-get pane w-args))
@@ -1331,14 +1339,13 @@ INHIBIT-SETUP is non-nil."
 (defun dirvish--reuse-or-create (path &optional dwim)
   "Find PATH in dirvish, check `one-window-p' for DWIM."
   (let* ((dir (or path default-directory))
-         (visible? (cl-loop for w in (window-list)
-                            for b = (window-buffer w)
-                            for dv = (with-current-buffer b (dirvish-curr))
-                            thereis (and dv (eq 'default (dv-type dv)) dv)))
-         (reuse? (unless visible? (dirvish--get-session 'type 'default))))
-    (cond (visible?
-           (select-window (dv-root-window visible?))
-           (unless (or (dv-curr-layout visible?) dwim) (dirvish-layout-toggle))
+         (vis? (cl-loop for w in (window-list)
+                        for b = (window-buffer w)
+                        for dv = (with-current-buffer b (dirvish-curr))
+                        thereis (and dv (eq 'default (dv-type dv)) dv)))
+         (reuse? (unless vis? (dirvish--get-session 'type 'default))))
+    (cond (vis? (if (dv-curr-layout vis?) (select-window (dv-root-window vis?))
+                  (unless dwim (dirvish-layout-toggle)))
            (dirvish-find-entry-a dir))
           (reuse?
            (with-selected-window (dirvish--create-root-window reuse?)
