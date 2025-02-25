@@ -62,7 +62,8 @@ one of categories in `dirvish-peek-categories'."
                   minibuffer-completion-predicate)))
          (category (completion-metadata-get meta 'category))
          (p-category (and (memq category dirvish-peek-categories) category))
-         new-dv)
+         (dv (dirvish--get-session 'curr-layout 'any))
+         (win (and dv (dv-preview-window dv))) new-dv)
     (dirvish-prop :peek-category p-category)
     (when p-category
       (dirvish-peek--prepare-cand-fetcher)
@@ -72,7 +73,10 @@ one of categories in `dirvish-peek-categories'."
       ;; `dirvish-image-dp' needs this.
       (setf (dv-index new-dv) (cons default-directory (current-buffer)))
       (setf (dv-preview-window new-dv)
-            (or (minibuffer-selected-window) (next-window)))
+            (or (and (window-live-p win) win)
+                (minibuffer-selected-window) (next-window)))
+      (cl-loop for (k v) on dirvish-scopes by 'cddr
+               do (dirvish-prop k (and (functionp v) (funcall v))))
       (dirvish-prop :dv (dv-id new-dv)))))
 
 (defun dirvish-peek-update-h ()

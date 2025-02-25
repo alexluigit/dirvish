@@ -538,19 +538,22 @@ ARGS is a list of keyword arguments for `dirvish' struct."
     (dirvish--check-deps)
     (dirvish--create-root-window new) new))
 
-(defun dirvish--get-session (key val)
+(defun dirvish--get-session (&optional key val)
   "Return the first matched session has KEY of VAL."
+  (setq key (or key 'type) val (or val 'default))
   (cl-loop for dv being the hash-values of dirvish--session-hash
-           for b = (cdr (dv-index dv)) when (not (buffer-live-p b)) return dv
+           for b = (cdr (dv-index dv))
            with (fr tab psp) = (cl-loop for (_ v) on dirvish-scopes by 'cddr
                                         collect (and (functionp v) (funcall v)))
-           if (eq (with-current-buffer b (dirvish-prop :tab)) tab)
-           if (eq (with-current-buffer b (dirvish-prop :frame)) fr)
-           if (eq (with-current-buffer b (dirvish-prop :persp)) psp)
-           if (let* ((fn (intern (format "dv-%s" key)))
-                     (res (and (functionp fn) (funcall fn dv))))
-                (if (eq key 'roots) (memq val (mapcar #'cdr res))
-                  (eq val res)))
+           if (or (null b) ; newly created session
+                  (and (buffer-live-p b)
+                       (eq (with-current-buffer b (dirvish-prop :tab)) tab)
+                       (eq (with-current-buffer b (dirvish-prop :frame)) fr)
+                       (eq (with-current-buffer b (dirvish-prop :persp)) psp)))
+           if (let ((res (funcall (intern (format "dv-%s" key)) dv)))
+                (cond ((eq val 'any) res)
+                      ((eq key 'roots) (memq val (mapcar #'cdr res)))
+                      (t (equal val res))))
            return dv))
 
 (defun dirvish--clear-session (dv &optional from-quit)
@@ -694,7 +697,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
-         (reuse? (or (dirvish-curr) (dirvish--get-session 'type 'default)))
+         (reuse? (or (dirvish-curr) (dirvish--get-session)))
          (dv (or reuse? (dirvish--new)))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
@@ -757,7 +760,8 @@ buffer, it defaults to filename under the cursor when it is nil."
               (with-current-buffer f-buf (force-mode-line-update)))
             (when (buffer-live-p h-buf)
               (with-current-buffer h-buf (force-mode-line-update)))
-            (dirvish--preview-update dv filename)))))))
+            (unless (dirvish--get-session 'type 'peek) ; don't grab focus
+              (dirvish--preview-update dv filename))))))))
 
 (defun dirvish-insert-entry-h (entry buffer)
   "Add ENTRY or BUFFER name to `dirvish--history'."
@@ -1344,9 +1348,11 @@ INHIBIT-SETUP is non-nil."
                         for dv = (with-current-buffer b (dirvish-curr))
                         thereis (and dv (eq 'default (dv-type dv)) dv)))
          (reuse? (unless vis? (dirvish--get-session 'type 'default))))
-    (cond (vis? (if (dv-curr-layout vis?) (select-window (dv-root-window vis?))
-                  (unless dwim (dirvish-layout-toggle)))
-           (dirvish-find-entry-a dir))
+    (cond (vis? (when (and (null dwim) dirvish-default-layout
+                           (not (dv-curr-layout vis?)))
+                  (unless (dirvish-curr) (select-window (dv-root-window vis?)))
+                  (dirvish-layout-toggle))
+                (dirvish-find-entry-a dir))
           (reuse?
            (with-selected-window (dirvish--create-root-window reuse?)
              (setf (dv-curr-layout reuse?)
