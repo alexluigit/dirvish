@@ -840,7 +840,7 @@ buffer, it defaults to filename under the cursor when it is nil."
       (cond ((ignore-errors (buffer-local-value 'so-long-detected-p buf))
              (kill-buffer buf)
              `(info . ,(format "File [ %s ] contains very long lines" name)))
-            (t `(buffer . ,buf))))))
+            (t (with-current-buffer buf (font-lock-mode 1) `(buffer . ,buf)))))))
 
 (dirvish-define-preview disable (file ext)
   "Disable preview in some cases."
