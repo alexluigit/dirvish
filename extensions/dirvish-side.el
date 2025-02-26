@@ -28,6 +28,21 @@
   "Window parameters for `dirvish-side' window."
   :group 'dirvish :type 'alist)
 
+(defcustom dirvish-side-mode-line-format dirvish-mode-line-format
+  "Mode line format used in `dirvish-side' window.
+See `dirvish-mode-line-format' for details."
+  :group 'dirvish :type 'plist)
+
+(defcustom dirvish-side-header-line-format '(:left (project))
+  "Header line format used in `dirvish-side' window.
+See `dirvish-mode-line-format' for details."
+  :group 'dirvish :type 'plist)
+
+(defcustom dirvish-side-attributes dirvish-attributes
+  "File attributes used in `dirvish-side' window.
+See `dirvish-attributes' for details."
+  :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
+
 (defcustom dirvish-side-open-file-action 'mru
   "The action of how to open a file in side window.
 The value can be one of:
@@ -52,8 +67,6 @@ The value can be one of:
 If non-nil, expand all the parent directories of current buffer's
 filename until the project root when opening a side session."
   :group 'dirvish :type 'boolean)
-
-(defconst dirvish-side-header (dirvish--mode-line-composer '(project) nil t))
 
 (defun dirvish-side-open-file-fn ()
   "Called before opening a file in side sessions."
@@ -115,12 +128,14 @@ filename until the project root when opening a side session."
          (let (buffer-list-update-hook) (dirvish-find-entry-a dir))
          (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
            (dired-goto-file curr))
-         (dirvish-prop :cus-header 'dirvish-side-header)
          (dirvish-update-body-h))))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
   (let* ((bname buffer-file-name)
+         (dirvish-mode-line-format dirvish-side-mode-line-format)
+         (dirvish-header-line-format dirvish-side-header-line-format)
+         (dirvish-attributes dirvish-side-attributes)
          (dv (or (dirvish--get-session 'type 'side)
                  (dirvish--new
                   :type 'side
@@ -139,19 +154,7 @@ filename until the project root when opening a side session."
             (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))
             (t (dired-goto-file bname)))
-      (dirvish-prop :cus-header 'dirvish-side-header)
       (dirvish-update-body-h))))
-
-(dirvish-define-mode-line project
-  "Return a string showing current project."
-  (let ((project (dirvish--get-project-root))
-        (face (if (dirvish--selected-p) 'dired-header 'dirvish-inactive)))
-    (if project
-        (setq project (file-name-base (directory-file-name project)))
-      (setq project "-"))
-    (format " %s %s"
-            (propertize "Project:" 'face face)
-            (propertize project 'face 'font-lock-string-face))))
 
 ;;;###autoload
 (define-minor-mode dirvish-side-follow-mode

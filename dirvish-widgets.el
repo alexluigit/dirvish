@@ -16,13 +16,25 @@
 ;; `file-size', `file-time'
 ;;
 ;; Mode-line segments:
+;;
 ;; `path', `symlink', `omit', `sort', `index', `free-space', `file-link-number',
 ;; `file-user', `file-group', `file-time', `file-size', `file-modes',
 ;; `file-inode-number', `file-device-number'
 ;;
 ;; Preview dispatchers:
-;; `audio' `image', `gif', `video', `video-mtn', `epub', `archive', `pdf', `pdf-preface'
-;; TODO: add `image-dired' preview dispatcher
+;;
+;; - `image':       preview image files, requires `imagemagick'
+;; - `gif':         preview GIF image files with animation
+;; - `video':       preview videos files with thumbnail image
+;;                    - requires `ffmpegthumbnailer' on Linux/macOS
+;;                    - requires `mtn' on Windows (special thanks to @samb233!)
+;; - `audio':       preview audio files with metadata, requires `mediainfo'
+;; - `epub':        preview epub documents, requires `epub-thumbnail'
+;; - `pdf':         preview pdf documents via `pdf-tools'
+;; - `archive':     preview archive files, requires `tar' and `unzip'
+;; - `dired':       preview directories using `dired' (asynchronously)
+;; - `pdf-preface': preview pdf documents with thumbnail image, require `pdftoppm'
+;; - `image-dired'  NOT implemented yet | TODO
 
 ;;; Code:
 
@@ -475,6 +487,17 @@ GROUP-TITLES is a list of group titles."
   "Filesystem device number, as an integer."
   (pcase-let ((`(,attr . ,face) (dirvish--format-file-attr 'device-number)))
     (propertize (format "%s" attr) 'face face)))
+
+(dirvish-define-mode-line project
+  "Return a string showing current project."
+  (let ((project (dirvish--get-project-root))
+        (face (if (dirvish--selected-p) 'dired-header 'dirvish-inactive)))
+    (if project
+        (setq project (file-name-base (directory-file-name project)))
+      (setq project "-"))
+    (format " %s %s"
+            (propertize "Project:" 'face face)
+            (propertize project 'face 'font-lock-string-face))))
 
 ;;;; Preview dispatchers
 

@@ -153,8 +153,7 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
          (new-dps (seq-difference
                    dirvish-preview-dispatchers '(vc-diff vc-log vc-blame))))
     (when value (push (intern (format "%s" value)) new-dps))
-    (setq-local dirvish--working-preview-dispathchers
-                (dirvish--preview-dps-validate new-dps))
+    (dirvish-prop :preview-dps (dirvish--preview-dps-validate new-dps))
     (if (not new-layout)
         (dirvish--preview-update dv (dirvish-prop :index))
       (quit-window nil (dv-root-window dv))
