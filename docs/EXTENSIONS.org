@@ -171,6 +171,9 @@ the appearance of the icons, you have these options:
 This extension provides the ~dirvish-side~ command. It toggles a Dirvish session
 as a sidebar in the frame.  These customization options are available:
 
++ ~dirvish-side-attributes~: like ~dirvish-attributes~, but for side window.
++ ~dirvish-side-mode-line-format~: like ~dirvish-mode-line-format~, but for side window.
++ ~dirvish-side-header-line-format~: like ~dirvish-header-line-format~, but for side window.
 + ~dirvish-side-display-alist~: Display actions for the side window.
 + ~dirvish-side-window-parameters~: Window parameters for the side window.
 + ~dirvish-side-width~: Width of the side window.

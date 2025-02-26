@@ -80,7 +80,7 @@ one of categories in `dirvish-peek-categories'."
       (dirvish-prop :dv (dv-id new-dv))
       (dirvish-prop :preview-dps
         (if (file-remote-p default-directory) '(dirvish-tramp-dp)
-          (dv-preview-dispatchers dv))))))
+          (dv-preview-dispatchers new-dv))))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
