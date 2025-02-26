@@ -304,7 +304,9 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
   (setq dirvish-mode-line-format
         '(:left (sort symlink) :right (omit yank index)))
   (setq dirvish-attributes
-        '(nerd-icons file-time file-size collapse subtree-state vc-state git-msg))
+        '(nerd-icons file-time file-size collapse subtree-state vc-state git-msg)
+        dirvish-side-attributes
+        '(vc-state file-size nerd-icons collapse))
   (setq delete-by-moving-to-trash t)
   (setq dired-listing-switches
         "-l --almost-all --human-readable --group-directories-first --no-group")

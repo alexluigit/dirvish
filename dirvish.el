@@ -600,7 +600,7 @@ FROM-QUIT is used to signify the calling command."
 
 (defun dirvish--attrs-expand (attrs)
   "Expand ATTRS from `dirvish--available-attrs'."
-  (sort (cl-loop for attr in attrs
+  (sort (cl-loop for attr in (append '(hl-line symlink-target) attrs)
                  for lst = (alist-get attr dirvish--available-attrs)
                  for (idx width pred render ov _) = lst
                  collect (list idx (eval width) pred render ov))
@@ -609,11 +609,11 @@ FROM-QUIT is used to signify the calling command."
 (defun dirvish--check-dependencies (dv)
   "Require necessary extensions for DV, raise warnings for missing executables."
   (cl-loop
+   with (dps . attrs) = (cons dirvish-preview-dispatchers dirvish-attributes)
    with (m . h) = (cons dirvish-mode-line-format dirvish-header-line-format)
    with (ml . mr) = (cons (plist-get m :left) (plist-get m :right))
    with (hl . hr) = (cons (plist-get h :left) (plist-get h :right))
-   with attrs = (append '(hl-line symlink-target) dirvish-attributes)
-   with feat-reqs = (append dirvish-preview-dispatchers attrs ml mr hl hr)
+   with feat-reqs = (append dps attrs ml mr hl hr)
    when feat-reqs do (require 'dirvish-widgets)
    for (lib . feat) in dirvish--libraries do
    (when (cl-intersection feat feat-reqs) (require lib))
@@ -1165,17 +1165,17 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish--create-parent-buffer (dv dir index level)
   "Create parent buffer at DIR in DV selecting file INDEX.
 LEVEL is the depth of current window."
-  (let ((index (directory-file-name index))
-        (buf (dirvish--util-buffer (format "parent-%s" level) dv nil t))
-        (str (or (gethash dir dirvish--parent-hash)
-                 (let ((flags dired-actual-switches))
-                   (with-temp-buffer (dired-insert-directory dir flags)
-                                     (buffer-string)))))
-        (attrs (append
-                '(hl-line symlink-target)
-                (cond ((memq 'all-the-icons dirvish-attributes) '(all-the-icons))
-                      ((memq 'nerd-icons dirvish-attributes) '(nerd-icons))
-                      ((memq 'vscode-icon dirvish-attributes) '(vscode-icon))))))
+  (let* ((index (directory-file-name index))
+         (buf (dirvish--util-buffer (format "parent-%s" level) dv nil t))
+         (str (or (gethash dir dirvish--parent-hash)
+                  (let ((flags dired-actual-switches))
+                    (with-temp-buffer (dired-insert-directory dir flags)
+                                      (buffer-string)))))
+         (attrs (if (not (eq (dv-type dv) 'side)) dirvish-attributes
+                  (bound-and-true-p dirvish-side-attributes)))
+         (icon (cond ((memq 'all-the-icons attrs) '(all-the-icons))
+                     ((memq 'nerd-icons attrs) '(nerd-icons))
+                     ((memq 'vscode-icon attrs) '(vscode-icon)))))
     (with-current-buffer buf
       (dirvish-directory-view-mode)
       (dirvish-prop :dv (dv-id dv))
@@ -1190,7 +1190,7 @@ LEVEL is the depth of current window."
       (font-lock-mode 1)
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--maybe-toggle-cursor '(box . 0)) ; always hide cursor in parents
-      (dirvish-prop :attrs (dirvish--attrs-expand attrs))
+      (dirvish-prop :attrs (dirvish--attrs-expand icon))
       (setq-local dirvish--attrs-hash (make-hash-table :test #'equal))
       (dirvish--render-attrs) buf)))
 

@@ -83,8 +83,7 @@ RECIPE has the same form as `dirvish-default-layout'."
                     (remq item old-val))))
     (mapc #'require '(dirvish-widgets dirvish-vc dirvish-collapse))
     (dirvish--render-attrs 'clear)
-    (dirvish-prop :attrs
-      (dirvish--attrs-expand (append '(hl-line symlink-target) new-val)))
+    (dirvish-prop :attrs (dirvish--attrs-expand new-val))
     (dirvish--render-attrs)))
 
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-extras" nil t)
