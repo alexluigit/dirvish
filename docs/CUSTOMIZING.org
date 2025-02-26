@@ -26,12 +26,12 @@ open them with an external application by default.  You can achieve this by
 customizing the ~dirvish-open-with-programs~ option.  By default, it instructs
 Emacs to open video/audio files using =mpv=.
 
-** Parsing switches
+** Parsing switches of GNU =ls=
 
-Dirvish avoids regex-based solutions as much as possible, this also applies to
-the parsing of ~dired-listing/actual-switches~ and ~dirvish-fd-switches~.  As a
-result, in order to setup ~dired-listing-switches~ and ~dirvish-fd-switches~
-correctly, there are a few rules here:
+To ensure Dirvish correctly parses =dired-listing-switches=, adhere to specific
+formatting rules when setting this variable.  These rules ensure compatibility
+with the =dirvish-ls= extension powered by =transient=, allowing for straightforward
+decomposition and composition of included switches.
 
 1. Make sure to use the long name of ~ls~ flags whenever possible.
 
@@ -47,10 +47,17 @@ correctly, there are a few rules here:
    * =-v --sort-time= (same as the above one, meanwhile this also violates rule NO.1)
    * =--sort=time=
 
-3. Use ~dirvish-quicksort~ instead of ~dired-sort-toggle-or-edit~
+These rules should also be followed when setting the ~dirvish-fd-switches~ option.
+For changing the sort criteria of a buffer, ~dirvish-quicksort~ is recommended
+over ~dired-sort-toggle-or-edit~.  If you choose to use ~dired-sort-toggle-or-edit~,
+ensure the entered =ls= flags adhere to the specified rules.
 
-   If you insist on using the ~dired-sort-toggle-or-edit~ command, you'll have
-   to obey the above rules when entering the ls flags.
+Additionally, it's best to avoid using options newly introduced in GNU =ls=.  For
+instance, while the =--time=mtime= option might function correctly on your local
+machine with =ls/gls= version 9.6, a remote host running GNU =ls= version 8.3 can
+not recognize it.  Consequently, if ~dired-listing-switches~ includes such an
+switch, Dirvish will display an empty buffer when you attempt to open any path
+on that remote host.
 
 ** Buffer management
 
