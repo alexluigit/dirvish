@@ -443,6 +443,9 @@ The command run is essentially:
       (dirvish-prop :cus-header 'dirvish-fd-header)
       (dirvish-prop :remote remote)
       (dirvish-prop :global-header t)
+      (dirvish-prop :preview-dps
+        (if remote '(dirvish-tramp-dp) (dv-preview-dispatchers dv)))
+      (dirvish-prop :attrs (dv-attributes dv))
       (cl-loop for (k v) on dirvish-scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (let ((proc (apply #'start-file-process

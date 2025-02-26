@@ -77,7 +77,10 @@ one of categories in `dirvish-peek-categories'."
                 (minibuffer-selected-window) (next-window)))
       (cl-loop for (k v) on dirvish-scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
-      (dirvish-prop :dv (dv-id new-dv)))))
+      (dirvish-prop :dv (dv-id new-dv))
+      (dirvish-prop :preview-dps
+        (if (file-remote-p default-directory) '(dirvish-tramp-dp)
+          (dv-preview-dispatchers dv))))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
