@@ -79,8 +79,9 @@ FN is the original `dired-noselect' closure."
         (when (buffer-live-p buf)
           (with-current-buffer buf
             (dirvish-tramp--ls-parser dir data)
-            (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
-            (dirvish-update-body-h))))
+            (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))
+          (when-let* ((win (get-buffer-window buf)) ((window-live-p win)))
+            (with-selected-window win (dirvish-update-body-h)))))
     (dirvish--kill-buffer (process-buffer proc))))
 
 (cl-defmethod dirvish-data-for-dir

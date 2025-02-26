@@ -1289,7 +1289,9 @@ version-controlled.  Run `dirvish-setup-hook' after data parsing unless
 INHIBIT-SETUP is non-nil."
   (ignore dir buffer)
   (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
-  (dirvish-update-body-h))
+  (when-let* ((win (get-buffer-window buffer))
+              ((window-live-p win)))
+    (with-selected-window win (dirvish-update-body-h))))
 
 (defun dirvish--window-split-order ()
   "Compute the window split order."
