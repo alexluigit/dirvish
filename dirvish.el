@@ -740,8 +740,10 @@ buffer, it defaults to filename under the cursor when it is nil."
 
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
-  (ansi-color-apply-on-region
-   (goto-char pos) (progn (forward-line (frame-height)) (point))))
+  (let (buffer-read-only)
+    (ansi-color-apply-on-region
+     (goto-char pos) (progn (forward-line (frame-height)) (point)))))
+
 
 (defun dirvish-update-body-h ()
   "Update UI of Dirvish."
