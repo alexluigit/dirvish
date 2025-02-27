@@ -82,16 +82,6 @@ leaving the last index buffer open, set ~dirvish-reuse-session~ to =nil=.
 
 See: [[https://github.com/alexluigit/dirvish/discussions/102#discussioncomment-3205349][the rationale behind buffer management in Dirvish]]
 
-** Multiple window layouts
-
-A session with a /layout/ means it has a companion preview window and possibly
-one or more parent windows.  The session layout can be toggled, namely turn
-on/off the preview and parent windows, using ~dirvish-layout-toggle~.
-
-You can define multiple layouts in ~dirvish-layout-recipes~ and cycle them through
-~dirvish-layout-switch~, by doing so you can have various pane-ratio for different
-tasks. For example, 1:3 for image preview, 1:3:5 for general file preview, etc.
-
 ** Hooks
 
 Apart from the hooks provided by Dired, Dirvish got some additions.
@@ -99,15 +89,11 @@ Apart from the hooks provided by Dired, Dirvish got some additions.
  * ~dirvish-setup-hook~: Functions called when directory data for the root buffer
    is ready.
 
- * ~dirvish-after-revert-hook~: Functions called after =revert-buffer= command.
+ * ~dirvish-after-revert-hook~: Functions called after running =revert-buffer= command.
 
  * ~dirvish-find-entry-hook~: Functions called before a Dired buffer is displayed.
 
- * ~dirvish-preview-setup-hook~: Functions called after a preview buffer gets
-   placed in the preview window.
-
- * ~dirvish-util-buffer-init-hook~: Functions called in the mode/header-line buffer
-   upon initialization.
+ * ~dirvish-preview-setup-hook~: Functions called in the regular preview buffer.
 
 ** =find-dired= integration
 
@@ -141,17 +127,33 @@ To achieve this, the only thing you need to do is put these symbols into
 ~dirvish-attributes~ like this (order doesn't matter):
 
 #+begin_src emacs-lisp
-  ;; Don't worry, Dirvish is still performant even if you enable all these attributes
-  (setq dirvish-attributes
-        '(vc-state subtree-state all-the-icons collapse git-msg file-time file-size))
+;; Don't worry, Dirvish is still performant even if you enable all these attributes
+(setq dirvish-attributes
+ '(vc-state subtree-state all-the-icons collapse git-msg file-time file-size))
 #+end_src
+
+* Multile layout recipies
+
+In Dirvish, a Dirvish window with an associated layout includes a preview window
+and, optionally, one or more parent windows.  You can toggle the visibility of
+the session layout (preview and parent windows) using ~dirvish-layout-toggle~.
+
+You can define multiple layouts in ~dirvish-layout-recipes~ and cycle through them
+with ~dirvish-layout-switch~.  This allows you to have different pane ratios for
+various tasks.  For example, use a 1:3 ratio for image previews or a 1:3:5 ratio
+for general file previews.
 
 * Mode line | Header line
 
-Dirvish uses mode line and header line to display additional information for the
-current directory or session.  The mode line only span the directory panes by
-default, to make them span all panes, just set ~dirvish-use-mode-line~ to ~global~.
-Setting the same option to /nil/ hides the mode line in dirvish buffers.
+Dirvish displays information about the current directory or session in the mode
+line and header line.  These features are enabled by default and include
+sensible default configurations.
+
+** Changing its placement, height and format
+
+The mode line only span the directory panes by default, to make them span all
+panes, just set ~dirvish-use-mode-line~ to ~global~.  Setting the same option to /nil/
+hides the mode line in dirvish buffers.
 
 To configure the content in the mode line, put the segments you wanted into
 ~dirvish-mode-line-format~.  There is also ~dirvish-mode-line-height~ for you to set
@@ -163,26 +165,33 @@ The header line can be customized in the same way with ~dirvish-use-header-line~
 The ~dired-switches-in-mode-line~ option is ignored in Dirvish.
 
 #+begin_src emacs-lisp
-  ;; Placement
-  ;; (setq dirvish-use-header-line nil)     ; hide header line (show the classic dired header)
-  ;; (setq dirvish-use-mode-line nil)       ; hide mode line
-  (setq dirvish-use-header-line 'global)    ; make header line span all panes
+;; Placement
+;; (setq dirvish-use-header-line nil)     ; hide header line (show the classic dired header)
+;; (setq dirvish-use-mode-line nil)       ; hide mode line
+(setq dirvish-use-header-line 'global)    ; make header line span all panes
 
-  ;; Height
-  ;;; '(25 . 35) means
-  ;;;   - height in single window sessions is 25
-  ;;;   - height in full-frame sessions is 35
-  (setq dirvish-header-line-height '(25 . 35))
-  (setq dirvish-mode-line-height 25) ; shorthand for '(25 . 25)
+;; Height
+;;; '(25 . 35) means
+;;;   - height in single window sessions is 25
+;;;   - height in full-frame sessions is 35
+(setq dirvish-header-line-height '(25 . 35))
+(setq dirvish-mode-line-height 25) ; shorthand for '(25 . 25)
 
-  ;; Segments
-  ;;; 1. the order of segments *matters* here
-  ;;; 2. it's ok to place raw string inside
-  (setq dirvish-header-line-format
-        '(:left (path) :right (free-space))
-        dirvish-mode-line-format
-        '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
+;; Segments
+;;; 1. the order of segments *matters* here
+;;; 2. it's ok to place raw strings in it as separators
+(setq dirvish-header-line-format
+      '(:left (path) :right (free-space))
+      dirvish-mode-line-format
+      '(:left (sort file-time " " file-size symlink) :right (omit yank index)))
 #+end_src
+
+** Special buffers for displaying mode-line and header-line
+
+When Dirvish uses a layout that occupies the entire frame, the mode-line and
+header-line are displayed in separate buffers and their corresponding
+windows. These buffers are initialized with ~dirvish-misc-mode~.  To customize the
+settings of these buffers, append your configuration to ~dirvish-misc-mode-hook~.
 
 * File preview
 
@@ -221,10 +230,6 @@ want to display preview for epub files via packages like =nov=, just remove the
 (setq dirvish-preview-dispatchers (remove 'epub dirvish-preview-dispatchers))
 #+end_src
 
-The =dirvish-preview-dired-sync-omit= option allows ~dired~ preview buffers to sync
-your =dired-omit-mode= and its settings from the root window, it is turned off by
-default.
-
 Some of preview dispatchers, such as ~image~, generate cache images to improve the
 preview experience.  Every time you enter a directory, Dirvish scans the the
 content of that directory and computes the fileset of the directory that
@@ -232,14 +237,52 @@ requires cache image generation, the corresponding caches are generated later
 when Emacs is idle.
 
 You can tweak the behavior of auto caching or turn off this feature completely
-by customizing the ~dirvish-media-auto-cache-threshold~ option.
+by customizing the ~dirvish-media-auto-cache-threshold~ option.  If you don't want
+the media properties displayed in the preview buffer, you can turn off
+~dirvish-show-media-properties~.
 
-If you don't want the media properties displayed in the preview buffer, you can
-turn off ~dirvish-show-media-properties~.
+The ~dirvish-preview-dired-sync-omit~ option allows ~dired~ preview buffers to sync
+your =dired-omit-mode= and its settings from the root window, it is turned off by
+default.
 
-Here are several examples to extend the preview capabilities of Dirvish.
+Dirvish also offers these user options to customize its preview behavior. Refer
+to the docstrings of these options for detailed information.
 
-** Preview PDF files with generated thumbnail
+ * ~dirvish-preview-buffers-max-count~
+ * ~dirvish-preview-disabled-exts~
+ * ~dirvish-preview-environment~
+ * ~dirvish-preview-large-file-threshold~
+
+** Customizations for preview buffers
+
+There are several types of buffer can be placed in the preview window in Dirvish.
+
+*** Directory files listing
+
+The ~dired~ preview dispatcher creates buffers in ~dirvish-directory-view-mode~.
+This mode is also used for the parent directory listing buffers.  Consequently,
+a single hook can configure both the parent buffer and the dired preview buffer.
+
+#+begin_src emacs-lisp
+(add-hook 'dirvish-directory-view-mode-hook #'diredfl-mode)
+#+end_src
+
+*** Regular files with certain major mode
+
+When a regular file with certain major mode is being previewed, you can change
+its settings by the ~dirvish-preview-setup-hook~.
+
+*** Special preview buffer
+
+A ~dirvish-special-preview-mode~ buffer is displayed in the preview window for all
+the rest filetypes.  This includes cases for shell command output, error/warning
+info display, image and metadata and etc.
+
+** Other use cases
+
+Here are several examples on how to extend the preview capabilities of Dirvish.
+
+*** Preview PDF files with generated thumbnail
 
 The default ~pdf~ preview method uses =pdf-tools= to open the document, which works
 fine for most of the pdf documents, but it feels sluggish for some documents
@@ -257,7 +300,7 @@ Note: this dispatcher requires the =pdftoppm= executable.
       (cl-substitute 'pdf-preface 'pdf dirvish-preview-dispatchers))
 #+end_src
 
-** Preview directory using ~eza~ command
+*** Preview directory using ~eza~ command
 
 Let's assume you don't like the default directory preview results provided by
 Dired, you can create a directory previewer that utilizes the ~eza~ command:
@@ -284,14 +327,6 @@ doesn't have good integration with the =ansi-color= package.
 #+end_src
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
-
-** User options
-
- * ~dirvish-preview-buffers-max-count~
- * ~dirvish-preview-disabled-exts~
- * ~dirvish-preview-environment~
- * ~dirvish-preview-dired-sync-omit~
- * ~dirvish-large-file-truncate-threshold~
 
 * Sample config
 ** Dirvish
