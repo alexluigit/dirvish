@@ -568,12 +568,9 @@ GROUP-TITLES is a list of group titles."
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head img)) dv)
   "Insert RECIPE as an image at preview window of DV."
-  (let ((buf (dirvish--util-buffer 'preview dv nil t))
-        (img (cdr recipe)))
-    (with-current-buffer buf
-      (erase-buffer) (remove-overlays)
-      (font-lock-mode -1)
-      (insert " ")
+  (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
+    (let ((img (cdr recipe)) buffer-read-only)
+      (erase-buffer) (remove-overlays) (insert " ")
       (add-text-properties 1 2 `(display ,img rear-nonsticky t keymap ,image-map))
       (pcase-let ((`(,iw . ,ih) (image-size img)))
         (let* ((p-window (dv-preview-window dv))
@@ -599,7 +596,7 @@ GROUP-TITLES is a list of group titles."
                       (make-string (* h-pad 2) ?\n))
               (align-regexp beg (point) "\\(\\\t\\)[^\\\t\\\n]+" 1 4 t)
               (goto-char 1)))))
-      buf)))
+      (current-buffer))))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head cache)) dv)
   "Generate cache image according to RECIPE and session DV."
@@ -616,8 +613,9 @@ GROUP-TITLES is a list of group titles."
         (process-put proc 'path path)
         (set-process-sentinel proc #'dirvish-media--cache-sentinel)))
     (with-current-buffer buf
-      (erase-buffer) (remove-overlays)
-      (insert " [Dirvish] Generating image cache...") buf)))
+      (let (buffer-read-only)
+        (erase-buffer) (remove-overlays) (insert "\n Generating image..."))
+      buf)))
 
 (defun dirvish-media--img-size (window &optional height)
   "Get corresponding image width or HEIGHT in WINDOW."

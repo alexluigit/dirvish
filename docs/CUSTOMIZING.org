@@ -96,13 +96,18 @@ tasks. For example, 1:3 for image preview, 1:3:5 for general file preview, etc.
 
 Apart from the hooks provided by Dired, Dirvish got some additions.
 
-|---------------------------+------------------------------------------|
-| Hook                      | Description                              |
-|---------------------------+------------------------------------------|
-| ~dirvish-setup-hook~        | Executed after the root buffer is ready. |
-| ~dirvish-after-revert-hook~ | Executed after ~revert-buffer~.            |
-| ~dirvish-find-entry-hook~   | Executed after finding a entry.          |
-|---------------------------+------------------------------------------|
+ * ~dirvish-setup-hook~: Functions called when directory data for the root buffer
+   is ready.
+
+ * ~dirvish-after-revert-hook~: Functions called after =revert-buffer= command.
+
+ * ~dirvish-find-entry-hook~: Functions called before a Dired buffer is displayed.
+
+ * ~dirvish-preview-setup-hook~: Functions called after a preview buffer gets
+   placed in the preview window.
+
+ * ~dirvish-util-buffer-init-hook~: Functions called in the mode/header-line buffer
+   upon initialization.
 
 ** =find-dired= integration
 
@@ -279,6 +284,14 @@ doesn't have good integration with the =ansi-color= package.
 #+end_src
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
+
+** User options
+
+ * ~dirvish-preview-buffers-max-count~
+ * ~dirvish-preview-disabled-exts~
+ * ~dirvish-preview-environment~
+ * ~dirvish-preview-dired-sync-omit~
+ * ~dirvish-large-file-truncate-threshold~
 
 * Sample config
 ** Dirvish
