@@ -23,7 +23,7 @@
 ;;
 ;; Preview dispatchers:
 ;;
-;; - `image':       preview image files, requires `imagemagick'
+;; - `image':       preview image files, requires `vipsthumbnail'
 ;; - `gif':         preview GIF image files with animation
 ;; - `video':       preview videos files with thumbnail image
 ;;                    - requires `ffmpegthumbnailer' on Linux/macOS
@@ -53,8 +53,8 @@ The value is a list with 3 elements:
 - icon for path separators [/]"
   :group 'dirvish :type '(repeat (string :tag "path separator")))
 
-(defcustom dirvish-magick-program "magick"
-  "Absolute or reletive name of the `magick' program.
+(defcustom dirvish-vipsthumbnail-program "vipsthumbnail"
+  "Absolute or reletive name of the `vipsthumbnail' program.
 This is used to generate image thumbnails."
   :group 'dirvish :type 'string)
 
@@ -102,26 +102,6 @@ This is used to list files and their attributes for .tar, .gz etc. archives."
   (and (executable-find dirvish-mediainfo-program) t)
   "Show media properties automatically in preview window."
   :group 'dirvish :type 'boolean)
-
-(defvar dirvish-media--cache-pool '())
-(defvar dirvish-media--auto-cache-timer nil)
-(defcustom dirvish-media-auto-cache-threshold '(500 . 4)
-  "Generate cache images automatically.
-The value should be a cons cell (FILE-COUNT . PROC-COUNT) where
-both FILE-COUNT and PROC-COUNT should be a integer.  Directories
-with file count less than FILE-COUNT are cached automatically,
-PROC-COUNT is the max number of cache processes.  If this
-variable is nil, the auto caching is disabled."
-  :group 'dirvish
-  :type '(cons (integer :tag "Max number of directory files")
-               (integer :tag "Max number of cache process"))
-  :set (lambda (k v)
-         (set k v)
-         (and (timerp dirvish-media--auto-cache-timer)
-              (cancel-timer dirvish-media--auto-cache-timer))
-         (unless v
-           (setq dirvish-media--auto-cache-timer
-                 (run-with-timer 0 0.25 #'dirvish-media--autocache)))))
 
 (defconst dirvish-media--img-max-width 2400)
 (defconst dirvish-media--img-scale-h 0.75)
@@ -273,20 +253,6 @@ A new directory is created unless NO-MKDIR."
               (path (dirvish-prop :index)))
     (and (equal path (process-get proc 'path))
          (dirvish-debounce nil (dirvish--preview-update dv path)))))
-
-(defun dirvish-media--autocache ()
-  "Pop and run the cache tasks in `dirvish-media--cache-pool'."
-  (when (and dirvish-media--cache-pool
-             (< (length (process-list))
-                (or (cdr dirvish-media-auto-cache-threshold) 0)))
-    (let (process-connection-type proc)
-      (pcase-let* ((`(,procname . (,path ,_width ,cmd ,args))
-                    (pop dirvish-media--cache-pool)))
-        (when path
-          (setq proc (apply #'start-process procname
-                            (get-buffer-create "*img-cache*") cmd args))
-          (process-put proc 'path path)
-          (set-process-sentinel proc #'dirvish-media--cache-sentinel))))))
 
 (defun dirvish-media--group-heading (group-titles)
   "Format media group heading in Dirvish preview buffer.
@@ -501,27 +467,6 @@ GROUP-TITLES is a list of group titles."
 
 ;;;; Preview dispatchers
 
-(cl-defmethod dirvish-build-cache (&context ((display-graphic-p) (eql t)))
-  "Cache image/video-thumbnail when `DISPLAY-GRAPHIC-P'."
-  (when-let* ((dv (dirvish-curr))
-              ((not (dirvish-prop :remote)))
-              ((dv-curr-layout dv))
-              (win (dv-preview-window dv))
-              ((window-live-p win))
-              (width (window-width win))
-              ((< (hash-table-count dirvish--attrs-hash)
-                  (or (car dirvish-media-auto-cache-threshold) 0))))
-    (cl-loop
-     with fns = '(dirvish-image-dp dirvish-video-dp dirvish-epub-dp)
-     for file in (directory-files default-directory t)
-     for ext = (downcase (or (file-name-extension file) ""))
-     for (cmd . args) = (cl-loop for fn in fns
-                                 for (k . v) = (funcall fn file ext win dv)
-                                 thereis (and (eq k 'cache) v))
-     when cmd do (push (cons (format "%s-%s-img-cache" file width)
-                             (list file width cmd args))
-                       dirvish-media--cache-pool))))
-
 (cl-defmethod dirvish-clean-cache (&context ((display-graphic-p) (eql t)))
   "Clean cache images for marked files when `DISPLAY-GRAPHIC-P'."
   (when-let* ((win (dv-preview-window (dirvish-curr)))
@@ -605,17 +550,13 @@ GROUP-TITLES is a list of group titles."
          (name (format "%s-%s-img-cache" path
                        (window-width (dv-preview-window dv)))))
     (unless (get-process name)
-      (setq dirvish-media--cache-pool
-            (delete (assoc name dirvish-media--cache-pool) dirvish-media--cache-pool))
       (let ((proc (apply #'start-process
                          name (get-buffer-create "*img-cache*")
                          (cadr recipe) (cddr recipe))))
         (process-put proc 'path path)
         (set-process-sentinel proc #'dirvish-media--cache-sentinel)))
     (with-current-buffer buf
-      (let (buffer-read-only)
-        (erase-buffer) (remove-overlays) (insert "\n Generating image..."))
-      buf)))
+      (let (buffer-read-only) (erase-buffer) (remove-overlays)) buf)))
 
 (defun dirvish-media--img-size (window &optional height)
   "Get corresponding image width or HEIGHT in WINDOW."
@@ -633,21 +574,17 @@ Require: `mediainfo' (executable)"
 
 (dirvish-define-preview image (file ext preview-window)
   "Preview image files.
-Require: `magick' (executable from `imagemagick' suite)"
-  :require (dirvish-magick-program)
+Require: `vipsthumbnail'"
+  :require (dirvish-vipsthumbnail-program)
   (when (member ext dirvish-image-exts)
     (let* ((w (dirvish-media--img-size preview-window))
            (h (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path
-                   file (format "images/%s" w) ".jpg")))
-      (cond ((file-exists-p cache)
-             `(img . ,(create-image cache nil nil :max-width w :max-height h)))
-            ((and (< (file-attribute-size (file-attributes file)) 250000)
-                  (member ext '("jpg" "jpeg" "png" "ico" "icns" "bmp" "svg")))
-             `(img . ,(create-image file nil nil :max-width w :max-height h)))
-            (t `(cache . (,dirvish-magick-program
-                          ,file "-define" "jpeg:extent=300kb" "-resize"
-                          ,(number-to-string w) ,cache)))))))
+           (cache (dirvish-media--cache-path file (format "images/%s" w) ".jpg")))
+      (cond
+       ((file-exists-p cache)
+        `(img . ,(create-image cache nil nil :max-width w :max-height h)))
+       (t `(cache . ("vipsthumbnail",file "--size" ,(format "%sx" w)
+                     "--output" ,cache)))))))
 
 (dirvish-define-preview gif (file ext)
   "Preview gif images with animations."

@@ -34,43 +34,41 @@ file manager.
 
 This package requires =GNU ls= (~gls~ on macOS), and /optionally/:
 
-+ =fd= as a faster alternative to =find=
-+ =imagemagick= for image preview
-+ =poppler= | =pdf-tools= for pdf preview
-+ =ffmpegthumbnailer= (Linux/macOS) | =mtn= (Windows) for video preview
-+ =mediainfo= for audio/video metadata generation
-+ =tar= and =unzip= for archive files preview
++ [[https://github.com/sharkdp/fd][fd]] as a faster alternative to =find=
++ [[https://github.com/libvips][vipsthumbnail]] for image preview
++ [[https://poppler.freedesktop.org/][poppler]] | [[https://github.com/vedang/pdf-tools][pdf-tools]] for pdf preview
++ [[https://github.com/dirkvdb/ffmpegthumbnailer][ffmpegthumbnailer]] (Linux/macOS) | [[https://gitlab.com/movie_thumbnailer/mtn][mtn]] (Windows) for video preview
++ [[https://github.com/MediaArea/MediaInfo][mediainfo]] for audio/video metadata generation
++ [[https://www.gnu.org/software/tar/][tar]] and [[https://infozip.sourceforge.net/UnZip.html][unzip]] for archive files preview
 
 @@html:<details>@@
 @@html:<summary>@@ @@html:<b>@@Toggle install instructions@@html:</b>@@ @@html:</summary>@@
 
 @@html:<h2>@@macOS@@html:</h2>@@
 #+begin_src bash
-  brew install coreutils fd poppler ffmpegthumbnailer mediainfo imagemagick
+  brew install coreutils fd poppler ffmpegthumbnailer mediainfo vips
 #+end_src
 
 @@html:<h2>@@Debian-based@@html:</h2>@@
 #+begin_src bash
-  apt install fd-find poppler-utils ffmpegthumbnailer mediainfo imagemagick tar unzip
+  apt install fd-find poppler-utils ffmpegthumbnailer mediainfo libvips-tools tar unzip
 #+end_src
 
 @@html:<h2>@@Arch-based@@html:</h2>@@
 #+begin_src bash
-  pacman -S fd poppler ffmpegthumbnailer mediainfo imagemagick tar unzip
+  pacman -S fd poppler ffmpegthumbnailer mediainfo libvips tar unzip
 #+end_src
 
 @@html:<h2>@@FreeBSD@@html:</h2>@@
 #+begin_src bash
-  pkg install gnuls fd-find poppler ffmpegthumbnailer ImageMagick7 gtar
+  pkg install gnuls fd-find poppler ffmpegthumbnailer vips gtar
 #+end_src
 
 @@html:<h2>@@Windows@@html:</h2>@@
 #+begin_src bash
   # install via Scoop: https://scoop.sh/
-  scoop install coreutils fd poppler imagemagick unzip
+  scoop install coreutils fd poppler mtn libvips unzip
 #+end_src
-
-You might also want to install [[https://gitlab.com/movie_thumbnailer/mtn][mtn]] for video preview.
 
 @@html:</details>@@
 
@@ -86,13 +84,10 @@ activate Dirvish globally with =M-x dirvish-override-dired-mode RET=.
 
   Welcome to Dirvish!  Use your favorite dired commands here!
 
-+ =M-x dired= | =dired-jump= | ... =RET=
-
-  Dirvish takes care all of your Dired entries.
-
 + =M-x dirvish-dwim RET=
 
-  If the selected window is the only window, open Dirvish, otherwise open Dired.
+  Works the same as `dirvish` when the selected window is the only window;
+  otherwise, it avoids occupying the entire frame.
 
 + =M-x dirvish-dispatch RET=
 

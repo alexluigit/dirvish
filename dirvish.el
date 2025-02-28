@@ -56,7 +56,7 @@ content generation for the corresponding filetype.
 
 The default value contains:
 
-- image: preview image files, requires `imagemagick'.
+- image: preview image files, requires `vipsthumbnail'.
 - gif: preview GIF image files with animation.
 - video: preview videos files with thumbnail.
     requires `ffmpegthumbnailer' on Linux/macOS | `mtn' on Windows
