@@ -964,7 +964,6 @@ When PROC finishes, fill preview buffer with process result."
   "Update preview content of INDEX for DV."
   (when-let* ((window (dv-preview-window dv))
               ((window-live-p window))
-              (orig-bufs (buffer-list))
               (ext (downcase (or (file-name-extension index) "")))
               (fns (with-current-buffer (window-buffer (dv-root-window dv))
                      (dirvish-prop :preview-dps)))
@@ -972,8 +971,8 @@ When PROC finishes, fill preview buffer with process result."
                             for rcp = (funcall fn index ext window dv) thereis
                             (and rcp (dirvish-preview-dispatch rcp dv)))))
     (setq-local other-window-scroll-buffer buf)
-    (set-window-buffer window buf)
-    (unless (memq buf orig-bufs) (push buf (dv-preview-buffers dv)))))
+    (cl-pushnew buf (dv-preview-buffers dv))
+    (set-window-buffer window buf)))
 
 ;;;; Attributes
 
