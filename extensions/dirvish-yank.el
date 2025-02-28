@@ -146,28 +146,25 @@ RANGE can be `buffer', `session', `all'."
     (when (memq status '(exit signal))
       (if (and success (not dirvish-yank-keep-success-log))
           (kill-buffer proc-buf)
-        (let ((comp-buffer (dirvish--util-buffer "complete-yank-log" nil nil t)))
-          (with-current-buffer comp-buffer
-            (goto-char (point-max))
-            (insert "\n\n" (format "%s" method)
-                    " finished @ " (current-time-string) "\n")
-            (insert-buffer-substring proc-buf)
-            (kill-buffer proc-buf)
-            ;; truncate old logs
-            (save-excursion
-              (delete-region
-               (point-min)
-               (let ((max (point-max)))
-                 (if (< max 20000)
-                     (point-min)
-                   (goto-char max)
-                   (dotimes (_n 40) (backward-paragraph))
-                   (point)))))
-            (unless success
-              (message "Yank finished with an error: see buffer %s for details"
-                       comp-buffer)
-              (pop-to-buffer comp-buffer)))))
-      (setq dirvish-yank-log-buffers (remove proc-buf dirvish-yank-log-buffers))
+        (with-current-buffer (get-buffer-create "*dirvish-yank-log*")
+          (goto-char (point-max))
+          (insert "\n\n" (format "%s" method)
+                  " finished @ " (current-time-string) "\n")
+          (insert-buffer-substring proc-buf)
+          (kill-buffer proc-buf)
+          ;; truncate old logs
+          (save-excursion
+            (delete-region
+             (point-min)
+             (let ((max (point-max)))
+               (if (< max 20000)
+                   (point-min)
+                 (goto-char max)
+                 (dotimes (_n 40) (backward-paragraph))
+                 (point)))))
+          (unless success
+            (message "Task FAILED with exit code %s" (process-exit-status proc))
+            (pop-to-buffer (current-buffer)))))
       (when (eq buffer (current-buffer))
         (with-current-buffer buffer
           (revert-buffer) (dirvish-update-body-h))))))
@@ -213,14 +210,16 @@ is t."
 
 (defun dirvish-yank--start-proc (cmd details)
   "Start a new process for CMD, put DETAILS into the process."
-  (let* ((process-connection-type nil)
-         (name "*dirvish-yank*")
-         (buf (dirvish--util-buffer
-               (format "yank@%s" (current-time-string)) nil nil t))
+  (let* ((process-connection-type nil) (name "*dirvish-yank*")
+         (buf (get-buffer-create (format "*yank@%s*" (current-time-string))))
+         (fn (lambda () (setq dirvish-yank-log-buffers
+                         (delete buf dirvish-yank-log-buffers))))
          (proc (if (listp cmd)
                    (make-process :name name :buffer buf :command cmd)
                  (start-process-shell-command name buf cmd))))
-    (with-current-buffer buf (dirvish-prop :yank-details details))
+    (with-current-buffer buf
+      (add-hook 'kill-buffer-hook fn nil t) ; user may kill yank buffers
+      (dirvish-prop :yank-details details))
     (process-put proc 'details details)
     (set-process-sentinel proc #'dirvish-yank-proc-sentinel)
     (set-process-filter proc #'dirvish-yank-proc-filter)
@@ -351,9 +350,6 @@ It sets the value for every variable matching INCLUDE-REGEXP."
 
 (dirvish-define-mode-line yank
   "Progress of yank tasks."
-  (setq dirvish-yank-log-buffers
-        (cl-remove-if-not ; user may kill yank buffers
-         (lambda (buf) (buffer-live-p buf)) dirvish-yank-log-buffers))
   (let ((number-of-tasks (length dirvish-yank-log-buffers)))
     (cond ((= number-of-tasks 0))
           ((= number-of-tasks 1)

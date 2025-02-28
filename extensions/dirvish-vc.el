@@ -216,7 +216,6 @@ This attribute only works on graphic displays."
   "Use output of `vc-annotate' (file) or `vc-dir' (dir) as preview."
   (when-let* ((bk (dirvish-prop :vc-backend))
               ((symbolp bk))
-              (orig-buflist (buffer-list))
               (display-buffer-alist
                '(("\\*\\(Annotate \\|vc-dir\\).*\\*"
                   (display-buffer-same-window)))))
@@ -231,8 +230,7 @@ This attribute only works on graphic displays."
                              file))
                   (f-buf (cdr (dirvish--find-file-temporarily file)))
                   ((bufferp f-buf)))
-        (unless (memq f-buf orig-buflist)
-          (push f-buf (dv-preview-buffers dv)))
+        (cl-pushnew f-buf (dv-preview-buffers dv))
         (with-selected-window preview-window
           (with-current-buffer f-buf
             (cl-letf (((symbol-function 'message) #'ignore))

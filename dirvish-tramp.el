@@ -92,7 +92,7 @@ means DIR is in a remote host.  Run `dirvish-setup-hook' after data
 parsing unless INHIBIT-SETUP is non-nil."
   (when (dirvish-tramp--async-p (dirvish-prop :tramp))
     (let* ((process-connection-type nil)
-           (buf (dirvish--util-buffer (make-temp-name "dir-tramp-")))
+           (buf (get-buffer-create (make-temp-name "tramp-data-")))
            (cmd (format "ls -1lahi %s" (file-local-name dir)))
            (proc (start-file-process-shell-command (buffer-name buf) buf cmd)))
       (process-put proc 'meta (list dir buffer inhibit-setup))
@@ -105,7 +105,7 @@ parsing unless INHIBIT-SETUP is non-nil."
         '(info . "File preview is not supported in current connection")
       (let ((process-connection-type nil)
             (localname (file-remote-p file 'localname))
-            (buf (dirvish--util-buffer 'preview dv nil t)) proc)
+            (buf (dirvish--special-buffer 'preview dv t)) proc)
         (when-let* ((proc (get-buffer-process buf))) (delete-process proc))
         (setq proc (start-file-process-shell-command
                     (buffer-name buf) buf

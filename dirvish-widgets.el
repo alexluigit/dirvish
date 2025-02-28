@@ -284,7 +284,7 @@ A new directory is created unless NO-MKDIR."
                     (pop dirvish-media--cache-pool)))
         (when path
           (setq proc (apply #'start-process procname
-                            (dirvish--util-buffer "img-cache") cmd args))
+                            (get-buffer-create "*img-cache*") cmd args))
           (process-put proc 'path path)
           (set-process-sentinel proc #'dirvish-media--cache-sentinel))))))
 
@@ -568,7 +568,7 @@ GROUP-TITLES is a list of group titles."
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head img)) dv)
   "Insert RECIPE as an image at preview window of DV."
-  (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
+  (with-current-buffer (dirvish--special-buffer 'preview dv t)
     (let ((img (cdr recipe)) buffer-read-only)
       (erase-buffer) (remove-overlays) (insert " ")
       (add-text-properties 1 2 `(display ,img rear-nonsticky t keymap ,image-map))
@@ -601,14 +601,14 @@ GROUP-TITLES is a list of group titles."
 (cl-defmethod dirvish-preview-dispatch ((recipe (head cache)) dv)
   "Generate cache image according to RECIPE and session DV."
   (let* ((path (dirvish-prop :index))
-         (buf (dirvish--util-buffer 'preview dv nil t))
+         (buf (dirvish--special-buffer 'preview dv t))
          (name (format "%s-%s-img-cache" path
                        (window-width (dv-preview-window dv)))))
     (unless (get-process name)
       (setq dirvish-media--cache-pool
             (delete (assoc name dirvish-media--cache-pool) dirvish-media--cache-pool))
       (let ((proc (apply #'start-process
-                         name (dirvish--util-buffer "img-cache")
+                         name (get-buffer-create "*img-cache*")
                          (cadr recipe) (cddr recipe))))
         (process-put proc 'path path)
         (set-process-sentinel proc #'dirvish-media--cache-sentinel)))

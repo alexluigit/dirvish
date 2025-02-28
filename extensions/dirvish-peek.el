@@ -70,7 +70,7 @@ one of categories in `dirvish-peek-categories'."
       (add-hook 'post-command-hook #'dirvish-peek-update-h 90 t)
       (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h nil t)
       (setq new-dv (dirvish--new :type 'peek))
-      (dirvish--init-util-buffers new-dv)
+      (dirvish--init-special-buffers new-dv)
       ;; `dirvish-image-dp' needs this.
       (setf (dv-index new-dv) (cons default-directory (current-buffer)))
       (setf (dv-preview-window new-dv)

@@ -424,7 +424,7 @@ The command run is essentially:
                  (progn (dirvish dir) (dirvish--get-session 'type 'default))))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
-         (buffer (dirvish--util-buffer 'fd dv nil t)))
+         (buffer (get-buffer-create (format "*fd@%s*" (current-time-string)))))
     (dirvish--kill-buffer (get-buffer (dirvish-fd--bufname pattern dir dv)))
     (with-current-buffer buffer
       (erase-buffer)
@@ -461,7 +461,6 @@ The command run is essentially:
         (dirvish-fd--argparser (split-string (or fd-switches "")))
         (process-put proc 'info (list pattern dir dv))))
     (dirvish-save-dedication (switch-to-buffer buffer))))
-
 
 ;;;###autoload
 (defun dirvish-fd-ask (dir pattern)

@@ -87,7 +87,7 @@ filename until the project root when opening a side session."
 (defun dirvish-side-root-window-fn ()
   "Create root window according to `dirvish-side-display-alist'."
   (let ((win (display-buffer-in-side-window
-              (dirvish--util-buffer "temp")
+              (get-buffer-create "*side-temp*")
               (append '((dedicated . t)) dirvish-side-display-alist))))
     (cl-loop for (key . value) in dirvish-side-window-parameters
              do (set-window-parameter win key value))
@@ -149,7 +149,7 @@ filename until the project root when opening a side session."
       ;; so set the prop to let `dired-noselect' get `dirvish-curr' correctly
       (dirvish-prop :dv (dv-id dv))
       (dirvish-find-entry-a path)
-      (kill-buffer (dirvish--util-buffer "temp")) ; remove `:dv' prop in it
+      (kill-buffer (get-buffer "*side-temp*")) ; remove `:dv' prop in it
       (cond ((not bname) nil)
             (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))

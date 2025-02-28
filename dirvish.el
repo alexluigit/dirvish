@@ -234,7 +234,7 @@ runtime.  Set it to nil disables this feature."
   :group 'dirvish :type '(alist :key-type (repeat :tag "File extensions" string)
                                 :value-type (repeat :tag "External command and args" string)))
 
-(defcustom dirvish-reuse-session t
+(defcustom dirvish-reuse-session 'open
   "Whether to keep the latest session index buffer for later reuse.
 The valid values are:
 - t:      keep index buffer on both `dirvish-quit' and file open
@@ -491,13 +491,11 @@ When NOTE is non-nil, append it the next line."
                         'display '(space :align-to right))
             (propertize (if note (concat "\n" note) "") 'face 'font-lock-doc-face))))
 
-(defun dirvish--util-buffer (type &optional dv no-create inhibit-hiding)
-  "Return session DV's utility buffer of TYPE (defaults to `temp').
-If NO-CREATE is non-nil, do not create the buffer.
+(defun dirvish--special-buffer (type dv &optional inhibit-hiding)
+  "Return session DV's utility buffer of TYPE.
 If INHIBIT-HIDING is non-nil, do not hide the buffer."
-  (let* ((id (if dv (format "-%s*" (dv-id dv)) "*"))
-         (name (format "%s*Dirvish-%s%s" (if inhibit-hiding "" " ") type id)))
-    (if no-create (get-buffer name) (get-buffer-create name))))
+  (get-buffer-create
+   (format "%s*dirvish-%s@%s*" (if inhibit-hiding "" " ") type (dv-id dv))))
 
 (defun dirvish--make-proc (form sentinel buffer-or-name &rest puts)
   "Make process for shell or batch FORM in BUFFER-OR-NAME.
@@ -526,13 +524,14 @@ Set process's SENTINEL and PUTS accordingly."
   (ff-layout dirvish-default-layout   :documentation "is a full-frame layout recipe.")
   (reuse ()                           :documentation "indicates if DV has been reused.")
   (ls-switches dired-listing-switches :documentation "is the directory listing switches.")
-  (mode-line ()                       :documentation "is the `mode-line-format' used by this DV.")
+  (mode-line ()                       :documentation "is the `mode-line-format' used by DV.")
   (header-line ()                     :documentation "is the `header-line-format' used by DV.")
   (preview-dispatchers ()             :documentation "is the working preview methods of DV.")
   (preview-hash (dirvish--ht)         :documentation "is a hash-table to record content of preview files.")
   (parent-hash (dirvish--ht)          :documentation "is a hash-table to record content of parent directories.")
   (attributes ()                      :documentation "is the working attributes of DV.")
   (preview-buffers ()                 :documentation "holds all file preview buffers of DV.")
+  (special-buffers ()                 :documentation "holds all special buffers of DV e.g. mode-line buffer.")
   (preview-window ()                  :documentation "is the window to display preview buffer.")
   (winconf ()                         :documentation "is a saved window configuration.")
   (index ()                           :documentation "is the (cwd-str . buf-obj) cons within ROOT-WINDOW.")
@@ -583,9 +582,7 @@ FROM-QUIT is used to signify the calling command."
                when (not (eq b index)) do (kill-buffer b))
       (when-let* ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
-    (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
-             (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-id dv)) bn)
-             do (dirvish--kill-buffer b))
+    (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
     (setf (dv-preview-hash dv) (dirvish--ht) (dv-parent-hash dv) (dirvish--ht)
           (dv-preview-buffers dv) nil (dv-winconf dv) nil)
     (when (or (null dirvish-reuse-session)
@@ -738,7 +735,6 @@ buffer, it defaults to filename under the cursor when it is nil."
     (ansi-color-apply-on-region
      (goto-char pos) (progn (forward-line (frame-height)) (point)))))
 
-
 (defun dirvish-update-body-h ()
   "Update UI of Dirvish."
   (when-let* ((dv (dirvish-curr)) ((null (derived-mode-p 'wdired-mode))))
@@ -752,8 +748,8 @@ buffer, it defaults to filename under the cursor when it is nil."
     (dirvish--render-attrs)
     (when-let* ((filename (dired-get-filename nil t)))
       (dirvish-prop :index filename)
-      (let ((h-buf (dirvish--util-buffer 'header dv t))
-            (f-buf (dirvish--util-buffer 'footer dv t)))
+      (let ((h-buf (dirvish--special-buffer 'header dv))
+            (f-buf (dirvish--special-buffer 'footer dv)))
         (dirvish-debounce nil
           (when (dv-curr-layout dv)
             (when (buffer-live-p f-buf)
@@ -787,10 +783,9 @@ buffer, it defaults to filename under the cursor when it is nil."
                   (wconf (dv-winconf dv))
                   ((eq buf (window-buffer (selected-window)))))
         (set-window-configuration wconf))
-      (remhash (dv-id dv) dirvish--session-hash)
-      (cl-loop for b in (buffer-list) for bn = (buffer-name b) when
-               (string-match-p (format " ?\\*Dirvish-.*-%s\\*" (dv-id dv)) bn)
-               do (dirvish--kill-buffer b)))))
+      (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
+      (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
+      (remhash (dv-id dv) dirvish--session-hash))))
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
@@ -829,7 +824,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Return preview buffer of FILE with SIZE in DV."
   (when (>= (length (dv-preview-buffers dv)) dirvish-preview-buffers-max-count)
     (dirvish--kill-buffer (frame-parameter nil 'dv-preview-last)))
-  (with-current-buffer (dirvish--util-buffer "temp")
+  (with-current-buffer (get-buffer-create "*preview-temp*")
     (let ((text (gethash file (dv-preview-hash dv))) info jka-compr-verbose)
       (with-silent-modifications
         (setq buffer-read-only t)
@@ -915,14 +910,14 @@ buffer, it defaults to filename under the cursor when it is nil."
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head info)) dv)
   "Insert info string from RECIPE into DV's preview buffer."
-  (let ((buf (dirvish--util-buffer 'preview dv nil t)))
+  (let ((buf (dirvish--special-buffer 'preview dv t)))
     (with-current-buffer buf
       (let (buffer-read-only)
         (erase-buffer) (remove-overlays) (insert "\n\n  " (cdr recipe)) buf))))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head buffer)) dv)
   "Use payload of RECIPE as preview buffer of DV directly."
-  (let ((p-buf (dirvish--util-buffer 'preview dv nil t)))
+  (let ((p-buf (dirvish--special-buffer 'preview dv t)))
     (with-current-buffer p-buf
       (let (buffer-read-only) (erase-buffer) (remove-overlays) (cdr recipe)))))
 
@@ -932,10 +927,10 @@ When PROC finishes, fill preview buffer with process result."
   (when-let* ((dv (dirvish-curr)) (cmd-type (process-get proc 'cmd-info))
               (str (with-current-buffer (process-buffer proc) (buffer-string))))
     (if (eq cmd-type 'shell)
-        (with-current-buffer (dirvish--util-buffer 'shell dv nil t)
+        (with-current-buffer (dirvish--special-buffer 'shell dv t)
           (let (buffer-read-only) (erase-buffer) (remove-overlays) (insert str))
           (dirvish-apply-ansicolor-h nil (point-min)))
-      (with-current-buffer (dirvish--util-buffer 'dired dv nil t)
+      (with-current-buffer (dirvish--special-buffer 'dired dv t)
         (let (buffer-read-only) (erase-buffer) (remove-overlays) (insert str))
         (setq-local dired-subdir-alist
                     (list (cons (car (dv-index dv)) (point-min-marker))))))
@@ -944,13 +939,13 @@ When PROC finishes, fill preview buffer with process result."
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
   (let ((proc (get-buffer-process (get-buffer " *dirvish-sh*")))
-        (buf (dirvish--util-buffer (car recipe) dv nil t)))
+        (buf (dirvish--special-buffer (car recipe) dv t)))
     (when proc (delete-process proc))
     (dirvish--make-proc
      (cdr recipe) 'dirvish-shell-preview-proc-s " *dirvish-sh*"
      'cmd-info (car recipe))
     (with-current-buffer buf
-      (let (buffer-read-only) (erase-buffer) (remove-overlays) buf))))
+      (let (buffer-read-only) (erase-buffer) buf))))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head shell)) dv)
   "Fill DV's preview buffer with output of sh command from RECIPE."
@@ -1127,7 +1122,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
      ((and fullframe-p (not dirvish-use-header-line)))
      (fullframe-p
       (with-current-buffer idx-buf (setq header-line-format nil))
-      (with-current-buffer (dirvish--util-buffer 'header dv)
+      (with-current-buffer (dirvish--special-buffer 'header dv)
         (setq header-line-format hl)))
      (dirvish-use-header-line
       (with-current-buffer idx-buf (setq header-line-format hl))))
@@ -1135,7 +1130,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
      ((and fullframe-p (not dirvish-use-mode-line)))
      (fullframe-p
       (with-current-buffer idx-buf (setq mode-line-format nil))
-      (with-current-buffer (dirvish--util-buffer 'footer dv)
+      (with-current-buffer (dirvish--special-buffer 'footer dv)
         (setq mode-line-format ml)))
      (dirvish-use-mode-line
       (with-current-buffer idx-buf (setq mode-line-format ml))))))
@@ -1208,7 +1203,7 @@ Dirvish sets `revert-buffer-function' to this function."
   "Create parent buffer at DIR in DV selecting file INDEX.
 LEVEL is the depth of current window."
   (let* ((index (directory-file-name index))
-         (buf (dirvish--util-buffer (format "parent-%s" level) dv nil t))
+         (buf (dirvish--special-buffer (format "parent-%s" level) dv t))
          (str (or (gethash dir (dv-parent-hash dv))
                   (let ((flags dired-actual-switches))
                     (with-temp-buffer (dired-insert-directory dir flags)
@@ -1218,6 +1213,7 @@ LEVEL is the depth of current window."
          (icon (cond ((memq 'all-the-icons attrs) '(all-the-icons))
                      ((memq 'nerd-icons attrs) '(nerd-icons))
                      ((memq 'vscode-icon attrs) '(vscode-icon)))))
+    (cl-pushnew buf (dv-special-buffers dv))
     (with-current-buffer buf
       (dirvish-directory-view-mode)
       (dirvish-prop :dv (dv-id dv))
@@ -1256,19 +1252,21 @@ LEVEL is the depth of current window."
                for w = (display-buffer b `(dirvish--display-buffer . ,args)) do
                (with-selected-window w (set-window-dedicated-p w t))))))
 
-(defun dirvish--init-util-buffers (dv)
-  "Initialize util buffers for DV."
-  (with-current-buffer (dirvish--util-buffer 'preview dv nil t)
-    (dirvish-special-preview-mode))
-  (with-current-buffer (dirvish--util-buffer 'shell dv nil t)
-    (dirvish-special-preview-mode)
-    (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
-  (with-current-buffer (dirvish--util-buffer 'dired dv nil t)
-    (dirvish-directory-view-mode))
-  (with-current-buffer (dirvish--util-buffer 'header dv)
-    (dirvish-misc-mode) (dirvish-prop :dv (dv-id dv)))
-  (with-current-buffer (dirvish--util-buffer 'footer dv)
-    (dirvish-misc-mode) (dirvish-prop :dv (dv-id dv))))
+(defun dirvish--init-special-buffers (dv)
+  "Initialize special buffers for DV."
+  (let ((dired (dirvish--special-buffer 'dired dv t))
+        (regular (dirvish--special-buffer 'preview dv t))
+        (shell (dirvish--special-buffer 'shell dv t))
+        (head (dirvish--special-buffer 'header dv))
+        (foot (dirvish--special-buffer 'footer dv)))
+    (with-current-buffer dired (dirvish-directory-view-mode))
+    (with-current-buffer regular (dirvish-special-preview-mode))
+    (with-current-buffer shell
+      (dirvish-special-preview-mode)
+      (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
+    (with-current-buffer head (dirvish-misc-mode) (dirvish-prop :dv (dv-id dv)))
+    (with-current-buffer foot (dirvish-misc-mode) (dirvish-prop :dv (dv-id dv)))
+    (setf (dv-special-buffers dv) (list dired regular shell head foot))))
 
 (defun dirvish--dir-data-async (dir buffer &optional inhibit-setup)
   "Asynchronously fetch metadata for DIR, stored locally in BUFFER.
@@ -1334,7 +1332,7 @@ INHIBIT-SETUP is non-nil."
                    (footer (side . below) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))))
          (w-order (and layout (dirvish--window-split-order))) util-windows)
-    (dirvish--init-util-buffers dv)
+    (dirvish--init-special-buffers dv)
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dirvish-prop :fringe nil)
@@ -1343,7 +1341,7 @@ INHIBIT-SETUP is non-nil."
     (when (or (dv-curr-layout dv) (dv-dedicated dv))
       (set-window-dedicated-p nil t))
     (dolist (pane w-order)
-      (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
+      (let* ((buf (dirvish--special-buffer pane dv (eq pane 'preview)))
              (args (alist-get pane w-args))
              (win (display-buffer buf `(dirvish--display-buffer . ,args))))
         (cond ((eq pane 'preview) (setf (dv-preview-window dv) win))
@@ -1386,7 +1384,7 @@ INHIBIT-SETUP is non-nil."
 
 ;;;; Major modes
 
-(define-derived-mode dirvish-directory-view-mode special-mode
+(define-derived-mode dirvish-directory-view-mode special-mode "Dirvish DIRview"
   "Major mode for parent directory and directory preview buffer."
   (setq mode-line-format nil header-line-format nil
         font-lock-defaults
@@ -1394,12 +1392,12 @@ INHIBIT-SETUP is non-nil."
   (font-lock-mode 1)
   :group 'dirvish :interactive nil)
 
-(define-derived-mode dirvish-special-preview-mode special-mode
+(define-derived-mode dirvish-special-preview-mode special-mode "Dirvish Special"
   "Major mode for info, shell command output and non-text file preview buffer."
   (setq mode-line-format nil header-line-format nil)
   :group 'dirvish :interactive nil)
 
-(define-derived-mode dirvish-misc-mode special-mode
+(define-derived-mode dirvish-misc-mode special-mode "Dirvish Misc"
   "Major mode for mode/header-line and other special buffers."
   (setq face-remapping-alist '((header-line-inactive header-line)
                                (mode-line-inactive mode-line))
