@@ -830,7 +830,7 @@ buffer, it defaults to filename under the cursor when it is nil."
   (when (>= (length (dv-preview-buffers dv)) dirvish-preview-buffers-max-count)
     (dirvish--kill-buffer (frame-parameter nil 'dv-preview-last)))
   (with-current-buffer (dirvish--util-buffer "temp")
-    (let ((text (gethash file (dv-preview-hash dv))) info)
+    (let ((text (gethash file (dv-preview-hash dv))) info jka-compr-verbose)
       (with-silent-modifications
         (setq buffer-read-only t)
         (if text (insert text)
@@ -852,8 +852,8 @@ buffer, it defaults to filename under the cursor when it is nil."
                    (and (bound-and-true-p so-long-detected-p)
                         (error "No preview of file with long lines"))))
         (error (setq info (error-message-string err))))
-      (set-frame-parameter nil 'dv-preview-last (current-buffer))
       (if info (prog1 `(info . ,info) (dirvish--kill-buffer (current-buffer)))
+        (set-frame-parameter nil 'dv-preview-last (current-buffer))
         (run-hooks 'dirvish-preview-setup-hook)
         (unless text (puthash file (buffer-string) (dv-preview-hash dv)))
         `(buffer . ,(current-buffer))))))
@@ -1192,8 +1192,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (use-local-map dirvish-mode-map)
   (dirvish--hide-dired-header)
   (dirvish--maybe-toggle-cursor 'box) ; restore from `wdired'
-  (setq-local dirvish--attrs-hash
-              (or dirvish--attrs-hash (dirvish--ht))
+  (setq-local dirvish--attrs-hash (or dirvish--attrs-hash (dirvish--ht))
               revert-buffer-function #'dirvish-revert
               tab-bar-new-tab-choice "*scratch*"
               dired-hide-details-hide-symlink-targets nil

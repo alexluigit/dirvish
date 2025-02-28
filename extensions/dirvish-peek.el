@@ -70,6 +70,7 @@ one of categories in `dirvish-peek-categories'."
       (add-hook 'post-command-hook #'dirvish-peek-update-h 90 t)
       (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h nil t)
       (setq new-dv (dirvish--new :type 'peek))
+      (dirvish--init-util-buffers new-dv)
       ;; `dirvish-image-dp' needs this.
       (setf (dv-index new-dv) (cons default-directory (current-buffer)))
       (setf (dv-preview-window new-dv)
@@ -104,10 +105,9 @@ one of categories in `dirvish-peek-categories'."
 
 (defun dirvish-peek-exit-h ()
   "Hook for `minibuffer-exit-hook' to destroy peek session."
-  (dolist (dv (hash-table-values dirvish--session-hash))
-    (when (eq (dv-type dv) 'peek)
-      (dirvish--clear-session dv)
-      (remhash (dv-id dv) dirvish--session-hash)))
+  (when-let* ((dv (dirvish--get-session 'type 'peek)))
+    (dirvish--clear-session dv)
+    (remhash (dv-id dv) dirvish--session-hash))
   (dirvish-prop :peek-last nil))
 
 ;;;###autoload

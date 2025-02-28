@@ -728,7 +728,7 @@ Require: `tar' (executable)"
   :require (dirvish-zipinfo-program dirvish-tar-program)
   (cond ((equal ext "zip") `(shell . (,dirvish-zipinfo-program ,file)))
         ;; Emacs source code files, let `fallback' handles it
-        ((string-suffix-p ".el.gz" file))
+        ((string-suffix-p ".el.gz" file) nil)
         ((member ext '("tar" "zst" "bz2" "bz" "gz" "xz" "tgz"))
          `(shell . (,dirvish-tar-program "-tvf" ,file)))))
 
