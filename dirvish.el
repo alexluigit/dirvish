@@ -703,7 +703,7 @@ buffer, it defaults to filename under the cursor when it is nil."
             (setq buffer (apply fn (list dir-or-list flags))))
         (require 'dirvish-tramp)
         (setq buffer (dirvish-tramp-noselect fn dir-or-list flags remote)))
-      (with-current-buffer buffer (dirvish-init-dired-buffer))
+      (with-current-buffer buffer (dirvish--setup-dired))
       (push (cons key buffer) (dv-roots dv))
       (push (cons key buffer) dired-buffers))
     (with-current-buffer buffer
@@ -1182,7 +1182,7 @@ Dirvish sets `revert-buffer-function' to this function."
     (dirvish--dir-data-async default-directory (current-buffer)))
   (run-hooks 'dirvish-after-revert-hook))
 
-(defun dirvish-init-dired-buffer ()
+(defun dirvish--setup-dired ()
   "Initialize a Dired buffer for Dirvish."
   (use-local-map dirvish-mode-map)
   (dirvish--hide-dired-header)
@@ -1448,7 +1448,7 @@ are killed and the Dired buffer(s) in the selected window are buried."
                (dired-noselect dirvish-dired-noselect-a :around)
                (dired-insert-subdir dirvish-insert-subdir-a :after)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
-               (wdired-change-to-dired-mode dirvish-init-dired-buffer :after))))
+               (wdired-change-to-dired-mode dirvish--setup-dired :after))))
     (if dirvish-override-dired-mode
         (pcase-dolist (`(,sym ,fn ,how) ads) (advice-add sym how fn))
       (pcase-dolist (`(,sym ,fn) ads) (advice-remove sym fn)))))

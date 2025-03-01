@@ -583,8 +583,8 @@ Require: `vipsthumbnail'"
       (cond
        ((file-exists-p cache)
         `(img . ,(create-image cache nil nil :max-width w :max-height h)))
-       (t `(cache . ("vipsthumbnail",file "--size" ,(format "%sx" w)
-                     "--output" ,cache)))))))
+       (t `(cache . (,dirvish-vipsthumbnail-program
+                     ,file "--size" ,(format "%sx" w) "--output" ,cache)))))))
 
 (dirvish-define-preview gif (file ext)
   "Preview gif images with animations."
