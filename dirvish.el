@@ -1324,6 +1324,8 @@ INHIBIT-SETUP is non-nil."
   "Build layout for Dirvish session DV."
   (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
   (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
+  ;; `dired' and `dired-jump' delete the old root window, so reset it
+  (setf (dv-root-window dv) (selected-window))
   (let* ((layout (dv-curr-layout dv))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
                    (header (side . above) (window-height . -2)
