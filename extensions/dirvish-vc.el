@@ -130,15 +130,15 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
          (with-current-buffer buf
            (maphash
             (lambda (k v)
-              (let ((orig (gethash k dirvish--attrs-hash)))
+              (let ((orig (gethash k dirvish--dir-data)))
                 (setf (plist-get orig :vc-state) (plist-get v :vc-state))
                 (setf (plist-get orig :git-msg) (plist-get v :git-msg))
-                (puthash k orig dirvish--attrs-hash)))
+                (puthash k orig dirvish--dir-data)))
             data)
            (dirvish-prop :vc-info info)
            (unless inhibit-setup (run-hooks 'dirvish-setup-hook))))
        (when-let* ((win (get-buffer-window buf)) ((window-live-p win)))
-         (with-selected-window win (dirvish-update-body-h))))
+         (with-selected-window win (dirvish--update-display))))
      (delete-process p)
      (dirvish--kill-buffer (process-buffer p)))
    nil 'meta (cons buffer inhibit-setup)))

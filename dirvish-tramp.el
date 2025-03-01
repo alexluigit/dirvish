@@ -52,7 +52,7 @@ FN is the original `dired-noselect' closure."
            (tramp-get-connection-property vec "direct-async-process" nil))))
 
 (defun dirvish-tramp--ls-parser (entry output)
-  "Parse ls OUTPUT for ENTRY and store it in `dirvish--attrs-hash'."
+  "Parse ls OUTPUT for ENTRY and store it in `dirvish--dir-data'."
   (dolist (file (and (> (length output) 2) (cl-subseq output 2 -1)))
     (cl-destructuring-bind
         (inode priv lnum user group size mon day time &rest path)
@@ -67,7 +67,7 @@ FN is the original `dired-noselect' closure."
                  `(:builtin ,(list f-type lnum user group nil
                                    f-mtime nil size priv nil inode)
                             :type ,(cons (if f-dirp 'dir 'file) f-truename))
-                 dirvish--attrs-hash)))))
+                 dirvish--dir-data)))))
 
 (defun dirvish-tramp-dir-data-proc-s (proc _exit)
   "Sentinel for `dirvish-data-for-dir''s process PROC."
@@ -81,7 +81,7 @@ FN is the original `dired-noselect' closure."
             (dirvish-tramp--ls-parser dir data)
             (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))
           (when-let* ((win (get-buffer-window buf)) ((window-live-p win)))
-            (with-selected-window win (dirvish-update-body-h)))))
+            (with-selected-window win (dirvish--update-display)))))
     (dirvish--kill-buffer (process-buffer proc))))
 
 (cl-defmethod dirvish-data-for-dir

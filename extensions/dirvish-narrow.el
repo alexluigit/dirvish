@@ -53,7 +53,7 @@ should return a list of regular expressions."
           (cl-loop for idx from 0
                    for (dir . pos) in dired-subdir-alist
                    do (dirvish-narrow--filter-subdir dir pos regex-list idx)))
-        (dirvish-update-body-h)))))
+        (dirvish--update-display)))))
 
 (defun dirvish-narrow--revert ()
   "Revert Dirvish buffer with empty narrowing filter."
@@ -97,7 +97,7 @@ IDX the index of DIR in `dired-subdir-alist'."
   "Minibuffer setup function for `dirvish-narrow'."
   (with-current-buffer (window-buffer (minibuffer-selected-window))
     (goto-char (dirvish-prop :content-begin))
-    (dirvish-update-body-h))
+    (dirvish--update-display))
   (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
 
 ;;;###autoload

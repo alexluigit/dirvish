@@ -167,7 +167,7 @@ RANGE can be `buffer', `session', `all'."
             (pop-to-buffer (current-buffer)))))
       (when (eq buffer (current-buffer))
         (with-current-buffer buffer
-          (revert-buffer) (dirvish-update-body-h))))))
+          (revert-buffer) (dirvish--update-display))))))
 
 (defun dirvish-yank-proc-filter (proc string)
   "Filter for yank task PROC's STRING."

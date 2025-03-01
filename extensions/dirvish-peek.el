@@ -75,7 +75,7 @@ one of categories in `dirvish-peek-categories'."
       (setf (dv-preview-window new-dv)
             (or (and (window-live-p win) win)
                 (minibuffer-selected-window) (next-window)))
-      (cl-loop for (k v) on dirvish-scopes by 'cddr
+      (cl-loop for (k v) on dirvish--scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (dirvish-prop :dv (dv-id new-dv))
       (dirvish-prop :preview-dps
@@ -106,7 +106,7 @@ one of categories in `dirvish-peek-categories'."
   "Hook for `minibuffer-exit-hook' to destroy peek session."
   (when-let* ((dv (dirvish--get-session 'type 'peek)))
     (dirvish--clear-session dv)
-    (remhash (dv-id dv) dirvish--session-hash))
+    (remhash (dv-id dv) dirvish--sessions))
   (dirvish-prop :peek-last nil))
 
 ;;;###autoload

@@ -128,7 +128,7 @@ filename until the project root when opening a side session."
          (let (buffer-list-update-hook) (dirvish-find-entry-a dir))
          (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
            (dired-goto-file curr))
-         (dirvish-update-body-h))))))
+         (dirvish--update-display))))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
@@ -154,7 +154,7 @@ filename until the project root when opening a side session."
             (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))
             (t (dired-goto-file bname)))
-      (dirvish-update-body-h))))
+      (dirvish--update-display))))
 
 ;;;###autoload
 (define-minor-mode dirvish-side-follow-mode

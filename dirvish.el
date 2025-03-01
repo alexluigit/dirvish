@@ -232,7 +232,7 @@ runtime.  Set it to nil disables this feature."
   :group 'dirvish :type '(alist :key-type (repeat :tag "File extensions" string)
                                 :value-type (repeat :tag "External command and args" string)))
 
-(defcustom dirvish-reuse-session 'open
+(defcustom dirvish-reuse-session t
   "Whether to keep the latest session index buffer for later reuse.
 The valid values are:
 - t:      keep index buffer on both `dirvish-quit' and file open
@@ -271,15 +271,18 @@ input for `dirvish-redisplay-debounce' seconds."
   "Functions called in the file preview buffer."
   :group 'dirvish :type 'hook)
 
-;;;; Internal variables
+;;;; Keymaps
 
-(defvar dirvish-scopes
-  '(:frame selected-frame :tab tab-bar--current-tab-index :persp persp-curr))
 (defvar dirvish-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map dired-mode-map)
     (define-key map (kbd "q") 'dirvish-quit) map)
-  "Keymap used in dirvish buffers.")
+  "Keymap used in dirvish buffers, it inherits `dired-mode-map'.")
+
+;;;; Internal variables
+
+(defvar dirvish--scopes
+  '(:frame selected-frame :tab tab-bar--current-tab-index :persp persp-curr))
 (defvar dirvish--libraries
   '((dirvish-vc       vc-state git-msg vc-diff vc-blame vc-log vc-info)
     (dirvish-icons    all-the-icons nerd-icons vscode-icon)
@@ -290,12 +293,12 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar dirvish--history nil)
 (defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish--selected-window nil)
-(defvar dirvish--session-hash (make-hash-table :test #'equal))
+(defvar dirvish--sessions (make-hash-table :test #'equal))
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-preview-dispatchers '())
 (defvar server-buffer-clients)
 (defvar-local dirvish--props '())
-(defvar-local dirvish--attrs-hash nil)
+(defvar-local dirvish--dir-data nil)
 
 ;;;; Macros
 
@@ -367,15 +370,15 @@ DOCSTRING is the docstring for the attribute.  An optional
        (defun ,render ,args (ignore ,@args) ,@body))))
 
 (defmacro dirvish-attribute-cache (file attribute &rest body)
-  "Get FILE's ATTRIBUTE from `dirvish--attrs-hash'.
+  "Get FILE's ATTRIBUTE from `dirvish--dir-data'.
 When the attribute does not exist, set it with BODY."
   (declare (indent defun))
   `(let* ((md5 (secure-hash 'md5 ,file))
-          (hash (gethash md5 dirvish--attrs-hash))
+          (hash (gethash md5 dirvish--dir-data))
           (cached (plist-get hash ,attribute))
           (attr (or cached ,@body)))
      (unless cached
-       (puthash md5 (append hash (list ,attribute attr)) dirvish--attrs-hash))
+       (puthash md5 (append hash (list ,attribute attr)) dirvish--dir-data))
      attr))
 
 (cl-defmacro dirvish-define-preview (name &optional arglist docstring &rest body)
@@ -405,7 +408,7 @@ A dirvish preview dispatcher is a function consumed by
 
 (defsubst dirvish-curr ()
   "Return Dirvish session attached to current buffer, if there is any."
-  (gethash (dirvish-prop :dv) dirvish--session-hash))
+  (gethash (dirvish-prop :dv) dirvish--sessions))
 
 (defun dirvish--ht ()
   "Return a new hash-table with `equal' as its test function."
@@ -536,23 +539,23 @@ Set process's SENTINEL and PUTS accordingly."
   (roots ()                           :documentation "is all the history INDEX entries in DV."))
 
 (defun dirvish--new (&rest args)
-  "Create and save a new dirvish struct to `dirvish--session-hash'.
+  "Create and save a new dirvish struct to `dirvish--sessions'.
 ARGS is a list of keyword arguments for `dirvish' struct."
   (let (slots new)
     (while (keywordp (car args)) (dotimes (_ 2) (push (pop args) slots)))
     (setq new (apply #'make-dirvish (reverse slots)))
     ;; ensure we have a fallback fullframe layout
     (unless dirvish-default-layout (setf (dv-ff-layout new) '(1 0.11 0.55)))
-    (puthash (dv-id new) new dirvish--session-hash)
+    (puthash (dv-id new) new dirvish--sessions)
     (dirvish--check-dependencies new)
     (dirvish--create-root-window new) new))
 
 (defun dirvish--get-session (&optional key val)
   "Return the first matched session has KEY of VAL."
   (setq key (or key 'type) val (or val 'default))
-  (cl-loop for dv being the hash-values of dirvish--session-hash
+  (cl-loop for dv being the hash-values of dirvish--sessions
            for b = (cdr (dv-index dv))
-           with (fr tab psp) = (cl-loop for (_ v) on dirvish-scopes by 'cddr
+           with (fr tab psp) = (cl-loop for (_ v) on dirvish--scopes by 'cddr
                                         collect (and (functionp v) (funcall v)))
            if (or (null b) ; newly created session
                   (and (buffer-live-p b)
@@ -718,7 +721,7 @@ buffer, it defaults to filename under the cursor when it is nil."
       (dirvish-prop :preview-dps
         (if remote '(dirvish-tramp-dp) (dv-preview-dispatchers dv)))
       (dirvish-prop :attrs (dv-attributes dv))
-      (cl-loop for (k v) on dirvish-scopes by 'cddr
+      (cl-loop for (k v) on dirvish--scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (when bname (dired-goto-file bname))
       (setf (dv-index dv) (cons key buffer))
@@ -733,7 +736,7 @@ buffer, it defaults to filename under the cursor when it is nil."
     (ansi-color-apply-on-region
      (goto-char pos) (progn (forward-line (frame-height)) (point)))))
 
-(defun dirvish-update-body-h ()
+(defun dirvish--update-display ()
   "Update UI of Dirvish."
   (when-let* ((dv (dirvish-curr)) ((null (derived-mode-p 'wdired-mode))))
     (cond ((not (dirvish--apply-hiding-p dirvish-hide-cursor)))
@@ -783,7 +786,7 @@ buffer, it defaults to filename under the cursor when it is nil."
         (set-window-configuration wconf))
       (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
       (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
-      (remhash (dv-id dv) dirvish--session-hash))))
+      (remhash (dv-id dv) dirvish--sessions))))
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
@@ -792,7 +795,7 @@ buffer, it defaults to filename under the cursor when it is nil."
               (winconf t) (layout t)
               (old-tab (with-selected-window window (dirvish-prop :tab)))
               (old-frame (with-selected-window window (dirvish-prop :frame)))
-              (sc (cl-loop for (k v) on dirvish-scopes by 'cddr
+              (sc (cl-loop for (k v) on dirvish--scopes by 'cddr
                            append (list k (and (functionp v) (funcall v)))))
               (frame t) (tab t))
     (setq winconf (dv-winconf dv) layout (dv-curr-layout dv)
@@ -1177,7 +1180,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (dired-revert)
   (dirvish--hide-dired-header)
   (when ignore-auto ; meaning it is called interactively from user
-    (setq-local dirvish--attrs-hash (dirvish--ht))
+    (setq-local dirvish--dir-data (dirvish--ht))
     (dirvish--dir-data-async default-directory (current-buffer)))
   (run-hooks 'dirvish-after-revert-hook))
 
@@ -1186,15 +1189,15 @@ Dirvish sets `revert-buffer-function' to this function."
   (use-local-map dirvish-mode-map)
   (dirvish--hide-dired-header)
   (dirvish--maybe-toggle-cursor 'box) ; restore from `wdired'
-  (setq-local dirvish--attrs-hash (or dirvish--attrs-hash (dirvish--ht))
+  (setq-local dirvish--dir-data (or dirvish--dir-data (dirvish--ht))
               revert-buffer-function #'dirvish-revert
               tab-bar-new-tab-choice "*scratch*"
               dired-hide-details-hide-symlink-targets nil
               dired-kill-when-opening-new-dired-buffer nil)
   (add-hook 'window-selection-change-functions #'dirvish--change-selected nil t)
-  (add-hook 'window-configuration-change-hook #'dirvish-update-body-h nil t)
+  (add-hook 'window-configuration-change-hook #'dirvish--update-display nil t)
   (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
-  (add-hook 'post-command-hook #'dirvish-update-body-h nil t)
+  (add-hook 'post-command-hook #'dirvish--update-display nil t)
   (add-hook 'kill-buffer-hook #'dirvish-kill-buffer-h nil t)
   (set-buffer-modified-p nil))
 
@@ -1223,7 +1226,7 @@ LEVEL is the depth of current window."
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--maybe-toggle-cursor '(box . 0)) ; always hide cursor in parents
       (dirvish-prop :attrs (dirvish--attrs-expand icon))
-      (setq-local dirvish--attrs-hash (dirvish--ht))
+      (setq-local dirvish--dir-data (dirvish--ht))
       (dirvish--render-attrs) buf)))
 
 (defun dirvish--create-parent-windows (dv)
@@ -1289,7 +1292,7 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
                     (read (buffer-string)))))
        (when (buffer-live-p buf)
          (with-current-buffer buf
-           (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) data)
+           (maphash (lambda (k v) (puthash k v dirvish--dir-data)) data)
            (dirvish-prop :vc-backend (or vc 0)) ; for &context compat
            (dirvish-data-for-dir dir buf inhibit-setup))))
      (delete-process p)
@@ -1305,7 +1308,7 @@ INHIBIT-SETUP is non-nil."
   (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
   (when-let* ((win (get-buffer-window buffer))
               ((window-live-p win)))
-    (with-selected-window win (dirvish-update-body-h))))
+    (with-selected-window win (dirvish--update-display))))
 
 (defun dirvish--window-split-order ()
   "Compute the window split order."

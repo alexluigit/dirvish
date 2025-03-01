@@ -351,7 +351,7 @@ value 16, let the user choose the root directory of their search."
                 (propertize (current-time-string)
                             'face (if success 'success 'error))))
       (cond ((not input) (setq input (dirvish-fd--read-input)))
-            (t (dirvish-update-body-h)))
+            (t (dirvish--update-display)))
       (when (eq input 'cancelled)
         (kill-buffer buf)
         (setf (dv-index dv) (car (dv-roots dv)))
@@ -382,7 +382,7 @@ When GLOB, convert the regexs using `dired-glob-regexp'."
                  unless (cl-loop for regex in regexs
                                  thereis (not (string-match regex file)))
                  do (insert line))))
-    (dirvish-update-body-h)))
+    (dirvish--update-display)))
 
 (defun dirvish-fd-minibuffer-update-h ()
   "Minibuffer update function for `dirvish-fd'."
@@ -446,7 +446,7 @@ The command run is essentially:
       (dirvish-prop :preview-dps
         (if remote '(dirvish-tramp-dp) (dv-preview-dispatchers dv)))
       (dirvish-prop :attrs (dv-attributes dv))
-      (cl-loop for (k v) on dirvish-scopes by 'cddr
+      (cl-loop for (k v) on dirvish--scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (let ((proc (apply #'start-file-process
                          "fd" buffer
