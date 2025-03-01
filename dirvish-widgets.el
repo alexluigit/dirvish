@@ -583,6 +583,8 @@ Require: `vipsthumbnail'"
       (cond
        ((file-exists-p cache)
         `(img . ,(create-image cache nil nil :max-width w :max-height h)))
+       ((member ext '("ico" "svg")) ; do not convert them, will get blank images
+        `(img . ,(create-image file nil nil :max-width w :max-height h)))
        (t `(cache . (,dirvish-vipsthumbnail-program
                      ,file "--size" ,(format "%sx" w) "--output" ,cache)))))))
 
