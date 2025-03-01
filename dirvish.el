@@ -37,9 +37,7 @@
 Dirvish ships with these attributes:
 
 - `subtree-state': A indicator for directory expanding state.
-- `all-the-icons': File icons provided by `all-the-icons.el'.
-- `nerd-icons': File icons provided by `nerd-icons.el'.
-- `vscode-icon': File icons provided by `vscode-icon.el'.
+- `nerd-icons' | `all-the-icons' | `vscode-icons': File icons.
 - `collapse': Collapse unique nested paths.
 - `git-msg': Append git commit message to filename.
 - `vc-state': The version control state at left fringe.

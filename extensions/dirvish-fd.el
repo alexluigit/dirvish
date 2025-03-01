@@ -432,7 +432,7 @@ The command run is essentially:
       (dired-mode dir ls-switches)
       (setq-local default-directory dir
                   dired-subdir-alist (list (cons dir (point-min-marker))))
-      (dirvish-init-dired-buffer)
+      (dirvish--setup-dired)
       (let ((map (make-sparse-keymap)))
         (set-keymap-parent map (current-local-map))
         (define-key map "\C-c\C-k" #'dirvish-fd-kill)

@@ -44,8 +44,7 @@ all categories."
 (defun dirvish-peek--prepare-cand-fetcher ()
   "Set candidate fetcher according to current completion framework."
   (dirvish-prop :peek-fetcher
-    (cond (dirvish-peek-candidate-fetcher
-           dirvish-peek-candidate-fetcher)
+    (cond (dirvish-peek-candidate-fetcher dirvish-peek-candidate-fetcher)
           ((bound-and-true-p vertico-mode) #'vertico--candidate)
           ((bound-and-true-p ivy-mode) (lambda () (ivy-state-current ivy-last)))
           ((bound-and-true-p icomplete-mode)
