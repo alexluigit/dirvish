@@ -991,7 +991,12 @@ When PROC finishes, fill preview buffer with process result."
                         (unless remote (file-attributes f-name)))
               f-type (dirvish-attribute-cache f-name :type
                        (let ((ch (progn (back-to-indentation) (char-after))))
-                         `(,(if (eq ch 100) 'dir 'file) . nil))))
+                         (cond ; ASCII: d -> 100, l -> 108
+                          ((eq ch 100) '(dir . nil))
+                          ((eq ch 108) ; use slash for dir check is unreliable
+                           `(,(if (file-directory-p f-name) 'dir 'file) .
+                             ,(buffer-substring (+ f-end 4) l-end)))
+                          (t '(file . nil))))))
         (unless (get-text-property f-beg 'mouse-face)
           (dired-insert-set-properties l-beg l-end)))
       (cl-loop
