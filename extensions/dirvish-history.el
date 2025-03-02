@@ -23,7 +23,7 @@
   (unless dirvish--history (user-error "Dirvish[error]: no history entries"))
   (let* ((entries (dirvish--append-metadata 'file dirvish--history))
          (result (completing-read "Recently visited: " entries)))
-      (when result (dirvish-find-entry-a result))))
+      (when result (dirvish--find-entry 'find-file result))))
 
 ;;;###autoload
 (defun dirvish-history-last ()
@@ -36,7 +36,7 @@
           for entry in dirvish--history
           thereis (and (member entry local-entries)
                        (not (equal entry (dired-current-directory))) entry))))
-    (and match (dirvish-find-entry-a match))))
+    (and match (dirvish--find-entry 'find-file match))))
 
 ;;;###autoload
 (defun dirvish-history-go-forward (arg)
@@ -49,12 +49,12 @@ ARG defaults to 1."
          (idx (cl-position (car (dv-index dv)) dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
-           (dirvish-find-entry-a (nth (- len 1) dirs))
+           (dirvish--find-entry 'find-file (nth (- len 1) dirs))
            (message "Dirvish: reached the end of history"))
           ((< new-idx 0)
-           (dirvish-find-entry-a (nth 0 dirs))
+           (dirvish--find-entry 'find-file (nth 0 dirs))
            (message "Dirvish: reached the beginning of history"))
-          (t (dirvish-find-entry-a (nth new-idx dirs))))))
+          (t (dirvish--find-entry 'find-file (nth new-idx dirs))))))
 
 ;;;###autoload
 (defun dirvish-history-go-backward (arg)

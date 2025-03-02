@@ -125,7 +125,7 @@ filename until the project root when opening a side session."
                  ((not (string-suffix-p "COMMIT_EDITMSG" curr)))
                  ((not (equal prev curr))))
        (with-selected-window win
-         (let (buffer-list-update-hook) (dirvish-find-entry-a dir))
+         (let (buffer-list-update-hook) (dirvish--find-entry 'find-file dir))
          (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
            (dired-goto-file curr))
          (dirvish--update-display))))))
@@ -148,7 +148,7 @@ filename until the project root when opening a side session."
     (with-selected-window r-win ; `dirvish-curr' returns nil in this temp buffer
       ;; so set the prop to let `dired-noselect' get `dirvish-curr' correctly
       (dirvish-prop :dv (dv-id dv))
-      (dirvish-find-entry-a path)
+      (dirvish--find-entry 'find-file path)
       (kill-buffer (get-buffer "*side-temp*")) ; remove `:dv' prop in it
       (cond ((not bname) nil)
             (dirvish-side-auto-expand

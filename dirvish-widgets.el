@@ -326,7 +326,7 @@ GROUP-TITLES is a list of group titles."
    'keymap `(header-line keymap
                          (mouse-1 . (lambda (_ev)
                                       (interactive "e")
-                                      (dirvish-find-entry-a ,path))))))
+                                      (dirvish--find-entry 'find-file ,path))))))
 
 (dirvish-define-mode-line path
   "Path of file under the cursor."

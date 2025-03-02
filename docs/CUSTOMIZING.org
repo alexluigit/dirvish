@@ -68,14 +68,9 @@ When you quit a Dirvish session, either by using ~dirvish-quit~ command (bound t
 =q=) or by opening a file (which automatically quits the session), all Dired
 buffers except the index buffer are killed.
 
-The ~dired-find-alternate-file~ command is ignored within Dirvish, but this should
-not be a concern, as Dirvish eliminates the need for manual Dired buffer
-management.
-
-From Dirvish v2.1 onwards, the ~dired-kill-when-opening-new-dired-buffer~ option
-is honored.  This means that opening a new Dired buffer within a Dirvish session
-will kill the previous one, ensuring that each session primarily retains only
-its index buffer.
+Dirvish respects the ~dired-kill-when-opening-new-dired-buffer~ option, preventing
+the creation of multiple Dired buffers. Alternatively, you may manually remove
+unwanted Dired buffers using the ~dired-find-alternate-file~ command.
 
 If you prefer Dirvish to kill all Dired buffers when quitting, instead of
 leaving the last index buffer open, set ~dirvish-reuse-session~ to =nil=.

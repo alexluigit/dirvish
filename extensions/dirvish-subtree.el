@@ -415,7 +415,7 @@ This command takes a mouse event EV as its argument."
       (when-let* ((entry (dired-get-filename nil t)))
         (if (file-directory-p entry)
             (dirvish-subtree-toggle)
-          (dirvish-find-entry-a entry))))
+          (dirvish--find-entry 'find-file entry))))
     (when (window-live-p win) (select-window win))))
 
 ;;;###autoload (autoload 'dirvish-subtree-menu "dirvish-subtree" nil t)

@@ -635,46 +635,34 @@ FROM-QUIT is used to signify the calling command."
                  (dv-preview-dispatchers dv) (dirvish--preview-dps-validate)
                  (dv-attributes dv) (dirvish--attrs-expand attrs))))
 
-(defun dirvish--only-index ()
-  "If `dired-kill-when-opening-new-dired-buffer', only keep session index."
-  (when-let* (((default-value 'dired-kill-when-opening-new-dired-buffer))
-              (dv (dirvish-curr)) (index-buf (cdr (dv-index dv))))
-    (cl-loop for (_d . b) in (dv-roots dv)
-             unless (eq index-buf b) do (kill-buffer b))))
+(cl-defun dirvish--find-entry (find-fn entry)
+  "Find ENTRY using FIND-FN in current dirvish session.
+FIND-FN can be one of `find-file', `find-alternate-file',
+`find-file-other-window' or `find-file-other-frame'.  ENTRY can be a
+filename or a string with format of `dirvish-fd-bufname'."
+  (let ((dv (dirvish-curr))
+        (switch-to-buffer-preserve-window-point (null dired-auto-revert-buffer))
+        (find-file-run-dired t) process-connection-type directory?)
+    (when (string-prefix-p "🔍" entry)
+      (dirvish-save-dedication (switch-to-buffer (dirvish-fd-find entry)))
+      (cl-return-from dirvish--find-entry))
+    (unless (setq directory? (file-directory-p entry))
+      (cl-loop with e = (downcase (or (file-name-extension entry) ""))
+               for (es . (c . a)) in dirvish-open-with-programs
+               when (and (member e es) (executable-find c)) do
+               (cl-return-from dirvish--find-entry
+                 (let ((a (cl-substitute entry "%f" a :test #'string=)))
+                   (when (eq find-fn 'find-alternate-file) (kill-current-buffer))
+                   (apply #'start-process "" nil "nohup" (append (list c) a))))))
+    (unless dv ; for `find-dired', just forward it
+      (cl-return-from dirvish--find-entry (funcall find-fn entry)))
+    (when (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window))
+      (user-error "Can not find a suitable other-window here"))
+    (unless directory? (if-let* ((fn (dv-open-file-fn dv))) (funcall fn)
+                         (dirvish--clear-session dv)))
+    (dirvish-save-dedication (funcall find-fn entry))))
 
 ;;;; Advices
-
-(defun dirvish-up-dir-a (fn args)
-  "Ensure FN and ARGS applied with window undedicated."
-  (dirvish-save-dedication (apply fn args))
-  (dirvish--only-index))
-
-(cl-defun dirvish-find-entry-a (&optional entry)
-  "Find ENTRY in current dirvish session.
-ENTRY can be a filename or a string with format of
-`dirvish-fd-bufname' used to query or create a `fd' result
-buffer, it defaults to filename under the cursor when it is nil."
-  (let* ((entry (or entry (dired-get-filename nil t)))
-         (buf (cond ((string-prefix-p "🔍" entry)
-                     (dirvish-fd-find entry))
-                    ((file-directory-p entry)
-                     (dired-noselect entry))
-                    ((string-suffix-p "/" entry)
-                     (user-error (concat entry " is not a directory")))))
-         (dv (dirvish-curr)) process-connection-type file)
-    (when buf (dirvish-save-dedication (switch-to-buffer buf))
-          (cl-return-from dirvish-find-entry-a (dirvish--only-index)))
-    (setq file (expand-file-name entry))
-    (cl-loop with e = (downcase (or (file-name-extension entry) ""))
-             for (es . (c . a)) in dirvish-open-with-programs
-             when (and (member e es) (executable-find c)) do
-             (cl-return-from dirvish-find-entry-a
-               (let ((a (cl-substitute file "%f" a :test #'string=)))
-                 (apply #'start-process "" nil "nohup" (append (list c) a)))))
-    (unless dv (cl-return-from dirvish-find-entry-a (find-file file)))
-    (if-let* ((fn (dv-open-file-fn dv))) (funcall fn)
-      (dirvish--clear-session dv))
-    (find-file file)))
 
 (defun dirvish-insert-subdir-a (dirname &rest _)
   "Setup newly inserted subdir DIRNAME for this Dirvish buffer."
@@ -685,6 +673,10 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Advice for `wdired-change-to-wdired-mode'."
   (let (dirvish-hide-cursor) (dirvish--maybe-toggle-cursor 'hollow))
   (dirvish--render-attrs 'clear))
+
+(defun dirvish-find-alt-a ()
+  "Advice for `dired-find-alternate-file'."
+  (dirvish--find-entry 'find-alternate-file (dired-get-file-for-visit)))
 
 (defun dirvish-dired-noselect-a (fn dir-or-list &optional flags)
   "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
@@ -1197,8 +1189,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (setq-local dirvish--dir-data (or dirvish--dir-data (dirvish--ht))
               revert-buffer-function #'dirvish-revert
               tab-bar-new-tab-choice "*scratch*"
-              dired-hide-details-hide-symlink-targets nil
-              dired-kill-when-opening-new-dired-buffer nil)
+              dired-hide-details-hide-symlink-targets nil)
   (add-hook 'window-selection-change-functions #'dirvish--change-selected nil t)
   (add-hook 'window-configuration-change-hook #'dirvish--update-display nil t)
   (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
@@ -1378,18 +1369,18 @@ INHIBIT-SETUP is non-nil."
                            (not (dv-curr-layout vis?)))
                   (unless (dirvish-curr) (select-window (dv-root-window vis?)))
                   (dirvish-layout-toggle))
-                (dirvish-find-entry-a dir))
+                (dirvish--find-entry 'find-file dir))
           (reuse?
            (with-selected-window (dirvish--create-root-window reuse?)
              (setf (dv-curr-layout reuse?)
                    (or (dv-curr-layout reuse?) dirvish-default-layout))
              (and dwim (not (one-window-p)) (setf (dv-curr-layout reuse?) nil))
              (if (eq dirvish-reuse-session 'resume) (dirvish--build-layout reuse?)
-               (dirvish-find-entry-a dir))))
+               (dirvish--find-entry 'find-file dir))))
           (t (dirvish--new
               :curr-layout (if dwim (and (one-window-p) dirvish-default-layout)
                              dirvish-default-layout))
-             (dirvish-find-entry-a dir)))))
+             (dirvish--find-entry 'find-file dir)))))
 
 ;;;; Major modes
 
@@ -1452,8 +1443,8 @@ are killed and the Dired buffer(s) in the selected window are buried."
 (define-minor-mode dirvish-override-dired-mode
   "Let Dirvish take over Dired globally."
   :group 'dirvish :global t
-  (let ((ads '((dired-find-file dirvish-find-entry-a :override)
-               (dired-up-directory dirvish-up-dir-a :around)
+  (let ((ads '((dired--find-file dirvish--find-entry :override)
+               (dired-find-alternate-file dirvish-find-alt-a :override)
                (dired-noselect dirvish-dired-noselect-a :around)
                (dired-insert-subdir dirvish-insert-subdir-a :after)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
