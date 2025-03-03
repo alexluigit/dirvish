@@ -640,7 +640,7 @@ FROM-QUIT is used to signify the calling command."
 FIND-FN can be one of `find-file', `find-alternate-file',
 `find-file-other-window' or `find-file-other-frame'.  ENTRY can be a
 filename or a string with format of `dirvish-fd-bufname'."
-  (let ((dv (dirvish-curr))
+  (let ((dv (dirvish-curr)) (buf (current-buffer))
         (switch-to-buffer-preserve-window-point (null dired-auto-revert-buffer))
         (find-file-run-dired t) process-connection-type directory?)
     (when (string-prefix-p "🔍" entry)
@@ -660,6 +660,12 @@ filename or a string with format of `dirvish-fd-bufname'."
       (user-error "Can not find a suitable other-window here"))
     (unless directory? (if-let* ((fn (dv-open-file-fn dv))) (funcall fn)
                          (dirvish--clear-session dv)))
+    (when (and directory? (eq find-fn 'find-alternate-file))
+      (cl-return-from dirvish--find-entry ; prevent session exit too early
+        (dirvish-save-dedication
+         (funcall 'find-file entry)
+         (when (and (> (length (dv-roots dv)) 1) (not (get-buffer-window buf)))
+           (kill-buffer buf)))))
     (dirvish-save-dedication (funcall find-fn entry))))
 
 ;;;; Advices
@@ -1322,17 +1328,18 @@ INHIBIT-SETUP is non-nil."
 
 (defun dirvish--build-layout (dv)
   "Build layout for Dirvish session DV."
-  (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
-  (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
-  ;; `dired' and `dired-jump' delete the old root window, so reset it
-  (setf (dv-root-window dv) (selected-window))
-  (let* ((layout (dv-curr-layout dv))
+  (let* ((layout (dv-curr-layout dv)) (conf (dv-winconf dv))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
                    (header (side . above) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))
                    (footer (side . below) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))))
          (w-order (and layout (dirvish--window-split-order))) util-windows)
+    (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
+    ;; only record window config before creating fullframe layout
+    (setf (dv-winconf dv) (when layout (or conf (current-window-configuration))))
+    ;; `dired' and `dired-jump' delete the old root window, so reset it
+    (setf (dv-root-window dv) (selected-window))
     (dirvish--init-special-buffers dv)
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
@@ -1361,23 +1368,27 @@ INHIBIT-SETUP is non-nil."
 (defun dirvish--reuse-or-create (path &optional dwim)
   "Find PATH in dirvish, check `one-window-p' for DWIM."
   (let* ((dir (or path default-directory))
+         (fn (if dired-kill-when-opening-new-dired-buffer 'find-alternate-file
+               'find-file))
          (vis? (cl-loop for w in (window-list)
                         for b = (window-buffer w)
                         for dv = (with-current-buffer b (dirvish-curr))
                         thereis (and dv (eq 'default (dv-type dv)) dv)))
          (reuse? (unless vis? (dirvish--get-session 'type 'default))))
-    (cond (vis? (when (and (null dwim) dirvish-default-layout
-                           (not (dv-curr-layout vis?)))
-                  (unless (dirvish-curr) (select-window (dv-root-window vis?)))
-                  (dirvish-layout-toggle))
-                (dirvish--find-entry 'find-file dir))
+    (cond (vis?
+           (unless (dirvish-curr)
+             (dirvish-save-dedication (switch-to-buffer (cdr (dv-index vis?)))))
+           (dirvish--find-entry fn dir)
+           (when (and dirvish-default-layout (not (dv-curr-layout vis?)))
+             (unless dwim (dirvish-layout-toggle))))
           (reuse?
            (with-selected-window (dirvish--create-root-window reuse?)
              (setf (dv-curr-layout reuse?)
                    (or (dv-curr-layout reuse?) dirvish-default-layout))
              (and dwim (not (one-window-p)) (setf (dv-curr-layout reuse?) nil))
-             (if (eq dirvish-reuse-session 'resume) (dirvish--build-layout reuse?)
-               (dirvish--find-entry 'find-file dir))))
+             (dirvish-save-dedication (switch-to-buffer (cdr (dv-index reuse?))))
+             (unless (eq dirvish-reuse-session 'resume)
+               (dirvish--find-entry fn dir))))
           (t (dirvish--new
               :curr-layout (if dwim (and (one-window-p) dirvish-default-layout)
                              dirvish-default-layout))
