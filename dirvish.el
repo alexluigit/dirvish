@@ -984,6 +984,7 @@ When PROC finishes, fill preview buffer with process result."
               f-type (dirvish-attribute-cache f-name :type
                        (let ((ch (progn (back-to-indentation) (char-after))))
                          (cond ; ASCII: d -> 100, l -> 108
+                          (remote `(,(if (eq ch 100) 'dir 'file) . nil))
                           ((eq ch 100) '(dir . nil))
                           ((eq ch 108) ; use slash for dir check is unreliable
                            `(,(if (file-directory-p f-name) 'dir 'file) .
