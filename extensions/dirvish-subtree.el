@@ -316,13 +316,16 @@ See `dirvish-subtree-file-viewer' for details"
    (list (directory-file-name (expand-file-name
                                (read-file-name "Expand to file: "
                                                (dired-current-directory))))))
-  (let ((file (dired-get-filename nil t)) (dir (dired-current-directory)))
+  (let* ((file (dired-get-filename nil t))
+         (dir (dired-current-directory))
+         (f-dir (and file (file-directory-p file) (file-name-as-directory file))))
     (cond ((equal file target) target)
-          ((and file (string-prefix-p file target))
+          ;; distinguish directories with same prefix, e.g .git/ and .github/
+          ((and file (string-prefix-p (or f-dir file) target))
            (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
            (let ((depth (1+ (dirvish-subtree--depth)))
                  (next (car (split-string
-                            (substring target (1+ (length file))) "/"))))
+                             (substring target (1+ (length file))) "/"))))
              (when (dirvish-subtree--move-to-file next depth)
                (dirvish-subtree-expand-to target))))
           ((string-prefix-p dir target)
