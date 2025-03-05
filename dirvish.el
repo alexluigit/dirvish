@@ -70,7 +70,7 @@ The default value contains:
   :group 'dirvish :type '(repeat (string :tag "File name extension")))
 
 (defcustom dirvish-preview-environment
-  '((inhibit-message . t) (non-essential . t) (delay-mode-hooks . t)
+  '((inhibit-message . t) (non-essential . t)
     (enable-dir-local-variables . nil) (enable-local-variables . :safe))
   "Variables which are bound for default file preview dispatcher.
 Credit: copied from `consult-preview-variables' in `consult.el'."
