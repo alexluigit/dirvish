@@ -81,6 +81,12 @@ filename until the project root when opening a side session."
                          ((eq dirvish-side-open-file-action 'vsplit)
                           (with-selected-window mru (split-window-right)))))))
 
+(defun dirvish-side-root-conf-fn (buffer)
+  "Setup BUFFER for side session."
+  (let ((name (buffer-name buffer)))
+    (unless (string-prefix-p " *SIDE::" name) ; hide it by prefix with " "
+      (rename-buffer (format " *SIDE::%s" name)))))
+
 (defun dirvish-side-root-window-fn (dv)
   "Create root window of DV according to `dirvish-side-display-alist'."
   (let* ((buf (with-current-buffer (get-buffer-create " *temp*")
@@ -142,6 +148,7 @@ filename until the project root when opening a side session."
                   :type 'side
                   :size-fixed 'width
                   :dedicated t
+                  :root-conf #'dirvish-side-root-conf-fn
                   :root-window-fn #'dirvish-side-root-window-fn
                   :open-file-fn #'dirvish-side-open-file-fn)))
          (r-win (dv-root-window dv)))
