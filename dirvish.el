@@ -517,14 +517,14 @@ Set process's SENTINEL and PUTS accordingly."
 
 (cl-defstruct (dirvish (:conc-name dv-))
   "Define dirvish session (`DV' for short) struct."
-  (id (make-temp-name "")             :documentation "is the unique key of DV's stored in `dirvish--sessions'.")
+  (id (make-temp-name "")             :documentation "is the unique key of DV stored in `dirvish--sessions'.")
   (timestamp (dirvish--timestamp)     :documentation "is the last access timestamp of DV.")
   (type 'default                      :documentation "is the type of DV.")
   (root-window ()                     :documentation "is the root/main window of DV.")
   (dedicated ()                       :documentation "passes to `set-window-dedicated-p' for ROOT-WINDOW.")
   (size-fixed ()                      :documentation "passes to `window-size-fixed' for ROOT-WINDOW.")
   (root-window-fn ()                  :documentation "is a function used to create the ROOT-WINDOW for DV.")
-  (open-file-fn ()                    :documentation "is a function used to open file under the cursor.")
+  (open-file-fn #'ignore              :documentation "is a function called before opening a file.")
   (curr-layout ()                     :documentation "is the working layout recipe of DV.")
   (ff-layout dirvish-default-layout   :documentation "is a full-frame layout recipe.")
   (reuse ()                           :documentation "indicates if DV has been reused.")
@@ -596,9 +596,9 @@ FROM-QUIT is used to signify the calling command."
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
-  (let* ((fn (or (dv-root-window-fn dv) #'frame-selected-window))
-         (w (funcall fn)))
-    (setf (dv-root-window dv) w) w))
+  (if-let* ((fn (dv-root-window-fn dv)))
+      (setf (dv-root-window dv) (funcall fn dv))
+    (setf (dv-root-window dv) (frame-selected-window))))
 
 (defun dirvish--preview-dps-validate (&optional dps)
   "Check if the requirements of dispatchers DPS are met."
@@ -661,9 +661,13 @@ filename or a string with format of `dirvish-fd-bufname'."
       (cl-return-from dirvish--find-entry (funcall find-fn entry)))
     (when (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window))
       (user-error "Can not find a suitable other-window here"))
-    (unless directory? (if-let* ((fn (dv-open-file-fn dv))) (funcall fn)
-                         (dirvish--clear-session dv)))
-    (dirvish-save-dedication (funcall find-fn entry))))
+    (if directory? (dirvish-save-dedication (funcall find-fn entry))
+      (funcall (dv-open-file-fn dv))
+      (dirvish--clear-session dv)
+      ;; if focusing a file window, do not kill previous buffer
+      (when (and (not (dirvish-curr)) (eq find-fn 'find-alternate-file))
+        (setq find-fn 'find-file))
+      (dirvish-save-dedication (funcall find-fn entry)))))
 
 ;;;; Advices
 
@@ -691,18 +695,15 @@ filename or a string with format of `dirvish-fd-bufname'."
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
-         (new-buffer-p (null buffer)))
+         (new-buffer-p (null buffer)) dired-buffers) ; disable reuse from dired
     (setf (dv-timestamp dv) (dirvish--timestamp))
     (when reuse? (setf (dv-reuse dv) t))
     (when new-buffer-p
-      (if (not remote)
-          (let ((dired-buffers nil)) ; disable reuse from dired
-            (setq buffer (apply fn (list dir-or-list flags))))
+      (if (not remote) (setq buffer (apply fn (list dir-or-list flags)))
         (require 'dirvish-tramp)
         (setq buffer (dirvish-tramp-noselect fn dir-or-list flags remote)))
       (with-current-buffer buffer (dirvish--setup-dired))
-      (push (cons key buffer) (dv-roots dv))
-      (push (cons key buffer) dired-buffers))
+      (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
       (cond (new-buffer-p nil)
             ((and (not remote) (not (equal flags dired-actual-switches)))
@@ -1338,7 +1339,8 @@ INHIBIT-SETUP is non-nil."
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dirvish-prop :fringe nil)
-    (dirvish--change-selected)
+    ;; if called from `dirvish-side--auto-jump', do nothing
+    (when (eq (dv-type dv) 'default) (dirvish--change-selected))
     (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
     (when (or (dv-curr-layout dv) (dv-dedicated dv))
       (set-window-dedicated-p nil t))
