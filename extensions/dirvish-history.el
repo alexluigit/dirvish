@@ -16,14 +16,37 @@
 (require 'dirvish)
 (require 'transient)
 
+(defcustom dirvish-history-sort-function #'dirvish-history--sort-by-atime
+  "Function used to sort history entries for `dirvish-history-jump'."
+  :group 'dirvish :type 'function)
+
+(defun dirvish-history--sort-by-atime (file-list)
+  "Sort the FILE-LIST by access time, from most recent to least recent."
+  (thread-last
+    file-list
+    ;; Use modification time, since getting file access time seems to count as
+    ;; accessing the file, ruining future uses.
+    (mapcar (lambda (f) (cons f (file-attribute-access-time (file-attributes f)))))
+    (seq-sort (pcase-lambda (`(,f1 . ,t1) `(,f2 . ,t2))
+                ;; Want existing, most recent, local files first.
+                (cond ((or (not (file-exists-p f1)) (file-remote-p f1)) nil)
+                      ((or (not (file-exists-p f2)) (file-remote-p f2)) t)
+                      (t (time-less-p t2 t1)))))
+    (mapcar #'car)))
+
 ;;;###autoload
 (defun dirvish-history-jump ()
   "Open a target directory from `dirvish--history'."
   (interactive)
   (unless dirvish--history (user-error "Dirvish[error]: no history entries"))
-  (let* ((entries (dirvish--append-metadata 'file dirvish--history))
-         (result (completing-read "Recently visited: " entries)))
-      (when result (dirvish--find-entry 'find-file result))))
+  (when-let* ((result
+               (completing-read
+                "Recently visited: "
+                (dirvish--completion-table-with-metadata
+                 dirvish--history
+                 `((category . file)
+                   (display-sort-function . ,dirvish-history-sort-function))))))
+    (dirvish--find-entry 'find-file result)))
 
 ;;;###autoload
 (defun dirvish-history-last ()

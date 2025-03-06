@@ -25,8 +25,6 @@
 (require 'cl-lib)
 (eval-when-compile (require 'project))
 (declare-function ansi-color-apply-on-region "ansi-color")
-(declare-function dirvish-fd-find "dirvish-fd")
-(declare-function dirvish-tramp-noselect "dirvish-tramp")
 
 ;;;; User Options
 
@@ -264,7 +262,7 @@ input for `dirvish-redisplay-debounce' seconds."
   "Functions called when directory data for the root buffer is ready."
   :group 'dirvish :type 'hook)
 
-(defcustom dirvish-find-entry-hook '(dirvish-insert-entry-h)
+(defcustom dirvish-find-entry-hook nil
   "Functions called before a Dired buffer is displayed."
   :group 'dirvish :type 'hook)
 
@@ -466,15 +464,12 @@ ALIST is window arguments passed to `window--display-buffer'."
   "Get parent directory of PATH."
   (file-name-directory (directory-file-name (expand-file-name path))))
 
-(defun dirvish--append-metadata (metadata completions)
-  "Append METADATA for minibuffer COMPLETIONS."
-  (let ((entry (if (functionp metadata)
-                   `(metadata (annotation-function . ,metadata))
-                 `(metadata (category . ,metadata)))))
-    (lambda (string pred action)
-      (if (eq action 'metadata)
-          entry
-        (complete-with-action action completions string pred)))))
+(defun dirvish--completion-table-with-metadata (table metadata)
+  "Return new completion TABLE with METADATA, see `completion-metadata'."
+  (lambda (string pred action)
+    (if (eq action 'metadata)
+        `(metadata . ,metadata)
+      (complete-with-action action table string pred))))
 
 (defun dirvish--change-selected (&rest _)
   "Record `dirvish--selected-window'."
@@ -647,10 +642,15 @@ FIND-FN can be one of `find-file', `find-alternate-file',
 `find-file-other-window' or `find-file-other-frame'.  ENTRY can be a
 filename or a string with format of `dirvish-fd-bufname'."
   (let ((switch-to-buffer-preserve-window-point (null dired-auto-revert-buffer))
-        (find-file-run-dired t) dv process-connection-type directory?)
+        (find-file-run-dired t) (dv (dirvish-curr))
+        process-connection-type directory? buf)
+    (when (setq buf (and dv (alist-get entry (dv-roots dv) nil nil #'equal)))
+      (cl-return-from dirvish--find-entry
+        (dirvish-save-dedication (switch-to-buffer buf))))
     (when (string-prefix-p "🔍" entry)
-      (dirvish-save-dedication (switch-to-buffer (dirvish-fd-find entry)))
-      (cl-return-from dirvish--find-entry))
+      (setq find-fn (prog1 'dirvish-fd (require 'dirvish-fd nil t)))
+      (pcase-let ((`(,re ,dir ,_) (split-string (substring entry 1) "📁")))
+        (cl-return-from dirvish--find-entry (funcall find-fn dir re))))
     (unless (setq directory? (file-directory-p entry))
       (cl-loop with e = (downcase (or (file-name-extension entry) ""))
                for (es . (c . a)) in dirvish-open-with-programs
@@ -659,8 +659,8 @@ filename or a string with format of `dirvish-fd-bufname'."
                  (let ((a (cl-substitute entry "%f" a :test #'string=)))
                    (when (eq find-fn 'find-alternate-file) (kill-current-buffer))
                    (apply #'start-process "" nil "nohup" (append (list c) a))))))
-    (unless (setq dv (dirvish-curr)) ; for `find-dired', just forward it
-      (cl-return-from dirvish--find-entry (funcall find-fn entry)))
+    ;; forward requests from `find-dired'
+    (unless dv (cl-return-from dirvish--find-entry (funcall find-fn entry)))
     (when (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window))
       (user-error "Can not find a suitable other-window here"))
     (if directory? (dirvish-save-dedication (funcall find-fn entry))
@@ -702,8 +702,8 @@ filename or a string with format of `dirvish-fd-bufname'."
     (when reuse? (setf (dv-reuse dv) t))
     (when new-buffer-p
       (if (not remote) (setq buffer (apply fn (list dir-or-list flags)))
-        (require 'dirvish-tramp)
-        (setq buffer (dirvish-tramp-noselect fn dir-or-list flags remote)))
+        (setq fn (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
+              buffer (apply fn (list dir-or-list flags remote))))
       (with-current-buffer buffer (dirvish--setup-dired))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
@@ -725,6 +725,8 @@ filename or a string with format of `dirvish-fd-bufname'."
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (when bname (dired-goto-file bname))
       (setf (dv-index dv) (cons key buffer))
+      (let ((key (if (string-prefix-p "🔍" key) (buffer-name buffer) key)))
+        (setq dirvish--history (seq-take (push key dirvish--history) 200)))
       (run-hook-with-args 'dirvish-find-entry-hook key buffer)
       buffer)))
 
@@ -756,12 +758,6 @@ filename or a string with format of `dirvish-fd-bufname'."
           (when (and (dirvish--selected-p dv)
                      (not (dirvish--get-session 'type 'peek)))
             (dirvish--preview-update dv filename)))))))
-
-(defun dirvish-insert-entry-h (entry buffer)
-  "Add ENTRY or BUFFER name to `dirvish--history'."
-  (let ((entry (if (string-prefix-p "🔍" entry)
-                   (buffer-name buffer) entry)))
-    (setq dirvish--history (seq-take (push entry dirvish--history) 200))))
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."

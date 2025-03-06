@@ -197,14 +197,14 @@ The predicate is consumed by `dirvish-emerge-groups'."
   "Read RECIPE from user input and optionally save it to OBJ."
   (ignore recipe)
   (let* ((table dirvish-emerge--available-preds)
-         (coll (dirvish--append-metadata
-                (lambda (i)
-                  (let ((item (intern (format "%s" i))))
-                    (concat
-                     (make-string
-                      (- dirvish-emerge--max-pred-name-len (length i) -8) ?\s)
-                     (cddr (assq item table)))))
-                table))
+         (fn (lambda (i)
+               (let ((item (intern (format "%s" i))))
+                 (concat
+                  (make-string
+                   (- dirvish-emerge--max-pred-name-len (length i) -8) ?\s)
+                  (cddr (assq item table))))))
+         (coll (dirvish--completion-table-with-metadata
+                table `((annotation-function . ,fn))))
          (pred (completing-read "Predicate: " coll)))
     (if obj (oset obj recipe `(predicate . ,(read pred))) (read pred))))
 

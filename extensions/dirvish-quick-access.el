@@ -65,7 +65,6 @@ Here is a sample value for this variable.
                        (interactive)
                        (funcall dirvish-quick-access-function ,path))))]
           (interactive)
-          (require 'dirvish-fd nil t)
           (transient-setup 'dirvish-quick-access))))))
 
 (provide 'dirvish-quick-access)

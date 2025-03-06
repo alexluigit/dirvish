@@ -28,8 +28,22 @@ Emacs to open video/audio files using =mpv=.
 
 ** Usage of GNU =ls=
 
-Please use gnu =ls= (=gls= on macOS and freeBSD) as your =insert-directory-program=,
-otherwise some features won't work correctly.
+It is recommended to use GNU =ls= (referred to as =gls= on macOS and FreeBSD) as
+your =insert-directory-program=.  If you are using macOS, FreeBSD, or Windows, you
+will need to manually install GNU =ls= and possibly configure it as your
+=insert-directory-program=.  On GNU/Linux systems, this program is typically
+pre-installed and utilized by Emacs without requiring additional setup.
+
+#+begin_src bash
+# macOS
+brew install coreutils
+
+# FreeBSD
+pkg install gnuls
+
+# Windows - install via Scoop: https://scoop.sh/
+scoop install coreutils
+#+end_src
 
 To ensure Dirvish correctly parses =dired-listing-switches=, adhere to specific
 formatting rules when setting this variable.  These rules ensure compatibility
@@ -196,7 +210,7 @@ Dirvish offers out-of-the-box file previews for text files and directories.
 Furthermore, it provides interfaces and extensive user options to customize and
 expand its preview capabilities.
 
-** Install dependency for better preview experience
+** Install dependencies for an enhanced preview experience
 
 Dirvish offers file preview presets that depend on specific binaries.  If you
 don't require these extra preview features, you can remove the corresponding
@@ -214,28 +228,28 @@ no longer prompt you to install the associated programs.
 
 @@html:<h2>@@macOS@@html:</h2>@@
 #+begin_src bash
-  brew install coreutils fd poppler ffmpegthumbnailer mediainfo vips 7zip
+brew install poppler ffmpegthumbnailer mediainfo vips 7zip
 #+end_src
 
 @@html:<h2>@@Debian-based@@html:</h2>@@
 #+begin_src bash
-  apt install fd-find poppler-utils ffmpegthumbnailer mediainfo libvips-tools
+apt install poppler-utils ffmpegthumbnailer mediainfo libvips-tools
 #+end_src
 
 @@html:<h2>@@Arch-based@@html:</h2>@@
 #+begin_src bash
-  pacman -S fd poppler ffmpegthumbnailer mediainfo libvips 7zip
+pacman -S poppler ffmpegthumbnailer mediainfo libvips 7zip
 #+end_src
 
 @@html:<h2>@@FreeBSD@@html:</h2>@@
 #+begin_src bash
-  pkg install gnuls fd-find poppler ffmpegthumbnailer vips 7-zip
+pkg install poppler ffmpegthumbnailer vips 7-zip
 #+end_src
 
 @@html:<h2>@@Windows@@html:</h2>@@
 #+begin_src bash
-  # install via Scoop: https://scoop.sh/
-  scoop install coreutils fd poppler mtn libvips 7zip
+# install via Scoop: https://scoop.sh/
+scoop install poppler mtn mediainfo libvips 7zip
 #+end_src
 
 @@html:</details>@@
