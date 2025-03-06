@@ -26,7 +26,10 @@ open them with an external application by default.  You can achieve this by
 customizing the ~dirvish-open-with-programs~ option.  By default, it instructs
 Emacs to open video/audio files using =mpv=.
 
-** Parsing switches of GNU =ls=
+** Usage of GNU =ls=
+
+Please use gnu =ls= (=gls= on macOS and freeBSD) as your =insert-directory-program=,
+otherwise some features won't work correctly.
 
 To ensure Dirvish correctly parses =dired-listing-switches=, adhere to specific
 formatting rules when setting this variable.  These rules ensure compatibility
@@ -104,13 +107,12 @@ which provides extra information for that file.
 For now Dirvish ships with these attributes:
 
 + ~subtree-state~: A indicator for directory expanding state.
-+ ~all-the-icons~: File icons provided by =all-the-icons.el=.
-+ ~vscode-icon~: File icons provided by =vscode-icon.el=.
++ ~nerd-icon~ | ~all-the-icons~ | ~vscode-icon~: File icons provided by various backends.
 + ~collapse~: Collapse unique nested paths.
 + ~git-msg~: Append git commit message to filename.
 + ~vc-state~: The version control state at left fringe.
 + ~file-size~: Show file size or directories file count at right fringe.
-+ ~file-time~ (newly added): Show file modification time before the ~file-size~.
++ ~file-time~: Show file modification time before the ~file-size~.
 
 Here is an overview of how does these attributes look like:
 
@@ -190,9 +192,59 @@ settings of these buffers, append your configuration to ~dirvish-misc-mode-hook~
 
 * File preview
 
-Dirvish uses different strategies towards various filetypes.  You may want to
-turn off preview for certain file extensions, ~dirvish-preview-disabled-exts~
-allows you to do that.
+Dirvish offers out-of-the-box file previews for text files and directories.
+Furthermore, it provides interfaces and extensive user options to customize and
+expand its preview capabilities.
+
+** Install dependency for better preview experience
+
+Dirvish offers file preview presets that depend on specific binaries.  If you
+don't require these extra preview features, you can remove the corresponding
+entries from ~dirvish-preview-dispatchers~ (documented below).  Dirvish will then
+no longer prompt you to install the associated programs.
+
++ [[https://github.com/libvips][vipsthumbnail]] for image preview
++ [[https://poppler.freedesktop.org/][poppler]] | [[https://github.com/vedang/pdf-tools][pdf-tools]] for pdf preview
++ [[https://github.com/dirkvdb/ffmpegthumbnailer][ffmpegthumbnailer]] (Linux/macOS) | [[https://gitlab.com/movie_thumbnailer/mtn][mtn]] (Windows) for video preview
++ [[https://github.com/MediaArea/MediaInfo][mediainfo]] for audio/video metadata generation
++ [[https://www.7-zip.org][7-zip]] for archive files preview
+
+@@html:<details>@@
+@@html:<summary>@@ @@html:<b>@@Toggle install instructions@@html:</b>@@ @@html:</summary>@@
+
+@@html:<h2>@@macOS@@html:</h2>@@
+#+begin_src bash
+  brew install coreutils fd poppler ffmpegthumbnailer mediainfo vips 7zip
+#+end_src
+
+@@html:<h2>@@Debian-based@@html:</h2>@@
+#+begin_src bash
+  apt install fd-find poppler-utils ffmpegthumbnailer mediainfo libvips-tools
+#+end_src
+
+@@html:<h2>@@Arch-based@@html:</h2>@@
+#+begin_src bash
+  pacman -S fd poppler ffmpegthumbnailer mediainfo libvips 7zip
+#+end_src
+
+@@html:<h2>@@FreeBSD@@html:</h2>@@
+#+begin_src bash
+  pkg install gnuls fd-find poppler ffmpegthumbnailer vips 7-zip
+#+end_src
+
+@@html:<h2>@@Windows@@html:</h2>@@
+#+begin_src bash
+  # install via Scoop: https://scoop.sh/
+  scoop install coreutils fd poppler mtn libvips 7zip
+#+end_src
+
+@@html:</details>@@
+
+** Preview methods for various filetypes
+
+Dirvish uses different preview strategies towards various filetypes.  You may
+want to turn off preview for certain file extensions,
+~dirvish-preview-disabled-exts~ allows you to do that.
 
 A preview dispatcher represents a strategy for file preview on certain
 conditions. The variable ~dirvish-preview-dispatchers~, which holds all the active
@@ -210,7 +262,7 @@ dispatchers, has the default value looks like:
 + ~audio~: preview audio files with metadata, requires =mediainfo=
 + ~epub~: preview epub documents, requires [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]]
 + ~pdf~: preview pdf documents via =pdf-tools=
-+ ~archive~: preview archive files such as =.tar=, =.zip=, requires =tar= / =unzip=
++ ~archive~: preview archive files such as =.tar=, =.zip=, requires =7z=
 + ~dired~: preview directories using =dired= (asynchronously)
 
 Each dispatcher in this list handles the validation and preview content

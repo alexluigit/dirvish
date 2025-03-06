@@ -199,7 +199,7 @@ This attribute only works on graphic displays."
 (dirvish-define-preview vc-diff (ext)
   "Use output of `vc-diff' as preview."
   (when (and (symbolp (dirvish-prop :vc-backend))
-             (not (member ext dirvish-media-exts))
+             (not (member ext dirvish-binary-exts))
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
                        ((symbol-function 'message) #'ignore))
                (vc-diff)))
@@ -224,7 +224,7 @@ This attribute only works on graphic displays."
           (vc-dir file bk)
           (cl-pushnew vc-dir-process-buffer (dv-preview-buffers dv))
           `(buffer . ,(current-buffer)))
-      (when-let* ((file (and (not (member ext dirvish-media-exts))
+      (when-let* ((file (and (not (member ext dirvish-binary-exts))
                              (not (memq (vc-state file bk)
                                         '(unregistered ignored)))
                              file))

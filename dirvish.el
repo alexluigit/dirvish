@@ -61,11 +61,11 @@ The default value contains:
 - audio: preview audio files with metadata, requires `mediainfo'.
 - epub: preview epub documents, requires `epub-thumbnailer'.
 - pdf: preview pdf documents via `pdf-tools'.
-- archive: preview archive files such as .tar, .zip, requires `tar' / `unzip'.
+- archive: preview archives such as .tar, .zip, requires `7z' (`7zz' on macOS).
 - dired: preview directories using `emacs --batch'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish preview methods")))
 
-(defcustom dirvish-preview-disabled-exts '("iso" "bin" "exe" "gpg" "elc" "eln")
+(defcustom dirvish-preview-disabled-exts '("bin" "exe" "gpg" "elc" "eln")
   "Do not preview files end with these extensions."
   :group 'dirvish :type '(repeat (string :tag "File name extension")))
 
@@ -216,7 +216,8 @@ Notice that it only take effects on the built-in `dired' preview dispatcher."
 (defconst dirvish-image-exts '("webp" "wmf" "pcx" "xif" "wbmp" "vtf" "tap" "s1j" "sjp" "sjpg" "s1g" "sgi" "sgif" "s1n" "spn" "spng" "xyze" "rgbe" "hdr" "b16" "mdi" "apng" "ico" "pgb" "rlc" "mmr" "fst" "fpx" "fbs" "dxf" "dwg" "djv" "uvvg" "uvg" "uvvi" "uvi" "azv" "psd" "tfx" "t38" "svgz" "svg" "pti" "btf" "btif" "ktx2" "ktx" "jxss" "jxsi" "jxsc" "jxs" "jxrs" "jxra" "jxr" "jxl" "jpf" "jpx" "jpgm" "jpm" "jfif" "jhc" "jph" "jpg2" "jp2" "jls" "hsj2" "hej2" "heifs" "heif" "heics" "heic" "fts" "fit" "fits" "emf" "drle" "cgm" "dib" "bmp" "hif" "avif" "avcs" "avci" "exr" "fax" "icon" "ief" "jpg" "macp" "pbm" "pgm" "pict" "png" "pnm" "ppm" "ras" "rgb" "tga" "tif" "tiff" "xbm" "xpm" "xwd" "jpe" "jpeg" "cr2" "arw"))
 (defconst dirvish-audio-exts '("ape" "stm" "s3m" "ra" "rm" "ram" "wma" "wax" "m3u" "med" "669" "mtm" "m15" "uni" "ult" "mka" "flac" "axa" "kar" "midi" "mid" "s1m" "smp" "smp3" "rip" "multitrack" "ecelp9600" "ecelp7470" "ecelp4800" "vbk" "pya" "lvp" "plj" "dtshd" "dts" "mlp" "eol" "uvva" "uva" "koz" "xhe" "loas" "sofa" "smv" "qcp" "psid" "sid" "spx" "opus" "ogg" "oga" "mp1" "mpga" "m4a" "mxmf" "mhas" "l16" "lbc" "evw" "enw" "evb" "evc" "dls" "omg" "aa3" "at3" "atx" "aal" "acn" "awb" "amr" "ac3" "ass" "aac" "adts" "726" "abs" "aif" "aifc" "aiff" "au" "mp2" "mp3" "mp2a" "mpa" "mpa2" "mpega" "snd" "vox" "wav"))
 (defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
-(defconst dirvish-media-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts '("pdf" "epub" "gif" "icns")))
+(defconst dirvish-archive-exts '("7z" "xz" "bzip2" "gzip" "tar" "zip" "wim" "ar" "arj" "cab" "chm" "dmg" "ext" "fat" "gpt" "hfs" "ihex" "iso" "mbr" "msi" "ntfs" "qcow2" "rar" "rpm" "udf" "uefi" "vdi" "vhd" "vmdk" "xar"))
+(defconst dirvish-binary-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts dirvish-archive-exts '("pdf" "epub" "gif" "icns")))
 (defcustom dirvish-open-with-programs
   (let ((mpv (or (executable-find "mpv") "mpv")))
     `((,dirvish-audio-exts . (,mpv "--profile=builtin-pseudo-gui" "%f"))
@@ -897,7 +898,7 @@ filename or a string with format of `dirvish-fd-bufname'."
            `(info . ,(format "Can not get file size of [ %s ]." file)))
           ((> size (or large-file-warning-threshold 10000000))
            `(info . ,(format "File [ %s ] is too big for literal preview." file)))
-          ((member ext dirvish-media-exts)
+          ((member ext dirvish-binary-exts)
            `(info . "Preview disabled for media files"))
           (t (dirvish--preview-file-maybe-truncate dv file size)))))
 

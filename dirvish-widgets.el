@@ -88,14 +88,9 @@ This is used to retrieve pdf metadata."
 This is used to generate thumbnails for pdf files."
   :group 'dirvish :type 'string)
 
-(defcustom dirvish-zipinfo-program "zipinfo"
-  "Absolute or reletive name of the `zipinfo' program.
+(defcustom dirvish-7z-program (or (executable-find "7zz") (executable-find "7z"))
+  "Absolute or reletive name of the `7z' | `7zz' (7-zip) program.
 This is used to list files and their attributes for .zip archives."
-  :group 'dirvish :type 'string)
-
-(defcustom dirvish-tar-program "tar"
-  "Absolute or reletive name of the `tar' program.
-This is used to list files and their attributes for .tar, .gz etc. archives."
   :group 'dirvish :type 'string)
 
 (defcustom dirvish-show-media-properties
@@ -662,14 +657,11 @@ Require: `pdf-tools' (Emacs package)"
 
 (dirvish-define-preview archive (file ext)
   "Preview archive files.
-Require: `zipinfo' (executable)
-Require: `tar' (executable)"
-  :require (dirvish-zipinfo-program dirvish-tar-program)
-  (cond ((equal ext "zip") `(shell . (,dirvish-zipinfo-program ,file)))
-        ;; Emacs source code files, let `fallback' handles it
-        ((string-suffix-p ".el.gz" file) nil)
-        ((member ext '("tar" "zst" "bz2" "bz" "gz" "xz" "tgz"))
-         `(shell . (,dirvish-tar-program "-tvf" ,file)))))
+Require: `7z' executable (`7zz' on macOS)"
+  :require (dirvish-7z-program)
+  (when (member ext dirvish-archive-exts)
+    ;; TODO: parse output from (dirvish-7z-program "l" "-ba" "-slt" "-sccUTF-8")
+    `(shell . (,dirvish-7z-program "l" "-ba" ,file))))
 
 (provide 'dirvish-widgets)
 ;;; dirvish-widgets.el ends here

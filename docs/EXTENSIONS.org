@@ -195,9 +195,9 @@ breeze. No manual editing anymore!
 
 * Dirvish as the interface of *fd* command (dirvish-fd.el)
 
-This is the BEST =fd= frontend, period.
+Please ensure [[https://github.com/sharkdp/fd][fd]] is installed on your OS before using this extension.
 
-Here is a quick demo.
+This is probably the BEST =fd= frontend, here is a quick demo:
 
 https://user-images.githubusercontent.com/16313743/170814774-98cc598d-6bc5-4fc3-9eea-21c98d6d4772.mp4
 
