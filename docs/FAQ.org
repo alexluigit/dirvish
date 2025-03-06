@@ -61,9 +61,18 @@ Disable =all-the-icons-dired= and =treemacs-icons-dired=.
 
 * Can not get access to commands in =dirvish-mode-map=?
 
-It happend for some evil users, you can try [[https://github.com/alexluigit/dirvish/issues/188][this]]:
+It happend for some =evil-mode= users, you can try [[https://github.com/alexluigit/dirvish/issues/188][this]]:
 
 #+begin_src emacs-lisp
 ;; setting it after dirvish to ensure `dirvish-mode-map' is loaded
 (evil-make-overriding-map dirvish-mode-map 'normal)
+#+end_src
+
+* Directory (Dired) previews not displayed in the preview buffer
+
+It could happen if you enabled ~global-nlinum-mode~, disable them in the directory
+preview buffers should do the trick: [[https://github.com/alexluigit/dirvish/issues/306][#306]]
+
+#+begin_src emacs-lisp
+(add-hook 'dirvish-directory-view-mode-hook (lambda () (nlinum-mode 0)))
 #+end_src

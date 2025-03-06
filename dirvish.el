@@ -899,7 +899,7 @@ filename or a string with format of `dirvish-fd-bufname'."
           ((> size (or large-file-warning-threshold 10000000))
            `(info . ,(format "File [ %s ] is too big for literal preview." file)))
           ((member ext dirvish-binary-exts)
-           `(info . "Preview disabled for media files"))
+           `(info . "Preview disabled for binary files"))
           (t (dirvish--preview-file-maybe-truncate dv file size)))))
 
 (cl-defgeneric dirvish-preview-dispatch (recipe dv)
