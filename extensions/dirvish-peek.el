@@ -50,6 +50,13 @@ all categories."
           ((bound-and-true-p icomplete-mode)
            (lambda () (car completion-all-sorted-completions))))))
 
+(dirvish-define-preview peek-exception (file)
+  "Handle exceptions when peek files."
+  (when-let* (((string-prefix-p "LIB_EXCEPTION:::" file)))
+    (pcase-let ((`(_ ,cand ,err) (split-string file ":::"))
+                (fmt "Warning: caught exception peeking [ %s ]\n    Error: %s"))
+      `(info . ,(format fmt cand err)))))
+
 (defun dirvish-peek-setup-h ()
   "Create dirvish minibuffer preview window.
 The window is created only when metadata in current minibuffer is
@@ -79,8 +86,10 @@ one of categories in `dirvish-peek-categories'."
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (dirvish-prop :dv (dv-id new-dv))
       (dirvish-prop :preview-dps
-        (if (file-remote-p default-directory) '(dirvish-tramp-dp)
-          (dv-preview-dispatchers new-dv))))))
+        (if (file-remote-p default-directory)
+            '(dirvish-peek-exception-dp dirvish-tramp-dp)
+          (append '(dirvish-peek-exception-dp)
+                  (dv-preview-dispatchers new-dv)))))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
@@ -95,8 +104,11 @@ one of categories in `dirvish-peek-categories'."
        (setq cand (expand-file-name
                    cand (or (dirvish--get-project-root)
                             (car (minibuffer-history-value))))))
-      ('library (setq cand (file-truename
-                            (or (ignore-errors (find-library-name cand)) "")))))
+      ('library
+       (condition-case err
+           (setq cand (file-truename (find-library-name cand)))
+         (error (setq cand (format "LIB_EXCEPTION:::%s:::%s" cand
+                                   (error-message-string err)))))))
     (dirvish-prop :index cand)
     (unless (file-remote-p cand)
       (dirvish-debounce nil
