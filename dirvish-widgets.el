@@ -30,6 +30,7 @@
 ;;                    - requires `mtn' on Windows (special thanks to @samb233!)
 ;; - `audio':       preview audio files with metadata, requires `mediainfo'
 ;; - `epub':        preview epub documents, requires `epub-thumbnail'
+;; - `font':        preview font files, requires `magick'
 ;; - `pdf':         preview pdf documents via `pdf-tools'
 ;; - `archive':     preview archive files, requires `tar' and `unzip'
 ;; - `dired':       preview directories using `dired' (asynchronously)
@@ -78,6 +79,11 @@ This is used to generate thumbnail for epub files."
 This is used to retrieve metadata for multiple types of media files."
   :group 'dirvish :type 'string)
 
+(defcustom dirvish-magick-program "magick"
+  "Absolute or reletive name of the `magick' program.
+This is used to generate thumbnail for font files."
+  :group 'dirvish :type 'string)
+
 (defcustom dirvish-pdfinfo-program "pdfinfo"
   "Absolute or reletive name of the `pdfinfo' program.
 This is used to retrieve pdf metadata."
@@ -93,10 +99,20 @@ This is used to generate thumbnails for pdf files."
 This is used to list files and their attributes for .zip archives."
   :group 'dirvish :type 'string)
 
+(defcustom dirvish-fc-query-program "fc-query"
+  "Absolute or reletive name of the `fc-query' program.
+This is used to generate metadata for font files."
+  :group 'dirvish :type 'string)
+
 (defcustom dirvish-show-media-properties
   (and (executable-find dirvish-mediainfo-program) t)
   "Show media properties automatically in preview window."
   :group 'dirvish :type 'boolean)
+
+(defcustom dirvish-font-preview-sample-text
+  "\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\nThe quick brown fox jumps over the lazy dog\n\n 枕上轻寒窗外雨 眼前春色梦中人 \n1234567890\n!@$\%(){}[]\nالسلام عليكم"
+  "Sample text for font preview."
+  :group 'dirvish :type 'string)
 
 (defconst dirvish-media--img-max-width 2400)
 (defconst dirvish-media--img-scale-h 0.75)
@@ -106,6 +122,10 @@ This is used to list files and their attributes for .zip archives."
 Image;(Width . \"\"%Width/String%\"\")(Height . \"\"%Height/String%\"\")(Bit-depth . \"\"%BitDepth/String%\"\")(Color-space . \"\"%ColorSpace%\"\")(Chroma-subsampling . \"\"%ChromaSubsampling%\"\")(Compression-mode . \"\"%Compression_Mode/String%\"\")
 Video;(Resolution . \"\"%Width% x %Height%\"\")(Video-codec . \"\"%CodecID%\"\")(Framerate . \"\"%FrameRate%\"\")(Video-bitrate . \"\"%BitRate/String%\"\")
 Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\")(Audio-sampling-rate . \"\"%SamplingRate/String%\"\")(Audio-channels . \"\"%ChannelLayout%\"\")")
+(defconst dirvish--fc-query-format
+  "(Family . \"%{family}\")(Family-lang . \"%{familylang}\")(Style . \"%{style}\")(Style-lang . \"%{stylelang}\")(Full-name . \"%{fullname}\")
+(Slant . \"%{slant}\")(Weight . \"%{weight}\")(Width . \"%{width}\")(Spacing . \"%{spacing}\")
+(Foundry . \"%{foundry}\")(Capability . \"%{capability}\")(Font-format . \"%{fontformat}\")(Decorative . \"%{decorative}\")")
 
 (defface dirvish-free-space
   '((t (:inherit font-lock-constant-face)))
@@ -506,6 +526,25 @@ GROUP-TITLES is a list of group titles."
   (format "%s%s" (dirvish-media--group-heading '("PDF info"))
           (dirvish-media--metadata-from-pdfinfo (cdr file))))
 
+(cl-defmethod dirvish-media-metadata ((file (head font)))
+  "Get metadata for font FILE."
+  (let ((finfo
+         (read (format "(%s)" (shell-command-to-string
+                               (format "%s -f '%s' %s"
+                                       dirvish-fc-query-program
+                                       dirvish--fc-query-format
+                                       (shell-quote-argument (cdr file))))))))
+    (format "%s%s\n%s%s\n%s%s"
+            (dirvish-media--group-heading '("Family" "Style"))
+            (dirvish-media--format-metadata
+             finfo '(Family Family-lang Style Style-lang Full-name))
+            (dirvish-media--group-heading '("Characteristics"))
+            (dirvish-media--format-metadata
+             finfo '(Slant Weight Width Spacing))
+            (dirvish-media--group-heading '("Others"))
+            (dirvish-media--format-metadata
+             finfo '(Foundry Capability Font-format Decorative)))))
+
 (cl-defmethod dirvish-preview-dispatch ((recipe (head img)) dv)
   "Insert RECIPE as an image at preview window of DV."
   (with-current-buffer (dirvish--special-buffer 'preview dv t)
@@ -526,6 +565,7 @@ GROUP-TITLES is a list of group titles."
                    (ext (downcase (or (file-name-extension file) "")))
                    (type (cond ((member ext dirvish-image-exts) 'image)
                                ((member ext dirvish-video-exts) 'video)
+                               ((member ext dirvish-font-exts) 'font)
                                ((and (memq 'pdf-preface
                                            dirvish-preview-dispatchers)
                                      (equal ext "pdf") 'pdf))
@@ -582,6 +622,23 @@ Require: `vipsthumbnail'"
         `(img . ,(create-image file nil nil :max-width w :max-height h)))
        (t `(cache . (,dirvish-vipsthumbnail-program
                      ,file "--size" ,(format "%sx" w) "--output" ,cache)))))))
+
+;; TODO: switch to `libvips' after its text rendering issues get solved
+(dirvish-define-preview font (file ext preview-window)
+  "Preview font files.
+Require: `magick' (from `imagemagick' suite)"
+  :require (dirvish-magick-program)
+  (when (member ext dirvish-font-exts)
+    (let* ((w (dirvish-media--img-size preview-window))
+           (h (dirvish-media--img-size preview-window 'height))
+           (cache (dirvish-media--cache-path file (format "images/%s" w) ".jpg")))
+      (if (file-exists-p cache)
+          `(img . ,(create-image cache nil nil :max-width w :max-height h))
+        `(cache . (,dirvish-magick-program
+                   "-size" "1000x500" "xc:#ffffff" "-gravity" "center"
+                   "-pointsize" "40" "-font" ,file "-fill" "#000000"
+                   "-annotate" "+0+20" ,dirvish-font-preview-sample-text
+                   "-flatten" ,cache))))))
 
 (dirvish-define-preview gif (file ext)
   "Preview gif images with animations."
