@@ -171,6 +171,11 @@ Set it to nil to use the default `mode-line-format'."
   "Like `dirvish-mode-line-format', but for header line ."
   :group 'dirvish :type 'plist)
 
+(defcustom dirvish-mode-line-bar-image-width 2
+  "Pixel width of the leading bar image in both mode-line and header-line.
+If the value is 0, the bar image is hidden."
+  :group 'dirvish :type 'integer)
+
 (defcustom dirvish-hide-details t
   "Whether to enable `dired-hide-details-mode' in Dirvish buffers.
 When sets to t, it is enabled for all Dirvish buffers.
@@ -1105,14 +1110,17 @@ If HEADER, the format is used for `header-line-format'."
   "Create a bar image with height of `dirvish-mode-line-height'.
 If FULLFRAME-P, use the `cdr' of the value as height, otherwise
 use `car'.  If HEADER, use `dirvish-header-line-height' instead."
-  (when (and (display-graphic-p) (image-type-available-p 'pbm))
+  (when (and (display-graphic-p) (image-type-available-p 'pbm)
+             (numberp dirvish-mode-line-bar-image-width))
     (let* ((hv (if header dirvish-header-line-height dirvish-mode-line-height))
-           (ht (cond ((numberp hv) hv) (fullframe-p (cdr hv)) (t (car hv)))))
+           (ht (cond ((numberp hv) hv) (fullframe-p (cdr hv)) (t (car hv))))
+           (wd dirvish-mode-line-bar-image-width))
       (propertize
        " " 'display
        (ignore-errors
          (create-image
-          (concat (format "P1\n%i %i\n" 2 ht) (make-string (* 2 ht) ?1) "\n")
+          (concat (format "P1\n%i %i\n" (if (eq wd 0) 1 wd) ht)
+                  (make-string (* wd ht) (if (> wd 0) ?1 ?0)) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
 (defun dirvish--setup-mode-line (dv)
