@@ -140,9 +140,6 @@ filename until the project root when opening a side session."
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
   (let* ((bname buffer-file-name)
-         (dirvish-mode-line-format dirvish-side-mode-line-format)
-         (dirvish-header-line-format dirvish-side-header-line-format)
-         (dirvish-attributes dirvish-side-attributes)
          (dv (or (dirvish--get-session 'type 'side)
                  (dirvish--new
                   :type 'side

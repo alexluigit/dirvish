@@ -594,7 +594,6 @@ FROM-QUIT is used to signify the calling command."
     (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
     (setf (dv-preview-hash dv) (dirvish--ht) (dv-parent-hash dv) (dirvish--ht)
           (dv-preview-buffers dv) nil (dv-winconf dv) nil)
-    (dirvish--check-dependencies dv) ; update configs
     (when (or (null dirvish-reuse-session)
               (eq dirvish-reuse-session (if from-quit 'open 'quit)))
       (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv)))))
@@ -631,11 +630,15 @@ FROM-QUIT is used to signify the calling command."
 (defun dirvish--check-dependencies (dv)
   "Require necessary extensions for DV, raise warnings for missing executables."
   (cl-loop
-   with (dps . attrs) = (cons dirvish-preview-dispatchers dirvish-attributes)
-   with (m . h) = (cons dirvish-mode-line-format dirvish-header-line-format)
+   with tp = (dv-type dv) with dft = (eq tp 'default)
+   with fn = (lambda (f) (eval `(bound-and-true-p
+                            ,(intern (format "dirvish-%s-%s" tp f)))))
+   with attrs = (if dft dirvish-attributes (funcall fn 'attributes))
+   with m = (if dft dirvish-mode-line-format (funcall fn 'mode-line-format))
+   with h = (if dft dirvish-header-line-format (funcall fn 'header-line-format))
    with (ml . mr) = (cons (plist-get m :left) (plist-get m :right))
    with (hl . hr) = (cons (plist-get h :left) (plist-get h :right))
-   with feat-reqs = (append dps attrs ml mr hl hr)
+   with feat-reqs = (append dirvish-preview-dispatchers attrs ml mr hl hr)
    when feat-reqs do (require 'dirvish-widgets)
    for (lib . feat) in dirvish--libraries do
    (when (cl-intersection feat feat-reqs) (require lib))
@@ -1455,6 +1458,7 @@ are killed and the Dired buffer(s) in the selected window are buried."
   (interactive)
   (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
         (win (selected-window)) (frame (selected-frame)))
+    (dirvish--check-dependencies dv) ; update configs
     (dirvish--clear-session dv t)
     (while (and (dirvish-curr) (eq (selected-window) win)
                 (<= (cl-incf ct) (length lst)))
