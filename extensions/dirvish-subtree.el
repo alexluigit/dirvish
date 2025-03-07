@@ -228,7 +228,7 @@ creation even the entry is in nested subtree nodes."
   (let* ((dir (dired-get-filename))
          (listing (dirvish-subtree--readin dir))
          buffer-read-only beg end)
-    (dirvish--dir-data-async dir (current-buffer) t)
+    (dirvish-data-for-dir dir (current-buffer) t)
     (with-silent-modifications
       (save-excursion
         (setq beg (progn (move-end-of-line 1) (insert "\n") (point)))
