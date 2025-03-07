@@ -110,7 +110,9 @@ This is used to generate metadata for font files."
   :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-font-preview-sample-text
-  "\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\nThe quick brown fox jumps over the lazy dog\n\n 枕上轻寒窗外雨 眼前春色梦中人 \n1234567890\n!@$\%(){}[]\nالسلام عليكم"
+  "\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\nThe quick
+brown fox jumps over the lazy dog\n\n 枕上轻寒窗外雨 眼前春色梦中人
+\n1234567890\n!@$%^&*-_+=|\\\\<>(){}[]\nالسلام عليكم"
   "Sample text for font preview."
   :group 'dirvish :type 'string)
 
@@ -250,17 +252,16 @@ Use optional SUFFIX or NAME to intern the face symbol."
               (attr (and attrs (funcall attr-getter attrs))))
     (cons attr face)))
 
-(defun dirvish-media--cache-path (file &optional base ext no-mkdir)
-  "Get FILE's cache path.
-BASE is a string indicating the subdir of `dirvish-cache-dir' to
-use.  EXT is a suffix such as \".jpg\" that is attached to FILE.
-A new directory is created unless NO-MKDIR."
-  (let* ((file (if (memq system-type '(windows-nt ms-dos))
-                   (concat "/" (replace-regexp-in-string ":" "" file)) file))
-         (cache (concat dirvish-cache-dir base file)))
-    (and (not no-mkdir) (not (file-exists-p cache))
-         (make-directory (file-name-directory cache) t))
-    (concat cache ext)))
+;; TODO: support Thumbnail Managing Standard (#269)
+(defun dirvish--img-thumb-name (file prefix &optional ext)
+  "Get FILE's image cache path.
+PREFIX is a string indicating the subdir of `dirvish-cache-dir' to use.
+EXT is a suffix such as \".jpg\" that is attached to FILE's md5 hash."
+  (let* ((md5 (secure-hash 'md5 (concat "file://" file)))
+         (dir (expand-file-name
+               (format "thumbnails/%s" prefix) dirvish-cache-dir)))
+    (unless (file-exists-p dir) (make-directory dir t))
+    (expand-file-name (concat md5 ext) dir)))
 
 (defun dirvish-media--cache-sentinel (proc _exitcode)
   "Sentinel for image cache process PROC."
@@ -489,10 +490,9 @@ GROUP-TITLES is a list of group titles."
     (clear-image-cache)
     (setq size (dirvish-media--img-size win))
     (dolist (file (dired-get-marked-files))
-      (mapc #'delete-file (file-expand-wildcards
-                           (dirvish-media--cache-path
-                            file (format "images/%s" size) ".*" t)
-                           t)))))
+      (mapc #'delete-file
+            (file-expand-wildcards
+             (dirvish--img-thumb-name file size ".*") t )))))
 
 (cl-defgeneric dirvish-media-metadata (file)
   "Get media file FILE's metadata.")
@@ -614,7 +614,7 @@ Require: `vipsthumbnail'"
   (when (member ext dirvish-image-exts)
     (let* ((w (dirvish-media--img-size preview-window))
            (h (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" w) ".jpg")))
+           (cache (dirvish--img-thumb-name file w ".jpg")))
       (cond
        ((file-exists-p cache)
         `(img . ,(create-image cache nil nil :max-width w :max-height h)))
@@ -631,7 +631,7 @@ Require: `magick' (from `imagemagick' suite)"
   (when (member ext dirvish-font-exts)
     (let* ((w (dirvish-media--img-size preview-window))
            (h (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" w) ".jpg")))
+           (cache (dirvish--img-thumb-name file w ".jpg")))
       (if (file-exists-p cache)
           `(img . ,(create-image cache nil nil :max-width w :max-height h))
         `(cache . (,dirvish-magick-program
@@ -657,7 +657,7 @@ Require: `ffmpegthumbnailer' (executable)"
   (when (member ext dirvish-video-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
+           (cache (dirvish--img-thumb-name file width ".jpg")))
       (if (file-exists-p cache)
           `(img . ,(create-image cache nil nil :max-width width :max-height height))
         `(cache . (,dirvish-ffmpegthumbnailer-program "-i" ,file "-o" ,cache "-s"
@@ -670,7 +670,7 @@ Require: `mtn' (executable)"
   (when (member ext dirvish-video-exts)
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg"))
+           (cache (dirvish--img-thumb-name file width ".jpg"))
            (path (dirvish--get-parent-path cache)))
       (if (file-exists-p cache)
           `(img . ,(create-image cache nil nil :max-width width :max-height height))
@@ -685,7 +685,7 @@ Require: `epub-thumbnailer' (executable)"
   (when (equal ext "epub")
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" width) ".jpg")))
+           (cache (dirvish--img-thumb-name file width ".jpg")))
       (if (file-exists-p cache)
           `(img . ,(create-image cache nil nil :max-width width :max-height height))
         `(cache . (,dirvish-epub-thumbnailer-program ,file ,cache ,(number-to-string width)))))))
@@ -706,7 +706,7 @@ Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
     (let* ((width (dirvish-media--img-size preview-window))
            (height (dirvish-media--img-size preview-window 'height))
-           (cache (dirvish-media--cache-path file (format "images/%s" width)))
+           (cache (dirvish--img-thumb-name file width))
            (cache-jpg (concat cache ".jpg")))
       (if (file-exists-p cache-jpg)
           `(img . ,(create-image cache-jpg nil nil :max-width width :max-height height))
