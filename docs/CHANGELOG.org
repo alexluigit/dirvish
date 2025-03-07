@@ -1,3 +1,34 @@
+* 2.2.0
+
+** BREAKING Changes
+
++ preview text files using proxy buffer (#184 #195 #270 #295)
++ replace magick with libvips for faster image preview (#218)
++ use 7-zip for archive preview
++ support font preview
+
+** Other changes
+
++ ~dirvish-reuse-session~ now accepts new value =quit= and =open=
++ allow setting ~dirvish-default-layout~ to =nil=
++ add ~dirvish-subtree-icon-scale-factor~ user option (#185)
++ fetch =vc-info= attribute asynchronously
++ add ~dirvish-inactive~ face
++ add ~dirvish-collapse-separator~ user option (#263)
++ support session|buffer locally attributes and mode-line-format (#286)
++ add ~dirvish-special-preview-mode~ and ~dirvish-misc-mode~
++ support ~dired-find-alternate-file~ (#186)
++ sort history entries with access time (#265)
++ add ~dirvish-mode-line-bar-image-width~ option (#252)
+
+** Screenshots
+
+[[https://github.com/user-attachments/assets/ef44bf63-ff49-4d62-8126-36a5bc21ff57][https://github.com/user-attachments/assets/ef44bf63-ff49-4d62-8126-36a5bc21ff57]]
+
+** Full Changelog
+
+https://github.com/alexluigit/dirvish/compare/2.1.0...2.2.0
+
 * 2.1.0
 
 ** What's changed
