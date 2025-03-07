@@ -166,6 +166,9 @@ The mode line only span the directory panes by default, to make them span all
 panes, just set ~dirvish-use-mode-line~ to ~global~.  Setting the same option to /nil/
 hides the mode line in dirvish buffers.
 
+To hide the leading bar image in mode-line and header-line, set
+~dirvish-mode-line-bar-image-width~ to 0.
+
 To configure the content in the mode line, put the segments you wanted into
 ~dirvish-mode-line-format~.  There is also ~dirvish-mode-line-height~ for you to set
 the height of the mode line.
@@ -177,9 +180,10 @@ The ~dired-switches-in-mode-line~ option is ignored in Dirvish.
 
 #+begin_src emacs-lisp
 ;; Placement
-;; (setq dirvish-use-header-line nil)     ; hide header line (show the classic dired header)
-;; (setq dirvish-use-mode-line nil)       ; hide mode line
-(setq dirvish-use-header-line 'global)    ; make header line span all panes
+;; (setq dirvish-use-header-line nil)      ; hide header line (show the classic dired header)
+;; (setq dirvish-use-mode-line nil)        ; hide mode line
+(setq dirvish-use-header-line 'global)     ; make header line span all panes
+(setq dirvish-mode-line-bar-image-width 0) ; hide the leading bar image
 
 ;; Height
 ;;; '(25 . 35) means
