@@ -284,6 +284,12 @@ input for `dirvish-redisplay-debounce' seconds."
     (set-keymap-parent map dired-mode-map)
     (define-key map (kbd "q") 'dirvish-quit) map)
   "Keymap used in dirvish buffers, it inherits `dired-mode-map'.")
+(defvar dirvish-directory-view-mode-map
+  (let ((km (make-sparse-keymap))) (define-key km (kbd "q") 'dirvish-quit) km))
+(defvar dirvish-misc-mode-map
+  (let ((km (make-sparse-keymap))) (define-key km (kbd "q") 'dirvish-quit) km))
+(defvar dirvish-special-preview-mode-map
+  (let ((km (make-sparse-keymap))) (define-key km (kbd "q") 'dirvish-quit) km))
 
 ;;;; Internal variables
 
@@ -1271,14 +1277,18 @@ LEVEL is the depth of current window."
         (regular (dirvish--special-buffer 'preview dv t))
         (shell (dirvish--special-buffer 'shell dv t))
         (head (dirvish--special-buffer 'header dv))
-        (foot (dirvish--special-buffer 'footer dv)))
-    (with-current-buffer dired (dirvish-directory-view-mode))
-    (with-current-buffer regular (dirvish-special-preview-mode))
+        (foot (dirvish--special-buffer 'footer dv))
+        (id (dv-id dv)))
+    (with-current-buffer dired
+      (dirvish-directory-view-mode) (dirvish-prop :dv id))
+    (with-current-buffer regular
+      (dirvish-special-preview-mode) (dirvish-prop :dv id))
     (with-current-buffer shell
+      (dirvish-prop :dv id)
       (dirvish-special-preview-mode)
       (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
-    (with-current-buffer head (dirvish-misc-mode) (dirvish-prop :dv (dv-id dv)))
-    (with-current-buffer foot (dirvish-misc-mode) (dirvish-prop :dv (dv-id dv)))
+    (with-current-buffer head (dirvish-misc-mode) (dirvish-prop :dv id))
+    (with-current-buffer foot (dirvish-misc-mode) (dirvish-prop :dv id))
     (setf (dv-special-buffers dv) (list dired regular shell head foot))))
 
 (defun dirvish--dir-data-async (dir buffer &optional inhibit-setup)
@@ -1456,8 +1466,9 @@ If the session is a full-framed one, the window layout is restored.  If
 killed, otherwise only the invisible Dired buffers within the session
 are killed and the Dired buffer(s) in the selected window are buried."
   (interactive)
-  (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
-        (win (selected-window)) (frame (selected-frame)))
+  (when-let* ((dv (dirvish-curr)) (ct 0) (lst (window-list))
+              (win (dv-root-window dv)) (frame (selected-frame)))
+    (select-window win)
     (dirvish--check-dependencies dv) ; update configs
     (dirvish--clear-session dv t)
     (while (and (dirvish-curr) (eq (selected-window) win)
