@@ -1298,7 +1298,9 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
    `(prin1
      (let* ((hs (make-hash-table))
             (remote? (file-remote-p ,dir))
-            (bk (unless remote? (vc-responsible-backend ,dir t))))
+            (i-bk ',(with-current-buffer buffer (dirvish-prop :vc-backend)))
+            ;; inherit from cached backend, avoid unneeded vc info in subtrees
+            (bk (or i-bk (unless remote? (vc-responsible-backend ,dir t)))))
        (dolist (file (unless remote? (directory-files ,dir t nil t)))
          (let* ((attrs (file-attributes file)) (tp (nth 0 attrs)))
            (cond ((eq t tp) (setq tp '(dir . nil)))
