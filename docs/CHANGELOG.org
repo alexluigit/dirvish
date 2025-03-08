@@ -1,3 +1,14 @@
+* 2.2.3
+
+Emergency fixes for 2 bugs in 2.2.0:
+
++ Error caused by mismatched vc-backend when expanding subtree
++ Incorrect resetting after quitting `dirvish-side`
+
+New feature:
+
++ `dirvish-quit` now works in all dirvish windows (#309)
+
 * 2.2.0
 
 ** BREAKING Changes
