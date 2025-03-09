@@ -844,8 +844,8 @@ filename or a string with format of `dirvish-fd-bufname'."
             (insert "\n\nFile truncated. End of partial preview.\n")))
         (setq buffer-file-name file)
         (goto-char (point-min))
-        (rename-buffer (format "Preview: %s @DIRVISH-%s"
-                               (file-name-nondirectory file) (dv-timestamp dv))))
+        (rename-buffer (format "Preview@DIRVISH-%s :: %s"
+                               (dv-timestamp dv) (file-name-nondirectory file))))
       (condition-case err
           (eval `(let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
                                (remove '(delay-mode-hooks . t)
