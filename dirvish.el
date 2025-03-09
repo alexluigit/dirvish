@@ -844,7 +844,7 @@ filename or a string with format of `dirvish-fd-bufname'."
             (insert "\n\nFile truncated. End of partial preview.\n")))
         (setq buffer-file-name file)
         (goto-char (point-min))
-        (rename-buffer (format "Preview@DIRVISH-%s :: %s"
+        (rename-buffer (format "PREVIEW|%s :: %s"
                                (dv-timestamp dv) (file-name-nondirectory file))))
       (condition-case err
           (eval `(let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
@@ -900,8 +900,8 @@ filename or a string with format of `dirvish-fd-bufname'."
   (let* ((attrs (ignore-errors (file-attributes file)))
          (size (file-attribute-size attrs)) buf)
     (cond ((setq buf (get-buffer
-                      (format "Preview: %s @DIRVISH-%s"
-                              (file-name-nondirectory file) (dv-timestamp dv))))
+                      (format "PREVIEW|%s :: %s"
+                              (dv-timestamp dv) (file-name-nondirectory file))))
            `(buffer . ,buf))
           ((not attrs)
            `(info . ,(format "Can not get attributes of [ %s ]." file)))
