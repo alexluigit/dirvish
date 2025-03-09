@@ -780,13 +780,11 @@ filename or a string with format of `dirvish-fd-bufname'."
   "Remove buffer from session's buffer list."
   (when-let* ((dv (dirvish-curr)) (buf (current-buffer)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
-    (if (dv-roots dv) ; it might be killed by user in a fullframe session
-        (when-let* (((eq (cdr (dv-index dv)) buf))
-                    ((dv-curr-layout dv))
-                    (win (dv-root-window dv))
-                    ((window-live-p win)))
-          (setf (dv-index dv) (car (dv-roots dv)))
-          (with-selected-window win ; we have to prevend this window get deleted
+    (when (eq (cdr (dv-index dv)) buf) (setf (dv-index dv) (car (dv-roots dv))))
+    (if (dv-roots dv) ; killed by user in `ibuffer' or using `kill-current-buffer'
+        (when-let* ((win (dv-root-window dv))
+                    ((and (window-live-p win) (window-dedicated-p win))))
+          (with-selected-window win ; prevend this dedicated window get deleted
             (dirvish-save-dedication (switch-to-buffer (cdr (dv-index dv))))))
       (when-let* ((layout (dv-curr-layout dv))
                   (wconf (dv-winconf dv))

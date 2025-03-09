@@ -84,8 +84,9 @@ filename until the project root when opening a side session."
 (defun dirvish-side-root-conf-fn (buffer)
   "Setup BUFFER for side session."
   (let ((name (buffer-name buffer)))
-    (unless (string-prefix-p " *SIDE::" name) ; hide it by prefix with " "
-      (rename-buffer (format " *SIDE::%s" name)))))
+    (unless (dirvish-prop :side-buf-renamed) ; hide it by prefix with " "
+      (rename-buffer (format " *SIDE::%s" name))
+      (dirvish-prop :side-buf-renamed t))))
 
 (defun dirvish-side-root-window-fn (dv)
   "Create root window of DV according to `dirvish-side-display-alist'."
