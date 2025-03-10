@@ -18,8 +18,9 @@
 (require 'dirvish)
 (require 'tramp)
 
+;; TODO: we don't have to use -Alh if the connection has GNU ls
 (defconst dirvish-tramp-preview-cmd
-  "head -n 1000 %s 2>/dev/null || ls -Alh --group-directories-first %s 2>/dev/null")
+  "head -n 1000 %s 2>/dev/null || ls -Alh %s 2>/dev/null")
 (defvar dirvish-tramp-hosts '())
 
 (defun dirvish-tramp-noselect (fn dir flags remote)
@@ -40,6 +41,12 @@ FN is the original `dired-noselect' closure."
     (with-current-buffer buffer
       (dirvish-prop :tramp (tramp-dissect-file-name dir))
       buffer)))
+
+(defun dirvish-tramp--async-p (vec)
+  "Return t if tramp connection VEC support async commands."
+  (or (tramp-local-host-p vec) ; the connection is either localhost
+      ;; or it's a remote host that supports `direct-async'
+      (tramp-direct-async-process-p)))
 
 (defun dirvish-tramp--ls-parser (entry output)
   "Parse ls OUTPUT for ENTRY and store it in `dirvish--dir-data'."
@@ -80,7 +87,7 @@ FN is the original `dired-noselect' closure."
 It is called when DIRVISH-PROP has key `:remote' as a string, which
 means DIR is in a remote host.  Run `dirvish-setup-hook' after data
 parsing unless INHIBIT-SETUP is non-nil."
-  (when (tramp-direct-async-process-p)
+  (when (dirvish-tramp--async-p (dirvish-prop :tramp))
     (let* ((process-connection-type nil)
            (buf (get-buffer-create (make-temp-name "tramp-data-")))
            (cmd (format "ls -1lahi %s" (file-local-name dir)))
@@ -90,7 +97,7 @@ parsing unless INHIBIT-SETUP is non-nil."
 
 (dirvish-define-preview tramp (file _ dv)
   "Preview files with `ls' or `head' for tramp files."
-  (if (not (tramp-direct-async-process-p))
+  (if (not (dirvish-tramp--async-p (dirvish-prop :tramp)))
       '(info . "File preview only supported in async connections")
     (let ((process-connection-type nil)
           (localname (file-remote-p file 'localname))
