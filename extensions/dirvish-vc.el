@@ -44,6 +44,9 @@ detail explanation of these states."
   :group 'dirvish
   :type '(alist :key-type symbol :value-type (symbol :tag "Face")))
 
+(defvar dirvish-vc--always-ignored "/node_modules"
+  "Always ignore folders matches this regex, as they may choke Emacs.")
+
 (defface dirvish-vc-needs-merge-face
   '((((background dark)) (:background "#500f29"))
     (t                   (:background "#efcbcf")))
@@ -114,7 +117,8 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
        (advice-add #'vc-git--git-status-to-vc-state :around
                    (lambda (fn codes) (apply fn (list (delete-dups codes)))))
        (dolist (file (directory-files ,dir t nil t))
-         (let ((state (vc-state-refresh file bk))
+         (let ((state (if (string-suffix-p dirvish-vc--always-ignored file)
+                          'ignored (vc-state-refresh file bk)))
                (msg (and (eq bk 'Git)
                          (shell-command-to-string
                           (format "git log -1 --pretty=%%s %s"
