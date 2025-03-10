@@ -30,7 +30,6 @@ FN is the original `dired-noselect' closure."
          (ftp? (tramp-ftp-file-name-p dir))
          (short-flags "-Alh")
          (default-directory dir)
-         (dired-buffers nil)
          (buffer (cond (ftp? (funcall fn dir short-flags))
                        (saved-flags (funcall fn dir saved-flags))
                        ((= (process-file "ls" nil nil nil "--version") 0)

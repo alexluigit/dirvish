@@ -714,13 +714,14 @@ filename or a string with format of `dirvish-fd-bufname'."
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
-         (new-buffer-p (null buffer)) dired-buffers) ; disable reuse from dired
+         (new-buffer-p (null buffer))
+         tramp-fn dired-buffers) ; disable reuse from dired
     (setf (dv-timestamp dv) (dirvish--timestamp))
     (when reuse? (setf (dv-reuse dv) t))
     (when new-buffer-p
       (if (not remote) (setq buffer (apply fn (list dir-or-list flags)))
-        (setq fn (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
-              buffer (apply fn (list dir-or-list flags remote))))
+        (setq tramp-fn (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
+              buffer (apply tramp-fn (list fn dir-or-list flags remote))))
       (with-current-buffer buffer (dirvish--setup-dired))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
