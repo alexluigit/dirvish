@@ -41,15 +41,6 @@ FN is the original `dired-noselect' closure."
       (dirvish-prop :tramp (tramp-dissect-file-name dir))
       buffer)))
 
-(defun dirvish-tramp--async-p (vec)
-  "Return t if tramp connection VEC support async commands."
-  (or (tramp-local-host-p vec) ; localhost
-      (bound-and-true-p tramp-direct-async-process) ; use async process globally
-      ;; the connection support `direct-async' and no password needed
-      (and (stringp (tramp-get-connection-property
-                     vec " first-password-request" nil))
-           (tramp-get-method-parameter vec 'tramp-direct-async))))
-
 (defun dirvish-tramp--ls-parser (entry output)
   "Parse ls OUTPUT for ENTRY and store it in `dirvish--dir-data'."
   (dolist (file (and (> (length output) 2) (cl-subseq output 2 -1)))
@@ -89,7 +80,7 @@ FN is the original `dired-noselect' closure."
 It is called when DIRVISH-PROP has key `:remote' as a string, which
 means DIR is in a remote host.  Run `dirvish-setup-hook' after data
 parsing unless INHIBIT-SETUP is non-nil."
-  (when (dirvish-tramp--async-p (dirvish-prop :tramp))
+  (when (tramp-direct-async-process-p)
     (let* ((process-connection-type nil)
            (buf (get-buffer-create (make-temp-name "tramp-data-")))
            (cmd (format "ls -1lahi %s" (file-local-name dir)))
@@ -99,25 +90,24 @@ parsing unless INHIBIT-SETUP is non-nil."
 
 (dirvish-define-preview tramp (file _ dv)
   "Preview files with `ls' or `head' for tramp files."
-  (let ((vec (dirvish-prop :tramp)))
-    (if (not (dirvish-tramp--async-p vec))
-        '(info . "File preview only supported in async connections")
-      (let ((process-connection-type nil)
-            (localname (file-remote-p file 'localname))
-            (buf (dirvish--special-buffer 'preview dv t)) proc)
-        (when-let* ((proc (get-buffer-process buf))) (delete-process proc))
-        (setq proc (start-file-process-shell-command
-                    (buffer-name buf) buf
-                    (format dirvish-tramp-preview-cmd localname localname)))
-        (set-process-sentinel
-         proc (lambda (proc _sig)
-                (when (memq (process-status proc) '(exit signal))
-                  (shell-command-set-point-after-cmd (process-buffer proc)))))
-        (set-process-filter
-         proc (lambda (proc str)
-                (with-current-buffer (process-buffer proc)
-                  (let (buffer-read-only) (insert str)))))
-        `(buffer . ,buf)))))
+  (if (not (tramp-direct-async-process-p))
+      '(info . "File preview only supported in async connections")
+    (let ((process-connection-type nil)
+          (localname (file-remote-p file 'localname))
+          (buf (dirvish--special-buffer 'preview dv t)) proc)
+      (when-let* ((proc (get-buffer-process buf))) (delete-process proc))
+      (setq proc (start-file-process-shell-command
+                  (buffer-name buf) buf
+                  (format dirvish-tramp-preview-cmd localname localname)))
+      (set-process-sentinel
+       proc (lambda (proc _sig)
+              (when (memq (process-status proc) '(exit signal))
+                (shell-command-set-point-after-cmd (process-buffer proc)))))
+      (set-process-filter
+       proc (lambda (proc str)
+              (with-current-buffer (process-buffer proc)
+                (let (buffer-read-only) (insert str)))))
+      `(buffer . ,buf))))
 
 (provide 'dirvish-tramp)
 ;;; dirvish-tramp.el ends here
