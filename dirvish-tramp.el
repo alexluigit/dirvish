@@ -44,11 +44,11 @@ FN is the original `dired-noselect' closure."
 (defun dirvish-tramp--async-p (vec)
   "Return t if tramp connection VEC support async commands."
   (or (tramp-local-host-p vec) ; localhost
-      ;; the connection support `direct-async-process' and no password needed
+      (bound-and-true-p tramp-direct-async-process) ; use async process globally
+      ;; the connection support `direct-async' and no password needed
       (and (stringp (tramp-get-connection-property
-                     vec "first-password-request" nil))
-           (tramp-get-method-parameter vec 'tramp-direct-async)
-           (tramp-get-connection-property vec "direct-async-process" nil))))
+                     vec " first-password-request" nil))
+           (tramp-get-method-parameter vec 'tramp-direct-async))))
 
 (defun dirvish-tramp--ls-parser (entry output)
   "Parse ls OUTPUT for ENTRY and store it in `dirvish--dir-data'."
@@ -101,7 +101,7 @@ parsing unless INHIBIT-SETUP is non-nil."
   "Preview files with `ls' or `head' for tramp files."
   (let ((vec (dirvish-prop :tramp)))
     (if (not (dirvish-tramp--async-p vec))
-        '(info . "File preview is not supported in current connection")
+        '(info . "File preview only supported in async connections")
       (let ((process-connection-type nil)
             (localname (file-remote-p file 'localname))
             (buf (dirvish--special-buffer 'preview dv t)) proc)
@@ -116,8 +116,7 @@ parsing unless INHIBIT-SETUP is non-nil."
         (set-process-filter
          proc (lambda (proc str)
                 (with-current-buffer (process-buffer proc)
-                  (fundamental-mode)
-                  (insert str))))
+                  (let (buffer-read-only) (insert str)))))
         `(buffer . ,buf)))))
 
 (provide 'dirvish-tramp)
