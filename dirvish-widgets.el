@@ -204,7 +204,7 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
 
 (defun dirvish--file-attr-size (name attrs)
   "Get file size of file NAME from ATTRS."
-  (cond ((dirvish-prop :remote)
+  (cond ((and (dirvish-prop :remote) (not (dirvish-prop :local-sudo)))
          (substring (format "      %s%s"
                             (or (file-attribute-size attrs) "?")
                             (if (dirvish-prop :gui) " " ""))
@@ -234,7 +234,7 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
 
 (defun dirvish--file-attr-time (name attrs)
   "File NAME's modified time from ATTRS."
-  (if (dirvish-prop :remote)
+  (if (and (dirvish-prop :remote) (not (dirvish-prop :local-sudo)))
       (format "  %s " (or (file-attribute-modification-time attrs) "?"))
     (format "  %s " (dirvish-attribute-cache name :f-time
                       (format-time-string
@@ -444,7 +444,7 @@ GROUP-TITLES is a list of group titles."
   "Last modification time of file."
   (pcase-let ((`(,time . ,face)
                (dirvish--format-file-attr 'modification-time 'time)))
-    (unless (dirvish-prop :remote)
+    (unless (and (dirvish-prop :remote) (not (dirvish-prop :local-sudo)))
       (setq time (format-time-string dirvish-time-format-string time)))
     (propertize (format "%s" time) 'face face)))
 

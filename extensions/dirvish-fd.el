@@ -410,8 +410,7 @@ The command run is essentially:
       (user-error "'fd' command requires a directory: %s" dir))
   (let* ((remote (file-remote-p dir))
          (fd-program (dirvish-fd--ensure-fd remote))
-         (ls-program (or (and remote (dirvish-fd--find-gnu-ls remote))
-                         dirvish-fd-ls-program))
+         (ls-program (dirvish-fd--find-gnu-ls remote))
          (dv (or (dirvish-curr)
                  (progn (dirvish dir) (dirvish--get-session 'type 'default))))
          (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
@@ -435,8 +434,7 @@ The command run is essentially:
       (dirvish-prop :cus-header 'dirvish-fd-header)
       (dirvish-prop :remote remote)
       (dirvish-prop :global-header t)
-      (dirvish-prop :preview-dps
-        (if remote '(dirvish-tramp-dp) (dv-preview-dispatchers dv)))
+      (dirvish-prop :preview-dps (unless remote (dv-preview-dispatchers dv)))
       (dirvish-prop :attrs (dv-attributes dv))
       (cl-loop for (k v) on dirvish--scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))

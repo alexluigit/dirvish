@@ -52,10 +52,13 @@ all categories."
 
 (dirvish-define-preview peek-exception (file)
   "Handle exceptions when peek files."
-  (when-let* (((string-prefix-p "LIB_EXCEPTION:::" file)))
-    (pcase-let ((`(_ ,cand ,err) (split-string file ":::"))
-                (fmt "Warning: caught exception peeking [ %s ]\n    Error: %s"))
-      `(info . ,(format fmt cand err)))))
+  (cond ((string-prefix-p "LIB_EXCEPTION:::" file)
+         (pcase-let ((`(_ ,cand ,err) (split-string file ":::"))
+                     (fmt "Caught exception peeking [ %s ]\n    Error: %s"))
+           `(info . ,(format fmt cand err))))
+        ((string-prefix-p "FILE_REMOTE_EXCEPTION:::" file)
+         (pcase-let ((`(_ ,cand) (split-string file ":::")))
+           `(info . ,(format "Unable to peek remote file: [ %s ]" cand))))))
 
 (defun dirvish-peek-setup-h ()
   "Create dirvish minibuffer preview window.
@@ -86,10 +89,7 @@ one of categories in `dirvish-peek-categories'."
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (dirvish-prop :dv (dv-id new-dv))
       (dirvish-prop :preview-dps
-        (if (file-remote-p default-directory)
-            '(dirvish-peek-exception-dp dirvish-tramp-dp)
-          (append '(dirvish-peek-exception-dp)
-                  (dv-preview-dispatchers new-dv)))))))
+        (append '(dirvish-peek-exception-dp) (dv-preview-dispatchers new-dv))))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
@@ -99,7 +99,11 @@ one of categories in `dirvish-peek-categories'."
               ((not (string= cand (dirvish-prop :peek-last)))))
     (dirvish-prop :peek-last cand)
     (pcase category
-      ('file (setq cand (expand-file-name cand)))
+      ('file
+       (let ((fname (expand-file-name cand)))
+         (if (file-remote-p fname)
+             (setq cand (format "FILE_REMOTE_EXCEPTION:::%s" fname))
+           (setq cand fname))))
       ('project-file
        (setq cand (expand-file-name
                    cand (or (dirvish--get-project-root)

@@ -715,13 +715,14 @@ filename or a string with format of `dirvish-fd-bufname'."
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
          (new-buffer-p (null buffer))
+         (dps (dv-preview-dispatchers dv))
          tramp-fn dired-buffers) ; disable reuse from dired
     (setf (dv-timestamp dv) (dirvish--timestamp))
     (when reuse? (setf (dv-reuse dv) t))
     (when new-buffer-p
       (if (not remote) (setq buffer (apply fn (list dir-or-list flags)))
         (setq tramp-fn (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
-              buffer (apply tramp-fn (list fn dir-or-list flags remote))))
+              buffer (apply tramp-fn (list fn dir-or-list flags remote dps))))
       (with-current-buffer buffer (dirvish--setup-dired))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
@@ -736,8 +737,7 @@ filename or a string with format of `dirvish-fd-bufname'."
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :remote remote)
       (dirvish-prop :root key)
-      (dirvish-prop :preview-dps
-        (if remote '(dirvish-tramp-dp) (dv-preview-dispatchers dv)))
+      (unless remote (dirvish-prop :preview-dps dps))
       (dirvish-prop :attrs (dv-attributes dv))
       (cl-loop for (k v) on dirvish--scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
@@ -768,7 +768,7 @@ filename or a string with format of `dirvish-fd-bufname'."
       (dired-move-to-filename))
     (dirvish--render-attrs)
     (when-let* ((filename (dired-get-filename nil t)))
-      (dirvish-prop :index filename)
+      (dirvish-prop :index (file-local-name filename))
       (dirvish-debounce nil
         (when (dv-curr-layout dv)
           (force-mode-line-update t)
@@ -890,7 +890,8 @@ filename or a string with format of `dirvish-fd-bufname'."
                 (setq dired-listing-switches ,dired-listing-switches)
                 (setq dired-omit-verbose ,(bound-and-true-p dired-omit-verbose))
                 (setq dired-omit-files ,(bound-and-true-p dired-omit-files))
-                (with-current-buffer (dired-noselect ,file)
+                ;; for `sudo-edit' compat
+                (with-current-buffer (dired-noselect (file-local-name ,file))
                   ,(and dirvish-preview-dired-sync-omit
                         (bound-and-true-p dired-omit-mode)
                         `(dired-omit-mode))
@@ -994,9 +995,11 @@ When PROC finishes, fill preview buffer with process result."
       (when f-beg
         (setq f-str (buffer-substring f-beg f-end)
               f-wid (string-width f-str)
-              f-name (concat (dired-current-directory) f-str)
+              f-name (concat (if remote (dired-current-directory)
+                               (file-local-name (dired-current-directory)))
+                             f-str)
               f-attrs (dirvish-attribute-cache f-name :builtin
-                        (unless remote (file-attributes f-name)))
+                        (unless remote (ignore-errors (file-attributes f-name))))
               f-type (dirvish-attribute-cache f-name :type
                        (let ((ch (progn (back-to-indentation) (char-after))))
                          (cond ; ASCII: d -> 100, l -> 108
@@ -1037,7 +1040,9 @@ When PROC finishes, fill preview buffer with process result."
 
 (defun dirvish--render-attrs (&optional clear)
   "Render or CLEAR attributes in DV's dirvish buffer."
-  (cl-loop with remote = (dirvish-prop :remote) with gui = (dirvish-prop :gui)
+  (cl-loop with remote = (and (dirvish-prop :remote)
+                              (not (dirvish-prop :local-sudo)))
+           with gui = (dirvish-prop :gui)
            with fns = () with height = (frame-height)
            with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
            with remain = (- (window-width) (if gui 1 2))
@@ -1301,7 +1306,8 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
             ;; inherit from cached backend, avoid unneeded vc info in subtrees
             (bk (or i-bk (unless remote? (vc-responsible-backend ,dir t)))))
        (dolist (file (unless remote? (directory-files ,dir t nil t)))
-         (let* ((attrs (file-attributes file)) (tp (nth 0 attrs)))
+         (let* ((attrs (ignore-errors (file-attributes file)))
+                (tp (nth 0 attrs)))
            (cond ((eq t tp) (setq tp '(dir . nil)))
                  (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
                  (t (setq tp '(file . nil))))
@@ -1309,9 +1315,8 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
        (cons bk hs)))
    (lambda (p _)
      (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
-                 (`(,vc . ,data)
-                  (with-current-buffer (process-buffer p)
-                    (read (buffer-string)))))
+                 (`(,vc . ,data) (with-current-buffer (process-buffer p)
+                                   (read (buffer-string)))))
        (when (buffer-live-p buf)
          (with-current-buffer buf
            (maphash (lambda (k v) (puthash k v dirvish--dir-data)) data)
