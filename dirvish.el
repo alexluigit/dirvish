@@ -346,12 +346,16 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
        (prog1 ,@body (set-window-dedicated-p nil dedicated)))))
 
 (defmacro dirvish-define-attribute (name docstring &rest body)
-  "Define a Dirvish attribute NAME.
-An attribute contains a pair of predicate/rendering functions
-that are being called on `post-command-hook'.  The predicate fn
-takes current DV as argument and is executed once.  When it
-evaluates to t, the rendering fn runs BODY for every line with
-following arguments:
+  "Define a Dirvish attribute NAME with DOCSTRING.
+An Dirvish attribute contains:
+- a PREDICATE form, which is the value of `:when' keyword
+- a SETUP form, which is the value of `:setup' keyword
+- a RENDER function runs BODY (excludes all the keywords)
+
+During redisplay, the PREDICATE is evaluated with WIN-WIDTH (from
+`window-width') bound locally, a nil result means the attribute should
+not be rendered.  Otherwise, SETUP form is evalutated once and RENDER is
+called for every file line in the viewport with the following arguments:
 
 - `f-beg'   from `dired-move-to-filename'
 - `f-end'   from `dired-move-to-end-of-filename'
@@ -361,14 +365,25 @@ following arguments:
 - `f-type'  from `file-directory-p' along with `file-symlink-p'
 - `l-beg'   from `line-beginning-position'
 - `l-end'   from `line-end-position'
-- `hl-face' a face that is only passed in on current line
+- `hl-face' from `dirvish-hl-line' face, only passed in for current line
+- `w-width' from `window-width'
 
-DOCSTRING is the docstring for the attribute.  An optional
-`:width' keyword is used to declare the length of the attribute."
+RENDER should return a cons of (TYPE . VAL) where:
+- TYPE can be one of `ov', `left' or `right'
+- When TYPE is `ov', VAL is a overlay to be put; otherwise VAL is a string
+
+The collected `left' strings as a whole (ordered according to `:index')
+is then attached to `f-end', while `right' would fill up remaining space
+within the file line.  These keywords are used to calculate the position
+of the collected `right' strings:
+
+- `:width': a form denotes the constant length of the attribute.
+- `:right': like `:width', but only used by `right' TYPE RENDER."
   (declare (indent defun) (doc-string 2))
   (let ((ov (intern (format "dirvish-%s-ov" name)))
         (render (intern (format "dirvish-attribute-%s-rd" name)))
-        (args '(f-beg f-end f-str f-name f-attrs f-type l-beg l-end hl-face))
+        (args '(f-beg f-end f-str f-name f-attrs
+                      f-type l-beg l-end hl-face w-width))
         options)
     (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) options)))
     (setq options (reverse options))
@@ -377,7 +392,9 @@ DOCSTRING is the docstring for the attribute.  An optional
         'dirvish--available-attrs
         (cons ',name '(,(or (plist-get options :index) 0)
                        ,(or (plist-get options :width) 0)
+                       ,(or (plist-get options :right) 0)
                        ,(or (plist-get options :when) t)
+                       ,(or (plist-get options :setup) nil)
                        ,render ,ov ,docstring)))
        (defun ,render ,args (ignore ,@args) ,@body))))
 
@@ -629,8 +646,8 @@ FROM-QUIT is used to signify the calling command."
   "Expand ATTRS from `dirvish--available-attrs'."
   (sort (cl-loop for attr in (append '(hl-line symlink-target) attrs)
                  for lst = (alist-get attr dirvish--available-attrs)
-                 for (idx width pred render ov _) = lst
-                 collect (list idx (eval width) pred render ov))
+                 for (idx wd wd-r pred setup render ov _) = lst collect
+                 (list idx attr (eval wd) (eval wd-r) pred setup render ov))
         (lambda (a b) (< (car a) (car b)))))
 
 (defun dirvish--check-dependencies (dv)
@@ -982,8 +999,9 @@ When PROC finishes, fill preview buffer with process result."
 
 ;;;; Attributes
 
-(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to no-hl)
-  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL."
+(defun dirvish--render-attrs-1
+    (height width pos remote fns ov align-to no-hl w-width)
+  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL W-WIDTH."
   (forward-line (- 0 height))
   (cl-dotimes (_ (* 2 height))
     (when (eobp) (cl-return))
@@ -1014,7 +1032,7 @@ When PROC finishes, fill preview buffer with process result."
       (cl-loop
        for fn in (if f-beg fns '(dirvish-attribute-hl-line-rd))
        for (k . v) = (funcall fn f-beg f-end f-str f-name
-                              f-attrs f-type l-beg l-end hl-face)
+                              f-attrs f-type l-beg l-end hl-face w-width)
        do (pcase k ('ov (overlay-put v ov t))
                  ('left (setq left (concat v left)))
                  ('right (setq right (concat v right))))
@@ -1045,11 +1063,12 @@ When PROC finishes, fill preview buffer with process result."
            with gui = (dirvish-prop :gui)
            with fns = () with height = (frame-height)
            with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
-           with remain = (- (window-width) (if gui 1 2))
-           for (_ width pred render ov) in (dirvish-prop :attrs)
+           with w-width = (window-width)
+           with remain = (- w-width (if gui 1 2))
+           for (_ _ width _ pred setup render ov) in (dirvish-prop :attrs)
            do (remove-overlays (point-min) (point-max) ov t)
            when (eval pred `((win-width . ,remain)))
-           do (setq remain (- remain width)) (push render fns)
+           do (eval setup) (setq remain (- remain width)) (push render fns)
            initially
            (remove-overlays (point-min) (point-max) 'dirvish-l-end-ov t)
            (remove-overlays (point-min) (point-max) 'dirvish-r-end-ov t)
@@ -1058,7 +1077,8 @@ When PROC finishes, fill preview buffer with process result."
              (unless clear
                (save-excursion
                  (dirvish--render-attrs-1 height remain (point)
-                                          remote fns ov (if gui 0 2) no-hl))))))
+                                          remote fns ov (if gui 0 2)
+                                          no-hl w-width))))))
 
 (dirvish-define-attribute hl-line
   "Highlight current line.

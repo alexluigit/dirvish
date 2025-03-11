@@ -235,8 +235,8 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
 (defun dirvish--file-attr-time (name attrs)
   "File NAME's modified time from ATTRS."
   (if (and (dirvish-prop :remote) (not (dirvish-prop :local-sudo)))
-      (format "  %s " (or (file-attribute-modification-time attrs) "?"))
-    (format "  %s " (dirvish-attribute-cache name :f-time
+      (format " %s " (or (file-attribute-modification-time attrs) "?"))
+    (format " %s " (dirvish-attribute-cache name :f-time
                       (format-time-string
                        dirvish-time-format-string
                        (file-attribute-modification-time attrs))))))
@@ -318,6 +318,7 @@ GROUP-TITLES is a list of group titles."
 (dirvish-define-attribute file-size
   "File size or directories file count at right fringe."
   :index 1
+  :right 6
   :when (and dired-hide-details-mode (> win-width 25))
   (let* ((str (concat (dirvish--file-attr-size f-name f-attrs)))
          (face (or hl-face 'dirvish-file-size)))
@@ -326,7 +327,10 @@ GROUP-TITLES is a list of group titles."
 
 (dirvish-define-attribute file-time
   "File's modified time at right fringe before the file size."
-  :when (and dired-hide-details-mode (> win-width 60))
+  :right (+ 2 (string-width
+                     (format-time-string
+                      dirvish-time-format-string (current-time))))
+  :when (and dired-hide-details-mode (> win-width 30))
   (let* ((str (concat (dirvish--file-attr-time f-name f-attrs)))
          (face (or hl-face 'dirvish-file-time)))
     (add-face-text-property 0 (length str) face t str)
