@@ -117,7 +117,7 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
        (advice-add #'vc-git--git-status-to-vc-state :around
                    (lambda (fn codes) (apply fn (list (delete-dups codes)))))
        (dolist (file (directory-files ,dir t nil t))
-         (let ((state (if (string-suffix-p dirvish-vc--always-ignored file)
+         (let ((state (if (string-suffix-p ,dirvish-vc--always-ignored file)
                           'ignored (vc-state-refresh file bk)))
                (msg (and (eq bk 'Git)
                          (shell-command-to-string
