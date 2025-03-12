@@ -122,26 +122,32 @@ For now Dirvish ships with these attributes:
 
 + ~subtree-state~: A indicator for directory expanding state.
 + ~nerd-icon~ | ~all-the-icons~ | ~vscode-icon~: File icons provided by various backends.
-+ ~collapse~: Collapse unique nested paths.
++ ~collapse~: append unique nested paths to the end of filename.
 + ~git-msg~: Append git commit message to filename.
 + ~vc-state~: The version control state at left fringe.
 + ~file-size~: Show file size or directories file count at right fringe.
-+ ~file-time~: Show file modification time before the ~file-size~.
++ ~file-time~: Show file modification time
 
 Here is an overview of how does these attributes look like:
 
 [[https://user-images.githubusercontent.com/16313743/178137697-3ff4ca5a-aaf3-44d4-b644-9e9a2e7f911a.svg][https://user-images.githubusercontent.com/16313743/178137697-3ff4ca5a-aaf3-44d4-b644-9e9a2e7f911a.svg]]
 
-*NOTE*: ~file-time~ was added recently (v2.0+), hence not in the screenshot.
-
 To achieve this, the only thing you need to do is put these symbols into
-~dirvish-attributes~ like this (order doesn't matter):
+~dirvish-attributes~, notice that the order matters for some attributes.
 
 #+begin_src emacs-lisp
-;; Don't worry, Dirvish is still performant even if you enable all these attributes
 (setq dirvish-attributes
- '(vc-state subtree-state all-the-icons collapse git-msg file-time file-size))
+      (append
+       ;; The order of these attributes is insignificant, they are always
+       ;; displayed in the same position.
+       '(vc-state subtree-state nerd-icons collapse)
+       ;; Other attributes are displayed in the order they appear in this list.
+       '( git-msg file-time  file-size)))
 #+end_src
+
+After modifying this variable, you should call ~revert-buffer~ (bound to =g= by
+default) to apply the latest configuration.  Alternatively, you can dynamically
+toggle or adjust the order of these attributes by ~M-x dirvish-setup-menu~.
 
 * Multile layout recipies
 
@@ -392,6 +398,7 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
 
 #+begin_src emacs-lisp
 (use-package dirvish
+  :ensure t
   :init
   (dirvish-override-dired-mode)
   :custom
@@ -405,10 +412,10 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
   ;; (dirvish-side-follow-mode)      ; similar to `treemacs-follow-mode'
   (setq dirvish-mode-line-format
         '(:left (sort symlink) :right (omit yank index)))
-  (setq dirvish-attributes
-        '(nerd-icons file-time file-size collapse subtree-state vc-state git-msg)
+  (setq dirvish-attributes           ; The order *MATTERS* for some attributes
+        '(vc-state subtree-state nerd-icons collapse git-msg file-time file-size)
         dirvish-side-attributes
-        '(vc-state file-size nerd-icons collapse))
+        '(vc-state nerd-icons collapse file-size))
   (setq delete-by-moving-to-trash t)
   (setq dired-listing-switches
         "-l --almost-all --human-readable --group-directories-first --no-group")

@@ -317,7 +317,6 @@ GROUP-TITLES is a list of group titles."
 
 (dirvish-define-attribute file-size
   "File size or directories file count at right fringe."
-  :index 1
   :right 6
   :when (and dired-hide-details-mode (> win-width 25))
   (let* ((str (concat (dirvish--file-attr-size f-name f-attrs)))

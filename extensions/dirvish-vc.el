@@ -182,10 +182,9 @@ This attribute only works on graphic displays."
 
 (dirvish-define-attribute git-msg
   "Append git commit message to filename."
-  :index -1
   :when (and (eq (dirvish-prop :vc-backend) 'Git) (not (dirvish-prop :remote)))
   :setup (dirvish-prop :gm-chop
-           (seq-reduce (lambda (acc i) (cl-incf acc (nth 3 i)))
+           (seq-reduce (lambda (acc i) (cl-incf acc (nth 2 i)))
                        (dirvish-prop :attrs) 0))
   (let* ((msg-raw (dirvish-attribute-cache f-name :git-msg))
          (msg (if (>= (length msg-raw) 1) (substring msg-raw 0 -1) ""))

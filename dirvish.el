@@ -394,8 +394,7 @@ of the collected `right' strings:
     `(progn
        (add-to-list
         'dirvish--available-attrs
-        (cons ',name '(,(or (plist-get options :index) 0)
-                       ,(or (plist-get options :width) 0)
+        (cons ',name '(,(or (plist-get options :width) 0)
                        ,(or (plist-get options :right) 0)
                        ,(or (plist-get options :when) t)
                        ,(or (plist-get options :setup) nil)
@@ -649,11 +648,12 @@ FROM-QUIT is used to signify the calling command."
 
 (defun dirvish--attrs-expand (attrs)
   "Expand ATTRS from `dirvish--available-attrs'."
-  (sort (cl-loop for attr in (append '(hl-line symlink-target) attrs)
+  (cl-pushnew 'hl-line attrs) (cl-pushnew 'symlink-target attrs)
+  (sort (cl-loop for attr in attrs
                  for lst = (alist-get attr dirvish--available-attrs)
-                 for (idx wd wd-r pred setup render ov _) = lst collect
-                 (list idx attr (eval wd) (eval wd-r) pred setup render ov))
-        (lambda (a b) (< (car a) (car b)))))
+                 for (wd wd-r pred setup render ov _) = lst
+                 collect (list attr (eval wd) (eval wd-r) pred setup render ov))
+        (lambda (a b) (< (cl-position (car a) attrs) (cl-position (car b) attrs)))))
 
 (defun dirvish--check-dependencies (dv)
   "Require necessary extensions for DV, raise warnings for missing executables."
@@ -1070,7 +1070,7 @@ When PROC finishes, fill preview buffer with process result."
            with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
            with w-width = (window-width)
            with remain = (- w-width (if gui 1 2))
-           for (_ _ width _ pred setup render ov) in (dirvish-prop :attrs)
+           for (_ width _ pred setup render ov) in (dirvish-prop :attrs)
            do (remove-overlays (point-min) (point-max) ov t)
            when (eval pred `((win-width . ,remain)))
            do (eval setup) (setq remain (- remain width)) (push render fns)
@@ -1223,6 +1223,9 @@ Optionally, use CURSOR as the enabled cursor type."
 When IGNORE-AUTO, refresh file attributes as well.
 Dirvish sets `revert-buffer-function' to this function."
   (dirvish-prop :old-index (dired-get-filename nil t))
+  (let ((dv (dirvish-curr)))
+    (dirvish--check-dependencies dv) ; update dirvish setups
+    (dirvish-prop :attrs (dv-attributes dv)))
   (dolist (keyword dirvish--reset-keywords) (dirvish-prop keyword nil))
   (dired-revert)
   (dirvish--hide-dired-header)
@@ -1502,7 +1505,6 @@ are killed and the Dired buffer(s) in the selected window are buried."
   (when-let* ((dv (dirvish-curr)) (ct 0) (lst (window-list))
               (win (dv-root-window dv)) (frame (selected-frame)))
     (select-window win)
-    (dirvish--check-dependencies dv) ; update configs
     (dirvish--clear-session dv t)
     (while (and (dirvish-curr) (eq (selected-window) win)
                 (<= (cl-incf ct) (length lst)))

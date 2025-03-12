@@ -51,37 +51,38 @@ RECIPE has the same form as `dirvish-default-layout'."
                        (float :tag "max width of parent windows")
                        (float :tag "width of preview window"))))
 
-(defclass dirvish-attribute (transient-infix)
-  ((variable  :initarg :variable))
+(defclass dirvish-attribute-set (transient-infix)
+  ((variable :initarg :variable))
   "Class for dirvish attributes.")
 
-(cl-defmethod transient-format-description ((obj dirvish-attribute))
+(cl-defmethod transient-format-description ((obj dirvish-attribute-set))
   "Format description for DIRVISH-ATTRIBUTE instance OBJ."
   (format "%s%s" (oref obj description)
           (propertize " " 'display '(space :align-to (- right 5)))))
 
-(cl-defmethod transient-format-value ((obj dirvish-attribute))
+(cl-defmethod transient-format-value ((obj dirvish-attribute-set))
   "Format value for DIRVISH-ATTRIBUTE instance OBJ."
   (let* ((val (oref obj value))
          (face (if (equal val "+") 'transient-argument 'transient-inactive-value)))
     (propertize val 'face face)))
 
-(cl-defmethod transient-init-value ((obj dirvish-attribute))
+(cl-defmethod transient-init-value ((obj dirvish-attribute-set))
   "Initialize value for DIRVISH-ATTRIBUTE instance OBJ."
-  (let ((sym (oref obj variable)))
-    (oset obj value (if (memq sym dirvish-attributes) "+" "-"))))
+  (let ((sym (oref obj variable))
+        (attrs (mapcar #'car (dirvish-prop :attrs))))
+    (oset obj value (if (memq sym attrs) "+" "-"))))
 
-(cl-defmethod transient-infix-read ((obj dirvish-attribute))
+(cl-defmethod transient-infix-read ((obj dirvish-attribute-set))
   "Read value from DIRVISH-ATTRIBUTE instance OBJ."
   (oset obj value (if (equal (oref obj value) "+") "-" "+")))
 
-(cl-defmethod transient-infix-set ((obj dirvish-attribute) value)
+(cl-defmethod transient-infix-set ((obj dirvish-attribute-set) value)
   "Set relevant value in DIRVISH-ATTRIBUTE instance OBJ to VALUE."
+  (mapc #'require '(dirvish-widgets dirvish-vc dirvish-collapse))
   (let* ((item (oref obj variable))
-         (old-val (purecopy dirvish-attributes))
+         (old-val (mapcar #'car (dirvish-prop :attrs)))
          (new-val (if (equal value "+") (cl-pushnew item old-val)
-                    (remq item old-val))))
-    (mapc #'require '(dirvish-widgets dirvish-vc dirvish-collapse))
+                    (remove item old-val))))
     (dirvish--render-attrs 'clear)
     (dirvish-prop :attrs (dirvish--attrs-expand new-val))
     (dirvish--render-attrs)))
@@ -119,7 +120,7 @@ predicate for that infix."
                         `(lambda () (interactive) (dirvish-layout-switch ,v)))
                   layouts)
           (eval `(transient-define-infix ,name ()
-                   :class 'dirvish-attribute :variable ',v
+                   :class 'dirvish-attribute-set :variable ',v
                    :description ,desc :if (lambda () ,(if pred `,@pred t))))
           (push (list k name) attrs))
      finally
@@ -134,10 +135,17 @@ predicate for that infix."
           ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
           ("RET" "Apply current settings to future sessions"
            (lambda () (interactive)
-             (setq-default dirvish-attributes dirvish-attributes)
-             (setq dirvish-default-layout (dv-ff-layout (dirvish-curr)))
-             (dirvish--build-layout (dirvish-curr))
-             (revert-buffer)))])))))
+             (let* ((dv (dirvish-curr)) (tp (dv-type dv)) (dft (eq tp 'default))
+                    (attr-sym (or (and dft 'dirvish-attributes)
+                                  (intern (format "dirvish-%s-attributes" tp))))
+                    (attrs (mapcar #'car (dirvish-prop :attrs))))
+               (when (boundp attr-sym) (set-default attr-sym attrs))
+               (setq dirvish-default-layout (dv-ff-layout dv))
+               (dirvish--build-layout (dirvish-curr))
+               (revert-buffer))))]
+         (interactive)
+         (if (dirvish-curr) (transient-setup 'dirvish-setup-menu)
+           (user-error "Not in a Dirvish buffer")))))))
 
 (defun dirvish-find-file-true-path ()
   "Open truename of (maybe) symlink file under the cursor."
