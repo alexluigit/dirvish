@@ -134,7 +134,7 @@ filename until the project root when opening a side session."
        (with-selected-window win
          (let (buffer-list-update-hook)
            (dirvish--find-entry 'find-alternate-file dir))
-         (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
+         (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr t)
            (dired-goto-file curr))
          (dirvish--update-display))))))
 
