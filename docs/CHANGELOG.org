@@ -1,3 +1,12 @@
+* 2.2.7
+
+** What's changed
+
++ use different handlers for local / sudo / remote connections
++ responsive & aligned ~git-msg~ attribute (github style)
++ support changing display order of some attributes
++ bug fixes for ~dirvish-subtree~
+
 * 2.2.3
 
 Emergency fixes for 2 bugs in 2.2.0:

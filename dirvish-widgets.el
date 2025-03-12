@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.2.3
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -318,7 +318,7 @@ GROUP-TITLES is a list of group titles."
 (dirvish-define-attribute file-size
   "File size or directories file count at right fringe."
   :right 6
-  :when (and dired-hide-details-mode (> win-width 25))
+  :when (and dired-hide-details-mode (>= win-width 20))
   (let* ((str (concat (dirvish--file-attr-size f-name f-attrs)))
          (face (or hl-face 'dirvish-file-size)))
     (add-face-text-property 0 (length str) face t str)
@@ -329,7 +329,7 @@ GROUP-TITLES is a list of group titles."
   :right (+ 2 (string-width
                      (format-time-string
                       dirvish-time-format-string (current-time))))
-  :when (and dired-hide-details-mode (> win-width 30))
+  :when (and dired-hide-details-mode (>= win-width 25))
   (let* ((str (concat (dirvish--file-attr-time f-name f-attrs)))
          (face (or hl-face 'dirvish-file-time)))
     (add-face-text-property 0 (length str) face t str)

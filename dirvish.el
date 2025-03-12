@@ -2,7 +2,7 @@
 ;; Copyright (C) 2021-2025 Alex Lu
 
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.2.3
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -376,10 +376,10 @@ RENDER should return a cons of (TYPE . VAL) where:
 - TYPE can be one of `ov', `left' or `right'
 - When TYPE is `ov', VAL is a overlay to be put; otherwise VAL is a string
 
-The collected `left' strings as a whole (ordered according to `:index')
-is then attached to `f-end', while `right' would fill up remaining space
-within the file line.  These keywords are used to calculate the position
-of the collected `right' strings:
+The collected `left' strings as a whole is then attached to `f-end',
+while `right' would fill up remaining space within the file line.  These
+keywords are used to calculate the starting position of the collected
+`right' strings:
 
 - `:width': a form denotes the constant length of the attribute.
 - `:right': like `:width', but only used by `right' TYPE RENDER."
