@@ -130,7 +130,7 @@ The valid value are:
   "Like `dirvish-use-mode-line', but for header line."
   :group 'dirvish :type 'symbol)
 
-(defcustom dirvish-mode-line-height 30
+(defcustom dirvish-mode-line-height 21
   "Height of Dirvish's mode line.
 The value should be a cons cell (H-WIN . H-FRAME), where H-WIN
 and H-FRAME represent the height of mode line in single window
@@ -139,7 +139,7 @@ integer INT, it is seen as a shorthand for (INT . INT)."
   :group 'dirvish
   :type '(choice integer (cons integer integer)))
 
-(defcustom dirvish-header-line-height 30
+(defcustom dirvish-header-line-height '(25 . 35)
   "Like `dirvish-mode-line-height', but for header line."
   :type '(choice integer (cons integer integer)))
 
@@ -171,7 +171,7 @@ Set it to nil to use the default `mode-line-format'."
   "Like `dirvish-mode-line-format', but for header line ."
   :group 'dirvish :type 'plist)
 
-(defcustom dirvish-mode-line-bar-image-width 2
+(defcustom dirvish-mode-line-bar-image-width 3
   "Pixel width of the leading bar image in both mode-line and header-line.
 If the value is 0, the bar image is hidden."
   :group 'dirvish :type 'integer)
@@ -196,6 +196,10 @@ Works all the same as `dirvish-hide-details' but for cursor."
   :group 'dirvish
   :type '(choice (boolean :tag "Apply to all Dirvish buffers")
                  (repeat :tag "Apply to a list of buffer types: 'dired, 'dirvish, 'dirvish-fd or 'dirvish-side" symbol)))
+
+(defcustom dirvish-window-fringe 3
+  "Root window's left fringe in pixels."
+  :group 'dirvish :type 'natnum)
 
 (defcustom dirvish-preview-dired-sync-omit nil
   "If non-nil, `dired' preview buffers sync `dired-omit-mode' from root window.
@@ -602,8 +606,9 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish--clear-session (dv &optional from-quit)
   "Reset DV's slot and kill its buffers.
 FROM-QUIT is used to signify the calling command."
-  (let ((index (cdr (dv-index dv))) (frg (dirvish-prop :fringe)))
-    (when frg (set-window-fringes nil (frame-parameter nil 'left-fringe)))
+  (let ((index (cdr (dv-index dv))))
+    (set-window-fringes
+     nil (frame-parameter nil 'left-fringe) (frame-parameter nil 'right-fringe))
     (if (not (dv-curr-layout dv))
         (cl-loop for (_d . b) in (dv-roots dv)
                  when (and (not (get-buffer-window b))
@@ -1293,7 +1298,8 @@ LEVEL is the depth of current window."
                             (window-parameters . ((no-other-window . t))))
                for b = (dirvish--create-parent-buffer dv parent current level)
                for w = (display-buffer b `(dirvish--display-buffer . ,args)) do
-               (with-selected-window w (set-window-dedicated-p w t))))))
+               (with-selected-window w
+                 (set-window-fringes w 1 1) (set-window-dedicated-p w t))))))
 
 (defun dirvish--init-special-buffers (dv)
   "Initialize special buffers for DV."
@@ -1387,12 +1393,13 @@ INHIBIT-SETUP is non-nil."
     (when layout (dirvish--init-special-buffers dv))
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
-    (dirvish-prop :fringe nil)
     ;; if called from `dirvish-side--auto-jump', do nothing
     (when (eq (dv-type dv) 'default) (dirvish--change-selected))
     (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
     (when (or (dv-curr-layout dv) (dv-dedicated dv))
       (set-window-dedicated-p nil t))
+    ;; ensure a positive fringe on both sides for `dirvish-subtree' (#311)
+    (set-window-fringes nil (1+ dirvish-window-fringe) 1)
     (dolist (pane w-order)
       (let* ((buf (dirvish--special-buffer pane dv (eq pane 'preview)))
              (args (alist-get pane w-args))
