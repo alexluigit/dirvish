@@ -334,6 +334,12 @@ See `dirvish-subtree-file-viewer' for details"
              (goto-char (dired-subdir-min))
              (goto-char (next-single-property-change (point) 'dired-filename))
              (forward-line -1)
+             ;; Without this `sit-for', the following movement may stop at a
+             ;; "strange" point where the file name belongs to a subtree that is
+             ;; not expanded yet.  This can occur when reopening a path
+             ;; immediately after the original buffer visiting that path is
+             ;; killed, affecting functions like `dirvish-side--auto-jump'.
+             (sit-for 0.01)
              ;; TARGET is either not exist or being hidden (#135)
              (when (dirvish-subtree--move-to-file next depth)
                (dirvish-subtree-expand-to target))))

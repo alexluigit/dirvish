@@ -197,7 +197,7 @@ Works all the same as `dirvish-hide-details' but for cursor."
   :type '(choice (boolean :tag "Apply to all Dirvish buffers")
                  (repeat :tag "Apply to a list of buffer types: 'dired, 'dirvish, 'dirvish-fd or 'dirvish-side" symbol)))
 
-(defcustom dirvish-window-fringe 3
+(defcustom dirvish-window-fringe 2
   "Root window's left fringe in pixels."
   :group 'dirvish :type 'natnum)
 

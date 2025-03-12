@@ -132,8 +132,8 @@ filename until the project root when opening a side session."
                  ((not (string-suffix-p "COMMIT_EDITMSG" curr)))
                  ((not (equal prev curr))))
        (with-selected-window win
-         ;; TODO: `find-alternate-file' lead to incorrect auto-expanding, why?
-         (let (buffer-list-update-hook) (dirvish--find-entry 'find-file dir))
+         (let (buffer-list-update-hook)
+           (dirvish--find-entry 'find-alternate-file dir))
          (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
            (dired-goto-file curr))
          (dirvish--update-display))))))
