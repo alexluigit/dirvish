@@ -158,8 +158,13 @@ VC commands, it also provides a way to cycle through the ~vc-*~ preview methods.
 
 * Show icons at front of file name (dirvish-icons.el)
 
-This extension provides two attributes: ~all-the-icons~ and ~vscode-icon~.  To tweak
-the appearance of the icons, you have these options:
+This extension provides file icons integration from various backends:
+
++ ~nerd-icons~:    https://github.com/rainstormstudio/nerd-icons.el
++ ~all-the-icons~: https://github.com/domtronn/all-the-icons.el
++ ~vscode-icon~:   https://github.com/jojojames/vscode-icon-emacs
+
+To tweak the appearance of the icons, you have these options:
 
 + ~dirvish-all-the-icons-height~: Height of icons from =all-the-icons=.
 + ~dirvish-all-the-icons-offset~: Vertical offset of icons from =all-the-icons=.

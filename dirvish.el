@@ -316,7 +316,7 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar-local dirvish--props '())
 (defvar-local dirvish--dir-data nil)
 
-;;;; Macros
+;;;; Helpers
 
 (defmacro dirvish-prop (prop &rest body)
   "Retrieve PROP from `dirvish--props'.
@@ -344,99 +344,9 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
 (defmacro dirvish-save-dedication (&rest body)
   "Run BODY after undedicating window, restore dedication afterwards."
   (declare (debug (&rest form)))
-  `(progn
-     (let ((dedicated (window-dedicated-p)))
-       (set-window-dedicated-p nil nil)
-       (prog1 ,@body (set-window-dedicated-p nil dedicated)))))
-
-(defmacro dirvish-define-attribute (name docstring &rest body)
-  "Define a Dirvish attribute NAME with DOCSTRING.
-An Dirvish attribute contains:
-- a PREDICATE form, which is the value of `:when' keyword
-- a SETUP form, which is the value of `:setup' keyword
-- a RENDER function runs BODY (excludes all the keywords)
-
-During redisplay, the PREDICATE is evaluated with WIN-WIDTH (from
-`window-width') bound locally, a nil result means the attribute should
-not be rendered.  Otherwise, SETUP form is evalutated once and RENDER is
-called for every file line in the viewport with the following arguments:
-
-- `f-beg'   from `dired-move-to-filename'
-- `f-end'   from `dired-move-to-end-of-filename'
-- `f-str'   from (`buffer-substring' F-BEG F-END)
-- `f-name'  from `dired-get-filename'
-- `f-attrs' from `file-attributes'
-- `f-type'  from `file-directory-p' along with `file-symlink-p'
-- `l-beg'   from `line-beginning-position'
-- `l-end'   from `line-end-position'
-- `hl-face' from `dirvish-hl-line' face, only passed in for current line
-- `w-width' from `window-width'
-
-RENDER should return a cons of (TYPE . VAL) where:
-- TYPE can be one of `ov', `left' or `right'
-- When TYPE is `ov', VAL is a overlay to be put; otherwise VAL is a string
-
-The collected `left' strings as a whole is then attached to `f-end',
-while `right' would fill up remaining space within the file line.  These
-keywords are used to calculate the starting position of the collected
-`right' strings:
-
-- `:width': a form denotes the constant length of the attribute.
-- `:right': like `:width', but only used by `right' TYPE RENDER."
-  (declare (indent defun) (doc-string 2))
-  (let ((ov (intern (format "dirvish-%s-ov" name)))
-        (render (intern (format "dirvish-attribute-%s-rd" name)))
-        (args '(f-beg f-end f-str f-name f-attrs
-                      f-type l-beg l-end hl-face w-width))
-        options)
-    (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) options)))
-    (setq options (reverse options))
-    `(progn
-       (add-to-list
-        'dirvish--available-attrs
-        (cons ',name '(,(or (plist-get options :width) 0)
-                       ,(or (plist-get options :right) 0)
-                       ,(or (plist-get options :when) t)
-                       ,(or (plist-get options :setup) nil)
-                       ,render ,ov ,docstring)))
-       (defun ,render ,args (ignore ,@args) ,@body))))
-
-(defmacro dirvish-attribute-cache (file attribute &rest body)
-  "Get FILE's ATTRIBUTE from `dirvish--dir-data'.
-When the attribute does not exist, set it with BODY."
-  (declare (indent defun))
-  `(let* ((md5 (secure-hash 'md5 ,file))
-          (hash (gethash md5 dirvish--dir-data))
-          (cached (plist-get hash ,attribute))
-          (attr (or cached ,@body)))
-     (unless cached
-       (puthash md5 (append hash (list ,attribute attr)) dirvish--dir-data))
-     attr))
-
-(cl-defmacro dirvish-define-preview (name &optional arglist docstring &rest body)
-  "Define a Dirvish preview dispatcher NAME.
-A dirvish preview dispatcher is a function consumed by
- `dirvish-preview-dispatch' which takes `file' (filename under
- the cursor) and `preview-window' as ARGLIST.  DOCSTRING and BODY
- is the docstring and body for this function."
-  (declare (indent defun) (doc-string 3))
-  (let* ((dp-name (intern (format "dirvish-%s-dp" name)))
-         (default-arglist '(file ext preview-window dv))
-         (ignore-list (cl-set-difference default-arglist arglist))
-         (keywords `(:doc ,docstring)))
-    (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) keywords)))
-    `(progn
-       (add-to-list
-        'dirvish--available-preview-dispatchers (cons ',name ',keywords))
-       (defun ,dp-name ,default-arglist (ignore ,@ignore-list) ,@body))))
-
-(defmacro dirvish-define-mode-line (name &optional docstring &rest body)
-  "Define a mode line segment NAME with BODY and DOCSTRING."
-  (declare (indent defun) (doc-string 2))
-  (let ((ml-name (intern (format "dirvish-%s-ml" name))))
-    `(defun ,ml-name () ,docstring ,@body)))
-
-;;;; Helpers
+  `(let ((dedicated (window-dedicated-p)))
+     (set-window-dedicated-p nil nil)
+     (prog1 ,@body (set-window-dedicated-p nil dedicated))))
 
 (defsubst dirvish-curr ()
   "Return Dirvish session attached to current buffer, if there is any."
@@ -646,15 +556,6 @@ FROM-QUIT is used to signify the calling command."
                      (when met (push (intern (format "dirvish-%s-dp" dp)) res)))
            finally return (reverse res)))
 
-(defun dirvish--attrs-expand (attrs)
-  "Expand ATTRS from `dirvish--available-attrs'."
-  (cl-pushnew 'hl-line attrs) (cl-pushnew 'symlink-target attrs)
-  (sort (cl-loop for attr in attrs
-                 for lst = (alist-get attr dirvish--available-attrs)
-                 for (wd wd-r pred setup render ov _) = lst
-                 collect (list attr (eval wd) (eval wd-r) pred setup render ov))
-        (lambda (a b) (< (cl-position (car a) attrs) (cl-position (car b) attrs)))))
-
 (defun dirvish--check-dependencies (dv)
   "Require necessary extensions for DV, raise warnings for missing executables."
   (cl-loop
@@ -851,6 +752,23 @@ filename or a string with format of `dirvish-fd-bufname'."
 
 ;;;; Preview
 
+(cl-defmacro dirvish-define-preview (name &optional arglist docstring &rest body)
+  "Define a Dirvish preview dispatcher NAME.
+A dirvish preview dispatcher is a function consumed by
+ `dirvish-preview-dispatch' which takes `file' (filename under
+ the cursor) and `preview-window' as ARGLIST.  DOCSTRING and BODY
+ is the docstring and body for this function."
+  (declare (indent defun) (doc-string 3))
+  (let* ((dp-name (intern (format "dirvish-%s-dp" name)))
+         (default-arglist '(file ext preview-window dv))
+         (ignore-list (cl-set-difference default-arglist arglist))
+         (keywords `(:doc ,docstring)))
+    (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) keywords)))
+    `(progn
+       (add-to-list
+        'dirvish--available-preview-dispatchers (cons ',name ',keywords))
+       (defun ,dp-name ,default-arglist (ignore ,@ignore-list) ,@body))))
+
 (defun dirvish--preview-file-maybe-truncate (dv file size)
   "Return preview buffer of FILE with SIZE in DV."
   (when (>= (length (dv-preview-buffers dv)) dirvish-preview-buffers-max-count)
@@ -1004,6 +922,79 @@ When PROC finishes, fill preview buffer with process result."
 
 ;;;; Attributes
 
+(defmacro dirvish-define-attribute (name docstring &rest body)
+  "Define a Dirvish attribute NAME with DOCSTRING.
+An Dirvish attribute contains:
+- a PREDICATE form, which is the value of `:when' keyword
+- a SETUP form, which is the value of `:setup' keyword
+- a RENDER function runs BODY (excludes all the keywords)
+
+During redisplay, the PREDICATE is evaluated with WIN-WIDTH (from
+`window-width') bound locally, a nil result means the attribute should
+not be rendered.  Otherwise, SETUP form is evalutated once and RENDER is
+called for every file line in the viewport with the following arguments:
+
+- `f-beg'   from `dired-move-to-filename'
+- `f-end'   from `dired-move-to-end-of-filename'
+- `f-str'   from (`buffer-substring' F-BEG F-END)
+- `f-name'  from `dired-get-filename'
+- `f-attrs' from `file-attributes'
+- `f-type'  from `file-directory-p' along with `file-symlink-p'
+- `l-beg'   from `line-beginning-position'
+- `l-end'   from `line-end-position'
+- `hl-face' from `dirvish-hl-line' face, only passed in for current line
+- `w-width' from `window-width'
+
+RENDER should return a cons of (TYPE . VAL) where:
+- TYPE can be one of `ov', `left' or `right'
+- When TYPE is `ov', VAL is a overlay to be put; otherwise VAL is a string
+
+The collected `left' strings as a whole is then attached to `f-end',
+while `right' would fill up remaining space within the file line.  These
+keywords are used to calculate the starting position of the collected
+`right' strings:
+
+- `:width': a form denotes the constant length of the attribute.
+- `:right': like `:width', but only used by `right' TYPE RENDER."
+  (declare (indent defun) (doc-string 2))
+  (let ((ov (intern (format "dirvish-%s-ov" name)))
+        (render (intern (format "dirvish-attribute-%s-rd" name)))
+        (args '(f-beg f-end f-str f-name f-attrs
+                      f-type l-beg l-end hl-face w-width))
+        options)
+    (while (keywordp (car body)) (dotimes (_ 2) (push (pop body) options)))
+    (setq options (reverse options))
+    `(progn
+       (add-to-list
+        'dirvish--available-attrs
+        (cons ',name '(,(or (plist-get options :width) 0)
+                       ,(or (plist-get options :right) 0)
+                       ,(or (plist-get options :when) t)
+                       ,(or (plist-get options :setup) nil)
+                       ,render ,ov ,docstring)))
+       (defun ,render ,args (ignore ,@args) ,@body))))
+
+(defmacro dirvish-attribute-cache (file attribute &rest body)
+  "Get FILE's ATTRIBUTE from `dirvish--dir-data'.
+When the attribute does not exist, set it with BODY."
+  (declare (indent defun))
+  `(let* ((md5 (secure-hash 'md5 ,file))
+          (hash (gethash md5 dirvish--dir-data))
+          (cached (plist-get hash ,attribute))
+          (attr (or cached ,@body)))
+     (unless cached
+       (puthash md5 (append hash (list ,attribute attr)) dirvish--dir-data))
+     attr))
+
+(defun dirvish--attrs-expand (attrs)
+  "Expand ATTRS from `dirvish--available-attrs'."
+  (cl-pushnew 'hl-line attrs) (cl-pushnew 'symlink-target attrs)
+  (sort (cl-loop for attr in attrs
+                 for lst = (alist-get attr dirvish--available-attrs)
+                 for (wd wd-r pred setup render ov _) = lst
+                 collect (list attr (eval wd) (eval wd-r) pred setup render ov))
+        (lambda (a b) (< (cl-position (car a) attrs) (cl-position (car b) attrs)))))
+
 (defun dirvish--render-attrs-1
     (height width pos remote fns ov align-to no-hl w-width)
   "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL W-WIDTH."
@@ -1102,6 +1093,12 @@ This attribute is disabled when cursor is visible."
       (overlay-put ov 'invisible t) `(ov . ,ov))))
 
 ;;;; Mode Line | Header Line
+
+(defmacro dirvish-define-mode-line (name &optional docstring &rest body)
+  "Define a mode line segment NAME with BODY and DOCSTRING."
+  (declare (indent defun) (doc-string 2))
+  (let ((ml-name (intern (format "dirvish-%s-ml" name))))
+    `(defun ,ml-name () ,docstring ,@body)))
 
 (defun dirvish--mode-line-composer (left right &optional header)
   "Compose `mode-line-format' from LEFT and RIGHT segments.
