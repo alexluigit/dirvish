@@ -90,7 +90,7 @@ filename until the project root when opening a side session."
 
 (defun dirvish-side-root-window-fn (dv)
   "Create root window of DV according to `dirvish-side-display-alist'."
-  (let* ((buf (with-current-buffer (get-buffer-create " *temp*")
+  (let* ((buf (with-current-buffer (get-buffer-create " *dirvish-temp*")
                 ;; set the :dv prop for `dirvish-curr'
                 (dirvish-prop :dv (dv-id dv))
                 (current-buffer)))

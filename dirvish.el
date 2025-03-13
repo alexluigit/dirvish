@@ -312,7 +312,6 @@ input for `dirvish-redisplay-debounce' seconds."
 (defvar dirvish--sessions (make-hash-table :test #'equal))
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-preview-dispatchers '())
-(defvar server-buffer-clients)
 (defvar-local dirvish--props '())
 (defvar-local dirvish--dir-data nil)
 
@@ -501,7 +500,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
            for b = (cdr (dv-index dv))
            with (fr tab psp) = (cl-loop for (_ v) on dirvish--scopes by 'cddr
                                         collect (and (functionp v) (funcall v)))
-           if (or (null b) ; newly created | cleared session
+           if (or (null b) ; newly created session
                   (and (buffer-live-p b)
                        (eq (with-current-buffer b (dirvish-prop :tab)) tab)
                        (eq (with-current-buffer b (dirvish-prop :frame)) fr)
@@ -515,25 +514,29 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 (defun dirvish--clear-session (dv &optional from-quit)
   "Reset DV's slot and kill its buffers.
 FROM-QUIT is used to signify the calling command."
-  (let ((index (cdr (dv-index dv))))
+  (let* ((idx (dv-index dv)) (ff (dv-curr-layout dv)) (wcon (dv-winconf dv))
+         (server-buf? (lambda (root) (with-current-buffer (cdr root)
+                                  (bound-and-true-p server-buffer-clients))))
+         keep roots kill-buffer-hook)
+    (cl-loop with killer = (lambda (r) (unless (member r keep) (kill-buffer (cdr r))))
+             for root in (setq roots (dv-roots dv))
+             if (or (get-buffer-window (cdr root)) (funcall server-buf? root))
+             do (push root keep) finally do (mapc killer roots))
+    (when (and ff wcon) (set-window-configuration wcon))
     (set-window-fringes
-     nil (frame-parameter nil 'left-fringe) (frame-parameter nil 'right-fringe))
-    (if (not (dv-curr-layout dv))
-        (cl-loop for (_d . b) in (dv-roots dv)
-                 when (and (not (get-buffer-window b))
-                           (not (with-current-buffer b server-buffer-clients)))
-                 do (kill-buffer b)
-                 finally (setf (dv-index dv) (car (dv-roots dv))))
-      (cl-loop for (_d . b) in (dv-roots dv)
-               when (not (eq b index)) do (kill-buffer b))
-      (when-let* ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
+     nil (frame-parameter nil 'left-fringe) (frame-parameter nil 'left-fringe))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
     (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
-    (setf (dv-preview-hash dv) (dirvish--ht) (dv-parent-hash dv) (dirvish--ht)
-          (dv-preview-buffers dv) nil (dv-winconf dv) nil)
     (when (or (null dirvish-reuse-session)
               (eq dirvish-reuse-session (if from-quit 'open 'quit)))
-      (mapc (pcase-lambda (`(,_ . ,b)) (kill-buffer b)) (dv-roots dv)))))
+      (unless (or (funcall server-buf? idx) ; client buf or displayed elsewhere
+                  (length> (get-buffer-window-list (cdr idx)) 1))
+        (kill-buffer (cdr idx))))
+    (setq roots (cl-remove-if-not (lambda (i) (buffer-live-p (cdr i))) keep))
+    (setf (dv-preview-hash dv) (dirvish--ht) (dv-parent-hash dv) (dirvish--ht)
+          (dv-roots dv) roots (dv-index dv) (car roots)
+          (dv-preview-buffers dv) nil (dv-winconf dv) nil)
+    (unless roots (remhash (dv-id dv) dirvish--sessions))))
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
@@ -603,6 +606,13 @@ filename or a string with format of `dirvish-fd-bufname'."
     (unless dv (cl-return-from dirvish--find-entry (funcall find-fn entry)))
     (when (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window))
       (user-error "Can not find a suitable other-window here"))
+    (when (and directory? (eq find-fn 'find-alternate-file))
+      (setq buf (current-buffer)) ; delay the killing, for its session info
+      (dirvish-save-dedication (find-file entry))
+      (with-current-buffer buf
+        (and (bound-and-true-p server-buffer-clients)
+             (cl-return-from dirvish--find-entry)))
+      (cl-return-from dirvish--find-entry (dirvish--kill-buffer buf)))
     (if directory? (dirvish-save-dedication (funcall find-fn entry))
       (funcall (dv-open-file-fn dv))
       (dirvish--clear-session dv)
@@ -714,10 +724,9 @@ filename or a string with format of `dirvish-fd-bufname'."
                   (wconf (dv-winconf dv))
                   ((eq buf (window-buffer (selected-window)))))
         (set-window-configuration wconf))
-      (setf (dv-index dv) nil (dv-winconf dv) nil
-            (dv-preview-hash dv) (dirvish--ht) (dv-parent-hash dv) (dirvish--ht))
       (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
-      (mapc #'dirvish--kill-buffer (dv-special-buffers dv)))))
+      (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
+      (remhash (dv-id dv) dirvish--sessions))))
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
@@ -1481,11 +1490,11 @@ A session with layout means it has a companion preview window and
 possibly one or more parent windows."
   (interactive)
   (let* ((dv (or (dirvish-curr) (user-error "Not a dirvish buffer")))
-         (old-layout (dv-curr-layout dv))
+         (old-layout (dv-curr-layout dv)) (conf (dv-winconf dv))
          (new-layout (unless old-layout (dv-ff-layout dv)))
          (buf (current-buffer)))
     (setf (dv-preview-hash dv) (dirvish--ht) (dv-parent-hash dv) (dirvish--ht))
-    (if old-layout (set-window-configuration (dv-winconf dv))
+    (if old-layout (and conf (set-window-configuration conf))
       (with-selected-window (dv-root-window dv) (quit-window)))
     (setf (dv-curr-layout dv) new-layout)
     (with-selected-window (dirvish--create-root-window dv)
@@ -1499,14 +1508,9 @@ If the session is a full-framed one, the window layout is restored.  If
 killed, otherwise only the invisible Dired buffers within the session
 are killed and the Dired buffer(s) in the selected window are buried."
   (interactive)
-  (when-let* ((dv (dirvish-curr)) (ct 0) (lst (window-list))
-              (win (dv-root-window dv)) (frame (selected-frame)))
-    (select-window win)
+  (when-let* ((dv (dirvish-curr)))
     (dirvish--clear-session dv t)
-    (while (and (dirvish-curr) (eq (selected-window) win)
-                (<= (cl-incf ct) (length lst)))
-      (quit-window))
-    (unless (eq (selected-frame) frame) (delete-frame frame))))
+    (while (dirvish-curr) (quit-window))))
 
 ;;;###autoload
 (define-minor-mode dirvish-override-dired-mode
