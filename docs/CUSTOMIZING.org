@@ -276,7 +276,7 @@ conditions. The variable ~dirvish-preview-dispatchers~, which holds all the acti
 dispatchers, has the default value looks like:
 
 #+begin_src emacs-lisp
-(image gif video audio epub pdf archive dired)
+(image gif video audio epub pdf archive)
 #+end_src
 
 + ~image~: preview image files, requires =vipsthumbnail=
@@ -288,7 +288,6 @@ dispatchers, has the default value looks like:
 + ~epub~: preview epub documents, requires [[https://github.com/alexluigit/dirvish/issues/85][epub-thumbnail]]
 + ~pdf~: preview pdf documents via =pdf-tools=
 + ~archive~: preview archive files such as =.tar=, =.zip=, requires =7z=
-+ ~dired~: preview directories using =dired= (asynchronously)
 
 Each dispatcher in this list handles the validation and preview content
 generation for the corresponding filetype.  To enable/disable certain preview
@@ -301,6 +300,12 @@ want to display preview for epub files via packages like =nov=, just remove the
 #+begin_src emacs-lisp
 (setq dirvish-preview-dispatchers (remove 'epub dirvish-preview-dispatchers))
 #+end_src
+
+Two dispatchers, ~dired~ and ~fallback~, are enabled by default as fallback
+handlers. These dispatchers are used to preview text files and directories
+respectively, but can be overridden by custom dispatchers.  For example, you can
+use ~eza~ to preview directories instead of ~dired~ (see *Preview directory using ~eza~
+command* section below).
 
 The ~dirvish-preview-dired-sync-omit~ option allows ~dired~ preview buffers to sync
 your =dired-omit-mode= and its settings from the root window, it is turned off by
@@ -362,8 +367,8 @@ Note: this dispatcher requires the =pdftoppm= executable.
 
 *** Preview directory using ~eza~ command
 
-Let's assume you don't like the default directory preview results provided by
-Dired, you can create a directory previewer that utilizes the ~eza~ command:
+If you find Dired's default directory previews unsatisfactory, you can create a
+custom previewer using the ~eza~ command.
 
 #+begin_src emacs-lisp
 (dirvish-define-preview eza (file)
@@ -373,8 +378,7 @@ Dired, you can create a directory previewer that utilizes the ~eza~ command:
     `(shell . ("eza" "-al" "--color=always" "--icons=always"
                "--group-directories-first" ,file))))
 
-(setq dirvish-preview-dispatchers
-      (cl-substitute 'eza 'dired dirvish-preview-dispatchers))
+(push 'eza dirvish-preview-dispatchers)
 #+end_src
 
 This makes Dirvish use the output from ~exa~ shell command as your preview content
@@ -387,6 +391,14 @@ doesn't have good integration with the =ansi-color= package.
 #+end_src
 
 [[https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png][https://user-images.githubusercontent.com/16313743/158852998-ebf4f1f7-7e12-450d-bb34-ce04ac22309c.png]]
+
+*** Contrib preview dispatchers
+
+Here are some user-contributed preview dispatchers. Explore these if the
+built-in preview handlers don't meet your needs for certain file types.
+Contributions to this list are welcome!
+
+https://github.com/alexluigit/dirvish/wiki/Contrib-preview-dispatchers
 
 * Sample config
 ** Dirvish

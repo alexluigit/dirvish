@@ -45,7 +45,7 @@ Dirvish ships with these attributes:
 
 (defcustom dirvish-preview-dispatchers
   `(,(if (memq system-type '(ms-dos windows-nt)) 'video-mtn 'video)
-    image gif audio epub archive font pdf dired)
+    image gif audio epub archive font pdf)
   "List of preview dispatchers.
 Each dispatcher in this list handles the validation and preview
 content generation for the corresponding filetype.
@@ -60,8 +60,7 @@ The default value contains:
 - epub: preview epub documents, requires `epub-thumbnailer'.
 - pdf: preview pdf documents via `pdf-tools'.
 - font: preview font files, requires `magick'.
-- archive: preview archives such as .tar, .zip, requires `7z' (`7zz' on macOS).
-- dired: preview directories using `emacs --batch'."
+- archive: preview archives such as .tar, .zip, requires `7z' (`7zz' on macOS)."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish preview methods")))
 
 (defcustom dirvish-preview-disabled-exts '("bin" "exe" "gpg" "elc" "eln")
@@ -549,7 +548,7 @@ FROM-QUIT is used to signify the calling command."
   (cl-loop with dps = (or dps dirvish-preview-dispatchers)
            with res = (prog1 '() (require 'recentf) (require 'ansi-color))
            with fmt = "[Dirvish]: install '%s' executable to preview %s files."
-           for dp in (append '(disable) dps '(fallback))
+           for dp in (append '(disable) dps '(dired fallback))
            for info = (alist-get dp dirvish--available-preview-dispatchers)
            for requirements = (plist-get info :require)
            for met = t
