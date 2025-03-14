@@ -765,7 +765,7 @@ filename or a string with format of `dirvish-fd-bufname'."
        ((not (equal old-tab tab))
         (tab-bar-switch-to-recent-tab)
         (killall (append (list buf) (mapcar #'cdr (dv-roots dv))))
-        (let ((tab-bar-mode t)) tab-bar-rename-tab "")
+        (let ((tab-bar-mode t)) (tab-bar-rename-tab ""))
         (tab-bar-switch-to-recent-tab)
         (build-dv (dirvish--new :curr-layout layout) frame dir))
        (t (with-selected-window window (dirvish--build-layout dv)))))))
