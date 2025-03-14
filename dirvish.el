@@ -242,7 +242,7 @@ runtime.  Set it to nil disables this feature."
   :group 'dirvish :type '(alist :key-type (repeat :tag "File extensions" string)
                                 :value-type (repeat :tag "External command and args" string)))
 
-(defcustom dirvish-reuse-session t
+(defcustom dirvish-reuse-session 'open
   "Whether to keep the latest session index buffer for later reuse.
 The valid values are:
 - t:      keep index buffer on both `dirvish-quit' and file open
@@ -466,7 +466,6 @@ Set process's SENTINEL and PUTS accordingly."
   (open-file-fn #'ignore              :documentation "is a function called before opening a file.")
   (curr-layout ()                     :documentation "is the working layout recipe of DV.")
   (ff-layout dirvish-default-layout   :documentation "is a full-frame layout recipe.")
-  (reuse ()                           :documentation "indicates if DV has been reused.")
   (ls-switches dired-listing-switches :documentation "is the directory listing switches.")
   (mode-line ()                       :documentation "is the `mode-line-format' used by DV.")
   (header-line ()                     :documentation "is the `header-line-format' used by DV.")
@@ -523,6 +522,7 @@ FROM-QUIT is used to signify the calling command."
              if (or (get-buffer-window (cdr root)) (funcall server-buf? root))
              do (push root keep) finally do (mapc killer roots))
     (when (and ff wcon) (set-window-configuration wcon))
+    (let ((tab-bar-mode t)) (tab-bar-rename-tab ""))
     (set-window-fringes
      nil (frame-parameter nil 'left-fringe) (frame-parameter nil 'left-fringe))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
@@ -641,8 +641,7 @@ filename or a string with format of `dirvish-fd-bufname'."
   "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
-         (reuse? (or (dirvish-curr) (dirvish--get-session)))
-         (dv (or reuse? (dirvish--new)))
+         (dv (or (dirvish-curr) (dirvish--get-session) (dirvish--new)))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
@@ -651,7 +650,6 @@ filename or a string with format of `dirvish-fd-bufname'."
          (dps (dv-preview-dispatchers dv))
          tramp-fn dired-buffers) ; disable reuse from dired
     (setf (dv-timestamp dv) (dirvish--timestamp))
-    (when reuse? (setf (dv-reuse dv) t))
     (when new-buffer-p
       (if (not remote) (setq buffer (apply fn (list dir-or-list flags)))
         (setq tramp-fn (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
@@ -720,13 +718,24 @@ filename or a string with format of `dirvish-fd-bufname'."
                     ((and (window-live-p win) (window-dedicated-p win))))
           (with-selected-window win ; prevend this dedicated window get deleted
             (dirvish-save-dedication (switch-to-buffer (cdr (dv-index dv))))))
-      (when-let* ((layout (dv-curr-layout dv))
-                  (wconf (dv-winconf dv))
-                  ((eq buf (window-buffer (selected-window)))))
-        (set-window-configuration wconf))
+      (when-let* ((layout (dv-curr-layout dv)) (wconf (dv-winconf dv)))
+        (cond ((eq buf (window-buffer (selected-window)))
+               (set-window-configuration wconf))
+              (t (when-let* ((idx (tab-bar--tab-index-by-name
+                                   (format "DIRVISH-%s" (dv-id dv))))
+                             (tab-idx (tab-bar--current-tab-index)))
+                   (tab-bar-select-tab (1+ idx))
+                   (set-window-configuration wconf)
+                   (let ((tab-bar-mode t)) (tab-bar-rename-tab ""))
+                   (unless (eq (tab-bar--current-tab-index) tab-idx)
+                     (tab-bar-switch-to-recent-tab))))))
       (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
       (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
-      (remhash (dv-id dv) dirvish--sessions))))
+      (remhash (dv-id dv) dirvish--sessions)))
+  (cl-loop for b in (buffer-list) with roots = nil
+           if (with-current-buffer b (derived-mode-p 'dired-mode))
+           do (push b roots) ; in case there is any lingering sessions
+           finally do (unless roots (setq dirvish--sessions (dirvish--ht)))))
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
@@ -740,24 +749,26 @@ filename or a string with format of `dirvish-fd-bufname'."
               (frame t) (tab t))
     (setq winconf (dv-winconf dv) layout (dv-curr-layout dv)
           frame (plist-get sc :frame) tab (plist-get sc :tab))
-    (when (and (dv-reuse dv) (not (equal old-frame frame)))
-      (with-selected-window (frame-selected-window old-frame)
-        (when (dirvish-curr) (let (dirvish-reuse-session) (dirvish-quit)))
-        (setq dv (dirvish--new))))
-    (when (and (dv-reuse dv) (not (equal old-tab tab)))
-      ;; TODO: maybe clear dirvish sessions in all tabs except the current TAB?
-      (setq dv (dirvish--new)))
-    (cond
-     ;; by `*-other-tab|frame'
-     ((or (null (equal old-frame frame)) (null (equal old-tab tab)))
-      (with-selected-window (dirvish--create-root-window dv)
-        (dirvish-save-dedication
-         (switch-to-buffer (get-buffer-create "*scratch*")))
-        (setf (dv-winconf dv) (current-window-configuration))
-        (dirvish-save-dedication (switch-to-buffer (dired-noselect dir)))
-        (cl-loop for (k v) on sc by 'cddr do (dirvish-prop k v))
-        (dirvish--build-layout dv)))
-     (t (with-selected-window window (dirvish--build-layout dv))))))
+    (cl-flet ((killall (bufs) (mapc #'dirvish--kill-buffer bufs))
+              (build-dv (dv frame dir)
+                (with-selected-frame frame
+                  (with-selected-window (dirvish--create-root-window dv)
+                    (dirvish-save-dedication
+                     (switch-to-buffer (get-buffer-create "*scratch*")))
+                    (dirvish-save-dedication
+                     (switch-to-buffer (dired-noselect dir)))
+                    (dirvish--build-layout dv)))))
+      (cond ; created new tab / frame in a reused session, kill the old session
+       ((not (equal old-frame frame))
+        (killall (append (list buf) (mapcar #'cdr (dv-roots dv))))
+        (build-dv (dirvish--new :curr-layout layout) frame dir))
+       ((not (equal old-tab tab))
+        (tab-bar-switch-to-recent-tab)
+        (killall (append (list buf) (mapcar #'cdr (dv-roots dv))))
+        (let ((tab-bar-mode t)) tab-bar-rename-tab "")
+        (tab-bar-switch-to-recent-tab)
+        (build-dv (dirvish--new :curr-layout layout) frame dir))
+       (t (with-selected-window window (dirvish--build-layout dv)))))))
 
 ;;;; Preview
 
@@ -1247,7 +1258,6 @@ Dirvish sets `revert-buffer-function' to this function."
   (dirvish--maybe-toggle-cursor 'box) ; restore from `wdired'
   (setq-local dirvish--dir-data (or dirvish--dir-data (dirvish--ht))
               revert-buffer-function #'dirvish-revert
-              tab-bar-new-tab-choice "*scratch*"
               dired-hide-details-hide-symlink-targets nil)
   (add-hook 'window-selection-change-functions #'dirvish--change-selected nil t)
   (add-hook 'window-configuration-change-hook #'dirvish--update-display nil t)
@@ -1424,7 +1434,9 @@ INHIBIT-SETUP is non-nil."
       (dirvish--dir-data-async default-directory (current-buffer))
       (dirvish-prop :cached t))
     (dirvish--maybe-toggle-cursor)
-    (dirvish--maybe-toggle-details)))
+    (dirvish--maybe-toggle-details)
+    (let ((tab-bar-mode t))
+      (tab-bar-rename-tab (format "DIRVISH-%s" (dv-id dv))))))
 
 (defun dirvish--reuse-or-create (path &optional dwim)
   "Find PATH in dirvish, check `one-window-p' for DWIM."
