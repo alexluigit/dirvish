@@ -1047,7 +1047,7 @@ When the attribute does not exist, set it with BODY."
                  ('right (setq right (concat v right))))
        finally
        (prog1 (unless (or left right) (cl-return))
-         (let* ((len1 (length right))
+         (let* ((len1 (string-width (or right "")))
                 (remain (- width len1
                            (or (get-text-property l-beg 'line-prefix) 0)))
                 (len2 (min (length left) (max 0 (- remain f-wid 1))))

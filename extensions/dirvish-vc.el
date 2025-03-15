@@ -181,7 +181,7 @@ This attribute only works on graphic displays."
     `(ov . ,ov)))
 
 (dirvish-define-attribute git-msg
-  "Append git commit message to filename."
+  "Display short git log."
   :when (and (eq (dirvish-prop :vc-backend) 'Git) (not (dirvish-prop :remote)))
   :setup (dirvish-prop :gm-chop
            (seq-reduce (lambda (acc i) (cl-incf acc (nth 2 i)))
@@ -189,19 +189,19 @@ This attribute only works on graphic displays."
   (let* ((msg-raw (dirvish-attribute-cache f-name :git-msg))
          (msg (if (>= (length msg-raw) 1) (substring msg-raw 0 -1) ""))
          (face (or hl-face 'dirvish-git-commit-message-face))
-         (spc (make-string w-width ?\ ))
-         (chop (dirvish-prop :gm-chop)) len tail str str-len)
+         (chop (dirvish-prop :gm-chop)) (mlen (length msg)) (stop t)
+         (limit (- (floor (* (if (< w-width 70) 0.48 0.6) w-width)) chop))
+         (count 0) (whole (concat " " msg (make-string w-width ?\ ))) str len)
     (cond ((or (not msg-raw) (< w-width 30)) (setq str ""))
           ((and (>= w-width 30) (< w-width 50)) (setq str (propertize " …  ")))
-          ((and (>= w-width 50) (< w-width 70))
-           (setq len (max 0 (- (floor (* w-width 0.48)) chop))
-                 tail (if (> (length msg) len) "… " "  ")
-                 str (concat (substring (concat " " msg spc) 0 len) tail)))
-          (t (setq len (max 0 (- (floor (* w-width 0.6)) chop))
-                   tail (if (> (length msg) len) "… " "  ")
-                   str (concat (substring (concat " " msg spc) 0 len) tail))))
-    (add-face-text-property 0 (setq str-len (length str)) face t str)
-    (add-text-properties 0 str-len `(help-echo ,msg) str)
+          (t (setq str "" stop (<= limit 0))))
+    (while (not stop) ; prevent multibyte string taking too much space
+      (setq str (substring whole 0 count))
+      (if (>= (- limit (string-width str)) 1)
+          (cl-incf count)
+        (setq str (concat str (if (> count mlen) "  " "… ")) stop t)))
+    (add-face-text-property 0 (setq len (length str)) face t str)
+    (add-text-properties 0 len `(help-echo ,msg) str)
     `(right . ,str)))
 
 (dirvish-define-preview vc-diff (ext)
