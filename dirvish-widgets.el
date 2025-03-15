@@ -13,7 +13,7 @@
 ;; dispatchers (fast and non-blocking media files preview) for dirvish.
 ;;
 ;; Attributes:
-;; `file-size', `file-time'
+;; `file-size', `file-time', `file-modes'
 ;;
 ;; Mode-line segments:
 ;;
@@ -150,18 +150,20 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
   :group 'dirvish)
 
 (defface dirvish-file-time
-  '((t (:inherit shadow :underline nil :italic nil)))
-  "Face used for file access/modify/change time mode-line segment."
+  '((((background dark)) (:foreground "#5699AF")) ; a light cyan
+    (t                   (:foreground "#979797")))
+  "Face used for `file-time' attribute and mode line segment."
   :group 'dirvish)
 
 (defface dirvish-file-size
   '((t (:inherit completions-annotations :underline nil :italic nil)))
-  "Face used for display file size attributes / mode-line segment."
+  "Face used for `file-size' attribute and mode-line segment."
   :group 'dirvish)
 
 (defface dirvish-file-modes
-  '((t (:inherit font-lock-builtin-face)))
-  "Face used for file mode (privilege) mode-line segment."
+  '((((background dark)) (:foreground "#a9a1e1")) ; magenta
+    (t                   (:foreground "#6b6b6b")))
+  "Face used for `file-modes' attribute and mode line segment."
   :group 'dirvish)
 
 (defface dirvish-file-inode-number
@@ -316,7 +318,7 @@ GROUP-TITLES is a list of group titles."
 ;;;; Attributes
 
 (dirvish-define-attribute file-size
-  "File size or directories file count at right fringe."
+  "File size or directories file count."
   :right 6
   :when (and dired-hide-details-mode (>= win-width 20))
   (let* ((str (concat (dirvish--file-attr-size f-name f-attrs)))
@@ -325,14 +327,30 @@ GROUP-TITLES is a list of group titles."
     `(right . ,str)))
 
 (dirvish-define-attribute file-time
-  "File's modified time at right fringe before the file size."
+  "File's modified time reported by `file-attribute-modification-time'."
   :right (+ 2 (string-width
                      (format-time-string
                       dirvish-time-format-string (current-time))))
   :when (and dired-hide-details-mode (>= win-width 25))
-  (let* ((str (concat (dirvish--file-attr-time f-name f-attrs)))
-         (face (or hl-face 'dirvish-file-time)))
-    (add-face-text-property 0 (length str) face t str)
+  (let* ((raw (dirvish--file-attr-time f-name f-attrs))
+         (face (or hl-face 'dirvish-file-time)) str str-len)
+    (cond ((or (not raw) (< w-width 40)) (setq str (propertize " …  ")))
+          (t (setq str (format " %s " raw))))
+    (add-face-text-property 0 (setq str-len (length str)) face t str)
+    (add-text-properties 0 str-len `(help-echo ,raw) str)
+    `(right . ,str)))
+
+(dirvish-define-attribute file-modes
+  "File's modes reported by `file-attribute-modes'."
+  :right 12
+  :when (and dired-hide-details-mode (>= win-width 30))
+  (let* ((raw (file-attribute-modes
+               (dirvish-attribute-cache f-name :builtin)))
+         (face (or hl-face 'dirvish-file-modes)) str str-len)
+    (cond ((or (not raw) (< w-width 48)) (setq str (propertize " …  ")))
+          (t (setq str (format " %s " raw))))
+    (add-face-text-property 0 (setq str-len (length str)) face t str)
+    (add-text-properties 0 str-len `(help-echo ,raw) str)
     `(right . ,str)))
 
 ;;;; Mode line segments

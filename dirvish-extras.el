@@ -91,11 +91,12 @@ RECIPE has the same form as `dirvish-default-layout'."
 (defcustom dirvish-ui-setup-items
   '(("s"  file-size     "File size")
     ("t"  file-time     "File modification time")
+    ("m"  file-modes    "File modes")
     ("c"  collapse      "Collapse unique nested paths"
      (not (dirvish-prop :remote)))
     ("v"  vc-state      "Version control state"
      (and (display-graphic-p) (symbolp (dirvish-prop :vc-backend))))
-    ("m"  git-msg       "Git commit messages"
+    ("l"  git-msg       "Git commit's short log"
      (and (symbolp (dirvish-prop :vc-backend)) (not (dirvish-prop :remote))))
     ("1" '(0 nil  0.4)  "     -       | current (60%) | preview (40%)")
     ("2" '(0 nil  0.8)  "     -       | current (20%) | preview (80%)")

@@ -115,6 +115,8 @@ a superior alternative.  See [[file:EXTENSIONS.org][Extensions:dirvish-fd.el]] f
 
 * Dirvish "attributes"
 
+** Overview
+
 A Dirvish attribute is a visual element that shows up within the file line,
 which provides extra information for that file.
 
@@ -127,6 +129,7 @@ For now Dirvish ships with these attributes:
 + ~vc-state~: The version control state at left fringe.
 + ~file-size~: Show file size or directories file count at right fringe.
 + ~file-time~: Show file modification time
++ ~file-modes~: Show file modes (*-rw-r--rwx*)
 
 Here is an overview of how does these attributes look like:
 
@@ -142,12 +145,20 @@ To achieve this, the only thing you need to do is put these symbols into
        ;; displayed in the same position.
        '(vc-state subtree-state nerd-icons collapse)
        ;; Other attributes are displayed in the order they appear in this list.
-       '( git-msg file-time  file-size)))
+       '(git-msg file-time file-modes file-size)))
 #+end_src
 
 After modifying this variable, you should call ~revert-buffer~ (bound to =g= by
-default) to apply the latest configuration.  Alternatively, you can dynamically
-toggle or adjust the order of these attributes by ~M-x dirvish-setup-menu~.
+default) to apply the latest configuration.
+
+** Setup menu
+
+Alternatively, you can dynamically toggle or adjust the order of these
+attributes by ~M-x dirvish-setup-menu~.
+
+A quick demo:
+
+https://github.com/user-attachments/assets/b0d93a4e-92a4-4c17-9f82-6e5206ece9bf
 
 * Multile layout recipies
 
