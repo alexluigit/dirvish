@@ -16,8 +16,14 @@ Dirvish uses ~dirvish-cache-dir~ to store cached images and other persistent dat
 
 ** File details display
 
-Dirvish hides the file details by default. If you want the details at buffer
-initialization like in Dired, you can customize the ~dirvish-hide-details~ option.
+~dired-hide-details-mode~ is enabled in Dirvish by default.  If you want the
+details at buffer initialization like in Dired, you can customize the
+~dirvish-hide-details~ option.
+
+Instead of ~dired-hide-details-mode~, configuring ~dirvish-attributes~ is the
+recommended approach for finer-grained control and greater flexibility in
+displaying and ordering file details.  See *Dirvish "Attributes"* below for
+detailed instructions.
 
 ** Open files externally
 
@@ -113,14 +119,14 @@ Apart from the hooks provided by Dired, Dirvish got some additions.
 plans to integrate Dirvish further into its output buffer, as =dirvish-fd= offers
 a superior alternative.  See [[file:EXTENSIONS.org][Extensions:dirvish-fd.el]] for more information.
 
-* Dirvish "attributes"
+* Dirvish "Attributes"
 
-** Overview
+A Dirvish attribute is a visual indicator displayed inline within dired buffers,
+providing additional information about each file.
 
-A Dirvish attribute is a visual element that shows up within the file line,
-which provides extra information for that file.
+** Available attributes
 
-For now Dirvish ships with these attributes:
+For now Dirvish offers these attributes:
 
 + ~subtree-state~: A indicator for directory expanding state.
 + ~nerd-icon~ | ~all-the-icons~ | ~vscode-icon~: File icons provided by various backends.
@@ -145,7 +151,7 @@ To achieve this, the only thing you need to do is put these symbols into
        ;; displayed in the same position.
        '(vc-state subtree-state nerd-icons collapse)
        ;; Other attributes are displayed in the order they appear in this list.
-       '(git-msg file-time file-modes file-size)))
+       '(git-msg file-modes file-time file-size)))
 #+end_src
 
 After modifying this variable, you should call ~revert-buffer~ (bound to =g= by

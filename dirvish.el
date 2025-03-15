@@ -521,7 +521,6 @@ FROM-QUIT is used to signify the calling command."
              if (or (get-buffer-window (cdr root)) (funcall server-buf? root))
              do (push root keep) finally do (mapc killer roots))
     (when (and ff wcon) (set-window-configuration wcon))
-    (let ((tab-bar-mode t)) (tab-bar-rename-tab ""))
     (set-window-fringes
      nil (frame-parameter nil 'left-fringe) (frame-parameter nil 'left-fringe))
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
@@ -708,7 +707,7 @@ filename or a string with format of `dirvish-fd-bufname'."
             (dirvish--preview-update dv filename)))))))
 
 (defun dirvish-kill-buffer-h ()
-  "Remove buffer from session's buffer list."
+  "Remove buffer from session's roots, clear session when roots is empty."
   (when-let* ((dv (dirvish-curr)) (buf (current-buffer)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
     (when (eq (cdr (dv-index dv)) buf) (setf (dv-index dv) (car (dv-roots dv))))
@@ -717,17 +716,14 @@ filename or a string with format of `dirvish-fd-bufname'."
                     ((and (window-live-p win) (window-dedicated-p win))))
           (with-selected-window win ; prevend this dedicated window get deleted
             (dirvish-save-dedication (switch-to-buffer (cdr (dv-index dv))))))
-      (when-let* ((layout (dv-curr-layout dv)) (wconf (dv-winconf dv)))
-        (cond ((eq buf (window-buffer (selected-window)))
-               (set-window-configuration wconf))
-              (t (when-let* ((idx (tab-bar--tab-index-by-name
-                                   (format "DIRVISH-%s" (dv-id dv))))
-                             (tab-idx (tab-bar--current-tab-index)))
-                   (tab-bar-select-tab (1+ idx))
-                   (set-window-configuration wconf)
-                   (let ((tab-bar-mode t)) (tab-bar-rename-tab ""))
-                   (unless (eq (tab-bar--current-tab-index) tab-idx)
-                     (tab-bar-switch-to-recent-tab))))))
+      (when-let* ((layout (dv-curr-layout dv)) (wc (dv-winconf dv)))
+        (cond ((eq buf (window-buffer (selected-window))) ; in a session, reset
+               (set-window-configuration wc nil t))
+              (t (cl-loop for tab in (funcall tab-bar-tabs-function)
+                          for ws = (alist-get 'ws tab)
+                          for bs = (window-state-buffers ws)
+                          if (or (memq buf bs) (member (buffer-name buf) bs))
+                          do (setf (alist-get 'wc tab) wc)))))
       (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
       (mapc #'dirvish--kill-buffer (dv-special-buffers dv))
       (remhash (dv-id dv) dirvish--sessions)))
@@ -740,13 +736,12 @@ filename or a string with format of `dirvish-fd-bufname'."
   "Rebuild layout once buffer in WINDOW changed."
   (when-let* ((dv (with-selected-window window (dirvish-curr)))
               (dir (car (dv-index dv))) (buf (cdr (dv-index dv)))
-              (winconf t) (layout t)
               (old-tab (with-selected-window window (dirvish-prop :tab)))
               (old-frame (with-selected-window window (dirvish-prop :frame)))
               (sc (cl-loop for (k v) on dirvish--scopes by 'cddr
                            append (list k (and (functionp v) (funcall v)))))
-              (frame t) (tab t))
-    (setq winconf (dv-winconf dv) layout (dv-curr-layout dv)
+              (layout t) (frame t) (tab t))
+    (setq layout (dv-curr-layout dv)
           frame (plist-get sc :frame) tab (plist-get sc :tab))
     (cl-flet ((killall (bufs) (mapc #'dirvish--kill-buffer bufs))
               (build-dv (dv frame dir)
@@ -757,14 +752,13 @@ filename or a string with format of `dirvish-fd-bufname'."
                     (dirvish-save-dedication
                      (switch-to-buffer (dired-noselect dir)))
                     (dirvish--build-layout dv)))))
-      (cond ; created new tab / frame in a reused session, kill the old session
+      (cond ; created new tab / frame in a reused session, kill the one
        ((not (equal old-frame frame))
         (killall (append (list buf) (mapcar #'cdr (dv-roots dv))))
         (build-dv (dirvish--new :curr-layout layout) frame dir))
        ((not (equal old-tab tab))
         (tab-bar-switch-to-recent-tab)
         (killall (append (list buf) (mapcar #'cdr (dv-roots dv))))
-        (let ((tab-bar-mode t)) (tab-bar-rename-tab ""))
         (tab-bar-switch-to-recent-tab)
         (build-dv (dirvish--new :curr-layout layout) frame dir))
        (t (with-selected-window window (dirvish--build-layout dv)))))))
@@ -1433,9 +1427,7 @@ INHIBIT-SETUP is non-nil."
       (dirvish--dir-data-async default-directory (current-buffer))
       (dirvish-prop :cached t))
     (dirvish--maybe-toggle-cursor)
-    (dirvish--maybe-toggle-details)
-    (let ((tab-bar-mode t))
-      (tab-bar-rename-tab (format "DIRVISH-%s" (dv-id dv))))))
+    (dirvish--maybe-toggle-details)))
 
 (defun dirvish--reuse-or-create (path &optional dwim)
   "Find PATH in dirvish, check `one-window-p' for DWIM."
