@@ -87,9 +87,8 @@ FN is the original `dired-noselect' closure."
         (when (buffer-live-p buf)
           (with-current-buffer buf
             (dirvish-tramp--ls-parser dir data)
-            (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))
-          (when-let* ((win (get-buffer-window buf)) ((window-live-p win)))
-            (with-selected-window win (dirvish--update-display)))))
+            (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
+            (dirvish--redisplay))))
     (dirvish--kill-buffer (process-buffer proc))))
 
 (cl-defmethod dirvish-data-for-dir
@@ -116,9 +115,8 @@ parsing unless INHIBIT-SETUP is non-nil."
        (when (buffer-live-p buf)
          (with-current-buffer buf
            (maphash (lambda (k v) (puthash k v dirvish--dir-data)) data)
-           (unless inhibit-setup (run-hooks 'dirvish-setup-hook))))
-       (when-let* ((win (get-buffer-window buf)) ((window-live-p win)))
-         (with-selected-window win (dirvish--update-display))))
+           (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
+           (dirvish--redisplay))))
      (delete-process p)
      (dirvish--kill-buffer (process-buffer p)))
    nil 'meta (cons buffer inhibit-setup)))

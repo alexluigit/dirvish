@@ -166,8 +166,7 @@ RANGE can be `buffer', `session', `all'."
             (message "Task FAILED with exit code %s" (process-exit-status proc))
             (pop-to-buffer (current-buffer)))))
       (when (eq buffer (current-buffer))
-        (with-current-buffer buffer
-          (revert-buffer) (dirvish--update-display))))))
+        (with-current-buffer buffer (revert-buffer) (dirvish--redisplay))))))
 
 (defun dirvish-yank-proc-filter (proc string)
   "Filter for yank task PROC's STRING."

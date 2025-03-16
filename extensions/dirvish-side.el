@@ -136,7 +136,7 @@ filename until the project root when opening a side session."
            (dirvish--find-entry 'find-alternate-file dir))
          (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr t)
            (dired-goto-file curr))
-         (dirvish--update-display))))))
+         (dirvish--redisplay))))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
@@ -157,7 +157,7 @@ filename until the project root when opening a side session."
             (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))
             (t (dired-goto-file bname)))
-      (dirvish--update-display))))
+      (dirvish--redisplay))))
 
 ;;;###autoload
 (define-minor-mode dirvish-side-follow-mode

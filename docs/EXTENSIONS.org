@@ -250,6 +250,11 @@ Too fast? Let's break it down:
 Feel free to experiment with other switches.  A bonus tip: ~dirvish-quicksort~ and
 ~dirvish-ls-switches-menu~ also works in this buffer.
 
+TODO: add ~dirvish-fd-refine-function~ for sorting
+TODO: fix #207
+TODO: achieve incremental string insertion
+TODO: try implementing #213
+
 If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have an input string that looks like /test
 ~Emacs .\(py\|yaml\)$/, by doing this you can skip the =-e= and =-E= steps in the
 above example.  The actual matching styles being applied are determined by your

@@ -343,7 +343,7 @@ value 16, let the user choose the root directory of their search."
                 (propertize (current-time-string)
                             'face (if success 'success 'error))))
       (cond ((not input) (setq input (dirvish-fd--read-input)))
-            (t (dirvish--update-display)))
+            (t (dirvish--redisplay)))
       (when (eq input 'cancelled)
         (kill-buffer buf)
         (setf (dv-index dv) (car (dv-roots dv)))
@@ -374,7 +374,7 @@ When GLOB, convert the regexs using `dired-glob-regexp'."
                  unless (cl-loop for regex in regexs
                                  thereis (not (string-match regex file)))
                  do (insert line))))
-    (dirvish--update-display)))
+    (dirvish--redisplay)))
 
 (defun dirvish-fd-minibuffer-update-h ()
   "Minibuffer update function for `dirvish-fd'."
