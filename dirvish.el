@@ -817,8 +817,7 @@ keywords are used to calculate the starting position of the collected
 - `:width': a form denotes the constant length of the attribute.
 - `:right': like `:width', but only used by `right' TYPE RENDER."
   (declare (indent defun) (doc-string 2))
-  (let ((ov (intern (format "dirvish-%s-ov" name)))
-        (render (intern (format "dirvish-attribute-%s-rd" name)))
+  (let ((render (intern (format "dirvish-attribute-%s-rd" name)))
         (args '(f-beg f-end f-str f-name f-attrs
                       f-type l-beg l-end hl-face w-width))
         options)
@@ -831,7 +830,7 @@ keywords are used to calculate the starting position of the collected
                        ,(or (plist-get options :right) 0)
                        ,(or (plist-get options :when) t)
                        ,(or (plist-get options :setup) nil)
-                       ,render ,ov ,docstring)))
+                       ,render ,docstring)))
        (defun ,render ,args (ignore ,@args) ,@body))))
 
 (defmacro dirvish-attribute-cache (file attribute &rest body)
@@ -851,13 +850,13 @@ When the attribute does not exist, set it with BODY."
   (cl-pushnew 'hl-line attrs) (cl-pushnew 'symlink-target attrs)
   (sort (cl-loop for attr in attrs
                  for lst = (alist-get attr dirvish--available-attrs)
-                 for (wd wd-r pred setup render ov _) = lst
-                 collect (list attr (eval wd) (eval wd-r) pred setup render ov))
+                 for (wd wd-r pred setup render _) = lst
+                 collect (list attr (eval wd) (eval wd-r) pred setup render))
         (lambda (a b) (< (cl-position (car a) attrs) (cl-position (car b) attrs)))))
 
 (defun dirvish--render-attrs-1
-    (height width pos remote fns ov align-to no-hl w-width)
-  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL W-WIDTH."
+    (height width pos remote fns align-to hl w-width)
+  "HEIGHT WIDTH POS REMOTE FNS ALIGN-TO HL W-WIDTH."
   (forward-line (- 0 height))
   (cl-dotimes (_ (* 2 height))
     (when (eobp) (cl-return))
@@ -865,7 +864,7 @@ When the attribute does not exist, set it with BODY."
           (f-end (dired-move-to-end-of-filename t))
           (l-beg (line-beginning-position)) (l-end (line-end-position))
           (f-wid 0) f-str f-name f-attrs f-type hl-face left right)
-      (setq hl-face (and (eq (or f-beg l-beg) pos) no-hl 'dirvish-hl-line))
+      (setq hl-face (and (eq (or f-beg l-beg) pos) hl 'dirvish-hl-line))
       (when f-beg
         (setq f-str (buffer-substring f-beg f-end)
               f-wid (string-width f-str)
@@ -889,7 +888,7 @@ When the attribute does not exist, set it with BODY."
        for fn in (if f-beg fns '(dirvish-attribute-hl-line-rd))
        for (k . v) = (funcall fn f-beg f-end f-str f-name
                               f-attrs f-type l-beg l-end hl-face w-width)
-       do (pcase k ('ov (overlay-put v ov t))
+       do (pcase k ('ov (overlay-put v 'dirvish-a-ov t))
                  ('left (setq left (concat v left)))
                  ('right (setq right (concat v right))))
        finally
@@ -906,36 +905,32 @@ When the attribute does not exist, set it with BODY."
                 (spec `(space :align-to (- right-fringe ,len1 ,align-to)))
                 (spc (propertize " " 'display spec 'face hl-face))
                 (ovr (make-overlay r-pos r-pos)))
-           (overlay-put ovl 'dirvish-l-end-ov t)
+           (overlay-put ovl 'dirvish-l-ov t)
            (overlay-put ovl 'after-string (substring (or left "") 0 len2))
-           (overlay-put ovr 'dirvish-r-end-ov t)
+           (overlay-put ovr 'dirvish-r-ov t)
            (overlay-put ovr 'after-string (concat spc right))))))
     (forward-line 1)))
 
-(defun dirvish--render-attrs (&optional clear)
-  "Render or CLEAR attributes in DV's dirvish buffer."
+(defun dirvish--render-attrs ()
+  "Render attributes in DV's dired-like buffer."
   (cl-loop with remote = (and (dirvish-prop :remote)
                               (not (dirvish-prop :local-sudo)))
            with gui = (dirvish-prop :gui)
            with fns = () with height = (frame-height)
-           with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
-           with w-width = (window-width)
-           with remain = (- w-width (if gui 1 2))
-           for (_ width _ pred setup render ov) in (dirvish-prop :attrs)
-           do (remove-overlays (point-min) (point-max) ov t)
+           with hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
+           with ww = (window-width) with pm = (point-min) with pM = (point-max)
+           with remain = (- ww (if gui 1 2))
+           for (_ width _ pred setup render) in (dirvish-prop :attrs)
            when (eval pred `((win-width . ,remain)))
            do (eval setup) (setq remain (- remain width)) (push render fns)
-           initially
-           (remove-overlays (point-min) (point-max) 'dirvish-l-end-ov t)
-           (remove-overlays (point-min) (point-max) 'dirvish-r-end-ov t)
+           initially (dolist (ov '(dirvish-a-ov dirvish-l-ov dirvish-r-ov))
+                       (remove-overlays pm pM ov t))
            finally
            (with-silent-modifications
-             (when (and (derived-mode-p '(dired-mode dirvish-directory-view-mode))
-                        (not clear))
-               (save-excursion
-                 (dirvish--render-attrs-1 height remain (point)
-                                          remote fns ov (if gui 0 2)
-                                          no-hl w-width))))))
+             (and (derived-mode-p '(dired-mode dirvish-directory-view-mode))
+                  (save-excursion
+                    (dirvish--render-attrs-1
+                     height remain (point) remote fns (if gui 0 2) hl ww))))))
 
 (dirvish-define-attribute hl-line
   "Highlight current line.
@@ -1116,8 +1111,7 @@ LEVEL is the depth of current window."
                   (let ((flags dired-actual-switches))
                     (with-temp-buffer (dired-insert-directory dir flags)
                                       (buffer-string)))))
-         (attrs (if (not (eq (dv-type dv) 'side)) dirvish-attributes
-                  (bound-and-true-p dirvish-side-attributes)))
+         (attrs (mapcar #'car (dv-attributes dv)))
          (icon (cond ((memq 'all-the-icons attrs) '(all-the-icons))
                      ((memq 'nerd-icons attrs) '(nerd-icons))
                      ((memq 'vscode-icon attrs) '(vscode-icon)))))
@@ -1131,9 +1125,7 @@ LEVEL is the depth of current window."
       (setq-local dired-subdir-alist (list (cons dir (point-min-marker))))
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
       (dirvish--maybe-toggle-cursor '(box . 0)) ; always hide cursor in parents
-      (dirvish-prop :attrs (dirvish--attrs-expand icon))
-      (setq-local dirvish--dir-data (dirvish--ht))
-      (dirvish--render-attrs) buf)))
+      (dirvish-prop :attrs (dirvish--attrs-expand icon)) buf)))
 
 (defun dirvish--init-special-buffers (dv)
   "Initialize special buffers for DV."
@@ -1223,12 +1215,10 @@ Dirvish sets `revert-buffer-function' to this function."
           ((cdr dired-subdir-alist))
           ((and (bobp) dirvish-use-header-line)
            (goto-char (dirvish-prop :content-begin))))
-    (when (dirvish--apply-hiding-p dirvish-hide-cursor)
-      (dired-move-to-filename))
-    (dolist (w (window-list)) ; render session buffers displayed in other windows
-      (with-selected-window w
-        (when (and (not (eq win w)) (dirvish-curr))
-          (dirvish--render-attrs))))
+    (when (dirvish--apply-hiding-p dirvish-hide-cursor) (dired-move-to-filename))
+    (dolist (w (window-list))
+      (with-selected-window w ; parent | non-root dired buffers
+        (and (not (eq win w)) (dirvish-prop :attrs) (dirvish--render-attrs))))
     (with-selected-window win (dirvish--render-attrs)) ; finally render the root
     (when-let* ((filename (dired-get-filename nil t)))
       (dirvish-prop :index (file-local-name filename))
@@ -1384,23 +1374,23 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (define-derived-mode dirvish-directory-view-mode special-mode "Dirvish DIRview"
   "Major mode for parent directory and directory preview buffer."
-  (setq mode-line-format nil header-line-format nil
-        font-lock-defaults
-        '(dired-font-lock-keywords t nil nil beginning-of-line))
+  (setq-local mode-line-format nil header-line-format nil
+              dirvish--dir-data (dirvish--ht) font-lock-defaults
+              '(dired-font-lock-keywords t nil nil beginning-of-line))
   (font-lock-mode 1)
   :group 'dirvish :interactive nil)
 
 (define-derived-mode dirvish-special-preview-mode special-mode "Dirvish Special"
   "Major mode for info, shell command output and non-text file preview buffer."
-  (setq mode-line-format nil header-line-format nil)
+  (setq-local mode-line-format nil header-line-format nil)
   :group 'dirvish :interactive nil)
 
 (define-derived-mode dirvish-misc-mode special-mode "Dirvish Misc"
   "Major mode for mode/header-line and other special buffers."
-  (setq face-remapping-alist '((header-line-inactive header-line)
-                               (mode-line-inactive mode-line))
-        cursor-type nil window-size-fixed 'height
-        mode-line-format nil header-line-format nil)
+  (setq-local face-remapping-alist '((header-line-inactive header-line)
+                                     (mode-line-inactive mode-line))
+              cursor-type nil window-size-fixed 'height
+              mode-line-format nil header-line-format nil)
   :group 'dirvish :interactive nil)
 
 ;;;; Advices
@@ -1413,7 +1403,7 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
   (let (dirvish-hide-cursor) (dirvish--maybe-toggle-cursor 'hollow))
-  (dirvish--render-attrs 'clear))
+  (dirvish--render-attrs))
 
 (defun dirvish-find-alt-a ()
   "Advice for `dired-find-alternate-file'."

@@ -83,9 +83,7 @@ RECIPE has the same form as `dirvish-default-layout'."
          (old-val (mapcar #'car (dirvish-prop :attrs)))
          (new-val (if (equal value "+") (cl-pushnew item old-val)
                     (remove item old-val))))
-    (dirvish--render-attrs 'clear)
-    (dirvish-prop :attrs (dirvish--attrs-expand new-val))
-    (dirvish--render-attrs)))
+    (dirvish-prop :attrs (dirvish--attrs-expand new-val))))
 
 ;;;###autoload (autoload 'dirvish-setup-menu "dirvish-extras" nil t)
 (defcustom dirvish-ui-setup-items
