@@ -8,11 +8,15 @@ customizations.
 -----
 * In relation to Dired
 
-Here are some Dirvish exclusive features or aspects that Dired and Dirvish handled differently.
+Here are some Dirvish exclusive features or aspects that Dired and Dirvish
+handled differently.
 
-** Cache directory
+** Cursor display and line highlighting
 
-Dirvish uses ~dirvish-cache-dir~ to store cached images and other persistent data.
+Dirvish by default hides the cursor in Dired buffers and highlights the current
+line.  It uses the ~dirvish-hl-line~ face for the active window and
+~dirvish-hl-line-inactive~ for inactive windows.  To modify this behavior,
+customize the ~dirvish-hide-cursor~ variable.
 
 ** File details display
 
@@ -24,6 +28,10 @@ Instead of ~dired-hide-details-mode~, configuring ~dirvish-attributes~ is the
 recommended approach for finer-grained control and greater flexibility in
 displaying and ordering file details.  See *Dirvish "Attributes"* below for
 detailed instructions.
+
+** Cache directory
+
+Dirvish uses ~dirvish-cache-dir~ to store cached images and other persistent data.
 
 ** Open files externally
 
