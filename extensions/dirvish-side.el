@@ -118,27 +118,23 @@ filename until the project root when opening a side session."
 
 (defun dirvish-side--auto-jump ()
   "Select latest buffer file in the visible `dirvish-side' session."
-  ;; some commands such as `consult-buffer' that uses minibuffer somehow causes
-  ;; a delay on `current-buffer' updating, so we wait for 0.01s here to ensure
-  ;; the latest buffer is correctly grabbed. (#264)
-  (run-with-timer
-   0.01 nil
-   (lambda ()
-     (when-let* (((not (dirvish-curr)))
-                 ((not (active-minibuffer-window)))
-                 (win (dirvish-side--session-visible-p))
-                 (dv (with-current-buffer (window-buffer win) (dirvish-curr)))
-                 (dir (or (dirvish--get-project-root) default-directory))
-                 (prev (with-selected-window win (dirvish-prop :index)))
-                 (curr buffer-file-name)
-                 ((not (string-suffix-p "COMMIT_EDITMSG" curr)))
-                 ((not (equal prev curr))))
-       (with-selected-window win
-         (let (buffer-list-update-hook)
-           (dirvish--find-entry 'find-alternate-file dir))
-         (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr t)
-           (dired-goto-file curr))
-         (dirvish--redisplay))))))
+  (when-let* (((not (dirvish-curr)))
+              ((not (active-minibuffer-window)))
+              (win (dirvish-side--session-visible-p))
+              (dv (with-current-buffer (window-buffer win) (dirvish-curr)))
+              (dir (or (dirvish--get-project-root) default-directory))
+              (prev (with-selected-window win (dirvish-prop :index)))
+              (curr buffer-file-name)
+              ((not (string-suffix-p "COMMIT_EDITMSG" curr)))
+              ((not (equal prev curr))))
+    (with-selected-window win
+      (let (buffer-list-update-hook window-buffer-change-functions)
+        (dirvish--find-entry 'find-alternate-file dir))
+      ;; delay the running of this hook to eliminate race condition
+      (dirvish-winbuf-change-h win)
+      (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
+        (dired-goto-file curr))
+      (dirvish--redisplay))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."

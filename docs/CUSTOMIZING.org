@@ -136,14 +136,14 @@ providing additional information about each file.
 
 For now Dirvish offers these attributes:
 
-+ ~subtree-state~: A indicator for directory expanding state.
-+ ~nerd-icon~ | ~all-the-icons~ | ~vscode-icon~: File icons provided by various backends.
++ ~subtree-state~: a indicator for directory expanding state.
++ ~nerd-icon~ | ~all-the-icons~ | ~vscode-icon~: file icons provided by various backends.
 + ~collapse~: append unique nested paths to the end of filename.
-+ ~git-msg~: Append git commit message to filename.
-+ ~vc-state~: The version control state at left fringe.
-+ ~file-size~: Show file size or directories file count at right fringe.
-+ ~file-time~: Show file modification time
-+ ~file-modes~: Show file modes (*-rw-r--rwx*)
++ ~git-msg~: short git commit log.
++ ~vc-state~: version control state at left fringe.
++ ~file-size~: file size or directories file counts.
++ ~file-time~: file modification time
++ ~file-modes~: file modes (*-rw-r--rwx*)
 
 Here is an overview of how does these attributes look like:
 
@@ -443,6 +443,7 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
+     ("s" "/ssh:my-server")             "SSH server"
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   :config
   ;; (dirvish-peek-mode)             ; Preview files in minibuffer

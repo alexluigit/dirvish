@@ -310,9 +310,8 @@ See `dirvish-subtree-file-viewer' for details"
            (setq stop t)))
     stop))
 
-(defun dirvish-subtree-expand-to (target &optional sit)
-  "Go to line describing TARGET and expand its parent directories.
-`sit-for' 0.01 before inserting subtrees if SIT."
+(defun dirvish-subtree-expand-to (target)
+  "Go to line describing TARGET and expand its parent directories."
   (interactive
    (list (directory-file-name (expand-file-name
                                (read-file-name "Expand to file: "
@@ -328,26 +327,20 @@ See `dirvish-subtree-file-viewer' for details"
                  (next (car (split-string
                              (substring target (1+ (length file))) "/"))))
              (when (dirvish-subtree--move-to-file next depth)
-               (dirvish-subtree-expand-to target sit))))
+               (dirvish-subtree-expand-to target))))
           ((string-prefix-p dir target)
            (let ((depth (dirvish-subtree--depth))
                  (next (car (split-string (substring target (length dir)) "/"))))
              (goto-char (dired-subdir-min))
              (goto-char (next-single-property-change (point) 'dired-filename))
              (forward-line -1)
-             ;; HACK!  Without this `sit-for', the following movement may stop
-             ;; at a incorrect point where the file name belongs to a subtree
-             ;; that is inserted in a wrong position.  This can occur when
-             ;; reopening a path immediately after the original buffer visiting
-             ;; that path is killed, e.g. `dirvish-side--auto-jump'.
-             (if sit (sit-for 0.01))
              ;; TARGET is either not exist or being hidden (#135)
              (when (dirvish-subtree--move-to-file next depth)
-               (dirvish-subtree-expand-to target sit))))
+               (dirvish-subtree-expand-to target))))
           ((string-prefix-p (expand-file-name default-directory) dir)
            (goto-char (dired-subdir-min))
            (goto-char (next-single-property-change (point) 'dired-filename))
-           (dirvish-subtree-expand-to target sit)))))
+           (dirvish-subtree-expand-to target)))))
 
 ;;;###autoload
 (defun dirvish-subtree-up ()
