@@ -443,7 +443,8 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
    '(("h" "~/"                          "Home")
      ("d" "~/Downloads/"                "Downloads")
      ("m" "/mnt/"                       "Drives")
-     ("s" "/ssh:my-server")             "SSH server"
+     ("s" "/ssh:my-remote-server")      "SSH server"
+     ("e" "/sudo:root@localhost:/etc")  "Modify program settings"
      ("t" "~/.local/share/Trash/files/" "TrashCan")))
   :config
   ;; (dirvish-peek-mode)             ; Preview files in minibuffer
@@ -454,28 +455,28 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
         '(vc-state subtree-state nerd-icons collapse git-msg file-time file-size)
         dirvish-side-attributes
         '(vc-state nerd-icons collapse file-size))
-  (setq delete-by-moving-to-trash t)
   (setq dired-listing-switches
         "-l --almost-all --human-readable --group-directories-first --no-group")
   :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish)
    :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
+   ;; ("o" . dired-up-directory)  ; So you can adjust dired bindings here
    ("?"   . dirvish-dispatch)     ; contains most of sub-menus in dirvish extensions
    ("a"   . dirvish-quick-access)
-   ("f"   . dirvish-file-info-menu)
+   ("f"   . dirvish-history-go-forward)
+   ("b"   . dirvish-history-go-backward)
    ("y"   . dirvish-yank-menu)
    ("N"   . dirvish-narrow)
    ("^"   . dirvish-history-last)
+   ("s"   . dirvish-setup-menu)   ; `st' toggles mtime, `ss' toggles file size, etc.
    ("h"   . dirvish-history-jump) ; remapped `describe-mode'
-   ("s"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
+   ("r"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
    ("v"   . dirvish-vc-menu)      ; remapped `dired-view-file'
    ("TAB" . dirvish-subtree-toggle)
-   ("M-f" . dirvish-history-go-forward)
-   ("M-b" . dirvish-history-go-backward)
+   ("M-f" . dirvish-file-info-menu)
    ("M-l" . dirvish-ls-switches-menu)
    ("M-m" . dirvish-mark-menu)
    ("M-t" . dirvish-layout-toggle)
-   ("M-s" . dirvish-setup-menu)
    ("M-e" . dirvish-emerge-menu)
    ("M-j" . dirvish-fd-jump)))
 #+end_src
@@ -498,10 +499,10 @@ Some keybindings for mouse:
 - /middle click/: opening a file/directory in new window
 
 #+begin_src emacs-lisp
-  (setq mouse-1-click-follows-link nil)
-  (define-key dirvish-mode-map (kbd "<mouse-1>") 'dirvish-subtree-toggle-or-open)
-  (define-key dirvish-mode-map (kbd "<mouse-2>") 'dired-mouse-find-file-other-window)
-  (define-key dirvish-mode-map (kbd "<mouse-3>") 'dired-mouse-find-file)
+(setq mouse-1-click-follows-link nil)
+(define-key dirvish-mode-map (kbd "<mouse-1>") 'dirvish-subtree-toggle-or-open)
+(define-key dirvish-mode-map (kbd "<mouse-2>") 'dired-mouse-find-file-other-window)
+(define-key dirvish-mode-map (kbd "<mouse-3>") 'dired-mouse-find-file)
 #+end_src
 
 ** TRAMP integration
@@ -534,26 +535,30 @@ be able to answer to in the child emacs.
 These packages are only listed here for discoverability.
 
 #+begin_src emacs-lisp
-  (use-package dired-x
-    :config
-    ;; Make dired-omit-mode hide all "dotfiles"
-    (setq dired-omit-files
-          (concat dired-omit-files "\\|^\\..*$")))
 
-  ;; Additional syntax highlighting for dired
-  (use-package diredfl
-    :hook
-    ((dired-mode . diredfl-mode)
-     ;; highlight parent and directory preview as well
-     (dirvish-directory-view-mode . diredfl-mode))
-    :config
-    (set-face-attribute 'diredfl-dir-name nil :bold t))
+(use-package dired-x
+  :config
+  ;; Make dired-omit-mode hide all "dotfiles"
+  (setq dired-omit-files
+        (concat dired-omit-files "\\|^\\..*$")))
 
-  ;; Use `nerd-icons' as Dirvish's icon backend
-  (use-package nerd-icons)
+;; Additional syntax highlighting for dired
+(use-package diredfl
+  :hook
+  ((dired-mode . diredfl-mode)
+   ;; highlight parent and directory preview as well
+   (dirvish-directory-view-mode . diredfl-mode))
+  :config
+  (set-face-attribute 'diredfl-dir-name nil :bold t))
 
-  ;; Or, use `vscode-icon' instead
-  ;; (use-package vscode-icon
-  ;;   :config
-  ;;   (push '("jpg" . "image") vscode-icon-file-alist))
+;; Use `nerd-icons' as Dirvish's icon backend
+(use-package nerd-icons)
+
+;; Or, use `vscode-icon' instead
+;; (use-package vscode-icon
+;;   :config
+;;   (push '("jpg" . "image") vscode-icon-file-alist))
+
+;; miscs
+(setq delete-by-moving-to-trash t)
 #+end_src

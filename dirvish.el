@@ -932,10 +932,9 @@ When the attribute does not exist, set it with BODY."
                          (remove-overlays pm pM ov t))
              finally
              (with-silent-modifications
-               (and (derived-mode-p '(dired-mode dirvish-directory-view-mode))
-                    (save-excursion
-                      (dirvish--render-attrs-1
-                       height remain (point) remote fns (if gui 0 2) hl ww)))))))
+               (save-excursion
+                 (dirvish--render-attrs-1
+                  height remain (point) remote fns (if gui 0 2) hl ww))))))
 
 (dirvish-define-attribute hl-line
   "Highlight current line.
@@ -1166,6 +1165,8 @@ LEVEL is the depth of current window."
                     (with-temp-buffer (dired-insert-directory dir flags)
                                       (buffer-string)))))
          (attrs (mapcar #'car (dv-attributes dv)))
+         (sudo (with-current-buffer (cdr (dv-index dv))
+                 (dirvish-prop :local-sudo)))
          (icon (cond ((memq 'all-the-icons attrs) '(all-the-icons))
                      ((memq 'nerd-icons attrs) '(nerd-icons))
                      ((memq 'vscode-icon attrs) '(vscode-icon)))))
@@ -1174,6 +1175,7 @@ LEVEL is the depth of current window."
       (dirvish-directory-view-mode)
       (dirvish-prop :dv (dv-id dv))
       (dirvish-prop :remote (file-remote-p dir))
+      (dirvish-prop :local-sudo sudo)
       (puthash dir str (dv-parent-hash dv))
       (let (buffer-read-only) (erase-buffer) (save-excursion (insert str)))
       (setq-local dired-subdir-alist (list (cons dir (point-min-marker))))
@@ -1265,8 +1267,11 @@ Dirvish sets `revert-buffer-function' to this function."
   (when-let* ((dv (dirvish-curr)) ((not (derived-mode-p 'wdired-mode)))
               (r-win (dv-root-window dv)) ((window-live-p r-win)))
     (when (dirvish--apply-hiding-p dirvish-hide-cursor) (dired-move-to-filename))
-    (dolist (w (window-list)) (unless (eq r-win w) (dirvish--render-attrs w))
-    (dirvish--render-attrs r-win))
+    (dolist (w (window-list))
+      (when (and (not (eq r-win w))
+                 (with-selected-window w (derived-mode-p 'dired-mode)))
+        (dirvish--render-attrs w)))
+    (dirvish--render-attrs r-win)
     (when-let* ((filename (dired-get-filename nil t)))
       (dirvish-prop :index (file-local-name filename)))))
 
@@ -1324,6 +1329,7 @@ Dirvish sets `revert-buffer-function' to this function."
                             (window-parameters . ((no-other-window . t))))
                for b = (dirvish--create-parent-buffer dv parent current level)
                for w = (display-buffer b `(dirvish--display-buffer . ,args)) do
+               (dirvish--render-attrs w 'never) ; only render icon
                (with-selected-window w
                  (set-window-fringes w 1 1) (set-window-dedicated-p w t))))))
 
@@ -1509,7 +1515,7 @@ are killed and the Dired buffer(s) in the selected window are buried."
   (let* ((dir (or path default-directory))
          (fn (if dired-kill-when-opening-new-dired-buffer 'find-alternate-file
                'find-file))
-         (cur? (dirvish-curr)) ; can be non-default session, reuse it directly
+         (cur? (dirvish-curr)) ; can be a non-default session, reuse it directly
          (vis? (cl-loop for w in (window-list)
                         for b = (window-buffer w)
                         for dv = (with-current-buffer b (dirvish-curr))
