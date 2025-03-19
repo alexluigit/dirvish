@@ -1165,8 +1165,6 @@ LEVEL is the depth of current window."
                     (with-temp-buffer (dired-insert-directory dir flags)
                                       (buffer-string)))))
          (attrs (mapcar #'car (dv-attributes dv)))
-         (sudo (with-current-buffer (cdr (dv-index dv))
-                 (dirvish-prop :local-sudo)))
          (icon (cond ((memq 'all-the-icons attrs) '(all-the-icons))
                      ((memq 'nerd-icons attrs) '(nerd-icons))
                      ((memq 'vscode-icon attrs) '(vscode-icon)))))
@@ -1175,7 +1173,8 @@ LEVEL is the depth of current window."
       (dirvish-directory-view-mode)
       (dirvish-prop :dv (dv-id dv))
       (dirvish-prop :remote (file-remote-p dir))
-      (dirvish-prop :local-sudo sudo)
+      (dirvish-prop :local-sudo ; copy this from root avoids requiring tramp
+        (with-current-buffer (cdr (dv-index dv)) (dirvish-prop :local-sudo)))
       (puthash dir str (dv-parent-hash dv))
       (let (buffer-read-only) (erase-buffer) (save-excursion (insert str)))
       (setq-local dired-subdir-alist (list (cons dir (point-min-marker))))
@@ -1212,8 +1211,9 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
             (remote? (file-remote-p ,dir))
             (i-bk ',(with-current-buffer buffer (dirvish-prop :vc-backend)))
             ;; inherit from cached backend, avoid unneeded vc info in subtrees
-            (bk (or i-bk (unless remote? (vc-responsible-backend ,dir t)))))
-       (dolist (file (unless remote? (directory-files ,dir t nil t)))
+            (bk (or i-bk (unless remote? (vc-responsible-backend ,dir t))))
+            (files (ignore-errors (directory-files ,dir t nil t))))
+       (dolist (file (unless remote? files))
          (let* ((attrs (ignore-errors (file-attributes file)))
                 (tp (nth 0 attrs)))
            (cond ((eq t tp) (setq tp '(dir . nil)))
@@ -1223,12 +1223,15 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
        (cons bk hs)))
    (lambda (p _)
      (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
-                 (`(,vc . ,data) (with-current-buffer (process-buffer p)
-                                   (read (buffer-string)))))
+                 (`(,pb . ,data) (cons (process-buffer p) nil)))
+       (condition-case err
+           (setq data (with-current-buffer pb (read (buffer-string))))
+         (error (message "Fetch dir data failed with error: %s" err)))
        (when (buffer-live-p buf)
          (with-current-buffer buf
-           (maphash (lambda (k v) (puthash k v dirvish--dir-data)) data)
-           (dirvish-prop :vc-backend (or vc 0)) ; for &context compat
+           (when-let* ((attrs (cdr data)) ((hash-table-p attrs)))
+             (maphash (lambda (k v) (puthash k v dirvish--dir-data)) attrs))
+           (dirvish-prop :vc-backend (or (car data) 0)) ; for &context compat
            (dirvish-data-for-dir dir buf inhibit-setup))))
      (delete-process p)
      (dirvish--kill-buffer (process-buffer p)))
