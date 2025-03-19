@@ -218,34 +218,6 @@ Notice that it only take effects on the built-in `dired' preview dispatcher."
   "Number of file buffers to keep open temporarily during preview."
   :group 'dirvish :type '(natnum :tag "Number of buffers"))
 
-(defconst dirvish-emacs-bin
-  (cond
-   ((and invocation-directory invocation-name)
-    (expand-file-name (concat (file-name-as-directory invocation-directory) invocation-name)))
-   ((eq system-type 'darwin)
-    "/Applications/Emacs.app/Contents/MacOS/Emacs")
-   (t "emacs")))
-(defconst dirvish-image-exts '("webp" "wmf" "pcx" "xif" "wbmp" "vtf" "tap" "s1j" "sjp" "sjpg" "s1g" "sgi" "sgif" "s1n" "spn" "spng" "xyze" "rgbe" "hdr" "b16" "mdi" "apng" "ico" "pgb" "rlc" "mmr" "fst" "fpx" "fbs" "dxf" "dwg" "djv" "uvvg" "uvg" "uvvi" "uvi" "azv" "psd" "tfx" "t38" "svgz" "svg" "pti" "btf" "btif" "ktx2" "ktx" "jxss" "jxsi" "jxsc" "jxs" "jxrs" "jxra" "jxr" "jxl" "jpf" "jpx" "jpgm" "jpm" "jfif" "jhc" "jph" "jpg2" "jp2" "jls" "hsj2" "hej2" "heifs" "heif" "heics" "heic" "fts" "fit" "fits" "emf" "drle" "cgm" "dib" "bmp" "hif" "avif" "avcs" "avci" "exr" "fax" "icon" "ief" "jpg" "macp" "pbm" "pgm" "pict" "png" "pnm" "ppm" "ras" "rgb" "tga" "tif" "tiff" "xbm" "xpm" "xwd" "jpe" "jpeg" "cr2" "arw"))
-(defconst dirvish-audio-exts '("ape" "stm" "s3m" "ra" "rm" "ram" "wma" "wax" "m3u" "med" "669" "mtm" "m15" "uni" "ult" "mka" "flac" "axa" "kar" "midi" "mid" "s1m" "smp" "smp3" "rip" "multitrack" "ecelp9600" "ecelp7470" "ecelp4800" "vbk" "pya" "lvp" "plj" "dtshd" "dts" "mlp" "eol" "uvva" "uva" "koz" "xhe" "loas" "sofa" "smv" "qcp" "psid" "sid" "spx" "opus" "ogg" "oga" "mp1" "mpga" "m4a" "mxmf" "mhas" "l16" "lbc" "evw" "enw" "evb" "evc" "dls" "omg" "aa3" "at3" "atx" "aal" "acn" "awb" "amr" "ac3" "ass" "aac" "adts" "726" "abs" "aif" "aifc" "aiff" "au" "mp2" "mp3" "mp2a" "mpa" "mpa2" "mpega" "snd" "vox" "wav"))
-(defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
-(defconst dirvish-font-exts '("ttf" "ttc" "otf" "woff" "eot"))
-(defconst dirvish-archive-exts '("7z" "xz" "bzip2" "gzip" "tar" "zip" "wim" "ar" "arj" "cab" "chm" "dmg" "ext" "fat" "gpt" "hfs" "ihex" "iso" "mbr" "msi" "ntfs" "qcow2" "rar" "rpm" "udf" "uefi" "vdi" "vhd" "vmdk" "xar"))
-(defconst dirvish-binary-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts dirvish-font-exts dirvish-archive-exts '("pdf" "epub" "gif" "icns")))
-(defcustom dirvish-open-with-programs
-  (let ((mpv (or (executable-find "mpv") "mpv")))
-    `((,dirvish-audio-exts . (,mpv "--profile=builtin-pseudo-gui" "%f"))
-      (,dirvish-video-exts . (,mpv "%f"))))
-  "Open certain file types using external programs.
-The value should be an association list where each element is of
-the form (EXTS . (CMD . ARGS)).  EXTS is a list of file name
-extensions.  When opening a file whose filename ends with one of
-the EXTS using `dired-find-file', a subprocess according to CMD
-and its ARGS is issued to open the file externally.  The special
-placeholder \"%f\" in the ARGS is replaced by the FILENAME at
-runtime.  Set it to nil disables this feature."
-  :group 'dirvish :type '(alist :key-type (repeat :tag "File extensions" string)
-                                :value-type (repeat :tag "External command and args" string)))
-
 (defcustom dirvish-reuse-session 'open
   "Whether to keep the latest session index buffer for later reuse.
 The valid values are:
@@ -284,6 +256,22 @@ input for `dirvish-redisplay-debounce' seconds."
 (defcustom dirvish-preview-setup-hook nil
   "Functions called in the file preview buffer."
   :group 'dirvish :type 'hook)
+
+;;;; Constants
+
+(defconst dirvish-emacs-bin
+  (cond
+   ((and invocation-directory invocation-name)
+    (expand-file-name (concat (file-name-as-directory invocation-directory) invocation-name)))
+   ((eq system-type 'darwin)
+    "/Applications/Emacs.app/Contents/MacOS/Emacs")
+   (t "emacs")))
+(defconst dirvish-image-exts '("webp" "wmf" "pcx" "xif" "wbmp" "vtf" "tap" "s1j" "sjp" "sjpg" "s1g" "sgi" "sgif" "s1n" "spn" "spng" "xyze" "rgbe" "hdr" "b16" "mdi" "apng" "ico" "pgb" "rlc" "mmr" "fst" "fpx" "fbs" "dxf" "dwg" "djv" "uvvg" "uvg" "uvvi" "uvi" "azv" "psd" "tfx" "t38" "svgz" "svg" "pti" "btf" "btif" "ktx2" "ktx" "jxss" "jxsi" "jxsc" "jxs" "jxrs" "jxra" "jxr" "jxl" "jpf" "jpx" "jpgm" "jpm" "jfif" "jhc" "jph" "jpg2" "jp2" "jls" "hsj2" "hej2" "heifs" "heif" "heics" "heic" "fts" "fit" "fits" "emf" "drle" "cgm" "dib" "bmp" "hif" "avif" "avcs" "avci" "exr" "fax" "icon" "ief" "jpg" "macp" "pbm" "pgm" "pict" "png" "pnm" "ppm" "ras" "rgb" "tga" "tif" "tiff" "xbm" "xpm" "xwd" "jpe" "jpeg" "cr2" "arw"))
+(defconst dirvish-audio-exts '("ape" "stm" "s3m" "ra" "rm" "ram" "wma" "wax" "m3u" "med" "669" "mtm" "m15" "uni" "ult" "mka" "flac" "axa" "kar" "midi" "mid" "s1m" "smp" "smp3" "rip" "multitrack" "ecelp9600" "ecelp7470" "ecelp4800" "vbk" "pya" "lvp" "plj" "dtshd" "dts" "mlp" "eol" "uvva" "uva" "koz" "xhe" "loas" "sofa" "smv" "qcp" "psid" "sid" "spx" "opus" "ogg" "oga" "mp1" "mpga" "m4a" "mxmf" "mhas" "l16" "lbc" "evw" "enw" "evb" "evc" "dls" "omg" "aa3" "at3" "atx" "aal" "acn" "awb" "amr" "ac3" "ass" "aac" "adts" "726" "abs" "aif" "aifc" "aiff" "au" "mp2" "mp3" "mp2a" "mpa" "mpa2" "mpega" "snd" "vox" "wav"))
+(defconst dirvish-video-exts '("f4v" "rmvb" "wvx" "wmx" "wmv" "wm" "asx" "mk3d" "mkv" "fxm" "flv" "axv" "webm" "viv" "yt" "s1q" "smo" "smov" "ssw" "sswf" "s14" "s11" "smpg" "smk" "bk2" "bik" "nim" "pyv" "m4u" "mxu" "fvt" "dvb" "uvvv" "uvv" "uvvs" "uvs" "uvvp" "uvp" "uvvu" "uvu" "uvvm" "uvm" "uvvh" "uvh" "ogv" "m2v" "m1v" "m4v" "mpg4" "mp4" "mjp2" "mj2" "m4s" "3gpp2" "3g2" "3gpp" "3gp" "avi" "mov" "movie" "mpe" "mpeg" "mpegv" "mpg" "mpv" "qt" "vbs"))
+(defconst dirvish-font-exts '("ttf" "ttc" "otf" "woff" "eot"))
+(defconst dirvish-archive-exts '("7z" "xz" "bzip2" "gzip" "tar" "zip" "wim" "ar" "arj" "cab" "chm" "dmg" "ext" "fat" "gpt" "hfs" "ihex" "iso" "mbr" "msi" "ntfs" "qcow2" "rar" "rpm" "udf" "uefi" "vdi" "vhd" "vmdk" "xar"))
+(defconst dirvish-binary-exts (append dirvish-image-exts dirvish-video-exts dirvish-audio-exts dirvish-font-exts dirvish-archive-exts '("pdf" "epub" "gif" "icns")))
 
 ;;;; Keymaps
 
@@ -569,40 +557,34 @@ FIND-FN can be one of `find-file', `find-alternate-file',
 filename or a string with format of `dirvish-fd-bufname'."
   (let ((switch-to-buffer-preserve-window-point (null dired-auto-revert-buffer))
         (find-file-run-dired t) (dv (dirvish-curr))
-        process-connection-type directory? buf)
-    (when (setq buf (and dv (alist-get entry (dv-roots dv) nil nil #'equal)))
+        (directory? (file-directory-p entry)) (cur (current-buffer)) cache)
+    (when (setq cache (and dv (alist-get entry (dv-roots dv) nil nil #'equal)))
       (cl-return-from dirvish--find-entry
-        (dirvish-save-dedication (switch-to-buffer buf))))
+        (dirvish-save-dedication (switch-to-buffer cache))))
     (when (string-prefix-p "🔍" entry)
       (setq find-fn (prog1 'dirvish-fd (require 'dirvish-fd nil t)))
       (pcase-let ((`(,re ,dir ,_) (split-string (substring entry 1) "📁")))
         (cl-return-from dirvish--find-entry (funcall find-fn dir re))))
-    (unless (setq directory? (file-directory-p entry))
-      (cl-loop with e = (downcase (or (file-name-extension entry) ""))
-               for (es . (c . a)) in dirvish-open-with-programs
-               when (and (member e es) (executable-find c)) do
-               (cl-return-from dirvish--find-entry
-                 (let ((a (cl-substitute entry "%f" a :test #'string=)))
-                   (when (eq find-fn 'find-alternate-file) (kill-current-buffer))
-                   (apply #'start-process "" nil "nohup" (append (list c) a))))))
     ;; forward requests from `find-dired'
     (unless dv (cl-return-from dirvish--find-entry (funcall find-fn entry)))
     (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window)
          (dirvish-layout-toggle))
     (when (and directory? (eq find-fn 'find-alternate-file))
-      (setq buf (current-buffer)) ; delay the killing, for its session info
       (dirvish-save-dedication (find-file entry))
-      (with-current-buffer buf
+      (with-current-buffer cur ; check if the buffer should be killed
         (and (bound-and-true-p server-buffer-clients)
              (cl-return-from dirvish--find-entry)))
-      (cl-return-from dirvish--find-entry (dirvish--kill-buffer buf)))
+      (cl-return-from dirvish--find-entry (dirvish--kill-buffer cur)))
     (if directory? (dirvish-save-dedication (funcall find-fn entry))
       (funcall (dv-open-file-fn dv))
       (dirvish--clear-session dv)
       ;; if focusing a file window, do not kill previous buffer
       (when (and (not (dirvish-curr)) (eq find-fn 'find-alternate-file))
         (setq find-fn 'find-file))
-      (dirvish-save-dedication (funcall find-fn entry)))))
+      (unwind-protect
+          (dirvish-save-dedication (funcall find-fn entry))
+        ;; opening aborted, e.g. user answered `no' on big file alert prompt.
+        (when (eq (current-buffer) cur) (quit-window))))))
 
 ;;;; Preview
 

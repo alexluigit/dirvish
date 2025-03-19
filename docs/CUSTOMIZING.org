@@ -33,13 +33,6 @@ detailed instructions.
 
 Dirvish uses ~dirvish-cache-dir~ to store cached images and other persistent data.
 
-** Open files externally
-
-For some filetypes such as media files or special documents, you may want to
-open them with an external application by default.  You can achieve this by
-customizing the ~dirvish-open-with-programs~ option.  By default, it instructs
-Emacs to open video/audio files using =mpv=.
-
 ** Usage of GNU =ls=
 
 It is recommended to use GNU =ls= (referred to as =gls= on macOS and FreeBSD) as
@@ -538,6 +531,24 @@ These packages are only listed here for discoverability.
 
 (use-package dired-x
   :config
+  ;; If you're using Emacs 30+, you likely don't need this. Emacs 30 introduces
+  ;; the `dired-do-open` command and `shell-command-guess-open` option,
+  ;; providing a more straightforward way to open files externally with your
+  ;; operating system's default application (e.g., "open" on macOS, "xdg-open"
+  ;; on Linux).
+  ;; (when-let* ((cmd (cond ((eq 'darwin system-type) "open")
+  ;;                        ((memq system-type '(ms-dos cygwin windows-nt)) "start")
+  ;;                        (t "xdg-open"))))
+  ;;   (setq dired-guess-shell-alist-user  ; let OS decide how to open certain files
+  ;;         `(("\\.\\(?:docx\\|pdf\\|djvu\\|eps\\)\\'" ,cmd)
+  ;;           ("\\.\\(?:jpe?g\\|png\\|gif\\|xpm\\)\\'" ,cmd)
+  ;;           ("\\.\\(?:xcf\\)\\'" ,cmd)
+  ;;           ("\\.csv\\'" ,cmd)
+  ;;           ("\\.tex\\'" ,cmd)
+  ;;           ("\\.\\(?:mp4\\|mkv\\|avi\\|flv\\|rm\\|rmvb\\|ogv\\)\\(?:\\.part\\)?\\'" ,cmd)
+  ;;           ("\\.\\(?:mp3\\|flac\\)\\'" ,cmd)
+  ;;           ("\\.html?\\'" ,cmd)
+  ;;           ("\\.md\\'" ,cmd))))
   ;; Make dired-omit-mode hide all "dotfiles"
   (setq dired-omit-files
         (concat dired-omit-files "\\|^\\..*$")))
