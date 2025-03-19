@@ -587,8 +587,8 @@ filename or a string with format of `dirvish-fd-bufname'."
                    (apply #'start-process "" nil "nohup" (append (list c) a))))))
     ;; forward requests from `find-dired'
     (unless dv (cl-return-from dirvish--find-entry (funcall find-fn entry)))
-    (when (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window))
-      (user-error "Can not find a suitable other-window here"))
+    (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window)
+         (dirvish-layout-toggle))
     (when (and directory? (eq find-fn 'find-alternate-file))
       (setq buf (current-buffer)) ; delay the killing, for its session info
       (dirvish-save-dedication (find-file entry))
