@@ -335,9 +335,9 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
 (defmacro dirvish-save-dedication (&rest body)
   "Run BODY after undedicating window, restore dedication afterwards."
   (declare (debug (&rest form)))
-  `(let ((dedicated (window-dedicated-p)))
-     (set-window-dedicated-p nil nil)
-     (prog1 ,@body (set-window-dedicated-p nil dedicated))))
+  `(let* ((w (selected-window)) (ded (window-dedicated-p w)))
+     (set-window-dedicated-p w nil)
+     (prog1 ,@body (and (window-live-p w) (set-window-dedicated-p w ded)))))
 
 (defsubst dirvish-curr ()
   "Return Dirvish session attached to current buffer, if there is any."
@@ -429,7 +429,7 @@ Set process's SENTINEL and PUTS accordingly."
   (size-fixed ()                      :documentation "passes to `window-size-fixed' for ROOT-WINDOW.")
   (root-conf #'ignore                 :documentation "is a function to apply extra configs for INDEX buffer.")
   (root-window-fn ()                  :documentation "is a function used to create the ROOT-WINDOW for DV.")
-  (open-file-fn #'ignore              :documentation "is a function called before opening a file.")
+  (open-file #'dirvish-open-file      :documentation "is a function to handle file opening.")
   (curr-layout ()                     :documentation "is the working layout recipe of DV.")
   (ff-layout dirvish-default-layout   :documentation "is a full-frame layout recipe.")
   (ls-switches dired-listing-switches :documentation "is the directory listing switches.")
@@ -488,11 +488,12 @@ FROM-QUIT is used to signify the calling command."
   (let* ((idx (dv-index dv)) (ff (dv-curr-layout dv)) (wcon (dv-winconf dv))
          (server-buf? (lambda (root) (with-current-buffer (cdr root)
                                   (bound-and-true-p server-buffer-clients))))
-         keep roots kill-buffer-hook)
+         (keep (list idx)) roots kill-buffer-hook)
     (cl-loop with killer = (lambda (r) (unless (member r keep) (kill-buffer (cdr r))))
              for root in (setq roots (dv-roots dv))
              if (or (get-buffer-window (cdr root)) (funcall server-buf? root))
-             do (push root keep) finally do (mapc killer roots))
+             do (cl-pushnew root keep :test #'equal)
+             finally do (mapc killer roots))
     (when (and ff wcon) (set-window-configuration wcon))
     (set-window-fringes
      nil (frame-parameter nil 'left-fringe) (frame-parameter nil 'left-fringe))
@@ -550,6 +551,14 @@ FROM-QUIT is used to signify the calling command."
                  (dv-preview-dispatchers dv) (dirvish--preview-dps-validate)
                  (dv-attributes dv) (dirvish--attrs-expand attrs))))
 
+(defun dirvish-open-file (dv find-fn file)
+  "Open FILE using FIND-FN for default DV sessions."
+  (let ((cur (current-buffer)) fbuf)
+    (unwind-protect (funcall find-fn file)
+      (unless (eq (setq fbuf (current-buffer)) cur)
+        (dirvish--clear-session dv)
+        (dirvish-save-dedication (switch-to-buffer fbuf))))))
+
 (cl-defun dirvish--find-entry (find-fn entry)
   "Find ENTRY using FIND-FN in current dirvish session.
 FIND-FN can be one of `find-file', `find-alternate-file',
@@ -576,15 +585,8 @@ filename or a string with format of `dirvish-fd-bufname'."
              (cl-return-from dirvish--find-entry)))
       (cl-return-from dirvish--find-entry (dirvish--kill-buffer cur)))
     (if directory? (dirvish-save-dedication (funcall find-fn entry))
-      (funcall (dv-open-file-fn dv))
-      (dirvish--clear-session dv)
-      ;; if focusing a file window, do not kill previous buffer
-      (when (and (not (dirvish-curr)) (eq find-fn 'find-alternate-file))
-        (setq find-fn 'find-file))
-      (unwind-protect
-          (dirvish-save-dedication (funcall find-fn entry))
-        ;; opening aborted, e.g. user answered `no' on big file alert prompt.
-        (when (eq (current-buffer) cur) (quit-window))))))
+      (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
+      (funcall (dv-open-file dv) dv find-fn entry))))
 
 ;;;; Preview
 

@@ -427,6 +427,14 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
 =/path/to/dirvish/extensions/= is in your ~load-path~).
 
 #+begin_src emacs-lisp
+(use-package dired
+  :config
+  (setq dired-listing-switches
+        "-l --almost-all --human-readable --group-directories-first --no-group")
+  ;; this command is useful when you want to close the window of `dirvish-side'
+  ;; automatically when opening a file
+  (put 'dired-find-alternate-file 'disabled nil))
+
 (use-package dirvish
   :ensure t
   :init
@@ -448,14 +456,11 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
         '(vc-state subtree-state nerd-icons collapse git-msg file-time file-size)
         dirvish-side-attributes
         '(vc-state nerd-icons collapse file-size))
-  (setq dired-listing-switches
-        "-l --almost-all --human-readable --group-directories-first --no-group")
   :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish)
    :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
-   ;; ("o" . dired-up-directory)  ; So you can adjust dired bindings here
+   ;; (";" . dired-up-directory)  ; So you can adjust dired bindings here
    ("?"   . dirvish-dispatch)     ; contains most of sub-menus in dirvish extensions
-   ("a"   . dirvish-quick-access)
    ("f"   . dirvish-history-go-forward)
    ("b"   . dirvish-history-go-backward)
    ("y"   . dirvish-yank-menu)
@@ -466,6 +471,7 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
    ("r"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
    ("v"   . dirvish-vc-menu)      ; remapped `dired-view-file'
    ("TAB" . dirvish-subtree-toggle)
+   ("M-a" . dirvish-quick-access)
    ("M-f" . dirvish-file-info-menu)
    ("M-l" . dirvish-ls-switches-menu)
    ("M-m" . dirvish-mark-menu)

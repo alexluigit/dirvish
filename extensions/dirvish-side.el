@@ -43,24 +43,13 @@ See `dirvish-mode-line-format' for details."
 See `dirvish-attributes' for details."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
-(defcustom dirvish-side-open-file-action 'mru
-  "The action of how to open a file in side window.
-The value can be one of:
-
-- \\='mru    - open the file in the most-recent-used window.
-- \\='split  - open the file below the mru window.
-- \\='vsplit - open the file in a vertical split window.
-- a function that returns a target window for the file buffer,
-  such as `ace-select-window'."
+(defcustom dirvish-side-open-file-action nil
+  "Action to perform before opening a file in a side window.
+The value is a function called before switching to the file buffer.  The
+most recent used window is select if it is nil."
   :group 'dirvish
-  :type '(choice (const :tag "open the file in the most-recent-used window" mru)
-                 (const :tag "open the file below the mru window" split)
-                 (const :tag "open the file in a vertical split window" vsplit)
+  :type '(choice (const :tag "open the file in the most-recent-used window" nil)
                  (function :tag "custom function")))
-
-(defcustom dirvish-side-auto-close nil
-  "Whether to auto close the side session after opening a file."
-  :group 'dirvish :type 'boolean)
 
 (defcustom dirvish-side-auto-expand t
   "Whether to auto expand parent directories of current file.
@@ -68,20 +57,7 @@ If non-nil, expand all the parent directories of current buffer's
 filename until the project root when opening a side session."
   :group 'dirvish :type 'boolean)
 
-(defun dirvish-side-open-file-fn ()
-  "Called before opening a file in side sessions."
-  (when (dv-curr-layout (dirvish-curr)) (dirvish-layout-toggle))
-  (when dirvish-side-auto-close (quit-window))
-  (let* ((mru (get-mru-window nil nil t)))
-    (select-window (cond ((functionp dirvish-side-open-file-action)
-                          (funcall dirvish-side-open-file-action))
-                         ((eq dirvish-side-open-file-action 'mru) mru)
-                         ((eq dirvish-side-open-file-action 'split)
-                          (with-selected-window mru (split-window-below)))
-                         ((eq dirvish-side-open-file-action 'vsplit)
-                          (with-selected-window mru (split-window-right)))))))
-
-(defun dirvish-side-root-conf-fn (buffer)
+(defun dirvish-side-root-conf (buffer)
   "Setup BUFFER for side session."
   (let ((name (buffer-name buffer)))
     (unless (string-prefix-p " *SIDE :: " name)
@@ -107,6 +83,24 @@ filename until the project root when opening a side session."
               ((< (window-width) w)
                (enlarge-window-horizontally (- w (window-width)))))))
     (select-window win)))
+
+(defun dirvish-side-open-file (dv find-fn file)
+  "Open FILE using FIND-FN for default DV sessions."
+  (let ((idx (current-buffer)) fbuf)
+    (unwind-protect (if (eq find-fn 'find-file-other-window)
+                        (funcall find-fn file) ; a new window is split
+                      (dirvish-save-dedication (funcall find-fn file)))
+      (cond ((eq (setq fbuf (current-buffer)) idx) nil)
+            ((eq find-fn 'find-file-other-window) (dirvish--clear-session dv))
+            (t (dirvish--clear-session dv)
+               (setf (dv-curr-layout dv) nil)
+               (if (buffer-live-p idx) ; `find-alternate-file' kills idx
+                   (dirvish-save-dedication (switch-to-buffer idx))
+                 (delete-window))
+               (when (dirvish-curr) (other-window 1))
+               (when (functionp dirvish-side-open-file-action)
+                 (funcall dirvish-side-open-file-action))
+               (dirvish-save-dedication (switch-to-buffer fbuf)))))))
 
 (defun dirvish-side--session-visible-p ()
   "Return the root window of visible side session."
@@ -144,9 +138,9 @@ filename until the project root when opening a side session."
                   :type 'side
                   :size-fixed 'width
                   :dedicated t
-                  :root-conf #'dirvish-side-root-conf-fn
+                  :root-conf #'dirvish-side-root-conf
                   :root-window-fn #'dirvish-side-root-window-fn
-                  :open-file-fn #'dirvish-side-open-file-fn)))
+                  :open-file #'dirvish-side-open-file)))
          (r-win (dv-root-window dv)))
     (setq r-win (dirvish--create-root-window dv))
     (with-selected-window r-win

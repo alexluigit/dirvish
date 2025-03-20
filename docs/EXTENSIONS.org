@@ -182,7 +182,7 @@ as a sidebar in the frame.  These customization options are available:
 + ~dirvish-side-display-alist~: Display actions for the side window.
 + ~dirvish-side-window-parameters~: Window parameters for the side window.
 + ~dirvish-side-width~: Width of the side window.
-+ ~dirvish-side-open-file-window-function~: Set window of for opened files.
++ ~dirvish-side-open-file-action~: Action to perform before opening a file in a side window.
 + ~dirvish-side-auto-expand~: Whether to auto expand parent directories of current file.
 
 When ~dirvish-side-follow-mode~ is enabled, the visible side session will select
