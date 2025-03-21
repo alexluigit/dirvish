@@ -421,7 +421,7 @@ Set process's SENTINEL and PUTS accordingly."
                 (list dirvish-emacs-bin
                       "-Q" "-batch" "--eval" (prin1-to-string form))))
          (proc (make-process :name "dirvish" :connection-type nil :buffer buf
-                             :command cmd :sentinel sentinel)))
+                             :command cmd :sentinel sentinel :noquery t)))
     (while-let ((k (pop puts)) (v (pop puts))) (process-put proc k v))))
 
 ;;;; Session Struct
