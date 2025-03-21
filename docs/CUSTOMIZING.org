@@ -105,14 +105,49 @@ See: [[https://github.com/alexluigit/dirvish/discussions/102#discussioncomment-3
 
 Apart from the hooks provided by Dired, Dirvish got some additions.
 
- * ~dirvish-setup-hook~: Functions called when directory data for the root buffer
-   is ready.
+*** ~dirvish-setup-hook~
 
- * ~dirvish-after-revert-hook~: Functions called after running =revert-buffer= command.
+Functions called when directory data for the root buffer is ready.
 
- * ~dirvish-find-entry-hook~: Functions called before a Dired buffer is displayed.
+*** ~dirvish-after-revert-hook~:
 
- * ~dirvish-preview-setup-hook~: Functions called in the regular preview buffer.
+Functions called after running =revert-buffer= command.
+
+*** ~dirvish-find-entry-hook~
+
+Functions to be called before opening a directory or file.
+
+Each function is called with the file's FILENAME and FIND-FN until one returns a
+non-nil value.  When a Dired buffer is created for the first time, FIND-FN is
+=dired=, and the function is called with that Dired buffer as =current-buffer=;
+Otherwise, it is one of =find-file=, =find-alternate-file=, or
+=find-file-other-window=.  A non-nil return value from
+=run-hook-with-args-until-succuss= terminates =dirvish--find-entry=, allowing
+interception of file opening and customized handling of specific file types.
+
+The code below configures ~dired-find-file*~ commands to automatically detect
+binary files based on their extensions and open them externally.
+
+#+begin_src emacs-lisp
+(defun dirvish-open-binaries-externally (file fn)
+  "When FN is not `dired', open binary FILE externally."
+  (when-let* (((not (eq fn 'dired)))
+              ((file-exists-p file))
+              ((not (file-directory-p file)))
+              ((member (downcase (or (file-name-extension file) ""))
+                       dirvish-binary-exts)))
+    ;; return t to terminate `dirvish--find-entry'.
+    (prog1 t (dired-do-open))))
+
+(add-hook 'dirvish-find-entry-hook #'dirvish-open-binaries-externally)
+#+end_src
+
+In practical applications, you might register multiple functions to handle
+different file types, assigning specific handlers for each.
+
+*** ~dirvish-preview-setup-hook~
+
+Functions called in the regular preview buffer.
 
 ** =find-dired= integration
 

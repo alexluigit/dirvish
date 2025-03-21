@@ -250,7 +250,14 @@ input for `dirvish-redisplay-debounce' seconds."
   :group 'dirvish :type 'hook)
 
 (defcustom dirvish-find-entry-hook nil
-  "Functions called before a Dired buffer is displayed."
+  "Functions to be called before opening a directory or file.
+Each function is called with the file's FILENAME and FIND-FN until one
+returns a non-nil value.  When a Dired buffer is created for the first
+time, FIND-FN is `dired', and the function is called with that Dired
+buffer as `current-buffer'; Otherwise, it is one of `find-file',
+`find-alternate-file', or `find-file-other-window'.  A non-nil return
+value terminates `dirvish--find-entry', allowing interception of file
+opening and customized handling of specific file types."
   :group 'dirvish :type 'hook)
 
 (defcustom dirvish-preview-setup-hook nil
@@ -574,6 +581,9 @@ filename or a string with format of `dirvish-fd-bufname'."
       (setq find-fn (prog1 'dirvish-fd (require 'dirvish-fd nil t)))
       (pcase-let ((`(,re ,dir ,_) (split-string (substring entry 1) "📁")))
         (cl-return-from dirvish--find-entry (funcall find-fn dir re))))
+    (and (run-hook-with-args-until-success
+          'dirvish-find-entry-hook entry find-fn)
+         (cl-return-from dirvish--find-entry))
     ;; forward requests from `find-dired'
     (unless dv (cl-return-from dirvish--find-entry (funcall find-fn entry)))
     (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window)
@@ -1460,7 +1470,7 @@ With optional NOSELECT just find files but do not select them."
       (setf (dv-index dv) (cons key buffer))
       (let ((key (if (string-prefix-p "🔍" key) (buffer-name buffer) key)))
         (setq dirvish--history (seq-take (push key dirvish--history) 200)))
-      (run-hook-with-args 'dirvish-find-entry-hook key buffer)
+      (run-hook-with-args 'dirvish-find-entry-hook key 'dired)
       buffer)))
 
 ;;;; Commands
