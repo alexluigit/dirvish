@@ -1411,6 +1411,16 @@ Dirvish sets `revert-buffer-function' to this function."
   "Advice for `dired-find-alternate-file'."
   (dirvish--find-entry 'find-alternate-file (dired-get-file-for-visit)))
 
+(defun dirvish-find-marked-files-a (&optional noselect)
+  "Find all marked files displaying all of them simultaneously.
+With optional NOSELECT just find files but do not select them."
+  (declare-function dired-simultaneous-find-file "dired-x")
+  (when-let* ((dv (dirvish-curr))
+              (files (dired-get-marked-files nil nil nil nil t)))
+    (unless noselect (dirvish--clear-session dv))
+    (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
+    (dired-simultaneous-find-file files noselect)))
+
 (defun dirvish-dired-noselect-a (fn dir-or-list &optional flags)
   "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
@@ -1489,6 +1499,7 @@ are killed and the Dired buffer(s) in the selected window are buried."
   :group 'dirvish :global t
   (let ((ads '((dired--find-file dirvish--find-entry :override)
                (dired-find-alternate-file dirvish-find-alt-a :override)
+               (dired-do-find-marked-files dirvish-find-marked-files-a :override)
                (dired-noselect dirvish-dired-noselect-a :around)
                (dired-insert-subdir dirvish-insert-subdir-a :after)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
