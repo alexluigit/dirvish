@@ -30,23 +30,6 @@
 (setq dirvish-default-layout nil)
 #+end_src
 
-* How to hide continuation lines?
-
-Do not display continuation lines globally:
-
-#+begin_src emacs-lisp
-  (setq-default truncate-lines t)
-#+end_src
-
-Or disable it only in dirvish:
-
-#+begin_src emacs-lisp
-  (add-hook 'dirvish-find-entry-hook
-            (lambda (&rest _) (setq-local truncate-lines t)))
-#+end_src
-
-Also see https://github.com/alexluigit/dirvish/issues/33
-
 * How to kill all session buffers on quit?
 
 Set ~dirvish-reuse-session~ to nil.

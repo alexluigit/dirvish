@@ -1132,7 +1132,7 @@ Optionally, use CURSOR as the enabled cursor type."
   (dirvish--hide-dired-header)
   (dirvish--maybe-toggle-cursor 'box) ; restore from `wdired'
   (setq-local dirvish--dir-data (or dirvish--dir-data (dirvish--ht))
-              revert-buffer-function #'dirvish-revert
+              revert-buffer-function #'dirvish-revert truncate-lines t
               dired-hide-details-hide-symlink-targets nil)
   (add-hook 'pre-redisplay-functions #'dirvish-pre-redisplay-h nil t)
   (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
