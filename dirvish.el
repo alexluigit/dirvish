@@ -1415,7 +1415,8 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
   (let (dirvish-hide-cursor) (dirvish--maybe-toggle-cursor 'hollow))
-  (dirvish--render-attrs (selected-window)))
+  (dolist (ov '(dirvish-a-ov dirvish-l-ov dirvish-r-ov))
+    (remove-overlays (point-min) (point-max) ov t)))
 
 (defun dirvish-find-alt-a ()
   "Advice for `dired-find-alternate-file'."
