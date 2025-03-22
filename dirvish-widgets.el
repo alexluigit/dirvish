@@ -586,9 +586,7 @@ GROUP-TITLES is a list of group titles."
                    (type (cond ((member ext dirvish-image-exts) 'image)
                                ((member ext dirvish-video-exts) 'video)
                                ((member ext dirvish-font-exts) 'font)
-                               ((and (memq 'pdf-preface
-                                           dirvish-preview-dispatchers)
-                                     (equal ext "pdf") 'pdf))
+                               ((equal ext "pdf") 'pdf)
                                (t (user-error "Not a media file")))))
               ;; ensure the content is higher than the window height to avoid
               ;; unexpected auto scrolling

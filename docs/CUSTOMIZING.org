@@ -361,8 +361,8 @@ want to display preview for epub files via packages like =nov=, just remove the
 Two dispatchers, ~dired~ and ~fallback~, are enabled by default as fallback
 handlers. These dispatchers are used to preview text files and directories
 respectively, but can be overridden by custom dispatchers.  For example, you can
-use ~eza~ to preview directories instead of ~dired~ (see *Preview directory using ~eza~
-command* section below).
+use ~eza~ to preview directories instead of ~dired~ (see *Preview directory using
+eza command* section below).
 
 The ~dirvish-preview-dired-sync-omit~ option allows ~dired~ preview buffers to sync
 your =dired-omit-mode= and its settings from the root window, it is turned off by
@@ -573,24 +573,6 @@ These packages are only listed here for discoverability.
 
 (use-package dired-x
   :config
-  ;; If you're using Emacs 30+, you likely don't need this. Emacs 30 introduces
-  ;; the `dired-do-open` command and `shell-command-guess-open` option,
-  ;; providing a more straightforward way to open files externally with your
-  ;; operating system's default application (e.g., "open" on macOS, "xdg-open"
-  ;; on Linux).
-  ;; (when-let* ((cmd (cond ((eq 'darwin system-type) "open")
-  ;;                        ((memq system-type '(ms-dos cygwin windows-nt)) "start")
-  ;;                        (t "xdg-open"))))
-  ;;   (setq dired-guess-shell-alist-user  ; let OS decide how to open certain files
-  ;;         `(("\\.\\(?:docx\\|pdf\\|djvu\\|eps\\)\\'" ,cmd)
-  ;;           ("\\.\\(?:jpe?g\\|png\\|gif\\|xpm\\)\\'" ,cmd)
-  ;;           ("\\.\\(?:xcf\\)\\'" ,cmd)
-  ;;           ("\\.csv\\'" ,cmd)
-  ;;           ("\\.tex\\'" ,cmd)
-  ;;           ("\\.\\(?:mp4\\|mkv\\|avi\\|flv\\|rm\\|rmvb\\|ogv\\)\\(?:\\.part\\)?\\'" ,cmd)
-  ;;           ("\\.\\(?:mp3\\|flac\\)\\'" ,cmd)
-  ;;           ("\\.html?\\'" ,cmd)
-  ;;           ("\\.md\\'" ,cmd))))
   ;; Make dired-omit-mode hide all "dotfiles"
   (setq dired-omit-files
         (concat dired-omit-files "\\|^\\..*$")))

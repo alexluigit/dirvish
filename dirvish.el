@@ -1389,7 +1389,7 @@ Dirvish sets `revert-buffer-function' to this function."
 
 (define-derived-mode dirvish-directory-view-mode special-mode "Dirvish DIRview"
   "Major mode for parent directory and directory preview buffer."
-  (setq-local mode-line-format nil header-line-format nil
+  (setq-local mode-line-format nil header-line-format nil truncate-lines t
               dirvish--dir-data (dirvish--ht) font-lock-defaults
               '(dired-font-lock-keywords t nil nil beginning-of-line))
   (font-lock-mode 1)
