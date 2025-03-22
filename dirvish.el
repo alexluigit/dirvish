@@ -675,7 +675,7 @@ A dirvish preview dispatcher is a function consumed by
                 (setq dired-omit-verbose ,(bound-and-true-p dired-omit-verbose))
                 (setq dired-omit-files ,(bound-and-true-p dired-omit-files))
                 ;; for `sudo-edit' compat
-                (with-current-buffer (dired-noselect (file-local-name ,file))
+                (with-current-buffer (dired-noselect ,file)
                   ,(and dirvish-preview-dired-sync-omit
                         (bound-and-true-p dired-omit-mode)
                         `(dired-omit-mode))
@@ -758,18 +758,17 @@ When PROC finishes, fill preview buffer with process result."
 
 (defun dirvish--preview-update (dv index)
   "Update preview content of INDEX for DV."
-  (when-let* ((window (dv-preview-window dv))
-              ((window-live-p window))
+  (when-let* ((pwin (dv-preview-window dv)) ((window-live-p pwin))
+              (root (cdr (dv-index dv))) ((buffer-live-p root))
               (ext (downcase (or (file-name-extension index) "")))
-              (fns (with-current-buffer (window-buffer (dv-root-window dv))
-                     (dirvish-prop :preview-dps)))
+              (fns (with-current-buffer root (dirvish-prop :preview-dps)))
               (buf (cl-loop for fn in fns
-                            for rcp = (funcall fn index ext window dv) thereis
+                            for rcp = (funcall fn index ext pwin dv) thereis
                             (and rcp (dirvish-preview-dispatch rcp dv)))))
     (setq-local other-window-scroll-buffer buf)
     (unless (memq buf (dv-special-buffers dv))
       (cl-pushnew buf (dv-preview-buffers dv)))
-    (set-window-buffer window buf)))
+    (set-window-buffer pwin buf)))
 
 ;;;; Attributes
 
@@ -908,7 +907,7 @@ When the attribute does not exist, set it with BODY."
   (with-selected-window window
     (cl-loop with attrs = (dirvish-prop :attrs) unless attrs do (cl-return)
              with remote = (and (dirvish-prop :remote)
-                                (not (dirvish-prop :local-sudo)))
+                                (not (dirvish-prop :sudo)))
              with gui = (dirvish-prop :gui)
              with fns = () with height = (frame-height)
              with hl = (and (dirvish--apply-hiding-p dirvish-hide-cursor)
@@ -1106,7 +1105,7 @@ Optionally, use CURSOR as the enabled cursor type."
         ;; don't grab focus when peeking or preview window is selected
         (when (and (dirvish--selected-p dv)
                    (not (dirvish--get-session 'type 'peek)))
-          (dirvish--preview-update dv filename))))))
+          (dirvish--preview-update dv (file-local-name filename)))))))
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's roots, clear session when roots is empty."
@@ -1168,8 +1167,8 @@ LEVEL is the depth of current window."
       (dirvish-directory-view-mode)
       (dirvish-prop :dv (dv-id dv))
       (dirvish-prop :remote (file-remote-p dir))
-      (dirvish-prop :local-sudo ; copy this from root avoids requiring tramp
-        (with-current-buffer (cdr (dv-index dv)) (dirvish-prop :local-sudo)))
+      (dirvish-prop :sudo ; copy this from root avoids requiring tramp
+        (with-current-buffer (cdr (dv-index dv)) (dirvish-prop :sudo)))
       (puthash dir str (dv-parent-hash dv))
       (let (buffer-read-only) (erase-buffer) (save-excursion (insert str)))
       (setq-local dired-subdir-alist (list (cons dir (point-min-marker))))
@@ -1203,12 +1202,13 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
   (dirvish--make-proc
    `(prin1
      (let* ((hs (make-hash-table))
-            (remote? (file-remote-p ,dir))
+            (rmt? ,(with-current-buffer buffer
+                     (and (not (dirvish-prop :sudo)) (dirvish-prop :remote))))
+            (dir (if rmt? ,dir ,(file-local-name dir)))
             (i-bk ',(with-current-buffer buffer (dirvish-prop :vc-backend)))
             ;; inherit from cached backend, avoid unneeded vc info in subtrees
-            (bk (or i-bk (unless remote? (vc-responsible-backend ,dir t))))
-            (files (ignore-errors (directory-files ,dir t nil t))))
-       (dolist (file (unless remote? files))
+            (bk (or i-bk (unless rmt? (vc-responsible-backend dir t)))))
+       (dolist (file (unless rmt? (ignore-errors (directory-files dir t nil t))))
          (let* ((attrs (ignore-errors (file-attributes file)))
                 (tp (nth 0 attrs)))
            (cond ((eq t tp) (setq tp '(dir . nil)))

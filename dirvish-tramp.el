@@ -44,7 +44,7 @@ FN is the original `dired-noselect' closure."
     (with-current-buffer buffer
       (dirvish-prop :gnuls gnuls)
       (cond ((eq async-type 'local)
-             (dirvish-prop :local-sudo 1)
+             (dirvish-prop :sudo 1)
              (dirvish-prop :preview-dps local-dispatchers))
             ((eq async-type 'async)
              (dirvish-prop :remote-async 1)
@@ -92,36 +92,6 @@ FN is the original `dired-noselect' closure."
     (dirvish--kill-buffer (process-buffer proc))))
 
 (cl-defmethod dirvish-data-for-dir
-  (dir buffer inhibit-setup &context ((dirvish-prop :local-sudo) number))
-  "Fetch data for DIR in BUFFER.
-It is called when DIRVISH-PROP :local-sudo is a number, which means DIR
-is opened using `sudo-edit'.  Run `dirvish-setup-hook' after data
-parsing unless INHIBIT-SETUP is non-nil."
-  (dirvish--make-proc
-   `(prin1
-     (let ((hs (make-hash-table)))
-       (dolist (file (directory-files ,(file-local-name dir) t nil t))
-         (let* ((attrs (ignore-errors (file-attributes file)))
-                (tp (nth 0 attrs)))
-           (cond ((eq t tp) (setq tp '(dir . nil)))
-                 (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
-                 (t (setq tp '(file . nil))))
-           (puthash (secure-hash 'md5 file) `(:builtin ,attrs :type ,tp) hs)))
-       hs))
-   (lambda (p _)
-     (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
-                 (data (with-current-buffer (process-buffer p)
-                         (read (buffer-string)))))
-       (when (buffer-live-p buf)
-         (with-current-buffer buf
-           (maphash (lambda (k v) (puthash k v dirvish--dir-data)) data)
-           (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
-           (dirvish--redisplay))))
-     (delete-process p)
-     (dirvish--kill-buffer (process-buffer p)))
-   nil 'meta (cons buffer inhibit-setup)))
-
-(cl-defmethod dirvish-data-for-dir
   (dir buffer inhibit-setup
        &context ((dirvish-prop :remote-async) number)
        &context ((dirvish-prop :gnuls) string))
@@ -158,12 +128,11 @@ which means DIR is opened over a remote host that supports
 (dirvish-define-preview tramp (file _ dv)
   "Preview files with `ls' or `head' for tramp files."
   (let ((process-connection-type nil)
-        (localname (file-remote-p file 'localname))
         (buf (dirvish--special-buffer 'preview dv t)) proc)
     (when-let* ((proc (get-buffer-process buf))) (delete-process proc))
     (setq proc (start-file-process-shell-command
                 (buffer-name buf) buf
-                (format dirvish-tramp-preview-cmd localname localname)))
+                (format dirvish-tramp-preview-cmd file file)))
     (set-process-sentinel
      proc (lambda (proc _sig)
             (when (memq (process-status proc) '(exit signal))
