@@ -847,6 +847,8 @@ When the attribute does not exist, set it with BODY."
 (defun dirvish--render-attrs-1
     (height width pos remote fns align-to hl w-width)
   "HEIGHT WIDTH POS REMOTE FNS ALIGN-TO HL W-WIDTH."
+  ;; jump over subdir header lines where `forward-line' is ignored
+  (when (cdr dired-subdir-alist) (goto-char (window-start)))
   (forward-line (- 0 height))
   (cl-dotimes (_ (* 2 height))
     (when (eobp) (cl-return))
@@ -1098,7 +1100,8 @@ Optionally, use CURSOR as the enabled cursor type."
         ((cdr dired-subdir-alist))
         ((and (bobp) dirvish-use-header-line)
          (goto-char (dirvish-prop :content-begin))))
-  (when-let* ((dv (dirvish-curr)) (filename (dired-get-filename nil t)))
+  (when-let* ((dv (dirvish-curr)) (localname t)
+              (filename (save-excursion (dired-get-filename nil t))))
     (dirvish-debounce nil
       (when (dv-curr-layout dv)
         (force-mode-line-update t)
@@ -1270,7 +1273,7 @@ Dirvish sets `revert-buffer-function' to this function."
                  (with-selected-window w (derived-mode-p 'dired-mode)))
         (dirvish--render-attrs w)))
     (dirvish--render-attrs r-win)
-    (when-let* ((filename (dired-get-filename nil t)))
+    (when-let* ((filename (save-excursion (dired-get-filename nil t))))
       (dirvish-prop :index (file-local-name filename)))))
 
 (defun dirvish-winbuf-change-h (window)
