@@ -123,12 +123,16 @@ filename until the project root when opening a side session."
               ((not (equal prev curr))))
     (with-selected-window win
       (let (buffer-list-update-hook window-buffer-change-functions)
-        (dirvish--find-entry 'find-alternate-file dir))
+        (or (cl-loop for (d . _) in dired-subdir-alist
+                     if (string-prefix-p d (expand-file-name dir))
+                     return (dired-goto-subdir d))
+            (dirvish--find-entry 'find-alternate-file dir)))
       ;; delay the running of this hook to eliminate race condition
       (dirvish-winbuf-change-h win)
-      (if dirvish-side-auto-expand (dirvish-subtree-expand-to curr)
-        (dired-goto-file curr))
-      (dirvish--redisplay))))
+      (unwind-protect (if dirvish-side-auto-expand
+                          (dirvish-subtree-expand-to curr)
+                        (dired-goto-file curr))
+        (dirvish--redisplay)))))
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
@@ -145,11 +149,11 @@ filename until the project root when opening a side session."
     (setq r-win (dirvish--create-root-window dv))
     (with-selected-window r-win
       (dirvish--find-entry 'find-alternate-file path)
-      (cond ((not bname) nil)
-            (dirvish-side-auto-expand
-             (dirvish-subtree-expand-to bname))
-            (t (dired-goto-file bname)))
-      (dirvish--redisplay))))
+      (unwind-protect (cond ((not bname) nil)
+                            (dirvish-side-auto-expand
+                             (dirvish-subtree-expand-to bname))
+                            (t (dired-goto-file bname)))
+        (dirvish--redisplay)))))
 
 ;;;###autoload
 (define-minor-mode dirvish-side-follow-mode

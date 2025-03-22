@@ -337,10 +337,11 @@ See `dirvish-subtree-file-viewer' for details"
              ;; TARGET is either not exist or being hidden (#135)
              (when (dirvish-subtree--move-to-file next depth)
                (dirvish-subtree-expand-to target))))
-          ((string-prefix-p (expand-file-name default-directory) dir)
-           (goto-char (dired-subdir-min))
-           (goto-char (next-single-property-change (point) 'dired-filename))
-           (dirvish-subtree-expand-to target)))))
+          ((cl-loop for (d . _) in dired-subdir-alist
+                    if (string-prefix-p d target)
+                    return (dired-goto-subdir d))
+           (dirvish-subtree-expand-to target))
+          (t (user-error "[ %s ] does not belong to any subdir" target)))))
 
 ;;;###autoload
 (defun dirvish-subtree-up ()
