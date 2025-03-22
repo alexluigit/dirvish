@@ -994,6 +994,11 @@ If HEADER, the format is used for `header-line-format'."
                                             ,(ceiling (* scale len-r))))))
         str-r)))))
 
+(defun dirvish--mode-line-height (fullframe &optional header)
+  "Get mode/header-line (when HEADER) height in single pane or FULLFRAME."
+  (let ((hv (if header dirvish-header-line-height dirvish-mode-line-height)))
+    (cond ((numberp hv) hv) (fullframe (cdr hv)) (t (car hv)))))
+
 ;; Thanks to `doom-modeline'.
 (defun dirvish--mode-line-bar-img (fullframe-p header)
   "Create a bar image with height of `dirvish-mode-line-height'.
@@ -1001,9 +1006,8 @@ If FULLFRAME-P, use the `cdr' of the value as height, otherwise
 use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   (when (and (display-graphic-p) (image-type-available-p 'pbm)
              (numberp dirvish-mode-line-bar-image-width))
-    (let* ((hv (if header dirvish-header-line-height dirvish-mode-line-height))
-           (ht (cond ((numberp hv) hv) (fullframe-p (cdr hv)) (t (car hv))))
-           (wd dirvish-mode-line-bar-image-width))
+    (let ((ht (dirvish--mode-line-height fullframe-p header))
+          (wd dirvish-mode-line-bar-image-width))
       (propertize
        " " 'display
        (ignore-errors
@@ -1351,7 +1355,10 @@ Dirvish sets `revert-buffer-function' to this function."
                            (window-parameters . ((no-other-window . t))))
                    (footer (side . below) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))))
-         (w-order (and layout (dirvish--window-split-order))) util-windows)
+         (w-order (and layout (dirvish--window-split-order)))
+         (window-safe-min-height 0) (window-resize-pixelwise t)
+         (lh (line-pixel-height)) (gui? (display-graphic-p))
+         (mh (dirvish--mode-line-height t)) (hh (dirvish--mode-line-height t t)))
     (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
     ;; only record window config before creating fullframe layout
     (setf (dv-winconf dv) (when layout (or conf (current-window-configuration))))
@@ -1369,13 +1376,12 @@ Dirvish sets `revert-buffer-function' to this function."
       (let* ((buf (dirvish--special-buffer pane dv (eq pane 'preview)))
              (args (alist-get pane w-args))
              (win (display-buffer buf `(dirvish--display-buffer . ,args))))
-        (cond ((eq pane 'preview) (setf (dv-preview-window dv) win))
-              (t (set-window-dedicated-p win t) (push win util-windows)))
+        (pcase pane
+          ('preview (setf (dv-preview-window dv) win))
+          ('header (when (and gui? (> hh lh)) (fit-window-to-buffer win 2 1)))
+          ('footer (when (and gui? (> mh lh)) (fit-window-to-buffer win 2 1))))
         (set-window-buffer win buf)))
     (dirvish--create-parent-windows dv)
-    (when (and (display-graphic-p) (> emacs-major-version 28))
-      (let ((window-safe-min-height 0) (window-resize-pixelwise t))
-        (dolist (win util-windows) (fit-window-to-buffer win 2 1))))
     (unless (dirvish-prop :cached)
       (dirvish--dir-data-async default-directory (current-buffer))
       (dirvish-prop :cached t))
