@@ -31,10 +31,9 @@
 ;; - `audio':       preview audio files with metadata, requires `mediainfo'
 ;; - `epub':        preview epub documents, requires `epub-thumbnail'
 ;; - `font':        preview font files, requires `magick'
-;; - `pdf':         preview pdf documents via `pdf-tools'
+;; - `pdf':         preview pdf documents with thumbnail image, require `pdftoppm'
+;; - `pdf-tools':   preview pdf documents via `pdf-tools'
 ;; - `archive':     preview archive files, requires `tar' and `unzip'
-;; - `dired':       preview directories using `dired' (asynchronously)
-;; - `pdf-preface': preview pdf documents with thumbnail image, require `pdftoppm'
 ;; - `image-dired'  NOT implemented yet | TODO
 
 ;;; Code:
@@ -711,7 +710,7 @@ Require: `epub-thumbnailer' (executable)"
           `(img . ,(create-image cache nil nil :max-width width :max-height height))
         `(cache . (,dirvish-epub-thumbnailer-program ,file ,cache ,(number-to-string width)))))))
 
-(dirvish-define-preview pdf (file ext)
+(dirvish-define-preview pdf-tools (file ext)
   "Preview pdf files.
 Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
@@ -721,8 +720,8 @@ Require: `pdf-tools' (Emacs package)"
         (dirvish--find-file-temporarily file)
       '(info . "`epdfinfo' program required to preview pdfs; run `M-x pdf-tools-install'"))))
 
-(dirvish-define-preview pdf-preface (file ext preview-window)
-  "Display the preface image as preview for pdf files."
+(dirvish-define-preview pdf (file ext preview-window)
+  "Display thumbnail for pdf files."
   :require (dirvish-pdftoppm-program)
   (when (equal ext "pdf")
     (let* ((width (dirvish-media--img-size preview-window))
