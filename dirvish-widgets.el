@@ -493,7 +493,7 @@ GROUP-TITLES is a list of group titles."
 
 (dirvish-define-mode-line project
   "Return a string showing current project."
-  (let ((project (dirvish--get-project-root))
+  (let ((project (dirvish--vc-root-dir))
         (face (if (dirvish--selected-p) 'dired-header 'dirvish-inactive)))
     (if project
         (setq project (file-name-base (directory-file-name project)))

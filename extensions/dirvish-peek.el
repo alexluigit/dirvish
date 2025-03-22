@@ -105,9 +105,7 @@ one of categories in `dirvish-peek-categories'."
              (setq cand (format "FILE_REMOTE_EXCEPTION:::%s" fname))
            (setq cand fname))))
       ('project-file
-       (setq cand (expand-file-name
-                   cand (or (dirvish--get-project-root)
-                            (car (minibuffer-history-value))))))
+       (setq cand (expand-file-name cand (dirvish--vc-root-dir))))
       ('library
        (condition-case err
            (setq cand (file-truename (find-library-name cand)))

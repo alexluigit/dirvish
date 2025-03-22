@@ -23,8 +23,6 @@
 
 (require 'dired)
 (require 'cl-lib)
-(eval-when-compile (require 'project))
-(declare-function ansi-color-apply-on-region "ansi-color")
 
 ;;;; User Options
 
@@ -379,11 +377,9 @@ ALIST is window arguments passed to `window--display-buffer'."
                  ((symbol-function 'recentf-track-closed-file) #'ignore))
          (let (kill-buffer-query-functions) (kill-buffer buffer)))))
 
-(defun dirvish--get-project-root (&optional directory)
-  "Get project root path of DIRECTORY."
-  (when-let* ((pj (project-current nil directory))
-              (pj-root (project-root pj)))
-    (expand-file-name pj-root)))
+(defun dirvish--vc-root-dir ()
+  "Get expanded `vc-root-dir'."
+  (when-let* ((root (vc-root-dir))) (expand-file-name root)))
 
 (defun dirvish--get-parent-path (path)
   "Get parent directory of PATH."
@@ -721,6 +717,7 @@ A dirvish preview dispatcher is a function consumed by
 
 (defun dirvish-apply-ansicolor-h (_win pos)
   "Update dirvish ansicolor in preview window from POS."
+  (declare-function ansi-color-apply-on-region "ansi-color")
   (let (buffer-read-only)
     (ansi-color-apply-on-region
      (goto-char pos) (progn (forward-line (frame-height)) (point)))))
@@ -1296,7 +1293,7 @@ Dirvish sets `revert-buffer-function' to this function."
                     (dirvish-save-dedication
                      (switch-to-buffer (dired-noselect dir)))
                     (dirvish--build-layout dv)))))
-      (cond ; created new tab / frame in a reused session, kill the one
+      (cond ; created new tab / frame in a reused session, clear the old one
        ((not (equal old-frame frame))
         (killall (append (list buf) (mapcar #'cdr (dv-roots dv))))
         (build-dv (dirvish--new :curr-layout layout) frame dir))
