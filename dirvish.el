@@ -1380,6 +1380,7 @@ Dirvish sets `revert-buffer-function' to this function."
           ('preview (setf (dv-preview-window dv) win))
           ('header (when (and gui? (> hh lh)) (fit-window-to-buffer win 2 1)))
           ('footer (when (and gui? (> mh lh)) (fit-window-to-buffer win 2 1))))
+        (unless (eq pane 'preview) (set-window-dedicated-p win t))
         (set-window-buffer win buf)))
     (dirvish--create-parent-windows dv)
     (unless (dirvish-prop :cached)
