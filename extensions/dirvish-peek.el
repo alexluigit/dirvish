@@ -96,8 +96,7 @@ one of categories in `dirvish-peek-categories'."
   (when-let* ((category (dirvish-prop :peek-category))
               (cand-fetcher (dirvish-prop :peek-fetcher))
               (cand (funcall cand-fetcher))
-              ((not (string= cand (dirvish-prop :peek-last)))))
-    (dirvish-prop :peek-last cand)
+              (dv (dirvish-curr)))
     (pcase category
       ('file
        (let ((fname (expand-file-name cand)))
@@ -112,16 +111,14 @@ one of categories in `dirvish-peek-categories'."
          (error (setq cand (format "LIB_EXCEPTION:::%s:::%s" cand
                                    (error-message-string err)))))))
     (dirvish-prop :index cand)
-    (unless (file-remote-p cand)
-      (dirvish-debounce nil
-        (dirvish--preview-update (dirvish-curr) cand)))))
+    (dirvish-run-with-delay cand
+      (lambda (action) (dirvish--preview-update dv action)))))
 
 (defun dirvish-peek-exit-h ()
   "Hook for `minibuffer-exit-hook' to destroy peek session."
   (when-let* ((dv (dirvish--get-session 'type 'peek)))
     (dirvish--clear-session dv)
-    (remhash (dv-id dv) dirvish--sessions))
-  (dirvish-prop :peek-last nil))
+    (remhash (dv-id dv) dirvish--sessions)))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode

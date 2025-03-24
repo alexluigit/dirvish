@@ -269,7 +269,7 @@ EXT is a suffix such as \".jpg\" that is attached to FILE's md5 hash."
   (when-let* ((dv (dirvish-curr))
               (path (dirvish-prop :index)))
     (and (equal path (process-get proc 'path))
-         (dirvish-debounce nil (dirvish--preview-update dv path)))))
+         (dirvish--preview-update dv path))))
 
 (defun dirvish-media--group-heading (group-titles)
   "Format media group heading in Dirvish preview buffer.

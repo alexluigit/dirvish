@@ -149,11 +149,10 @@ filename until the project root when opening a side session."
     (setq r-win (dirvish--create-root-window dv))
     (with-selected-window r-win
       (dirvish--find-entry 'find-alternate-file path)
-      (unwind-protect (cond ((not bname) nil)
-                            (dirvish-side-auto-expand
-                             (dirvish-subtree-expand-to bname))
-                            (t (dired-goto-file bname)))
-        (dirvish--redisplay)))))
+      (cond ((not bname) nil)
+            (dirvish-side-auto-expand
+             (dirvish-subtree-expand-to bname))
+            (t (dired-goto-file bname))))))
 
 ;;;###autoload
 (define-minor-mode dirvish-side-follow-mode

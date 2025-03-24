@@ -131,8 +131,8 @@ predicate for that infix."
          ["Switch layouts:"
           :if (lambda () (dv-curr-layout (dirvish-curr))) ,@layouts]
          ["Actions:"
-          ("M-t" "Toggle fullscreen" dirvish-layout-toggle)
-          ("RET" "Apply current settings to future sessions"
+          ("f" "Toggle fullscreen" dirvish-layout-toggle)
+          ("a" "Apply current settings to future sessions"
            (lambda () (interactive)
              (let* ((dv (dirvish-curr)) (tp (dv-type dv)) (dft (eq tp 'default))
                     (attr-sym (or (and dft 'dirvish-attributes)

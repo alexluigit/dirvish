@@ -502,7 +502,7 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
    ("y"   . dirvish-yank-menu)
    ("N"   . dirvish-narrow)
    ("^"   . dirvish-history-last)
-   ("s"   . dirvish-setup-menu)   ; `st' toggles mtime, `ss' toggles file size, etc.
+   ("s"   . dirvish-setup-menu)   ; `sf' toggles fullframe, `st' toggles mtime, etc.
    ("h"   . dirvish-history-jump) ; remapped `describe-mode'
    ("r"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
    ("v"   . dirvish-vc-menu)      ; remapped `dired-view-file'

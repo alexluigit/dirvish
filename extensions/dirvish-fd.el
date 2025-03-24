@@ -66,10 +66,6 @@ The function takes the input string as its sole argument and
 should return a list of regular expressions."
   :group 'dirvish :type 'function)
 
-(defcustom dirvish-fd-debounce 0.2
-  "Like `dirvish-redisplay-debounce', but used for fd input."
-  :group 'dirvish :type 'float)
-
 (defcustom dirvish-fd-default-dir "/"
   "Default directory for `dirvish-fd-jump'."
   :group 'dirvish :type 'directory)
@@ -78,7 +74,6 @@ should return a list of regular expressions."
 (defconst dirvish-fd-header
   (dirvish--mode-line-composer '(fd-switches) '(fd-timestamp fd-pwd " ") t))
 (defvar dirvish-fd-input-history nil "History list of fd input in the minibuffer.")
-(defvar dirvish-fd-debounce-timer nil)
 (defvar-local dirvish-fd--output "")
 (defvar-local dirvish-fd--input "" "Last used fd user input.")
 
@@ -299,7 +294,8 @@ value 16, let the user choose the root directory of their search."
 
 (defun dirvish-fd--read-input ()
   "Setup INPUT reader for fd."
-  (minibuffer-with-setup-hook #'dirvish-fd-minibuffer-setup-h
+  (minibuffer-with-setup-hook
+      (lambda () (add-hook 'post-command-hook #'dirvish-fd-minibuffer-update-h nil t))
     (condition-case nil
         (read-string "🔍: " nil dirvish-fd-input-history)
       (quit (prog1 'cancelled (message "Fd search cancelled"))))))
@@ -355,39 +351,30 @@ value 16, let the user choose the root directory of their search."
         (dirvish--kill-buffer (get-buffer bufname))
         (rename-buffer bufname)))))
 
-(defun dirvish-fd--narrow (&optional input glob)
-  "Filter the subdir with regexs composed from INPUT.
-When GLOB, convert the regexs using `dired-glob-regexp'."
-  (let ((regexs (cond ((eq (length input) 0) nil)
-                      (glob (mapcar #'dired-glob-regexp
-                                    (funcall dirvish-fd-regex-builder input)))
-                      (t (funcall dirvish-fd-regex-builder input))))
-        buffer-read-only)
-    (goto-char (cdar dired-subdir-alist))
-    (forward-line (dirvish-fd--header-offset))
-    (dirvish-prop :content-begin (point))
-    (delete-region (point) (dired-subdir-max))
-    (save-excursion
-      (if (not regexs)
-          (cl-loop for (_ . line) in dirvish-fd--output do (insert line))
-        (cl-loop for (file . line) in dirvish-fd--output
-                 unless (cl-loop for regex in regexs
-                                 thereis (not (string-match regex file)))
-                 do (insert line))))
-    (dirvish--redisplay)))
-
 (defun dirvish-fd-minibuffer-update-h ()
   "Minibuffer update function for `dirvish-fd'."
-  (dirvish-debounce fd
-    (let* ((buf (window-buffer (minibuffer-selected-window)))
-           (input (minibuffer-contents-no-properties)))
-      (with-current-buffer buf
-        (setq dirvish-fd--input input)
-        (dirvish-fd--narrow input (car (dirvish-prop :fd-arglist)))))))
-
-(defun dirvish-fd-minibuffer-setup-h ()
-  "Minibuffer setup function for `dirvish-fd'."
-  (add-hook 'post-command-hook #'dirvish-fd-minibuffer-update-h nil t))
+  (dirvish-run-with-delay (minibuffer-contents-no-properties)
+    (lambda (action)
+      (with-current-buffer (window-buffer (minibuffer-selected-window))
+        (setq dirvish-fd--input action)
+        (let ((regexs (cond ((eq (length action) 0) nil)
+                            ((car (dirvish-prop :fd-arglist))
+                             (mapcar #'dired-glob-regexp
+                                     (funcall dirvish-fd-regex-builder action)))
+                            (t (funcall dirvish-fd-regex-builder action))))
+              buffer-read-only)
+          (goto-char (cdar dired-subdir-alist))
+          (forward-line (dirvish-fd--header-offset))
+          (dirvish-prop :content-begin (point))
+          (delete-region (point) (dired-subdir-max))
+          (save-excursion
+            (if (not regexs)
+                (cl-loop for (_ . line) in dirvish-fd--output do (insert line))
+              (cl-loop for (file . line) in dirvish-fd--output
+                       unless (cl-loop for regex in regexs
+                                       thereis (not (string-match regex file)))
+                       do (insert line))))
+          (force-mode-line-update t))))))
 
 (defun dirvish-fd-kill ()
   "Kill the `fd' process running in the current buffer."

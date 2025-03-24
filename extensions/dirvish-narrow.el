@@ -26,11 +26,6 @@ The function takes the input string as its sole argument and
 should return a list of regular expressions."
   :group 'dirvish :type 'function)
 
-(defcustom dirvish-narrow-debounce 0.2
-  "Like `dirvish-redisplay-debounce', but used for narrowing."
-  :group 'dirvish :type 'float)
-
-(defvar dirvish-narrow-debounce-timer nil)
 (defvar-local dirvish-narrow--subdir-alist '())
 
 (defun dirvish-narrow--build-indices ()
@@ -45,15 +40,14 @@ should return a list of regular expressions."
 
 (defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
-  (dirvish-debounce narrow
-    (let* ((input (minibuffer-contents-no-properties))
-           (regex-list (funcall dirvish-narrow-regex-builder input)))
+  (dirvish-run-with-delay (minibuffer-contents-no-properties)
+    (lambda (action)
       (with-current-buffer (window-buffer (minibuffer-selected-window))
         (save-excursion
-          (cl-loop for idx from 0
+          (cl-loop with regs = (funcall dirvish-narrow-regex-builder action)
+                   for idx from 0
                    for (dir . pos) in dired-subdir-alist
-                   do (dirvish-narrow--filter-subdir dir pos regex-list idx)))
-        (dirvish--redisplay)))))
+                   do (dirvish-narrow--filter-subdir dir pos regs idx)))))))
 
 (defun dirvish-narrow--revert ()
   "Revert Dirvish buffer with empty narrowing filter."
@@ -93,13 +87,6 @@ IDX the index of DIR in `dired-subdir-alist'."
                                thereis (not (string-match regex file)))
                do (insert line)))))
 
-(defun dirvish-narrow-minibuffer-setup-h ()
-  "Minibuffer setup function for `dirvish-narrow'."
-  (with-current-buffer (window-buffer (minibuffer-selected-window))
-    (goto-char (dirvish-prop :content-begin))
-    (dirvish--redisplay))
-  (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
-
 ;;;###autoload
 (defun dirvish-narrow ()
   "Narrow a Dirvish buffer to the files matching a regex."
@@ -107,7 +94,8 @@ IDX the index of DIR in `dired-subdir-alist'."
   (dirvish-narrow--build-indices)
   (when (minibufferp) (user-error "`%s' called inside the minibuffer" this-command))
   (let ((old-f (dirvish-prop :index)) final-input)
-    (minibuffer-with-setup-hook #'dirvish-narrow-minibuffer-setup-h
+    (minibuffer-with-setup-hook
+        (lambda () (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
       (unwind-protect
           (setq final-input (read-from-minibuffer "Focus on files: "))
         (when (= (length final-input) 0) (dirvish-narrow--revert))

@@ -230,11 +230,22 @@ The valid values are:
                                  (const :tag "only keep index after open a file" open)
                                  (const :tag "never keep any index buffer" nil)))
 
-(defcustom dirvish-redisplay-debounce 0.02
-  "Input debounce for dirvish UI redisplay.
-The UI of dirvish is refreshed only when there has not been new
-input for `dirvish-redisplay-debounce' seconds."
-  :group 'dirvish :type 'float)
+(defcustom dirvish-input-throttle 0.25
+  "Input THROTTLE for commands run repeatedly within a short period of time.
+The preview window and any associated asynchronous processes for the
+file under the cursor are updated and started only every THROTTLE
+seconds.  This also applies root window's refreshing for synchronous
+filtering commands like ``dirvish-narrow'`."
+  :group 'dirvish :type '(float :tag "Delay in seconds"))
+
+(define-obsolete-variable-alias 'dirvish-redisplay-debounce 'dirvish-input-debounce "Mar 25, 2025")
+(defcustom dirvish-input-debounce 0.02
+  "Input DEBOUNCE for commands run repeatedly within a short period of time.
+The preview window and any associated asynchronous processes for the
+file under the cursor are updated and started only when there has not
+been new input for DEBOUNCE seconds.  This also applies to root window's
+refreshing for synchronous filtering commands like `dirvish-narrow'."
+  :group 'dirvish :type '(float :tag "Delay in seconds"))
 
 (cl-defgeneric dirvish-clean-cache () "Clean cache for selected files." nil)
 (cl-defgeneric dirvish-build-cache () "Build cache for current directory." nil)
@@ -302,7 +313,7 @@ opening and customized handling of specific file types."
     (dirvish-collapse collapse)
     (dirvish-subtree  subtree-state)
     (dirvish-yank     yank)))
-(defvar dirvish-redisplay-debounce-timer nil)
+(defvar dirvish--delay-timer `(,(timer-create) ,(float-time) nil))
 (defvar dirvish--history nil)
 (defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish--selected-window nil)
@@ -324,18 +335,25 @@ Set the PROP with BODY if given."
                     (push (cons ,prop val) dirvish--props)))
         `val)))
 
-(defmacro dirvish-debounce (label &rest body)
-  "Debouncing the execution of BODY under LABEL.
-The BODY runs only when there has not been new input for DEBOUNCE
-seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
+(defun dirvish-run-with-delay (action fun &optional debounce throttle record)
+  "DV ACTION FUN DEBOUNCE THROTTLE RECORD."
   (declare (indent defun))
-  (setq label (or label "redisplay"))
-  (let* ((debounce (intern (format "dirvish-%s-debounce" label)))
-         (timer (intern (format "dirvish-%s-debounce-timer" label)))
-         (fn `(lambda () (ignore-errors ,@body))))
-    `(progn
-       (and (timerp ,timer) (cancel-timer ,timer))
-       (setq ,timer (run-with-idle-timer ,debounce nil ,fn)))))
+  (setq record (or record dirvish--delay-timer)
+        debounce (or debounce dirvish-input-debounce)
+        throttle (or throttle dirvish-input-throttle))
+  (pcase action
+    ((pred stringp)
+     (unless (equal action (nth 2 record))
+       (cancel-timer (car record))
+       (timer-set-function
+        (car record)
+        (lambda () (setf (nth 1 record) (float-time)) (funcall fun action)))
+       (timer-set-time
+        (car record)
+        (timer-relative-time
+         nil (max debounce (- (+ (nth 1 record) throttle) (float-time)))))
+       (setf (nth 2 record) action)
+       (timer-activate (car record))))))
 
 (defmacro dirvish-save-dedication (&rest body)
   "Run BODY after undedicating window, restore dedication afterwards."
@@ -1099,16 +1117,7 @@ Optionally, use CURSOR as the enabled cursor type."
         ((eobp) (forward-line -1))
         ((cdr dired-subdir-alist))
         ((and (bobp) dirvish-use-header-line)
-         (goto-char (dirvish-prop :content-begin))))
-  (when-let* ((dv (dirvish-curr)) (localname t)
-              (filename (save-excursion (dired-get-filename nil t))))
-    (dirvish-debounce nil
-      (when (dv-curr-layout dv)
-        (force-mode-line-update t)
-        ;; don't grab focus when peeking or preview window is selected
-        (when (and (dirvish--selected-p dv)
-                   (not (dirvish--get-session 'type 'peek)))
-          (dirvish--preview-update dv (file-local-name filename)))))))
+         (goto-char (dirvish-prop :content-begin)))))
 
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's roots, clear session when roots is empty."
@@ -1243,7 +1252,7 @@ INHIBIT-SETUP is non-nil."
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
       (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
-      (ignore dir) (dirvish--redisplay))))
+      (ignore dir))))
 
 ;;;; Layout Build & Teardown
 
@@ -1273,8 +1282,16 @@ Dirvish sets `revert-buffer-function' to this function."
                  (with-selected-window w (derived-mode-p 'dired-mode)))
         (dirvish--render-attrs w)))
     (dirvish--render-attrs r-win)
-    (when-let* ((filename (save-excursion (dired-get-filename nil t))))
-      (dirvish-prop :index (file-local-name filename)))))
+    (when-let* ((idx (save-excursion (dired-get-filename nil t))))
+      (dirvish-prop :index (setq idx (file-local-name idx)))
+      (when (dv-curr-layout dv)
+        (dirvish-run-with-delay idx
+          (lambda (action)
+            ;; don't grab focus when peeking or preview window is selected
+            (force-mode-line-update t)
+            (when (and (dirvish--selected-p dv)
+                       (not (dirvish--get-session 'type 'peek)))
+              (dirvish--preview-update dv action))))))))
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
