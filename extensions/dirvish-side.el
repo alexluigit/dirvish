@@ -171,7 +171,7 @@ after switching to a new project."
 - If the current window is a side session window, hide it.
 - If a side session is visible, select it.
 - If a side session exists but is not visible, show it.
-- If there is no side session exists,create a new one with PATH.
+- If there is no side session exists, create a new one with PATH.
 
 If called with \\[universal-arguments], prompt for PATH,
 otherwise it defaults to `project-current'."

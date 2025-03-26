@@ -494,26 +494,24 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
         '(vc-state nerd-icons collapse file-size))
   :bind ; Bind `dirvish-fd|dirvish-side|dirvish-dwim' as you see fit
   (("C-c f" . dirvish)
-   :map dirvish-mode-map          ; Dirvish inherits `dired-mode-map'
-   ;; (";" . dired-up-directory)  ; So you can adjust dired bindings here
-   ("?"   . dirvish-dispatch)     ; contains most of sub-menus in dirvish extensions
-   ("f"   . dirvish-history-go-forward)
-   ("b"   . dirvish-history-go-backward)
+   :map dirvish-mode-map               ; Dirvish inherits `dired-mode-map'
+   (";"   . dired-up-directory)        ; So you can adjust `dired' bindings here
+   ("?"   . dirvish-dispatch)          ; [?] a helpful cheatsheet
+   ("a"   . dirvish-setup-menu)        ; [a]ttributes settings: press `a' + `t' toggles mtime, etc.
+   ("f"   . dirvish-file-info-menu)    ; [f]ile info
+   ("o"   . dirvish-quick-access)      ; [o]pen `dirvish-quick-access-entries'
+   ("s"   . dirvish-quicksort)         ; [s]ort flie list
+   ("r"   . dirvish-history-jump)      ; [r]ecent visited
+   ("l"   . dirvish-ls-switches-menu)  ; [l]s command flags
+   ("*"   . dirvish-mark-menu)
    ("y"   . dirvish-yank-menu)
    ("N"   . dirvish-narrow)
    ("^"   . dirvish-history-last)
-   ("s"   . dirvish-setup-menu)   ; `sf' toggles fullframe, `st' toggles mtime, etc.
-   ("h"   . dirvish-history-jump) ; remapped `describe-mode'
-   ("r"   . dirvish-quicksort)    ; remapped `dired-sort-toggle-or-edit'
-   ("v"   . dirvish-vc-menu)      ; remapped `dired-view-file'
    ("TAB" . dirvish-subtree-toggle)
-   ("M-a" . dirvish-quick-access)
-   ("M-f" . dirvish-file-info-menu)
-   ("M-l" . dirvish-ls-switches-menu)
-   ("M-m" . dirvish-mark-menu)
+   ("M-f" . dirvish-history-go-forward)
+   ("M-b" . dirvish-history-go-backward)
    ("M-t" . dirvish-layout-toggle)
-   ("M-e" . dirvish-emerge-menu)
-   ("M-j" . dirvish-fd-jump)))
+   ("M-e" . dirvish-emerge-menu)))
 #+end_src
 
 ** Mouse settings

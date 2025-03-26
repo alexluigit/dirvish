@@ -117,16 +117,24 @@ a directory, add ~dirvish-emerge-mode~ to ~dirvish-setup-hook~.
 This extension introduces =dirvish-peek-mode=, a minor mode that enables file
 previews within the minibuffer as you narrow down candidates.  By leveraging
 =dirvish.el= for its core functionality, it delivers a seamless and consistent
-preview experience.
+preview experience.  It currently supports =vertico=, =ivy= and =icomplete=.
 
 https://user-images.githubusercontent.com/16313743/158052790-22e6cf49-e18e-435c-908e-f5d91ba316a6.mp4
 
 *Figure 1.* A demo of ~find-library~ and ~find-file~ commands after ~dirvish-peek-mode~ enabled.
 
-The ~dirvish-peek-display-alist~ option allows you to control the window placement
-of the peek window.
+=dirvish-peek-mode= enables previews by default. You can disable them by adjusting
+the =dirvish-peek-key= variable (adopted from ~consult-preview-key~).  Furthermore
+it is possible to specify keybindings which trigger the preview manually. The
+default setting of =dirvish-peek-key= is =any= which means that =dirvish-peek-mode=
+triggers the preview /immediately/ on any key press when the selected candidate
+changes.  The following settings are possible:
 
-~dirvish-peek-mode~ currently supports =vertico=, =selectrum=, =ivy= and =icomplete[-vertical]=.
+- Automatic and immediate ='any=
+- Automatic and delayed =(list :debounce 0.5 'any)=
+- Manual and immediate ="M-."=
+- Manual and delayed =(list :debounce 0.5 "M-.")=
+- Disabled =nil=
 
 * Version-control (*git*) integration (dirvish-vc.el)
 

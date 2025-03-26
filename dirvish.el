@@ -6,7 +6,7 @@
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Package-Requires: ((emacs "28.1"))
+;; Package-Requires: ((emacs "28.1") (compat "30"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -22,7 +22,7 @@
 ;;; Code:
 
 (require 'dired)
-(require 'cl-lib)
+(require 'compat)
 
 ;;;; User Options
 
@@ -336,7 +336,10 @@ Set the PROP with BODY if given."
         `val)))
 
 (defun dirvish-run-with-delay (action fun &optional debounce throttle record)
-  "DV ACTION FUN DEBOUNCE THROTTLE RECORD."
+  "Run function FUN accroding to ACTION with delay.
+DEBOUNCE defaults to `dirvish-input-debounce'.
+THROTTLE defaults to `dirvish-input-throttle'.
+RECORD defaults to `dirvish--delay-timer'."
   (declare (indent defun))
   (setq record (or record dirvish--delay-timer)
         debounce (or debounce dirvish-input-debounce)

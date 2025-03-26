@@ -41,6 +41,18 @@ Notice that the `dirvish-preview-dispatchers' option is respected across
 all categories."
   :group 'dirvish :type '(repeat :tag "each item can be 'file 'project-file 'library" symbol))
 
+;; Credit: copied from `consult-preview-key'
+(defcustom dirvish-peek-key 'any
+  "Preview trigger keys, can be nil, `any', a single key or a list of keys.
+Debouncing can be specified via the `:debounce' attribute.  The
+individual keys must be strings accepted by `key-valid-p'."
+  :group 'dirvish
+  :type '(choice (const :tag "Any key" any)
+                 (list :tag "Debounced" (const :debounce) (float :tag "Seconds" 0.1) (const any))
+                 (const :tag "No preview" nil)
+                 (key :tag "Key")
+                 (repeat :tag "List of keys" key)))
+
 (defun dirvish-peek--prepare-cand-fetcher ()
   "Set candidate fetcher according to current completion framework."
   (dirvish-prop :peek-fetcher
@@ -49,6 +61,25 @@ all categories."
           ((bound-and-true-p ivy-mode) (lambda () (ivy-state-current ivy-last)))
           ((bound-and-true-p icomplete-mode)
            (lambda () (car completion-all-sorted-completions))))))
+
+;; Credit: copied from `consult--preview-key-normalize'
+(defun dirvish-peek--normalize-keys (peek-key)
+  "Normalize PEEK-KEY, return alist of keys and debounce times."
+  (let ((keys) (debounce 0))
+    (setq peek-key (ensure-list peek-key))
+    (while peek-key
+      (if (eq (car peek-key) :debounce)
+          (setq debounce (cadr peek-key)
+                peek-key (cddr peek-key))
+        (let ((key (car peek-key)))
+          (cond
+           ((eq key 'any))
+           ((not (key-valid-p key))
+            (error "%S is not a valid key definition; see `key-valid-p'" key))
+           (t (setq key (key-parse key))))
+          (push (cons key debounce) keys))
+        (pop peek-key)))
+    keys))
 
 (dirvish-define-preview peek-exception (file)
   "Handle exceptions when peek files."
@@ -74,7 +105,14 @@ one of categories in `dirvish-peek-categories'."
          (dv (dirvish--get-session 'curr-layout 'any))
          (win (and dv (dv-preview-window dv))) new-dv)
     (dirvish-prop :peek-category p-category)
-    (when p-category
+    (when (and p-category dirvish-peek-key)
+      (let ((old-map (current-local-map))
+            (map (make-sparse-keymap))
+            (keys (dirvish-peek--normalize-keys dirvish-peek-key)))
+        (pcase-dolist (`(,k . ,_) keys)
+          (unless (or (eq k 'any) (lookup-key old-map k))
+            (define-key map k #'ignore)))
+        (use-local-map (make-composed-keymap map old-map)))
       (dirvish-peek--prepare-cand-fetcher)
       (add-hook 'post-command-hook #'dirvish-peek-update-h 90 t)
       (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h nil t)
@@ -89,11 +127,15 @@ one of categories in `dirvish-peek-categories'."
                do (dirvish-prop k (and (functionp v) (funcall v))))
       (dirvish-prop :dv (dv-id new-dv))
       (dirvish-prop :preview-dps
-        (append '(dirvish-peek-exception-dp) (dv-preview-dispatchers new-dv))))))
+        (append '(dirvish-peek-exception-dp)
+                (dv-preview-dispatchers new-dv))))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
   (when-let* ((category (dirvish-prop :peek-category))
+              (key (this-single-command-keys))
+              (peek-keys (dirvish-peek--normalize-keys dirvish-peek-key))
+              (peek-key (or (assq 'any peek-keys) (assoc key peek-keys)))
               (cand-fetcher (dirvish-prop :peek-fetcher))
               (cand (funcall cand-fetcher))
               (dv (dirvish-curr)))
@@ -112,7 +154,7 @@ one of categories in `dirvish-peek-categories'."
                                    (error-message-string err)))))))
     (dirvish-prop :index cand)
     (dirvish-run-with-delay cand
-      (lambda (action) (dirvish--preview-update dv action)))))
+      (lambda (action) (dirvish--preview-update dv action)) (cdr peek-key))))
 
 (defun dirvish-peek-exit-h ()
   "Hook for `minibuffer-exit-hook' to destroy peek session."
