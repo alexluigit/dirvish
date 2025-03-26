@@ -1108,7 +1108,9 @@ Optionally, use CURSOR as the enabled cursor type."
 (defun dirvish-pre-redisplay-h (window)
   "Record root WINDOW and redisplay sessions in selected frame."
   (setq dirvish--selected-window (frame-selected-window))
-  (when-let* ((dv (dirvish-curr))) (setf (dv-root-window dv) window))
+  (let* ((dv (dirvish-curr)) (lyt (dv-curr-layout dv)) (sf (dv-size-fixed dv)))
+    (setf (dv-root-window dv) window)
+    (when (and (not lyt) sf) (setq window-size-fixed sf)))
   (dirvish--redisplay))
 
 (defun dirvish-post-command-h ()
@@ -1377,14 +1379,11 @@ Dirvish sets `revert-buffer-function' to this function."
          (lh (line-pixel-height)) (gui? (display-graphic-p))
          (mh (dirvish--mode-line-height t)) (hh (dirvish--mode-line-height t t)))
     (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
-    ;; only record window config before creating fullframe layout
+    ;; only refresh window config before creating fullframe layout
     (setf (dv-winconf dv) (when layout (or conf (current-window-configuration))))
-    ;; `dired' and `dired-jump' delete the old root window, so reset it
-    (setf (dv-root-window dv) (selected-window))
     (when layout (dirvish--init-special-buffers dv))
     (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
-    (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
     (when (or (dv-curr-layout dv) (dv-dedicated dv))
       (set-window-dedicated-p nil t))
     ;; ensure a positive fringe on both sides for `dirvish-subtree' (#311)

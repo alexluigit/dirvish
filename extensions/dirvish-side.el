@@ -70,6 +70,7 @@ filename until the project root when opening a side session."
   "Create root window of DV according to `dirvish-side-display-alist'."
   (let* ((buf (with-current-buffer (get-buffer-create " *dirvish-temp*")
                 ;; set the :dv prop for `dirvish-curr'
+                (setq window-size-fixed 'width)
                 (dirvish-prop :dv (dv-id dv))
                 (current-buffer)))
          (win (display-buffer-in-side-window
@@ -136,18 +137,16 @@ filename until the project root when opening a side session."
 
 (defun dirvish-side--new (path)
   "Open a side session in PATH."
-  (let* ((bname buffer-file-name)
-         (dv (or (dirvish--get-session 'type 'side)
-                 (dirvish--new
-                  :type 'side
-                  :size-fixed 'width
-                  :dedicated t
-                  :root-conf #'dirvish-side-root-conf
-                  :root-window-fn #'dirvish-side-root-window-fn
-                  :open-file #'dirvish-side-open-file)))
-         (r-win (dv-root-window dv)))
-    (setq r-win (dirvish--create-root-window dv))
-    (with-selected-window r-win
+  (let ((bname buffer-file-name)
+        (dv (or (dirvish--get-session 'type 'side)
+                (dirvish--new
+                 :type 'side
+                 :size-fixed 'width
+                 :dedicated t
+                 :root-conf #'dirvish-side-root-conf
+                 :root-window-fn #'dirvish-side-root-window-fn
+                 :open-file #'dirvish-side-open-file))))
+    (with-selected-window (dirvish--create-root-window dv)
       (dirvish--find-entry 'find-alternate-file path)
       (cond ((not bname) nil)
             (dirvish-side-auto-expand
