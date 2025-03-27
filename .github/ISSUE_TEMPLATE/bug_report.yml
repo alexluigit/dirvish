@@ -4,6 +4,13 @@ title: "[Bug] "
 labels: "bug"
 body:
 - type: checkboxes
+  id: updated-dirvish
+  attributes:
+    label: Please update dirvish first -- errors are often fixed by the time they're reported.
+    options:
+      - label: I have updated dirvish to the latest commit and tested that the issue still exists
+        required: true
+- type: checkboxes
   id: requirements
   attributes:
     label: Thank you for the bug report
