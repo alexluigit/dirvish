@@ -271,9 +271,9 @@ enables you to configure different pane ratios as needed. For instance, you
 might use a 1:3 ratio for image previews or a 1:3:5 ratio for more detailed file
 previews.
 
-When a layout is active, you can use ~M-x other-window~ to switch focus between
-the main file listing window and the preview window. Note that the contents of
-the preview buffers are generally read-only.
+When a layout is active, you can use ~C-x o~ (~other-window~) to switch focus
+between the main file listing window and the preview window. Note that the
+contents of the preview buffers are generally read-only.
 
 ** Install dependencies for an enhanced preview experience
 
@@ -497,12 +497,13 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
    :map dirvish-mode-map               ; Dirvish inherits `dired-mode-map'
    (";"   . dired-up-directory)        ; So you can adjust `dired' bindings here
    ("?"   . dirvish-dispatch)          ; [?] a helpful cheatsheet
-   ("a"   . dirvish-setup-menu)        ; [a]ttributes settings: press `a' + `t' toggles mtime, etc.
+   ("a"   . dirvish-setup-menu)        ; [a]ttributes settings:`t' toggles mtime, `f' toggles fullframe, etc.
    ("f"   . dirvish-file-info-menu)    ; [f]ile info
    ("o"   . dirvish-quick-access)      ; [o]pen `dirvish-quick-access-entries'
    ("s"   . dirvish-quicksort)         ; [s]ort flie list
    ("r"   . dirvish-history-jump)      ; [r]ecent visited
    ("l"   . dirvish-ls-switches-menu)  ; [l]s command flags
+   ("v"   . dirvish-vc-menu)           ; [v]ersion control commands
    ("*"   . dirvish-mark-menu)
    ("y"   . dirvish-yank-menu)
    ("N"   . dirvish-narrow)
@@ -510,7 +511,6 @@ you don't have to require them explicitly if you installed dirvish from MELPA or
    ("TAB" . dirvish-subtree-toggle)
    ("M-f" . dirvish-history-go-forward)
    ("M-b" . dirvish-history-go-backward)
-   ("M-t" . dirvish-layout-toggle)
    ("M-e" . dirvish-emerge-menu)))
 #+end_src
 

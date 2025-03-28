@@ -258,15 +258,8 @@ Too fast? Let's break it down:
 Feel free to experiment with other switches.  A bonus tip: ~dirvish-quicksort~ and
 ~dirvish-ls-switches-menu~ also works in this buffer.
 
-TODO: add ~dirvish-fd-refine-function~ for sorting
 TODO: fix #207
-TODO: achieve incremental string insertion
 TODO: try implementing #213
-
-If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have an input string that looks like /test
-~Emacs .\(py\|yaml\)$/, by doing this you can skip the =-e= and =-E= steps in the
-above example.  The actual matching styles being applied are determined by your
-orderless config.  Also see ~dirvish-fd-regex-builder~.
 
 This extension also provides the ~dirvish-fd-jump~ command which allows you to go
 to any directory in the file system using results from =fd= command as completions.
@@ -330,13 +323,13 @@ See also: [[https://github.com/alexluigit/dirvish/blob/main/docs/FAQ.org#dired-c
 
 * Live-narrowing of Dirvish buffer (dirvish-narrow.el)
 
-This extension provides live filtering of files in dirvish buffers.  In general,
-after calling ~dirvish-narrow~ you type a filter string into the minibuffer.
-After each change the changes automatically reflect in the buffer. Typing =RET=
-will exit the live filtering mode and leave the dired buffer in the narrowed
-state.  Typing =C-g= will cancel the narrowing and restore the original view.  To
-bring it back to the original view after the narrowing, just call ~revert-buffer~
-(usually bound to =g=).
+This extension provides live filtering of files within Dirvish buffers. Invoke
+~dirvish-narrow~, then type a filter string in the minibuffer, the buffer updates
+automatically as you type. Press =RET= to finalize the narrowed view, or =C-g= to
+cancel and restore the original buffer.  To restore the full view after
+finalizing with =RET=, use ~revert-buffer~ (typically bound to =g=).
+
+https://github.com/alexluigit/binaries/raw/refs/heads/main/dirvish/assets/narrow.mp4
 
 If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have an input string that looks like /test
 ~Emacs .\(py\|yaml\)$/,  meaning:
@@ -346,4 +339,4 @@ If you have [[https://github.com/oantolin/orderless][orderless]] installed, you 
 - exclude results containing /Emacs/
 
 The actual matching styles being applied are determined by your orderless
-config.  Also see ~dirvish-narrow-regex-builder~.
+config.  See ~dirvish-narrow-regex-builder~.
