@@ -245,24 +245,24 @@ This is probably the BEST =fd= frontend, here is a quick demo:
 
 https://user-images.githubusercontent.com/16313743/170814774-98cc598d-6bc5-4fc3-9eea-21c98d6d4772.mp4
 
-Too fast? Let's break it down:
+Let's break it down:
 
 1. M-x ~dirvish-fd~, input /test/ as the search pattern and confirm
-2. Oh, too many results. How about some additional filtering?
-3. M-x ~dirvish-fd-switches-menu~
-4. Press =f= (show file only，no directories)
-5. Press =-e=, input "/py,yaml/", meaning search for these 2 extensions only
-6. Press =-E=, input "/Emacs/", exclude the glob in the results
-7. Press =RET=, refresh the results
+2. M-x ~dirvish-fd-switches-menu~ for additional filtering
+3. Press =f= (show file only，no directories)
+4. Press =-e=, input "/py,yaml/", meaning search for these 2 extensions only
+5. Press =-E=, input "/Emacs/", exclude the glob in the results
+6. Press =RET=, refresh the results
 
-Feel free to experiment with other switches.  A bonus tip: ~dirvish-quicksort~ and
-~dirvish-ls-switches-menu~ also works in this buffer.
-
-TODO: fix #207
-TODO: try implementing #213
+Note that ~dirvish-quicksort~ and ~dirvish-ls-switches-menu~ also works in this
+buffer.  Feel free to experiment with other switches.
 
 This extension also provides the ~dirvish-fd-jump~ command which allows you to go
 to any directory in the file system using results from =fd= command as completions.
+
+TODO: fix #207
+
+TODO: try implementing #213
 
 * Turn Dirvish into a tree browser (dirvish-subtree.el)
 
@@ -329,10 +329,10 @@ automatically as you type. Press =RET= to finalize the narrowed view, or =C-g= t
 cancel and restore the original buffer.  To restore the full view after
 finalizing with =RET=, use ~revert-buffer~ (typically bound to =g=).
 
-https://github.com/alexluigit/binaries/raw/refs/heads/main/dirvish/assets/narrow.mp4
+https://github.com/user-attachments/assets/539e1a74-ddf2-41fa-9dc2-3358108828fc
 
 If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have an input string that looks like /test
-~Emacs .\(py\|yaml\)$/,  meaning:
+~Emacs .\(py\|yaml\)$/, meaning:
 
 - match /test/
 - match /.py/ or /.yaml/ files
