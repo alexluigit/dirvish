@@ -258,31 +258,26 @@ value 16, let the user choose the root directory of their search."
       (dired-jump nil full-file))))
 
 (defun dirvish-fd-proc-filter (proc string)
-  "Filter for `dirvish-fd' processes PROC and output STRING."
+  "Filter for output STRING of `dirvish-fd''s processes PROC."
   (let ((buf (process-buffer proc)))
     (if (not (buffer-name buf)) (delete-process proc)
       (with-current-buffer buf
         (save-excursion
           (save-restriction
             (widen)
-            (let ((beg (point-max)) (data (dirvish-prop :fd-cache))
-                  buffer-read-only lb le fname)
-              (goto-char beg)
-              (insert string)
+            (let ((data (dirvish-prop :fd-cache)) buffer-read-only last file)
+              (goto-char (point-max)) (insert string)
               (goto-char (process-mark proc))
               (or (looking-at "^") (forward-line 1))
+              ;; strip " ./" prefix and collect data on complete lines
               (while-let ((fb (search-forward " ./" nil t))
-                          ((search-forward "\n" nil t))) ; skip incomplete lines
+                          (le (line-end-position)) ((eq (char-after le) 10)))
                 (delete-region fb (- fb 2))
-                (forward-line -1)
-                (setq fname (buffer-substring (- fb 2) (line-end-position)))
+                (setq file (buffer-substring (- fb 2) (- le 2)) last le)
                 (beginning-of-line) (insert "  ")
-                (setq lb (line-beginning-position) le (line-end-position))
-                (puthash fname (buffer-substring lb (1+ le)) data)
+                (puthash file (buffer-substring (- (point) 2) (1+ le)) data)
                 (forward-line 1))
-              (goto-char (point-max))
-              (when (search-backward "\n" (process-mark proc) t)
-                (move-marker (process-mark proc) (1+ (point)))))))))))
+              (when last (move-marker (process-mark proc) (1+ last))))))))))
 
 (defsubst dirvish-fd-revert (&rest _)
   "Revert buffer function for fd buffer."

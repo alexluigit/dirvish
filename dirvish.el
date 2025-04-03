@@ -877,9 +877,9 @@ When the attribute does not exist, set it with BODY."
     (let ((f-beg (dired-move-to-filename))
           (f-end (dired-move-to-end-of-filename t))
           (l-beg (line-beginning-position)) (l-end (line-end-position))
-          (f-wid 0) f-str f-name f-attrs f-type hl-face left right)
+          (f-wid 0) f-str f-name f-attrs f-type hl-face left right f-line?)
       (setq hl-face (and (eq (or f-beg l-beg) pos) hl))
-      (when (and f-beg f-end) ; `f-end' is nil in a incomplete line
+      (when (setq f-line? (and f-beg f-end (eq (char-after l-end) 10)))
         (setq f-str (buffer-substring f-beg f-end)
               f-wid (string-width f-str)
               f-name (concat (if remote (dired-current-directory)
@@ -889,7 +889,7 @@ When the attribute does not exist, set it with BODY."
                         (unless remote (ignore-errors (file-attributes f-name))))
               f-type (dirvish-attribute-cache f-name :type
                        (let ((ch (progn (back-to-indentation) (char-after))))
-                         (cond ; ASCII: d -> 100, l -> 108
+                         (cond ; ASCII: d -> 100, l -> 108, LF(\n) -> 10
                           (remote `(,(if (eq ch 100) 'dir 'file) . nil))
                           ((eq ch 100) '(dir . nil))
                           ((eq ch 108) ; use slash for dir check is unreliable
@@ -899,7 +899,7 @@ When the attribute does not exist, set it with BODY."
         (unless (get-text-property f-beg 'mouse-face)
           (dired-insert-set-properties l-beg l-end)))
       (cl-loop
-       for fn in (if (and f-beg f-end) fns '(dirvish-attribute-hl-line-rd))
+       for fn in (if f-line? fns '(dirvish-attribute-hl-line-rd))
        for (k . v) = (funcall fn f-beg f-end f-str f-name
                               f-attrs f-type l-beg l-end hl-face w-width)
        do (pcase k ('ov (overlay-put v 'dirvish-a-ov t))
