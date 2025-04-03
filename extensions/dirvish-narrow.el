@@ -137,7 +137,7 @@ IDX the index of DIR in `dired-subdir-alist'."
     (user-error "Current buffer has unfinished jobs"))
   (dirvish-narrow--build-indices)
   (let ((dv (dirvish-prop :dv))
-        (of (dirvish-prop :index))
+        (restore (dirvish-prop :index))
         (bstr (buffer-string))
         input buffer-read-only)
     (font-lock-mode -1) (buffer-disable-undo)
@@ -150,7 +150,7 @@ IDX the index of DIR in `dired-subdir-alist'."
         (when (= (length input) 0)
           (erase-buffer) (insert bstr)
           (unless (cdr dired-subdir-alist) (dirvish--hide-dired-header)))
-        (dired-goto-file of)
+        (when restore (dired-goto-file restore))
         (font-lock-mode 1) (buffer-enable-undo)))))
 
 (provide 'dirvish-narrow)

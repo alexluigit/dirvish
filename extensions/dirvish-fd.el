@@ -33,6 +33,10 @@
   "The default fd program."
   :type 'string :group 'dirvish)
 
+(defcustom dirvish-fd-setup-hook nil
+  "Functions called after the `fd` process exits successfully."
+  :type 'hook :group 'dirvish)
+
 (defun dirvish-fd--find-gnu-ls (&optional remote)
   "Find ls from gnu coreutils on a local or REMOTE host ."
   (let* ((ls (executable-find "ls" remote))
@@ -297,7 +301,8 @@ value 16, let the user choose the root directory of their search."
       (dirvish-prop :fd-time
         (format " %s %s "
                 (propertize "Took:" 'face 'font-lock-doc-face)
-                (propertize took 'face (if (eq status 0) 'success 'error)))))
+                (propertize took 'face 'success)))
+      (run-hooks 'dirvish-fd-setup-hook))
     (force-mode-line-update t)))
 
 ;;;###autoload
