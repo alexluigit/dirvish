@@ -6,23 +6,17 @@ body:
 - type: checkboxes
   id: updated-dirvish
   attributes:
-    label: Please update dirvish first -- errors are often fixed by the time they're reported.
+    label: Thank you for the bug report, please update dirvish first -- errors are often fixed by the time they're reported.
+    description: Please check the suggestion below before proceeding
     options:
       - label: I have updated dirvish to the latest commit and tested that the issue still exists
         required: true
-- type: checkboxes
-  id: requirements
-  attributes:
-    label: Thank you for the bug report
-    description: Please check the suggestion below before proceeding
-    options:
       - label: I am using the latest version of `dirvish` related packages.
         required: true
       - label: I checked [CUSTOMIZING|EXTENSIONS|FAQ](https://github.com/alexluigit/dirvish#documentation).
         required: true
       - label: |
-          You may also try reproduce the issue using clean environment and minimal configurations with
-          the command `emacs -Q`.
+          You may also try reproduce the issue using clean environment and minimal configurations with `emacs -Q`.
 - type: textarea
   id: bug-description
   attributes:
@@ -65,6 +59,7 @@ body:
       - 29
       - 30
       - 31
+    default: 2
   validations:
     required: true
 - type: input
