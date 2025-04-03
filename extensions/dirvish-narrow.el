@@ -38,28 +38,32 @@ should return a list of regular expressions."
     (((class color) (min-colors 88) (background dark)) :foreground "#72a4ff")
     (((class color) (min-colors 88) (background light)) :foreground "#223fbf")
     (t :foreground "blue"))
-  "Face for matches of components numbered 0 mod 4.")
+  "Face for matches of components numbered 0 mod 4."
+  :group 'dirvish)
 
 (defface dirvish-narrow-match-face-1
   '((default :weight bold)
     (((class color) (min-colors 88) (background dark)) :foreground "#ed92f8")
     (((class color) (min-colors 88) (background light)) :foreground "#8f0075")
     (t :foreground "magenta"))
-  "Face for matches of components numbered 1 mod 4.")
+  "Face for matches of components numbered 1 mod 4."
+  :group 'dirvish)
 
 (defface dirvish-narrow-match-face-2
   '((default :weight bold)
     (((class color) (min-colors 88) (background dark)) :foreground "#90d800")
     (((class color) (min-colors 88) (background light)) :foreground "#145a00")
     (t :foreground "green"))
-  "Face for matches of components numbered 2 mod 4.")
+  "Face for matches of components numbered 2 mod 4."
+  :group 'dirvish)
 
 (defface dirvish-narrow-match-face-3
   '((default :weight bold)
     (((class color) (min-colors 88) (background dark)) :foreground "#f0ce43")
     (((class color) (min-colors 88) (background light)) :foreground "#804000")
     (t :foreground "yellow"))
-  "Face for matches of components numbered 3 mod 4.")
+  "Face for matches of components numbered 3 mod 4."
+  :group 'dirvish)
 
 (defun dirvish-narrow--highlight (regexps ignore-case string)
   "Destructively propertize STRING to highlight a match of each of the REGEXPS.

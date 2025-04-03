@@ -259,15 +259,14 @@ value 16, let the user choose the root directory of their search."
 
 (defun dirvish-fd-proc-filter (proc string)
   "Filter for `dirvish-fd' processes PROC and output STRING."
-  (let ((buf (process-buffer proc))
-        (start (process-get proc 'start)) (now (float-time)))
+  (let ((buf (process-buffer proc)))
     (if (not (buffer-name buf)) (delete-process proc)
       (with-current-buffer buf
         (save-excursion
           (save-restriction
             (widen)
             (let ((beg (point-max)) (data (dirvish-prop :fd-cache))
-                  (lazy (> (- now start) 0.5)) buffer-read-only lb le fname)
+                  buffer-read-only lb le fname)
               (goto-char beg)
               (insert string)
               (goto-char (process-mark proc))
@@ -279,7 +278,6 @@ value 16, let the user choose the root directory of their search."
                 (setq fname (buffer-substring (- fb 2) (line-end-position)))
                 (beginning-of-line) (insert "  ")
                 (setq lb (line-beginning-position) le (line-end-position))
-                (unless lazy (dired-insert-set-properties lb le))
                 (puthash fname (buffer-substring lb (1+ le)) data)
                 (forward-line 1))
               (goto-char (point-max))
@@ -296,7 +294,6 @@ value 16, let the user choose the root directory of their search."
               ((buffer-live-p buf))
               (status (process-exit-status proc))
               (took (float-time (time-since (process-get proc 'start)))))
-    (unless (buffer-live-p buf) (cl-return-from dirvish-fd-proc-sentinel))
     (unless (eq status 0) (user-error "`fd' exited with status: %s" status))
     (if (< took 1.0)
         (setq took (format "%s ms" (round took 0.001)))
