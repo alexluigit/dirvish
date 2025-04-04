@@ -260,8 +260,6 @@ buffer.  Feel free to experiment with other switches.
 This extension also provides the ~dirvish-fd-jump~ command which allows you to go
 to any directory in the file system using results from =fd= command as completions.
 
-TODO: fix #207
-
 TODO: try implementing #213
 
 * Turn Dirvish into a tree browser (dirvish-subtree.el)
@@ -331,12 +329,7 @@ finalizing with =RET=, use ~revert-buffer~ (typically bound to =g=).
 
 https://github.com/user-attachments/assets/539e1a74-ddf2-41fa-9dc2-3358108828fc
 
-If you have [[https://github.com/oantolin/orderless][orderless]] installed, you can have an input string that looks like /test
-~Emacs .\(py\|yaml\)$/, meaning:
-
-- match /test/
-- match /.py/ or /.yaml/ files
-- exclude results containing /Emacs/
-
-The actual matching styles being applied are determined by your orderless
-config.  See ~dirvish-narrow-regex-builder~.
+If [[https://github.com/oantolin/orderless][orderless]] is installed, it is automatically used to generate the
+=completion-regexp-list= from your input string for file list filtering. The
+matching style is determined by your =orderless= configuration. If =orderless= is
+not available, the regexp list is generated using ~split-string~ instead.

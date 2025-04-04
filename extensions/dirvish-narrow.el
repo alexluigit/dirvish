@@ -16,14 +16,6 @@
 
 (require 'dirvish)
 
-(defcustom dirvish-narrow-regex-builder
-  (if (fboundp 'orderless-compile) (lambda (s) (cdr (orderless-compile s)))
-    #'split-string)
-  "Function used to generate the `completion-regexp-list' for narrowing.
-The function takes the input string as its sole argument and
-should return a list of regular expressions."
-  :group 'dirvish :type 'function)
-
 ;; Credit: copied from `orderless.el'
 (defcustom dirvish-narrow-match-faces
   [dirvish-narrow-match-face-0
@@ -112,7 +104,9 @@ The search is case insensitive if IGNORE-CASE is non-nil."
     (lambda (action)
       (with-current-buffer (window-buffer (minibuffer-selected-window))
         (save-excursion
-          (cl-loop with regs = (funcall dirvish-narrow-regex-builder action)
+          (cl-loop with regs = (if (fboundp 'orderless-compile)
+                                   (cdr (orderless-compile action))
+                                 (split-string action))
                    for idx from 0
                    for (dir . pos) in dired-subdir-alist
                    do (dirvish-narrow--filter-subdir dir pos regs idx)))))
@@ -143,6 +137,7 @@ IDX the index of DIR in `dired-subdir-alist'."
   (interactive nil dired-mode)
   (when (get-buffer-process (current-buffer))
     (user-error "Current buffer has unfinished jobs"))
+  (require 'orderless nil t)
   (dirvish-narrow--build-indices)
   (let ((dv (dirvish-prop :dv))
         (restore (dirvish-prop :index))
