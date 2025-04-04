@@ -1220,20 +1220,16 @@ LEVEL is the depth of current window."
 INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
   (dirvish--make-proc
    `(prin1
-     (let* ((hs (make-hash-table))
-            (rmt? ,(with-current-buffer buffer
-                     (and (not (dirvish-prop :sudo)) (dirvish-prop :remote))))
-            (dir (if rmt? ,dir ,(file-local-name dir)))
-            (i-bk ',(with-current-buffer buffer (dirvish-prop :vc-backend)))
-            ;; inherit from cached backend, avoid unneeded vc info in subtrees
-            (bk (or i-bk (unless rmt? (vc-responsible-backend dir t)))))
-       (dolist (file (unless rmt? (ignore-errors (directory-files dir t nil t))))
-         (let* ((attrs (ignore-errors (file-attributes file)))
-                (tp (nth 0 attrs)))
-           (cond ((eq t tp) (setq tp '(dir . nil)))
-                 (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
-                 (t (setq tp '(file . nil))))
-           (puthash (secure-hash 'md5 file) `(:builtin ,attrs :type ,tp) hs)))
+     (let ((hs (make-hash-table)) (bk ',(dirvish-prop :vc-backend)))
+       (if ,(and (not (dirvish-prop :sudo)) (dirvish-prop :remote)) (setq bk 0)
+         (dolist (f (ignore-errors ; `dir' can be problematic due to its encoding
+                      (directory-files ,(file-local-name dir) t nil t 20000)))
+           (let* ((attrs (ignore-errors (file-attributes f))) (tp (nth 0 attrs)))
+             (cond ((eq t tp) (setq tp '(dir . nil)))
+                   (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
+                   (t (setq tp '(file . nil))))
+             (puthash (secure-hash 'md5 f) `(:builtin ,attrs :type ,tp) hs)))
+         (setq bk (or bk (vc-responsible-backend ,(file-local-name dir) t))))
        (cons bk hs)))
    (lambda (p _)
      (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
@@ -1276,7 +1272,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (dirvish--hide-dired-header)
   (when ignore-auto ; meaning it is called interactively from user
     (setq-local dirvish--dir-data (dirvish--ht))
-    (dirvish--dir-data-async default-directory (current-buffer)))
+    (dirvish--dir-data-async (dirvish-prop :root) (current-buffer)))
   (run-hooks 'dirvish-after-revert-hook))
 
 (defun dirvish--redisplay ()
@@ -1404,9 +1400,6 @@ Dirvish sets `revert-buffer-function' to this function."
         (unless (eq pane 'preview) (set-window-dedicated-p win t))
         (set-window-buffer win buf)))
     (dirvish--create-parent-windows dv)
-    (unless (dirvish-prop :cached)
-      (dirvish--dir-data-async default-directory (current-buffer))
-      (dirvish-prop :cached t))
     (dirvish--maybe-toggle-cursor)
     (dirvish--maybe-toggle-details)))
 
@@ -1469,18 +1462,17 @@ With optional NOSELECT just find files but do not select them."
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
-         (new-buffer-p (null buffer))
-         (dps (dv-preview-dispatchers dv))
+         (new? (null buffer)) (dps (dv-preview-dispatchers dv))
          tramp-fn dired-buffers) ; disable reuse from dired
     (setf (dv-timestamp dv) (dirvish--timestamp))
-    (when new-buffer-p
+    (when new?
       (if (not remote) (setq buffer (apply fn (list dir-or-list flags)))
         (setq tramp-fn (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
               buffer (apply tramp-fn (list fn dir-or-list flags remote dps))))
       (with-current-buffer buffer (dirvish--setup-dired))
       (push (cons key buffer) (dv-roots dv)))
     (with-current-buffer buffer
-      (cond (new-buffer-p nil)
+      (cond (new? nil)
             ((and (not remote) (not (equal flags dired-actual-switches)))
              (dired-sort-other flags))
             ((eq dired-auto-revert-buffer t) (revert-buffer))
@@ -1495,6 +1487,7 @@ With optional NOSELECT just find files but do not select them."
       (dirvish-prop :attrs (dv-attributes dv))
       (cl-loop for (k v) on dirvish--scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
+      (when new? (dirvish--dir-data-async key buffer))
       (when bname (dired-goto-file bname))
       (setf (dv-index dv) (cons key buffer))
       (let ((key (if (string-prefix-p "🔍" key) (buffer-name buffer) key)))
