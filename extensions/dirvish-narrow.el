@@ -103,6 +103,9 @@ The search is case insensitive if IGNORE-CASE is non-nil."
          (forward-line 1))
        (puthash (md5 dir) files dirvish--dir-data)))))
 
+;; use a separate timer here, otherwise it would be overrided by the default one
+(defvar dirvish-narrow--delay-timer `(,(timer-create) ,(float-time) nil))
+
 (defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
   (dirvish-run-with-delay (minibuffer-contents-no-properties)
@@ -112,7 +115,8 @@ The search is case insensitive if IGNORE-CASE is non-nil."
           (cl-loop with regs = (funcall dirvish-narrow-regex-builder action)
                    for idx from 0
                    for (dir . pos) in dired-subdir-alist
-                   do (dirvish-narrow--filter-subdir dir pos regs idx)))))))
+                   do (dirvish-narrow--filter-subdir dir pos regs idx)))))
+    nil nil dirvish-narrow--delay-timer))
 
 (defun dirvish-narrow--filter-subdir (dir pos regexs idx)
   "Filter the subdir DIR in POS with REGEXS.
@@ -121,12 +125,16 @@ IDX the index of DIR in `dired-subdir-alist'."
    (progn (goto-char pos) (forward-line (dirvish--subdir-offset)) (point))
    (- (dired-subdir-max) (if (eq idx 0) 0 1)))
   (cl-loop with completion-regexp-list = regexs
+           with completion-ignore-case =
+           (cl-loop for regexp in (ensure-list regexs)
+                    always (isearch-no-upper-case-p regexp t))
            with files = (gethash (md5 dir) dirvish--dir-data)
            and fr-h = (+ (frame-height) 5) and count = 0
            for f in (all-completions "" files)
            for l = (concat (gethash f files)) ; use copy, not reference
            for hl = (if (> (cl-incf count) fr-h) l ; lazy highlighting
-                      (dirvish-narrow--highlight regexs t l))
+                      (dirvish-narrow--highlight
+                       regexs completion-ignore-case l))
            do (insert hl)))
 
 ;;;###autoload
@@ -151,6 +159,7 @@ IDX the index of DIR in `dired-subdir-alist'."
           (erase-buffer) (insert bstr)
           (unless (cdr dired-subdir-alist) (dirvish--hide-dired-header)))
         (when restore (dired-goto-file restore))
+        (dirvish-run-with-delay 'reset #'ignore)
         (font-lock-mode 1) (buffer-enable-undo)))))
 
 (provide 'dirvish-narrow)
