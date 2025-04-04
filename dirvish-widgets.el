@@ -187,12 +187,12 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
 
 ;;;; Helpers
 
-(defun dirvish--attr-size-human-readable (file-size)
-  "Produce a string showing FILE-SIZE in human-readable form."
-  (let ((power 1024.0)
-        (prefixes '("" "k" "M" "G" "T" "P" "E" "Z" "Y")))
-    (while (and (>= file-size power) (cdr prefixes))
-      (setq file-size (/ file-size power)
+(defun dirvish--attr-size-human-readable (file-size kilo)
+  "Produce a string showing FILE-SIZE in human-readable form.
+KILO is 1024.0 / 1000 for file size / counts respectively."
+  (let ((prefixes '("" "k" "M" "G" "T" "P" "E" "Z" "Y")))
+    (while (and (>= file-size kilo) (cdr prefixes))
+      (setq file-size (/ file-size kilo)
             prefixes (cdr prefixes)))
     (substring (format (if (and (< file-size 10)
                                 (>= (mod file-size 1.0) 0.05)
@@ -215,23 +215,23 @@ Audio;(Audio-codec . \"\"%CodecID%\"\")(Audio-bitrate . \"\"%BitRate/String%\"\"
                      (condition-case nil
                          (let ((files (directory-files name nil nil t)))
                            (dirvish--attr-size-human-readable
-                            (- (length files) 2)))
+                            (- (length files) 2) 1000))
                        (file-error 'file)))))
            (if (not (eq ct 'file)) ct
              (dirvish-attribute-cache name :f-size
                (dirvish--attr-size-human-readable
-                 (file-attribute-size (file-attributes name)))))))
+                (file-attribute-size (file-attributes name)) 1024.0)))))
         ((file-attribute-type attrs)
          (let ((ct (dirvish-attribute-cache name :f-count
                      (condition-case nil
                          (let ((files (directory-files name nil nil t)))
                            (dirvish--attr-size-human-readable
-                            (- (length files) 2)))
+                            (- (length files) 2) 1000))
                        (file-error 'no-permission)))))
            (if (eq ct 'no-permission) " ---- " ct)))
         (t (dirvish-attribute-cache name :f-size
              (dirvish--attr-size-human-readable
-              (or (file-attribute-size attrs) 0))))))
+              (or (file-attribute-size attrs) 0) 1024.0)))))
 
 (defun dirvish--file-attr-time (name attrs)
   "File NAME's modified time from ATTRS."
