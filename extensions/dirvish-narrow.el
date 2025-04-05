@@ -57,6 +57,11 @@
   "Face for matches of components numbered 3 mod 4."
   :group 'dirvish)
 
+(defun dirvish-narrow--compile-regex (string)
+  "Compile `completion-regexp-list' from STRING."
+  (if (fboundp 'orderless-compile) (cdr (orderless-compile string))
+    (split-string string)))
+
 (defun dirvish-narrow--highlight (regexps ignore-case string)
   "Destructively propertize STRING to highlight a match of each of the REGEXPS.
 The search is case insensitive if IGNORE-CASE is non-nil."
@@ -100,36 +105,32 @@ The search is case insensitive if IGNORE-CASE is non-nil."
 
 (defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
-  (dirvish-run-with-delay (minibuffer-contents-no-properties)
+  (dirvish--run-with-delay
+    (minibuffer-contents-no-properties) dirvish-narrow--delay-timer
     (lambda (action)
       (with-current-buffer (window-buffer (minibuffer-selected-window))
         (save-excursion
-          (cl-loop with regs = (if (fboundp 'orderless-compile)
-                                   (cdr (orderless-compile action))
-                                 (split-string action))
-                   for idx from 0
-                   for (dir . pos) in dired-subdir-alist
-                   do (dirvish-narrow--filter-subdir dir pos regs idx)))))
-    nil nil dirvish-narrow--delay-timer))
+          (cl-loop with regs = (dirvish-narrow--compile-regex action)
+                   for (dir . pos) in dired-subdir-alist and idx from 0
+                   do (dirvish-narrow--subdir dir pos regs idx)))))))
 
-(defun dirvish-narrow--filter-subdir (dir pos regexs idx)
-  "Filter the subdir DIR in POS with REGEXS.
-IDX the index of DIR in `dired-subdir-alist'."
+(defun dirvish-narrow--subdir (dir pos regexs idx &optional all)
+  "Narrow subdir DIR at index IDX in POS with REGEXS."
   (delete-region
    (progn (goto-char pos) (forward-line (dirvish--subdir-offset)) (point))
    (- (dired-subdir-max) (if (eq idx 0) 0 1)))
   (cl-loop with completion-regexp-list = regexs
            with completion-ignore-case =
-           (cl-loop for regexp in (ensure-list regexs)
-                    always (isearch-no-upper-case-p regexp t))
+           (cl-loop for re in (ensure-list regexs)
+                    always (isearch-no-upper-case-p re t))
            with files = (gethash (md5 dir) dirvish--dir-data)
            and fr-h = (+ (frame-height) 5) and count = 0
-           for f in (all-completions "" files)
+           with pred = (if all #'always (lambda (&rest _) (<= (cl-incf count) fr-h)))
+           for f in (all-completions "" files pred)
            for l = (concat (gethash f files)) ; use copy, not reference
-           for hl = (if (> (cl-incf count) fr-h) l ; lazy highlighting
-                      (dirvish-narrow--highlight
-                       regexs completion-ignore-case l))
-           do (insert hl)))
+           do (insert (if all l (dirvish-narrow--highlight ; lazy highlighting
+                                 regexs completion-ignore-case l)))
+           finally do (dirvish-prop :count count)))
 
 ;;;###autoload
 (defun dirvish-narrow ()
@@ -139,9 +140,7 @@ IDX the index of DIR in `dired-subdir-alist'."
     (user-error "Current buffer has unfinished jobs"))
   (require 'orderless nil t)
   (dirvish-narrow--build-indices)
-  (let ((dv (dirvish-prop :dv))
-        (restore (dirvish-prop :index))
-        (bstr (buffer-string))
+  (let ((dv (dirvish-prop :dv)) (restore (dirvish-prop :index))
         input buffer-read-only)
     (font-lock-mode -1) (buffer-disable-undo)
     (minibuffer-with-setup-hook
@@ -150,11 +149,14 @@ IDX the index of DIR in `dired-subdir-alist'."
           (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
       (unwind-protect
           (setq input (read-from-minibuffer "Focus on files: "))
-        (when (= (length input) 0)
-          (erase-buffer) (insert bstr)
-          (unless (cdr dired-subdir-alist) (dirvish--hide-dired-header)))
+        (save-excursion
+          (cl-loop with re = (dirvish-narrow--compile-regex (or input ""))
+                   for (d . p) in dired-subdir-alist and i from 0
+                   do (dirvish-narrow--subdir d p re i (or input ""))))
+        (dirvish-prop :count nil)
         (when restore (dired-goto-file restore))
-        (dirvish-run-with-delay 'reset #'ignore)
+        (dirvish--run-with-delay 'reset)
+        (dirvish--run-with-delay 'reset dirvish-narrow--delay-timer)
         (font-lock-mode 1) (buffer-enable-undo)))))
 
 (provide 'dirvish-narrow)

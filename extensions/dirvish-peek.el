@@ -153,7 +153,7 @@ one of categories in `dirvish-peek-categories'."
          (error (setq cand (format "LIB_EXCEPTION:::%s:::%s" cand
                                    (error-message-string err)))))))
     (dirvish-prop :index cand)
-    (dirvish-run-with-delay cand
+    (dirvish--run-with-delay cand nil
       (lambda (action) (dirvish--preview-update dv action)) (cdr peek-key))))
 
 (defun dirvish-peek-exit-h ()

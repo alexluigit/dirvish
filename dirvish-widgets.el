@@ -427,13 +427,15 @@ GROUP-TITLES is a list of group titles."
 
 (dirvish-define-mode-line index
   "Current file's index and total files count."
-  (let ((cur-pos (format "%3d " (- (line-number-at-pos (point)) 1)))
-        (fin-pos (format "/%3d " (- (line-number-at-pos (point-max)) 2))))
-    (if (dirvish--selected-p)
-        (put-text-property 0 (length fin-pos) 'face 'bold fin-pos)
-      (put-text-property 0 (length cur-pos) 'face 'dirvish-inactive cur-pos)
-      (put-text-property 0 (length fin-pos) 'face 'dirvish-inactive fin-pos))
-    (format "%s%s" cur-pos fin-pos)))
+  (let* ((ct (dirvish-prop :count)) (cpos (- (line-number-at-pos (point)) 1))
+         (fpos (- (line-number-at-pos (point-max)) 2))
+         (cur (if ct "" (format "%3d " cpos)))
+         (end (if ct (format " found %s matches " ct) (format "/%3d " fpos))))
+    (if (or (dirvish--selected-p) ct)
+        (put-text-property 0 (length end) 'face 'bold end)
+      (put-text-property 0 (length cur) 'face 'dirvish-inactive cur)
+      (put-text-property 0 (length end) 'face 'dirvish-inactive end))
+    (format "%s%s" cur end)))
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."

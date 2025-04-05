@@ -335,13 +335,13 @@ Set the PROP with BODY if given."
                     (push (cons ,prop val) dirvish--props)))
         `val)))
 
-(defun dirvish-run-with-delay (action fun &optional debounce throttle record)
+(defun dirvish--run-with-delay (action &optional record fun debounce throttle)
   "Run function FUN accroding to ACTION with delay.
 DEBOUNCE defaults to `dirvish-input-debounce'.
 THROTTLE defaults to `dirvish-input-throttle'.
 RECORD defaults to `dirvish--delay-timer'."
   (declare (indent defun))
-  (setq record (or record dirvish--delay-timer)
+  (setq record (or record dirvish--delay-timer) fun (or fun #'ignore)
         debounce (or debounce dirvish-input-debounce)
         throttle (or throttle dirvish-input-throttle))
   (pcase action
@@ -357,7 +357,7 @@ RECORD defaults to `dirvish--delay-timer'."
          nil (max debounce (- (+ (nth 1 record) throttle) (float-time)))))
        (setf (nth 2 record) action)
        (timer-activate (car record))))
-    ('reset (setf (nth 2 record) nil))))
+    ('reset (setf (nth 2 record) ""))))
 
 (defmacro dirvish-save-dedication (&rest body)
   "Run BODY after undedicating window, restore dedication afterwards."
@@ -1288,7 +1288,7 @@ Dirvish sets `revert-buffer-function' to this function."
     (when-let* ((idx (save-excursion (dired-get-filename nil t))))
       (dirvish-prop :index (setq idx (file-local-name idx)))
       (when (dv-curr-layout dv)
-        (dirvish-run-with-delay idx
+        (dirvish--run-with-delay idx nil
           (lambda (action)
             ;; don't grab focus when peeking or preview window is selected
             (force-mode-line-update t)
