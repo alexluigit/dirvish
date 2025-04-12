@@ -190,6 +190,8 @@ as a sidebar in the frame.  These customization options are available:
 + ~dirvish-side-display-alist~: Display actions for the side window.
 + ~dirvish-side-window-parameters~: Window parameters for the side window.
 + ~dirvish-side-width~: Width of the side window.
++ ~dirvish-side-increase-width~: Increases the width of the side window by a set increment.
++ ~dirvish-side-decrease-width~: Decreases the width of the side window by a set increment.
 + ~dirvish-side-open-file-action~: Action to perform before opening a file in a side window.
 + ~dirvish-side-auto-expand~: Whether to auto expand parent directories of current file.
 
