@@ -23,6 +23,10 @@
   "Width of the `dirvish-side' buffer."
   :type 'integer :group 'dirvish)
 
+(defcustom dirvish-side-width-increment 5
+  "Amount to change width by when resizing `dirvish-side' window."
+  :type 'integer :group 'dirvish)
+
 (defcustom dirvish-side-window-parameters
   '((no-delete-other-windows . t) (no-other-window . t))
   "Window parameters for `dirvish-side' window."
@@ -77,12 +81,17 @@ filename until the project root when opening a side session."
                buf (append '((dedicated . t)) dirvish-side-display-alist))))
     (cl-loop for (key . value) in dirvish-side-window-parameters
              do (set-window-parameter win key value))
+    ;; Initial sizing respecting the fixed size setting
     (with-selected-window win
-      (let ((w (max dirvish-side-width window-min-width)) window-size-fixed)
-        (cond ((> (window-width) w)
-               (shrink-window-horizontally  (- (window-width) w)))
-              ((< (window-width) w)
-               (enlarge-window-horizontally (- w (window-width)))))))
+      (let ((w (max dirvish-side-width window-min-width))
+            ;; Temporarily unfix size for initial adjustment
+            (window-size-fixed nil))
+        (condition-case nil ; Avoid error if initial size is already minimal
+            (cond ((> (window-width) w)
+                   (shrink-window-horizontally (- (window-width) w)))
+                  ((< (window-width) w)
+                   (enlarge-window-horizontally (- w (window-width)))))
+          (error nil)))) ; Ignore errors during initial setup resizing
     (select-window win)))
 
 (defun dirvish-side-open-file (dv find-fn file)
@@ -184,6 +193,30 @@ otherwise it defaults to `project-current'."
           ((eq visible (selected-window)) (dirvish-quit))
           (visible (select-window visible))
           (t (dirvish-side--new path)))))
+
+;;;###autoload
+(defun dirvish-side-increase-width ()
+  "Increase width of the `dirvish-side' window."
+  (interactive)
+  (if-let ((win (dirvish-side--session-visible-p)))
+      (with-selected-window win
+        ;; Temporarily unfix window size to allow manual resizing
+        (let ((window-size-fixed nil))
+          (enlarge-window-horizontally dirvish-side-width-increment)))
+    (user-error "No visible dirvish-side window found")))
+
+;;;###autoload
+(defun dirvish-side-decrease-width ()
+  "Decrease width of the `dirvish-side' window."
+  (interactive)
+  (if-let ((win (dirvish-side--session-visible-p)))
+      (with-selected-window win
+        ;; Temporarily unfix window size to allow manual resizing
+        (let ((window-size-fixed nil))
+          (condition-case nil ; Avoid error if already at minimum width
+              (shrink-window-horizontally dirvish-side-width-increment)
+            (error nil)))) ; Ignore errors from trying to shrink past minimum
+    (user-error "No visible dirvish-side window found")))
 
 (provide 'dirvish-side)
 ;;; dirvish-side.el ends here
