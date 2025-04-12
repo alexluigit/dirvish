@@ -23,7 +23,7 @@
   "Width of the `dirvish-side' buffer."
   :type 'integer :group 'dirvish)
 
-(defcustom dirvish-side-width-increment 2
+(defcustom dirvish-side-width-increment 1
   "Amount to change width by when resizing `dirvish-side' window."
   :type 'integer :group 'dirvish)
 
