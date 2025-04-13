@@ -194,27 +194,41 @@ otherwise it defaults to `project-current'."
           (visible (select-window visible))
           (t (dirvish-side--new path)))))
 
-(defun dirvish-side-increase-width ()
-  "Increase width of the `dirvish-side' window."
-  (interactive)
+(defun dirvish-side--resize-window (delta)
+  "Helper function to resize visible dirvish-side window by DELTA columns.
+Positive DELTA increases width, negative DELTA decreases width."
   (if-let ((win (dirvish-side--session-visible-p)))
       (with-selected-window win
         ;; Temporarily unfix window size to allow manual resizing
         (let ((window-size-fixed nil))
-          (enlarge-window-horizontally dirvish-side-width-increment)))
+          (cond ((> delta 0)
+                 (enlarge-window-horizontally delta))
+                ((< delta 0)
+                 (condition-case nil ; Avoid error if already at minimum width
+                     (shrink-window-horizontally (- delta)) ; shrink needs positive value
+                   (error nil))) ; Ignore errors from trying to shrink past minimum
+                )))
     (user-error "No visible dirvish-side window found")))
 
-(defun dirvish-side-decrease-width ()
-  "Decrease width of the `dirvish-side' window."
-  (interactive)
-  (if-let ((win (dirvish-side--session-visible-p)))
-      (with-selected-window win
-        ;; Temporarily unfix window size to allow manual resizing
-        (let ((window-size-fixed nil))
-          (condition-case nil ; Avoid error if already at minimum width
-              (shrink-window-horizontally dirvish-side-width-increment)
-            (error nil)))) ; Ignore errors from trying to shrink past minimum
-    (user-error "No visible dirvish-side window found")))
+(defun dirvish-side-increase-width (&optional increment)
+  "Increase width of the `dirvish-side' window by INCREMENT columns.
+If INCREMENT is nil or called interactively without a prefix
+argument, use `dirvish-side-width-increment'. With a prefix
+argument N, increase width by N columns."
+  (interactive "P")
+  (let ((amount (or (prefix-numeric-value increment)
+                    dirvish-side-width-increment)))
+    (dirvish-side--resize-window amount)))
+
+(defun dirvish-side-decrease-width (&optional increment)
+  "Decrease width of the `dirvish-side' window by INCREMENT columns.
+If INCREMENT is nil or called interactively without a prefix
+argument, use `dirvish-side-width-increment'. With a prefix
+argument N, decrease width by N columns."
+  (interactive "P")
+  (let ((amount (or (prefix-numeric-value increment)
+                    dirvish-side-width-increment)))
+    (dirvish-side--resize-window (- amount)))) ; Pass negative delta to helper
 
 (provide 'dirvish-side)
 ;;; dirvish-side.el ends here
