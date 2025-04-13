@@ -194,7 +194,6 @@ otherwise it defaults to `project-current'."
           (visible (select-window visible))
           (t (dirvish-side--new path)))))
 
-;;;###autoload
 (defun dirvish-side-increase-width ()
   "Increase width of the `dirvish-side' window."
   (interactive)
@@ -205,7 +204,6 @@ otherwise it defaults to `project-current'."
           (enlarge-window-horizontally dirvish-side-width-increment)))
     (user-error "No visible dirvish-side window found")))
 
-;;;###autoload
 (defun dirvish-side-decrease-width ()
   "Decrease width of the `dirvish-side' window."
   (interactive)
