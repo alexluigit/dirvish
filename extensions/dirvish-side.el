@@ -77,12 +77,11 @@ filename until the project root when opening a side session."
                buf (append '((dedicated . t)) dirvish-side-display-alist))))
     (cl-loop for (key . value) in dirvish-side-window-parameters
              do (set-window-parameter win key value))
-    (with-selected-window win
-      (let ((w (max dirvish-side-width window-min-width)) window-size-fixed)
-        (cond ((> (window-width) w)
-               (shrink-window-horizontally  (- (window-width) w)))
-              ((< (window-width) w)
-               (enlarge-window-horizontally (- w (window-width)))))))
+    (with-selected-window win ; Set window width to `dirvish-side-width'
+      (let ((w (max dirvish-side-width window-min-width))
+            window-size-fixed) ; Temporarily unfix size for initial adjustment
+        ;; Ignore errors during resizing (eg. already minimum)
+        (ignore-errors (enlarge-window-horizontally (- w (window-width))))))
     (select-window win)))
 
 (defun dirvish-side-open-file (dv find-fn file)
@@ -152,6 +151,22 @@ filename until the project root when opening a side session."
             (dirvish-side-auto-expand
              (dirvish-subtree-expand-to bname))
             (t (dired-goto-file bname))))))
+
+(defun dirvish-side-increase-width (delta)
+  "Increase width of the `dirvish-side' window by DELTA columns.
+Interactively, if no argument is given, DELTA is seen as 1."
+  (interactive "^p")
+  (let ((win (dirvish-side--session-visible-p)))
+    (unless win (user-error "No visible dirvish-side window found"))
+    (with-selected-window win
+      (let ((window-size-fixed nil))
+        (ignore-errors (enlarge-window-horizontally delta))))))
+
+(defun dirvish-side-decrease-width (delta)
+  "Decrease width of the `dirvish-side' window by DELTA columns.
+Interactively, if no argument is given, DELTA is seen as 1."
+  (interactive "^p")
+  (dirvish-side-increase-width (- delta)))
 
 ;;;###autoload
 (define-minor-mode dirvish-side-follow-mode

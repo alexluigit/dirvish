@@ -181,8 +181,16 @@ To tweak the appearance of the icons, you have these options:
 
 * Toggle Dirvish in side window (dirvish-side.el)
 
-This extension provides the ~dirvish-side~ command. It toggles a Dirvish session
-as a sidebar in the frame.  These customization options are available:
+This extension provides the ~dirvish-side~ command, which toggles a Dirvish
+sidebar within the current frame.  The width is fixed to prevent the window from
+unexpected resizing, but you can adjust it using the ~dirvish-side-increase-width~
+and ~dirvish-side-decrease-width~ commands.
+
+When ~dirvish-side-follow-mode~ is enabled, the visible side session will select
+the current buffer's filename, similar to ~treemacs-follow-mode~ in =treemacs=. It
+will also visits the latest ~project-root~ after switching to a new project.
+
+These customization options are available:
 
 + ~dirvish-side-attributes~: like ~dirvish-attributes~, but for side window.
 + ~dirvish-side-mode-line-format~: like ~dirvish-mode-line-format~, but for side window.
@@ -192,10 +200,6 @@ as a sidebar in the frame.  These customization options are available:
 + ~dirvish-side-width~: Width of the side window.
 + ~dirvish-side-open-file-action~: Action to perform before opening a file in a side window.
 + ~dirvish-side-auto-expand~: Whether to auto expand parent directories of current file.
-
-When ~dirvish-side-follow-mode~ is enabled, the visible side session will select
-the current buffer's filename, similar to ~treemacs-follow-mode~ in =treemacs=. It
-will also visits the latest ~project-root~ after switching to a new project.
 
 * Setup ls switches on the fly (dirvish-ls.el)
 
