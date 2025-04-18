@@ -35,7 +35,7 @@ FN is the original `dired-noselect' closure."
          (gnuls "ls")
          (buffer (cond ((eq async-type 'local) (funcall fn dir flags))
                        (saved-flags (funcall fn dir saved-flags)) ; skip
-                       ((= (process-file gnuls nil nil nil "--version") 0)
+                       ((= (or (process-file gnuls nil nil nil "--version") 1) 0)
                         (push (cons remote flags) dirvish-tramp-hosts)
                         (funcall fn dir flags))
                        (t (setq gnuls nil)
