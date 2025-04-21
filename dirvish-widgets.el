@@ -426,16 +426,19 @@ GROUP-TITLES is a list of group titles."
             (propertize truename 'face 'dired-symlink))))
 
 (dirvish-define-mode-line index
-  "Current file's index and total files count."
-  (let* ((ct (dirvish-prop :count)) (cpos (- (line-number-at-pos (point)) 1))
-         (fpos (- (line-number-at-pos (point-max)) 2))
-         (cur (if ct "" (format "%3d " cpos)))
-         (end (if ct (format " found %s matches " ct) (format "/%3d " fpos))))
-    (if (or (dirvish--selected-p) ct)
+  "Cursor file's index and total files count within current subdir."
+  (let* ((count (if (cdr dired-subdir-alist)
+                    (format "[ %s subdirs ] " (length dired-subdir-alist)) ""))
+         (smin (line-number-at-pos (dired-subdir-min)))
+         (cpos (- (line-number-at-pos (point)) smin))
+         (fpos (- (line-number-at-pos (dired-subdir-max)) smin 1))
+         (cur (format "%3d " cpos)) (end (format "/%3d " fpos)))
+    (if (dirvish--selected-p)
         (put-text-property 0 (length end) 'face 'bold end)
+      (put-text-property 0 (length count) 'face 'dirvish-inactive count)
       (put-text-property 0 (length cur) 'face 'dirvish-inactive cur)
       (put-text-property 0 (length end) 'face 'dirvish-inactive end))
-    (format "%s%s" cur end)))
+    (format "%s%s%s" cur end count)))
 
 (dirvish-define-mode-line free-space
   "Amount of free space on `default-directory''s file system."

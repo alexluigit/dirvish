@@ -117,6 +117,21 @@ the full-frame layout when file previews are needed."
   "Face used for mode-line segments in unfocused Dirvish windows."
   :group 'dirvish)
 
+(defface dirvish-proc-running
+  '((t :inherit warning))
+  "Face used if asynchronous process is running."
+  :group 'dirvish)
+
+(defface dirvish-proc-finished
+  '((t :inherit success))
+  "Face used if asynchronous process has finished."
+  :group 'dirvish)
+
+(defface dirvish-proc-failed
+  '((t :inherit error))
+  "Face used if asynchronous process has failed."
+  :group 'dirvish)
+
 (defcustom dirvish-use-mode-line t
   "Whether to display mode line in dirvish buffers.
 The valid value are:
@@ -903,6 +918,7 @@ When the attribute does not exist, set it with BODY."
        for (k . v) = (funcall fn f-beg f-end f-str f-name
                               f-attrs f-type l-beg l-end hl-face w-width)
        do (pcase k ('ov (overlay-put v 'dirvish-a-ov t))
+                 ('ovs (dolist (ov v) (overlay-put ov 'dirvish-a-ov t)))
                  ('left (setq left (concat v left)))
                  ('right (setq right (concat v right))))
        finally
@@ -1061,7 +1077,7 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
 (defun dirvish--apply-hiding-p (ctx)
   "Return t when it should hide cursor/details within context CTX."
   (cond ((booleanp ctx) ctx)
-        ((dirvish-prop :fd-arglist)
+        ((dirvish-prop :fd-info)
          (memq 'dirvish-fd ctx))
         ((and (dirvish-curr) (dv-curr-layout (dirvish-curr)))
          (memq 'dirvish ctx))

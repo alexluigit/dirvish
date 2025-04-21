@@ -454,7 +454,7 @@ PREDS are locally composed predicates."
 
 (defun dirvish-emerge--apply ()
   "Readin `dirvish-emerge-groups' and apply them."
-  (when (and (not (dirvish-prop :fd-arglist))
+  (when (and (not (dirvish-prop :fd-info))
              (or (dirvish-prop :force-emerge)
                  (< (hash-table-count dirvish--dir-data)
                     dirvish-emerge-max-file-count)))

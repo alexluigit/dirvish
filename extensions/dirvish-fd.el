@@ -61,14 +61,10 @@
   "Listing program for `fd'."
   :type '(string :tag "Listing program, such as `ls'") :group 'dirvish)
 
-(defcustom dirvish-fd-default-dir "/"
-  "Default directory for `dirvish-fd-jump'."
-  :group 'dirvish :type 'directory)
 
-(defconst dirvish-fd-bufname "🔍%s📁%s📁")
-(defconst dirvish-fd-header
-  (dirvish--mode-line-composer '(fd-switches) '(fd-took) t))
-(defvar-local dirvish-fd--input "" "Last used fd user input.")
+(defconst dirvish-fd-bufname "🔍%s📁%s📁") ; TODO: remove this
+(defconst dirvish-fd-header ; TODO: refactor this
+  (dirvish--mode-line-composer '(fd-info) '(fd-status) t))
 
 (defun dirvish-fd--ensure-fd (remote)
   "Return fd executable on REMOTE or localhost.
@@ -79,46 +75,36 @@ Raise an error if fd executable is not available."
 (defun dirvish-fd--apply-switches ()
   "Apply fd SWITCHES to current buffer."
   (interactive)
-  (let* ((args (transient-args transient-current-command))
-         (switches (string-join args " ")))
-    (dirvish-prop :fd-switches switches)
-    (revert-buffer)))
+  (cl-loop with (re . args) = nil
+           for arg in (transient-args transient-current-command)
+           if (string-prefix-p "--and=" arg) do (push arg re)
+           else do (push arg args)
+           finally do (dirvish-fd--argparser re args))
+  (revert-buffer))
 
 (transient-define-infix dirvish-fd--extensions-switch ()
   :description "Filter results by file extensions"
   :class 'transient-option
   :argument "--extension="
-  :multi-value 'repeat
-  :prompt
-  (lambda (o)
-    (let* ((val (oref o value))
-           (str (if val (format "(current: %s) " (mapconcat #'concat val ",")) "")))
-      (format "%sFile exts separated with comma: " str))))
+  :multi-value 'repeat)
 
 (transient-define-infix dirvish-fd--exclude-switch ()
   :description "Exclude files/dirs that match the glob pattern"
   :class 'transient-option
   :argument "--exclude="
-  :multi-value 'repeat
-  :prompt
-  (lambda (o)
-    (let* ((val (oref o value))
-           (str (if val (format "(current: %s) " (mapconcat #'concat val ",")) "")))
-      (format "%sGlob patterns (such as *.pyc) separated with comma: " str))))
+  :multi-value 'repeat)
 
 (transient-define-infix dirvish-fd--search-pattern-infix ()
-  "Change search pattern."
-  :description "Change search pattern"
-  :class 'transient-lisp-variable
-  :variable 'dirvish-fd--input
-  :reader (lambda (_prompt init hist)
-            (completing-read "Regex for fd: " nil nil nil init hist)))
+  :description "Change search patterns"
+  :class 'transient-option
+  :argument "--and="
+  :multi-value 'repeat)
 
 ;;;###autoload (autoload 'dirvish-fd-switches-menu "dirvish-fd" nil t)
 (transient-define-prefix dirvish-fd-switches-menu ()
   "Setup fd switches."
-  :init-value
-  (lambda (o) (oset o value (split-string (or (dirvish-prop :fd-switches) ""))))
+  :init-value (lambda (o) (let ((args (dirvish-prop :fd-info)))
+                       (oset o value (append (cadr args) (cddr args)))))
   [:description
    (lambda () (dirvish--format-menu-heading
           "Setup FD Switches"
@@ -171,35 +157,40 @@ Raise an error if fd executable is not available."
     ""
     "Actions"
     ("r" dirvish-fd--search-pattern-infix)
-    ("RET" "Apply switches" dirvish-fd--apply-switches)]])
+    ("RET" "Rerun" dirvish-fd--apply-switches)]])
 
-(defun dirvish-fd--argparser (args)
-  "Parse fd args to a list of flags from ARGS."
+(defun dirvish-fd--argparser (re args)
+  "Parse fd args to a list of flags from ARGS and search regexp RE."
   (let* ((globp (member "--glob" args))
          (casep (member "--case-sensitive" args))
-         (ign-range (cond ((member "--no-ignore" args) "no")
-                          ((member "--no-ignore-vcs" args) "no_vcs")
-                          (t "all")))
-         types exts excludes)
+         (ign (cond ((member "--no-ignore" args) "no")
+                    ((member "--no-ignore-vcs" args) "no_vcs")
+                    (t "all")))
+         (status (propertize " ●  " 'face 'dirvish-proc-running))
+         comp types exts exc)
     (dolist (arg args)
-      (cond ((string-prefix-p "--type=" arg) (push (substring arg 8) types))
+      (cond ((string-prefix-p "--type=" arg) (push (substring arg 7) types))
             ((string-prefix-p "--extension=" arg) (push (substring arg 12) exts))
-            ((string-prefix-p "--exclude=" arg) (push (substring arg 10) excludes))))
+            ((string-prefix-p "--exclude=" arg) (push (substring arg 10) exc))))
+    (dolist (r re) (push (substring r 6) comp))
     (setq types (mapconcat #'concat types ","))
     (setq exts (mapconcat #'concat exts ","))
-    (setq excludes (mapconcat #'concat excludes ","))
-    (dirvish-prop :fd-arglist (list globp casep ign-range types exts excludes))))
+    (setq exc (mapconcat #'concat exc ","))
+    (setq comp (mapconcat #'concat comp ","))
+    (dirvish-prop :fd-info
+      (cons (list comp globp casep ign types exts exc status) (cons re args)))))
 
-(dirvish-define-mode-line fd-switches
-  "Return a formatted string showing the DIRVISH-FD-ACTUAL-SWITCHES."
-  (pcase-let ((`(,globp ,casep ,ign-range ,types ,exts ,excludes)
-               (dirvish-prop :fd-arglist))
+(dirvish-define-mode-line fd-info
+  "Return a formatted string showing the actual fd command line arguments."
+  (pcase-let ((`(,re ,globp ,casep ,ign-range ,types ,exts ,excludes ,_)
+               (car (dirvish-prop :fd-info)))
               (face (if (dirvish--selected-p) 'dired-header 'dirvish-inactive)))
-    (format "  🔍 ⋗ 📁: %s [ %s \"%s\" | %s %s | %s %s | %s %s | %s %s | %s %s ]"
+    (format "  🔍 ⋗ %s [ %s \"%s\" | %s %s | %s %s | %s %s | %s %s | %s %s ]"
             (propertize
-             (abbreviate-file-name default-directory) 'face 'dired-directory)
+             (abbreviate-file-name (directory-file-name default-directory))
+             'face 'dired-directory)
             (propertize (if globp "glob:" "regex:") 'face face)
-            (propertize (or dirvish-fd--input "")
+            (propertize (or re "")
                         'face 'font-lock-regexp-grouping-construct)
             (propertize "type:" 'face face)
             (propertize (if (equal types "") "all" types)
@@ -216,167 +207,135 @@ Raise an error if fd executable is not available."
             (propertize (if (equal excludes "") "none" excludes)
                         'face 'font-lock-string-face))))
 
-(dirvish-define-mode-line fd-took
-  "Time took by last fd search."
-  (or (dirvish-prop :fd-time)
-      (format "%s %s %s"
-              (propertize "Fd indexing… " 'face 'warning)
-              (substitute-command-keys "\\[kill-current-buffer]")
-              (propertize "to abort" 'face 'warning))))
+(dirvish-define-mode-line fd-status
+  "Status and time took by last fd search."
+  (car (last (car (dirvish-prop :fd-info)))))
 
-;;;###autoload
-(defun dirvish-fd-jump (&optional current-dir-p)
-  "Browse directories using `fd' command.
-This command takes a while to index all the directories the first time
-you run it.  After the indexing, it fires up instantly except for those
-huge directories such as root.  It is recommended to setup your
-.fdignore properly before using this command.
+(defun dirvish-fd--proc-filter (proc string)
+  "Filter for output STRING of `dirvish-fd''s process PROC."
+  (when-let* (((buffer-name (process-buffer proc)))
+              (target (process-get proc 'target)) ((buffer-live-p target)))
+    (with-current-buffer target
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (cdar dired-subdir-alist)) (goto-char (dired-subdir-max))
+          (cl-loop
+           with buffer-read-only = nil
+           with (_ regexps case-fold-search) = (dirvish-prop :narrow-info)
+           with string = (concat (process-get proc 'tail) string)
+           with splits = (split-string string "\n" t)
+           with tail = (car (last splits))
+           with comp? = (string-suffix-p "\n" string)
+           for file in (if comp? splits (butlast splits))
+           for f-beg = (string-match " ./" file)
+           for f-name = (substring file (+ f-beg 3))
+           for f-line = (concat "  " (substring file 0 f-beg) " " f-name "\n")
+           do (if (not regexps) (insert f-line)
+                (cl-loop for re in regexps
+                         unless (string-match re f-name) return nil
+                         finally do (insert f-line)))
+           finally do (process-put proc 'tail (unless comp? tail))))))))
 
-If called with \\`C-u' or if CURRENT-DIR-P holds the value 4,
-search for directories in the current directory.  Otherwise,
-search for directories in `dirvish-fd-default-dir'.
-
-If prefixed twice with \\`C-u' or if CURRENT-DIR-P holds the
-value 16, let the user choose the root directory of their search."
-  (interactive "p")
-  (let* ((base-dir (cond
-                    ((eq current-dir-p 4) default-directory)
-                    ((eq current-dir-p 16)
-                     (let ((dir (car (find-file-read-args
-                                      "Select root directory: " nil))))
-                       (if (file-directory-p dir)
-                           (file-name-as-directory dir)
-                         (dirvish--get-parent-path dir))))
-                    (t dirvish-fd-default-dir)))
-         (remote (file-remote-p base-dir))
-         (fd-program (dirvish-fd--ensure-fd remote)))
-    (let* ((command (concat fd-program " -H -td --color=never -0 . "
-                            (file-local-name base-dir)))
-           (default-directory base-dir)
-           (output (shell-command-to-string command))
-           (files-raw (split-string output "\0" t))
-           (files (dirvish--completion-table-with-metadata
-                   files-raw '((category . file))))
-           (file (completing-read "Go to: " files))
-           (full-file (concat remote file)))
-      (dired-jump nil full-file))))
-
-(defun dirvish-fd-proc-filter (proc string)
-  "Filter for output STRING of `dirvish-fd''s processes PROC."
-  (let ((buf (process-buffer proc)))
-    (if (not (buffer-name buf)) (delete-process proc)
-      (with-current-buffer buf
-        (save-excursion
-          (save-restriction
-            (widen)
-            (let ((data (dirvish-prop :fd-cache)) buffer-read-only last file)
-              (goto-char (point-max)) (insert string)
-              (goto-char (process-mark proc))
-              (or (looking-at "^") (forward-line 1))
-              ;; strip " ./" prefix and collect data on complete lines
-              (while-let ((fb (search-forward " ./" nil t))
-                          (le (line-end-position)) ((eq (char-after le) 10)))
-                (delete-region fb (- fb 2))
-                (setq file (buffer-substring (- fb 2) (- le 2)) last le)
-                (beginning-of-line) (insert "  ")
-                (puthash file (buffer-substring (- (point) 2) (1+ le)) data)
-                (forward-line 1))
-              (when last (move-marker (process-mark proc) (1+ last))))))))))
-
-(defsubst dirvish-fd-revert (&rest _)
-  "Revert buffer function for fd buffer."
-  (dirvish-fd default-directory (or dirvish-fd--input "")))
-
-(defun dirvish-fd-proc-sentinel (proc _)
-  "Sentinel for `dirvish-fd' process PROC."
-  (when-let* ((buf (process-buffer proc))
-              ((buffer-live-p buf))
-              (status (process-exit-status proc))
-              (took (float-time (time-since (process-get proc 'start)))))
-    (unless (eq status 0) (user-error "`fd' exited with status: %s" status))
-    (if (< took 1.0)
-        (setq took (format "%s ms" (round took 0.001)))
-      (setq took (format "%s secs" (/ (round took 0.001) 1000.0))))
-    (with-current-buffer buf
-      (dirvish-prop :fd-time
-        (format " %s %s "
-                (propertize "Took:" 'face 'font-lock-doc-face)
-                (propertize took 'face 'success)))
+(defun dirvish-fd--proc-sentinel (proc status)
+  "Sentinel for `dirvish-fd' process PROC and its STATUS."
+  (when-let* (((buffer-live-p (process-buffer proc)))
+              (took (float-time (time-since (process-get proc 'start))))
+              (target (process-get proc 'target)) ((buffer-live-p target)))
+    (setq took (if (< took 1.0) (format "%s ms" (round took 0.001))
+                 (format "%s secs" (/ (round took 0.001) 1000.0))))
+    (with-current-buffer target
+      (setf (car (last (car (dirvish-prop :fd-info))))
+            (cond ((string-prefix-p "killed" status)
+                   (propertize " ●  " 'face 'dirvish-proc-failed))
+                  ((string-prefix-p "finished" status)
+                   (propertize (format "%s ●  " took)
+                               'face 'dirvish-proc-finished))
+                  (t (propertize " ●  " 'face 'dirvish-proc-failed))))
       (run-hooks 'dirvish-fd-setup-hook))
     (force-mode-line-update t)))
 
+(defun dirvish-fd--start-proc ()
+  "Start fd process."
+  (let* ((remote (file-remote-p default-directory))
+         (fd (dirvish-fd--ensure-fd remote))
+         (ls (dirvish-fd--find-gnu-ls remote))
+         (fd-args (dirvish-prop :fd-info))
+         (buf (get-buffer-create "*dirvish-fd*"))
+         process-connection-type proc)
+    (when-let* ((op (get-buffer-process buf))) (delete-process op))
+    (setq proc (apply #'start-file-process "fd" buf
+                      `(,fd "--color=never" ,@(cddr fd-args) ,@(cadr fd-args)
+                            "--exec-batch" ,ls
+                            ,@(or (split-string dired-actual-switches) "")
+                            "--quoting-style=literal" "--directory")))
+    (set-process-filter proc #'dirvish-fd--proc-filter)
+    (set-process-sentinel proc #'dirvish-fd--proc-sentinel)
+    (set-process-query-on-exit-flag proc nil)
+    (process-put proc 'start (float-time))
+    (process-put proc 'target (current-buffer))))
+
 ;;;###autoload
-(defun dirvish-fd (dir pattern)
+(defun dirvish-fd (dir re)
   "Run `fd' on DIR and go into Dired mode on a buffer of the output.
 The command run is essentially:
 
-  fd --color=never -0 `dirvish-fd-switches' PATTERN
-     --exec-batch `dirvish-fd-ls-program' `dired-listing-switches' --directory."
+  fd --color=never `dirvish-fd-switches'
+     --and RE [--and RE1 --and RE2 … ]
+     --exec-batch `dirvish-fd-ls-program' `dired-listing-switches' --directory
+
+If called with \\`C-u', prompt for the target directory,
+`default-directory' is used.  If prefixed with \\`C-u' twice, also
+prompt for the search regex RE as a comma separated list."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Fd target directory: " nil "" t))
-                     nil))
+                     (and (equal current-prefix-arg '(16))
+                          (completing-read-multiple "Pattern: " nil))))
   (setq dir (file-name-as-directory
-             (expand-file-name (or dir default-directory))))
+             (expand-file-name (or dir default-directory)))
+        re (mapcan (lambda (x) `(,(format "--and=%s" x)))
+                   (if (stringp re) (split-string re ",") re)))
   (or (file-directory-p dir) (user-error "'fd' requires a directory: %s" dir))
-  (let* ((remote (file-remote-p dir))
-         (fd-program (dirvish-fd--ensure-fd remote))
-         (ls-program (dirvish-fd--find-gnu-ls remote))
-         (dv (or (dirvish-curr) (dirvish--get-session) (dirvish--new)))
-         (fd-switches (or (dirvish-prop :fd-switches) dirvish-fd-switches ""))
+  (let* ((dv (or (dirvish-curr) (dirvish--get-session) (dirvish--new)))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
-         (buffer (get-buffer-create "*dirvish-fd*"))
-         (root (format dirvish-fd-bufname (or pattern "")
+         (root (format dirvish-fd-bufname (or re "")
                        (file-name-nondirectory (directory-file-name dir))))
-         (bname (concat root (dirvish--timestamp))) process-connection-type proc)
-    (with-current-buffer buffer
+         (buffer (get-buffer-create (concat root (dirvish--timestamp))))
+         (fd (dirvish-prop :fd-info)) (re (or re (cadr fd)))
+         (switches (or (cddr fd) (split-string dirvish-fd-switches)))
+         remote)
+    (setf (dv-index dv) (cons root buffer))
+    (cl-pushnew (cons root buffer) (dv-roots dv) :test #'equal)
+    (with-current-buffer buffer ; TODO: session independent?
       (let (buffer-read-only) (erase-buffer))
       (insert "  " dir ":" (make-string (dirvish--subdir-offset) ?\n))
       (dired-mode dir ls-switches)
       (setq-local default-directory dir
-                  dired-subdir-alist (list (cons dir (point-min-marker)))
-                  dirvish-fd--input (or pattern ""))
-      (dirvish--setup-dired #'dirvish-fd-revert)
-      (dirvish-prop :fd-cache (dirvish--ht))
+                  dired-subdir-alist (list (cons dir (point-min-marker))))
+      (dirvish--setup-dired
+       (lambda (&rest _)
+         (setq dired-subdir-alist (list (car (reverse dired-subdir-alist))))
+         (let (buffer-read-only)
+           (buffer-disable-undo)
+           (delete-region (goto-char (dirvish-prop :content-begin)) (point-max)))
+         (buffer-enable-undo)
+         (dirvish-fd--start-proc)))
+      (dirvish-fd--argparser re switches)
+      (dirvish-prop :root root)
       (dirvish-prop :dv (dv-id dv))
-      (dirvish-prop :gui (display-graphic-p))
-      (dirvish-prop :fd-switches fd-switches)
+      (dirvish-prop :gui (display-graphic-p)) ; TODO: remove this
       (dirvish-prop :cus-header 'dirvish-fd-header)
-      (dirvish-prop :remote remote)
+      (dirvish-prop :remote (setq remote (file-remote-p dir)))
       (dirvish-prop :global-header t)
       (dirvish-prop :preview-dps (unless remote (dv-preview-dispatchers dv)))
       (dirvish-prop :attrs (dv-attributes dv))
       (cl-loop for (k v) on dirvish--scopes by 'cddr
                do (dirvish-prop k (and (functionp v) (funcall v))))
-      (dirvish-fd--argparser (split-string (or fd-switches "")))
       (dirvish-save-dedication
        (switch-to-buffer buffer) (dirvish--build-layout dv))
-      (setq proc (apply #'start-file-process "fd" buffer
-                        `(,fd-program "--color=never"
-                                      ,@(or (split-string fd-switches) "")
-                                      ,(or pattern "")
-                                      "--exec-batch" ,ls-program
-                                      ,@(or (split-string ls-switches) "")
-                                      "--quoting-style=literal" "--directory")))
-      (move-marker (process-mark proc) (point) buffer)
-      (set-process-filter proc #'dirvish-fd-proc-filter)
-      (set-process-sentinel proc #'dirvish-fd-proc-sentinel)
-      (set-process-query-on-exit-flag proc nil)
-      (process-put proc 'start (float-time))
-      (setf (dv-index dv) (cons root buffer))
-      (cl-pushnew (cons root buffer) (dv-roots dv) :test #'equal)
-      (cl-loop for (_ . b) in (dv-roots dv)
-               when (equal (with-current-buffer b (dirvish-prop :root)) root)
-               do (dirvish--kill-buffer b))
-      (dirvish-prop :root root)
-      (rename-buffer bname))))
+      (dirvish-fd--start-proc))))
 
-;;;###autoload
-(defun dirvish-fd-ask (dir pattern)
-  "The same as `dirvish-fd' but ask initial DIR and PATTERN via prompt."
-  (interactive (list (and current-prefix-arg
-                          (read-directory-name "Fd target directory: " nil "" t))
-                     (read-from-minibuffer "Pattern: ")))
-  (dirvish-fd dir pattern))
+(define-obsolete-function-alias 'dirvish-fd-ask #'dirvish-fd "Apr 4, 2025")
 
 (provide 'dirvish-fd)
 ;;; dirvish-fd.el ends here

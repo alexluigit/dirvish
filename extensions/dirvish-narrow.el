@@ -57,37 +57,18 @@
   "Face for matches of components numbered 3 mod 4."
   :group 'dirvish)
 
-(defun dirvish-narrow--compile-regex (string)
-  "Compile `completion-regexp-list' from STRING."
-  (if (fboundp 'orderless-compile) (cdr (orderless-compile string))
-    (split-string string)))
-
-(defun dirvish-narrow--highlight (regexps ignore-case string)
-  "Destructively propertize STRING to highlight a match of each of the REGEXPS.
-The search is case insensitive if IGNORE-CASE is non-nil."
-  (cl-loop with case-fold-search = ignore-case
-           with n = (length dirvish-narrow-match-faces)
-           for regexp in regexps and i from 0
-           when (string-match regexp string) do
-           (cl-loop
-            for (x y) on (let ((m (match-data))) (or (cddr m) m)) by #'cddr
-            when x do (add-face-text-property
-                       x y (aref dirvish-narrow-match-faces (mod i n))
-                       nil string)))
-  string)
+(defface dirvish-narrow-split
+  '((t :inherit font-lock-negation-char-face))
+  "Face used to highlight punctuation character."
+  :group 'dirvish)
 
 (defun dirvish-narrow--build-indices ()
   "Update the Dirvish buffer based on the input of the minibuffer."
-  (declare-function dirvish-subtree--revert "dirvish-subtree")
-  (when (bound-and-true-p dirvish-subtree--overlays)
-    (dirvish-subtree--revert t))
   (save-excursion
     (cl-loop
-     for (dir . beg) in dired-subdir-alist
-     if (and (equal dir (expand-file-name default-directory))
-             (dirvish-prop :fd-arglist))
-     do (puthash (md5 dir) (dirvish-prop :fd-cache) dirvish--dir-data)
-     else do (goto-char beg)
+     for (dir . beg) in dired-subdir-alist and idx from 0
+     unless (and (eq idx 0) (dirvish-prop :fd-info))
+     do (goto-char beg)
      (let ((end (dired-subdir-max)) (files (dirvish--ht)))
        (while (< (point) end)
          (when-let* ((f-beg (dired-move-to-filename))
@@ -100,64 +81,98 @@ The search is case insensitive if IGNORE-CASE is non-nil."
          (forward-line 1))
        (puthash (md5 dir) files dirvish--dir-data)))))
 
+(defun dirvish-narrow--compiler (s)
+  "Compile `completion-regexp-list' from string S."
+  (if (fboundp 'orderless-compile) (cdr (orderless-compile s)) (split-string s)))
+
 ;; use a separate timer here, otherwise it would be overrided by the default one
 (defvar dirvish-narrow--delay-timer `(,(timer-create) ,(float-time) nil))
 
 (defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
-  (dirvish--run-with-delay
-    (minibuffer-contents-no-properties) dirvish-narrow--delay-timer
-    (lambda (action)
-      (with-current-buffer (window-buffer (minibuffer-selected-window))
-        (save-excursion
-          (cl-loop with regs = (dirvish-narrow--compile-regex action)
-                   for (dir . pos) in dired-subdir-alist and idx from 0
-                   do (dirvish-narrow--subdir dir pos regs idx)))))))
+  (let* ((mc (minibuffer-contents-no-properties))
+         (filter mc) async rel igc)
+    (save-match-data
+      (when-let* (((string-match "^#\\([^ #]*\\)\\(.*\\)" mc))
+                  (beg (minibuffer-prompt-end)))
+        (add-text-properties beg (1+ beg) '(rear-nonsticky t))
+        (add-face-text-property beg (1+ beg) 'dirvish-narrow-split)
+        (setq async (match-string 1 mc) filter (match-string 2 mc))))
+    (with-current-buffer (cdr (dv-index (dirvish-curr)))
+      (when (and async (dirvish-prop :fd-info))
+        (dirvish-fd--argparser (mapcan (lambda (x) `(,(format "--and=%s" x)))
+                                       (split-string async "," t))
+                               (cddr (dirvish-prop :fd-info))))
+      (setq rel (dirvish-narrow--compiler filter)
+            igc (cl-loop for re in (ensure-list rel)
+                         always (isearch-no-upper-case-p re t)))
+      (dirvish-prop :narrow-info (list async rel igc)))
+    (dirvish--run-with-delay mc dirvish-narrow--delay-timer
+      (lambda (action)
+        (with-current-buffer (cdr (dv-index (dirvish-curr)))
+          (when (dirvish-prop :fd-info) (dirvish-fd--start-proc))
+          (save-excursion
+            (cl-loop for (dir . pos) in dired-subdir-alist and idx from 0
+                     do (delete-region
+                         (progn (goto-char pos)
+                                (forward-line (dirvish--subdir-offset)) (point))
+                         (- (dired-subdir-max) (if (eq idx 0) 0 1)))
+                     unless (and (eq idx 0) (dirvish-prop :fd-info))
+                     do (cl-loop with files = (gethash (md5 dir) dirvish--dir-data)
+                                 with completion-regexp-list = rel
+                                 with completion-ignore-case = igc
+                                 for f in (all-completions "" files)
+                                 do (insert (concat (gethash f files)))))))
+        (when (dv-curr-layout (dirvish-curr)) (force-mode-line-update t))))))
 
-(defun dirvish-narrow--subdir (dir pos regexs idx &optional all)
-  "Narrow subdir DIR at index IDX in POS with REGEXS."
-  (delete-region
-   (progn (goto-char pos) (forward-line (dirvish--subdir-offset)) (point))
-   (- (dired-subdir-max) (if (eq idx 0) 0 1)))
-  (cl-loop with completion-regexp-list = regexs
-           with completion-ignore-case =
-           (cl-loop for re in (ensure-list regexs)
-                    always (isearch-no-upper-case-p re t))
-           with files = (gethash (md5 dir) dirvish--dir-data)
-           and fr-h = (+ (frame-height) 5) and count = 0
-           with pred = (if all #'always (lambda (&rest _) (<= (cl-incf count) fr-h)))
-           for f in (all-completions "" files pred)
-           for l = (concat (gethash f files)) ; use copy, not reference
-           do (insert (if all l (dirvish-narrow--highlight ; lazy highlighting
-                                 regexs completion-ignore-case l)))
-           finally do (dirvish-prop :count count)))
+(dirvish-define-attribute narrow-match
+  "NARROW MATCH."
+  (cl-loop with (_ regexps case-fold-search) = (dirvish-prop :narrow-info)
+           with n = (length dirvish-narrow-match-faces) with ovs = nil
+           for regexp in regexps and i from 0
+           when (string-match regexp f-str) do
+           (cl-loop
+            for (x y) on (let ((m (match-data))) (or (cddr m) m)) by #'cddr
+            when x do (let ((ov (make-overlay (+ f-beg x) (+ f-beg y)))
+                            (face (aref dirvish-narrow-match-faces (mod i n))))
+                        (overlay-put ov 'face face)
+                        (push ov ovs)))
+           finally return `(ovs . ,ovs)))
 
 ;;;###autoload
 (defun dirvish-narrow ()
   "Narrow a Dirvish buffer to the files matching a regex."
   (interactive nil dired-mode)
-  (when (get-buffer-process (current-buffer))
-    (user-error "Current buffer has unfinished jobs"))
+  (when (bound-and-true-p dirvish-subtree--overlays)
+    (declare-function dirvish-subtree--revert "dirvish-subtree")
+    (dirvish-subtree--revert t))
   (require 'orderless nil t)
   (dirvish-narrow--build-indices)
-  (let ((dv (dirvish-prop :dv)) (restore (dirvish-prop :index))
-        input buffer-read-only)
-    (font-lock-mode -1) (buffer-disable-undo)
+  (let ((dv (dirvish-prop :dv))
+        (idx (dirvish-prop :index))
+        (fd (dirvish-prop :fd-info))
+        (attrs (mapcar #'car (dirvish-prop :attrs)))
+        buffer-read-only)
+    (when fd
+      (setq dired-subdir-alist (list (car (reverse dired-subdir-alist))))
+      (delete-region (goto-char (dirvish-prop :content-begin)) (point-max)))
+    (dirvish-prop :attrs
+      (dirvish--attrs-expand (append '(narrow-match) attrs)))
     (minibuffer-with-setup-hook
         (lambda ()
           (dirvish-prop :dv dv)
           (add-hook 'post-command-hook #'dirvish-narrow-update-h nil t))
       (unwind-protect
-          (setq input (read-from-minibuffer "Focus on files: "))
-        (save-excursion
-          (cl-loop with re = (dirvish-narrow--compile-regex (or input ""))
-                   for (d . p) in dired-subdir-alist and i from 0
-                   do (dirvish-narrow--subdir d p re i (or input ""))))
-        (dirvish-prop :count nil)
-        (when restore (dired-goto-file restore))
+          (read-from-minibuffer "Focus on files: " (if fd "#" ""))
+        (when idx (dired-goto-file idx))
+        (dirvish-prop :attrs (dirvish--attrs-expand attrs))
+        (when-let* (((not (eq (dv-type (dirvish-curr)) 'side)))
+                    (query (caar (dirvish-prop :fd-info)))
+                    (key (file-name-nondirectory
+                          (directory-file-name default-directory))))
+          (rename-buffer (concat key "🔍" query "🔍" (dv-id (dirvish-curr)))))
         (dirvish--run-with-delay 'reset)
-        (dirvish--run-with-delay 'reset dirvish-narrow--delay-timer)
-        (font-lock-mode 1) (buffer-enable-undo)))))
+        (dirvish--run-with-delay 'reset dirvish-narrow--delay-timer)))))
 
 (provide 'dirvish-narrow)
 ;;; dirvish-narrow.el ends here

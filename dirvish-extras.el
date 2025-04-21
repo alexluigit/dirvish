@@ -426,7 +426,7 @@ current layout defined in `dirvish-layout-recipes'."
    ("s" "Sort current buffer"    dirvish-quicksort)
    ("l" "Setup listing switches" dirvish-ls-switches-menu)
    ("f" "Setup fd-find switches" dirvish-fd-switches-menu
-    :if (lambda () (dirvish-prop :fd-arglist)))
+    :if (lambda () (dirvish-prop :fd-info)))
    ("S" "Setup rsync switches"   dirvish-rsync-switches-menu)
    ("m" "Manage marks"           dirvish-mark-menu)
    ("e" "Manage emerged groups"  dirvish-emerge-menu)
