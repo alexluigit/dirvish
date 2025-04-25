@@ -204,7 +204,7 @@ Raise an error if fd executable is not available."
                         'face 'font-lock-string-face)
             (propertize "excludes:" 'face face)
             (propertize (if (equal excludes "") "none" excludes)
-                        'face 'font-lock-string-face))))
+                        'face 'font-lock-variable-name-face))))
 
 (dirvish-define-mode-line fd-status
   "Status and time took by last fd search."
@@ -287,7 +287,8 @@ Raise an error if fd executable is not available."
       (let (buffer-read-only)
         (erase-buffer)
         (insert "  " dir ":" (make-string (dirvish--subdir-offset) ?\n)))
-      (unless (derived-mode-p 'dired-mode) (dired-mode dir ls-switches))
+      (unless (derived-mode-p 'dired-mode)
+        (let (dired-buffers) (dired-mode dir ls-switches)))
       (setq-local default-directory dir
                   dired-subdir-alist (list (cons dir (point-min-marker))))
       (dirvish-fd--argparser re switches)

@@ -36,14 +36,14 @@
 
 ;;;###autoload
 (defun dirvish-history-jump ()
-  "Open a target directory from `dirvish--history'."
+  "Read a recently visited directory from minibuffer and revisit it."
   (interactive)
-  (unless dirvish--history (user-error "Dirvish[error]: no history entries"))
+  (unless dired-buffers (user-error "Dirvish[error]: no history entries"))
   (when-let* ((result
                (completing-read
                 "Recently visited: "
                 (dirvish--completion-table-with-metadata
-                 dirvish--history
+                 (mapcar #'car dired-buffers)
                  `((category . file)
                    (display-sort-function . ,dirvish-history-sort-function))))))
     (dirvish--find-entry 'find-file result)))
@@ -52,11 +52,11 @@
 (defun dirvish-history-last ()
   "Switch to the most recently visited dirvish buffer."
   (interactive)
-  (unless dirvish--history (user-error "Dirvish[error]: no history entries"))
+  (unless dired-buffers (user-error "Dirvish[error]: no history entries"))
   (let ((match
          (cl-loop
           with local-entries = (mapcar #'car (dv-roots (dirvish-curr)))
-          for entry in dirvish--history
+          for entry in (mapcar #'car dired-buffers)
           thereis (and (member entry local-entries)
                        (not (equal entry (dired-current-directory))) entry))))
     (and match (dirvish--find-entry 'find-file match))))
@@ -67,17 +67,17 @@
 ARG defaults to 1."
   (interactive "^p")
   (let* ((dv (or (dirvish-curr) (user-error "Not in a dirvish session")))
-         (dirs (reverse (mapcar #'car (dv-roots dv))))
-         (len (length dirs))
-         (idx (cl-position (car (dv-index dv)) dirs :test #'equal))
+         (bufs (reverse (mapcar #'cdr (dv-roots dv))))
+         (len (length bufs))
+         (idx (cl-position (cdr (dv-index dv)) bufs))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
-           (dirvish--find-entry 'find-file (nth (- len 1) dirs))
+           (dirvish-save-dedication (switch-to-buffer (nth (- len 1) bufs)))
            (message "Dirvish: reached the end of history"))
           ((< new-idx 0)
-           (dirvish--find-entry 'find-file (nth 0 dirs))
+           (dirvish-save-dedication (switch-to-buffer (nth 0 bufs)))
            (message "Dirvish: reached the beginning of history"))
-          (t (dirvish--find-entry 'find-file (nth new-idx dirs))))))
+          (t (dirvish-save-dedication (switch-to-buffer (nth new-idx bufs)))))))
 
 ;;;###autoload
 (defun dirvish-history-go-backward (arg)
