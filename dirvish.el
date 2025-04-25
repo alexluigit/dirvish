@@ -615,8 +615,11 @@ FIND-FN can be one of `find-file', `find-alternate-file',
          (cl-return-from dirvish--find-entry))
     ;; forward requests from `find-dired'
     (unless dv (cl-return-from dirvish--find-entry (funcall find-fn entry)))
-    (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window)
-         (dirvish-layout-toggle))
+    (unless dir? (mapc #'dirvish--kill-buffer (dv-preview-buffers dv)))
+    (when (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window))
+      (if dir? (dirvish-layout-toggle)
+        (select-window (dv-preview-window dv))
+        (cl-return-from dirvish--find-entry (find-file entry))))
     (when (and dir? (eq find-fn 'find-alternate-file))
       (dirvish-save-dedication (find-file entry))
       (with-current-buffer cur ; check if the buffer should be killed
@@ -624,7 +627,6 @@ FIND-FN can be one of `find-file', `find-alternate-file',
              (cl-return-from dirvish--find-entry)))
       (cl-return-from dirvish--find-entry (dirvish--kill-buffer cur)))
     (if dir? (dirvish-save-dedication (funcall find-fn entry))
-      (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
       (funcall (dv-open-file dv) dv find-fn entry))))
 
 ;;;; Preview
