@@ -333,8 +333,7 @@ opening and customized handling of specific file types."
     (dirvish-collapse collapse)
     (dirvish-subtree  subtree-state)
     (dirvish-yank     yank)))
-(defvar dirvish--delay-timer `(,(timer-create) ,(float-time) nil))
-(defvar dirvish--reset-keywords '(:free-space :content-begin))
+(defvar dirvish--timers `(:default (,(timer-create) ,(float-time) nil)))
 (defvar dirvish--selected-window nil)
 (defvar dirvish--sessions (make-hash-table :test #'equal))
 (defvar dirvish--available-attrs '())
@@ -358,9 +357,12 @@ Set the PROP with BODY if given."
   "Run function FUN accroding to ACTION with delay.
 DEBOUNCE defaults to `dirvish-input-debounce'.
 THROTTLE defaults to `dirvish-input-throttle'.
-RECORD defaults to `dirvish--delay-timer'."
+RECORD defaults to `:default' record in `dirvish--timers'."
   (declare (indent defun))
-  (setq record (or record dirvish--delay-timer) fun (or fun #'ignore)
+  (unless (plist-get dirvish--timers (setq record (or record :default)))
+    (cl-callf append dirvish--timers
+      `(,record (,(timer-create) ,(float-time) nil))))
+  (setq record (plist-get dirvish--timers record) fun (or fun #'ignore)
         debounce (or debounce dirvish-input-debounce)
         throttle (or throttle dirvish-input-throttle))
   (pcase action
@@ -1281,7 +1283,7 @@ Dirvish sets `revert-buffer-function' to this function."
   (let ((dv (dirvish-curr)))
     (dirvish--check-dependencies dv) ; update dirvish setups
     (dirvish-prop :attrs (dv-attributes dv)))
-  (dolist (keyword dirvish--reset-keywords) (dirvish-prop keyword nil))
+  (dolist (keyword '(:free-space :content-begin)) (dirvish-prop keyword nil))
   (dired-revert)
   (dirvish--hide-dired-header)
   (when ignore-auto ; meaning it is called interactively from user

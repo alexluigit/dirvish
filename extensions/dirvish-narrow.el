@@ -85,9 +85,6 @@
   "Compile `completion-regexp-list' from string S."
   (if (fboundp 'orderless-compile) (cdr (orderless-compile s)) (split-string s)))
 
-;; use a separate timer here, otherwise it would be overrided by the default one
-(defvar dirvish-narrow--delay-timer `(,(timer-create) ,(float-time) nil))
-
 (defun dirvish-narrow-update-h ()
   "Update the Dirvish buffer based on the input of the minibuffer."
   (let* ((mc (minibuffer-contents-no-properties))
@@ -107,7 +104,7 @@
             igc (cl-loop for re in (ensure-list rel)
                          always (isearch-no-upper-case-p re t)))
       (dirvish-prop :narrow-info (list async rel igc)))
-    (dirvish--run-with-delay mc dirvish-narrow--delay-timer
+    (dirvish--run-with-delay mc :narrow
       (lambda (action)
         (with-current-buffer (cdr (dv-index (dirvish-curr)))
           (when (dirvish-prop :fd-info) (dirvish-fd--start-proc))
@@ -172,7 +169,7 @@
                           (directory-file-name default-directory))))
           (rename-buffer (concat key "🔍" query "🔍" (dv-id (dirvish-curr)))))
         (dirvish--run-with-delay 'reset)
-        (dirvish--run-with-delay 'reset dirvish-narrow--delay-timer)))))
+        (dirvish--run-with-delay 'reset :narrow)))))
 
 (provide 'dirvish-narrow)
 ;;; dirvish-narrow.el ends here
