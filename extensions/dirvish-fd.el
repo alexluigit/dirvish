@@ -61,10 +61,9 @@
   "Listing program for `fd'."
   :type '(string :tag "Listing program, such as `ls'") :group 'dirvish)
 
-
-(defconst dirvish-fd-bufname "🔍%s📁%s📁") ; TODO: remove this
-(defconst dirvish-fd-header ; TODO: refactor this
-  (dirvish--mode-line-composer '(fd-info) '(fd-status) t))
+(defcustom dirvish-fd-header-line-format '(:left (fd-info) :right (fd-status))
+  "Header line format for `dirvish-fd'."
+  :group 'dirvish :type 'plist)
 
 (defun dirvish-fd--ensure-fd (remote)
   "Return fd executable on REMOTE or localhost.
@@ -275,65 +274,58 @@ Raise an error if fd executable is not available."
     (process-put proc 'start (float-time))
     (process-put proc 'target (current-buffer))))
 
+(defun dirvish-fd-noselect (dv dir pattern)
+  "Return the fd buffer for DV at DIR with search PATTERN."
+  (let* ((re (mapcan (lambda (x) `(,(format "--and=%s" x)))
+                     (if (stringp pattern) (split-string pattern ",") pattern)))
+         (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
+         (key (file-name-nondirectory (directory-file-name dir)))
+         (buf (get-buffer-create (concat key "🔍" pattern "🔍" (dv-id dv))))
+         (fd (dirvish-prop :fd-info)) (re (or re (cadr fd)))
+         (switches (or (cddr fd) (split-string dirvish-fd-switches))))
+    (with-current-buffer buf
+      (let (buffer-read-only)
+        (erase-buffer)
+        (insert "  " dir ":" (make-string (dirvish--subdir-offset) ?\n)))
+      (unless (derived-mode-p 'dired-mode) (dired-mode dir ls-switches))
+      (setq-local default-directory dir
+                  dired-subdir-alist (list (cons dir (point-min-marker))))
+      (dirvish-fd--argparser re switches)
+      (dirvish-prop :revert
+        (lambda (&rest _)
+          (setq dired-subdir-alist (list (car (reverse dired-subdir-alist))))
+          (let (buffer-read-only)
+            (buffer-disable-undo)
+            (delete-region (goto-char (dirvish-prop :content-begin)) (point-max)))
+          (buffer-enable-undo)
+          (dirvish-fd--start-proc)))
+      (let* ((fmt dirvish-fd-header-line-format)
+             (l (plist-get fmt :left)) (r (plist-get fmt :right)))
+        (dirvish-prop :cus-header (dirvish--mode-line-composer l r t)))
+      (dirvish-prop :global-header t)
+      (dirvish--setup-dired)
+      (dirvish-fd--start-proc) buf)))
+
 ;;;###autoload
-(defun dirvish-fd (dir re)
+(defun dirvish-fd (dir pattern)
   "Run `fd' on DIR and go into Dired mode on a buffer of the output.
 The command run is essentially:
 
   fd --color=never `dirvish-fd-switches'
-     --and RE [--and RE1 --and RE2 … ]
+     --and PATTERN [--and PATTERN1 --and PATTERN2 … ]
      --exec-batch `dirvish-fd-ls-program' `dired-listing-switches' --directory
 
 If called with \\`C-u', prompt for the target directory,
 `default-directory' is used.  If prefixed with \\`C-u' twice, also
-prompt for the search regex RE as a comma separated list."
+prompt for the search regex PATTERN as a comma separated list."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Fd target directory: " nil "" t))
                      (and (equal current-prefix-arg '(16))
                           (completing-read-multiple "Pattern: " nil))))
-  (setq dir (file-name-as-directory
-             (expand-file-name (or dir default-directory)))
-        re (mapcan (lambda (x) `(,(format "--and=%s" x)))
-                   (if (stringp re) (split-string re ",") re)))
-  (or (file-directory-p dir) (user-error "'fd' requires a directory: %s" dir))
-  (let* ((dv (or (dirvish-curr) (dirvish--get-session) (dirvish--new)))
-         (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
-         (root (format dirvish-fd-bufname (or re "")
-                       (file-name-nondirectory (directory-file-name dir))))
-         (buffer (get-buffer-create (concat root (dirvish--timestamp))))
-         (fd (dirvish-prop :fd-info)) (re (or re (cadr fd)))
-         (switches (or (cddr fd) (split-string dirvish-fd-switches)))
-         remote)
-    (setf (dv-index dv) (cons root buffer))
-    (cl-pushnew (cons root buffer) (dv-roots dv) :test #'equal)
-    (with-current-buffer buffer ; TODO: session independent?
-      (let (buffer-read-only) (erase-buffer))
-      (insert "  " dir ":" (make-string (dirvish--subdir-offset) ?\n))
-      (dired-mode dir ls-switches)
-      (setq-local default-directory dir
-                  dired-subdir-alist (list (cons dir (point-min-marker))))
-      (dirvish--setup-dired
-       (lambda (&rest _)
-         (setq dired-subdir-alist (list (car (reverse dired-subdir-alist))))
-         (let (buffer-read-only)
-           (buffer-disable-undo)
-           (delete-region (goto-char (dirvish-prop :content-begin)) (point-max)))
-         (buffer-enable-undo)
-         (dirvish-fd--start-proc)))
-      (dirvish-fd--argparser re switches)
-      (dirvish-prop :root root)
-      (dirvish-prop :dv (dv-id dv))
-      (dirvish-prop :gui (display-graphic-p)) ; TODO: remove this
-      (dirvish-prop :cus-header 'dirvish-fd-header)
-      (dirvish-prop :remote (setq remote (file-remote-p dir)))
-      (dirvish-prop :global-header t)
-      (dirvish-prop :preview-dps (unless remote (dv-preview-dispatchers dv)))
-      (dirvish-prop :attrs (dv-attributes dv))
-      (cl-loop for (k v) on dirvish--scopes by 'cddr
-               do (dirvish-prop k (and (functionp v) (funcall v))))
-      (dirvish-save-dedication
-       (switch-to-buffer buffer) (dirvish--build-layout dv))
-      (dirvish-fd--start-proc))))
+  (let* ((dir (or dir default-directory))
+         (buf (dirvish-dired-noselect-a nil dir nil (or pattern "")))
+         (dv (with-current-buffer buf (dirvish-curr))))
+    (dirvish-save-dedication (switch-to-buffer buf) (dirvish--build-layout dv))))
 
 (define-obsolete-function-alias 'dirvish-fd-ask #'dirvish-fd "Apr 4, 2025")
 

@@ -102,6 +102,11 @@ the full-frame layout when file previews are needed."
                        (float :tag "max width of parent windows")
                        (float :tag "width of preview windows"))))
 
+(defcustom dirvish-large-directory-threshold nil
+  "Directories with file count greater than this are opened using `dirvish-fd'."
+  :group 'dirvish :type '(choice (const :tag "Never use `dirvish-fd'" nil)
+                                 (natnum :tag "File counts in integer")))
+
 (defface dirvish-hl-line
   '((t :inherit highlight :extend t))
   "Face used for Dirvish line highlighting in focused Dirvish window."
@@ -602,18 +607,10 @@ FROM-QUIT is used to signify the calling command."
 (cl-defun dirvish--find-entry (find-fn entry)
   "Find ENTRY using FIND-FN in current dirvish session.
 FIND-FN can be one of `find-file', `find-alternate-file',
-`find-file-other-window' or `find-file-other-frame'.  ENTRY can be a
-filename or a string with format of `dirvish-fd-bufname'."
+`find-file-other-window' or `find-file-other-frame'."
   (let ((switch-to-buffer-preserve-window-point (null dired-auto-revert-buffer))
         (find-file-run-dired t) (dv (dirvish-curr))
-        (directory? (file-directory-p entry)) (cur (current-buffer)) cache)
-    (when (setq cache (and dv (alist-get entry (dv-roots dv) nil nil #'equal)))
-      (cl-return-from dirvish--find-entry
-        (dirvish-save-dedication (switch-to-buffer cache))))
-    (when (string-prefix-p "🔍" entry)
-      (setq find-fn (prog1 'dirvish-fd (require 'dirvish-fd nil t)))
-      (pcase-let ((`(,re ,dir ,_) (split-string (substring entry 1) "📁")))
-        (cl-return-from dirvish--find-entry (funcall find-fn dir re))))
+        (dir? (file-directory-p entry)) (cur (current-buffer)))
     (and (run-hook-with-args-until-success
           'dirvish-find-entry-hook entry find-fn)
          (cl-return-from dirvish--find-entry))
@@ -621,13 +618,13 @@ filename or a string with format of `dirvish-fd-bufname'."
     (unless dv (cl-return-from dirvish--find-entry (funcall find-fn entry)))
     (and (dv-curr-layout dv) (eq find-fn 'find-file-other-window)
          (dirvish-layout-toggle))
-    (when (and directory? (eq find-fn 'find-alternate-file))
+    (when (and dir? (eq find-fn 'find-alternate-file))
       (dirvish-save-dedication (find-file entry))
       (with-current-buffer cur ; check if the buffer should be killed
         (and (bound-and-true-p server-buffer-clients)
              (cl-return-from dirvish--find-entry)))
       (cl-return-from dirvish--find-entry (dirvish--kill-buffer cur)))
-    (if directory? (dirvish-save-dedication (funcall find-fn entry))
+    (if dir? (dirvish-save-dedication (funcall find-fn entry))
       (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
       (funcall (dv-open-file dv) dv find-fn entry))))
 
@@ -1171,13 +1168,13 @@ Optionally, use CURSOR as the enabled cursor type."
                do (push b rs) ; in case there is any lingering sessions
                finally do (unless rs (setq dirvish--sessions (dirvish--ht)))))))
 
-(defun dirvish--setup-dired (&optional revert-fn)
-  "Initialize Dired buffers, set `revert-buffer-function' to REVERT-FN."
+(defun dirvish--setup-dired ()
+  "Initialize Dired buffers."
   (use-local-map dirvish-mode-map)
   (dirvish--hide-dired-header)
   (dirvish--maybe-toggle-cursor 'box) ; restore from `wdired'
   (setq-local dirvish--dir-data (or dirvish--dir-data (dirvish--ht))
-              revert-buffer-function (or revert-fn #'dirvish-revert)
+              revert-buffer-function (or (dirvish-prop :revert) #'dirvish-revert)
               truncate-lines t dired-hide-details-hide-symlink-targets nil)
   (add-hook 'pre-redisplay-functions #'dirvish-pre-redisplay-h nil t)
   (add-hook 'window-buffer-change-functions #'dirvish-winbuf-change-h nil t)
@@ -1469,25 +1466,29 @@ With optional NOSELECT just find files but do not select them."
     (mapc #'dirvish--kill-buffer (dv-preview-buffers dv))
     (dired-simultaneous-find-file files noselect)))
 
-(defun dirvish-dired-noselect-a (fn dir-or-list &optional flags)
+(defun dirvish-dired-noselect-a (fn dir-or-list &optional flags re)
   "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
          (dv (or (dirvish-curr) (dirvish--get-session) (dirvish--new)))
-         (bname buffer-file-name)
-         (remote (file-remote-p dir))
+         (bname buffer-file-name) (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
+         (mc dirvish-large-directory-threshold)
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
          (new? (null buffer)) (dps (dv-preview-dispatchers dv))
-         tramp-fn dired-buffers) ; disable reuse from dired
+         tramp fd dired-buffers) ; disable reuse from dired
     (setf (dv-timestamp dv) (dirvish--timestamp))
-    (when new?
-      (if (not remote) (setq buffer (apply fn (list dir-or-list flags)))
-        (setq tramp-fn (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
-              buffer (apply tramp-fn (list fn dir-or-list flags remote dps))))
-      (with-current-buffer buffer (dirvish--setup-dired))
-      (push (cons key buffer) (dv-roots dv)))
+    (cond ((and new? remote)
+           (setq tramp (prog1 'dirvish-tramp-noselect (require 'dirvish-tramp))
+                 buffer (apply tramp (list fn dir-or-list flags remote dps))))
+          ((or re (and mc (length> (directory-files key nil nil t mc) (1- mc))))
+           (setq fd (prog1 'dirvish-fd-noselect (require 'dirvish-fd nil t))
+                 buffer (apply fd (list dv key (or re "")))
+                 key (concat key "🔍" (or re ""))))
+          (new? (setq buffer (apply fn (list dir-or-list flags)))))
+    (cl-pushnew (cons key buffer) (dv-roots dv) :test #'equal)
     (with-current-buffer buffer
+      (dirvish--setup-dired)
       (cond (new? nil)
             ((and (not remote) (not (equal flags dired-actual-switches)))
              (dired-sort-other flags))
