@@ -1,3 +1,16 @@
+* 2.3.0
+
+** What's changed
+
++ add =file-modes= attribute
++ prevent =tab-bar-mode= from messing up window layout
++ add =dirvish-hl-line-inactive= face
++ remove =dirvish-open-with-programs= | improve =dirvish-find-entry-hook= (#182 #186 #275 #315)
++ fix race condition in =dirvish-subtree=
++ add =dirvish-peek-key= user option
++ asynchronous filtering and match highlighting with =dirvish-narrow=
++ add =dirvish-large-directory-threshold= user option, integrate =fd= to dirvish core
+
 * 2.2.7
 
 ** What's changed
