@@ -280,7 +280,8 @@ Raise an error if fd executable is not available."
                      (if (stringp pattern) (split-string pattern ",") pattern)))
          (ls-switches (or dired-actual-switches (dv-ls-switches dv)))
          (key (file-name-nondirectory (directory-file-name dir)))
-         (buf (get-buffer-create (concat key "🔍" pattern "🔍" (dv-id dv))))
+         (query (if (stringp pattern) pattern (mapconcat #'concat pattern ",")))
+         (buf (get-buffer-create (concat key "🔍" query "🔍" (dv-id dv))))
          (fd (dirvish-prop :fd-info)) (re (or re (cadr fd)))
          (switches (or (cddr fd) (split-string dirvish-fd-switches))))
     (with-current-buffer buf

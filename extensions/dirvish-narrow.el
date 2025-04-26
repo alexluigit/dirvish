@@ -119,7 +119,7 @@
                                  with completion-regexp-list = rel
                                  with completion-ignore-case = igc
                                  for f in (all-completions "" files)
-                                 do (insert (concat (gethash f files)))))))
+                                 do (insert (gethash f files))))))
         (when (dv-curr-layout (dirvish-curr)) (force-mode-line-update t))))))
 
 (dirvish-define-attribute narrow-match

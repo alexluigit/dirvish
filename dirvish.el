@@ -1487,7 +1487,8 @@ With optional NOSELECT just find files but do not select them."
           ((or re (and mc (length> (directory-files key nil nil t mc) (1- mc))))
            (setq fd (prog1 'dirvish-fd-noselect (require 'dirvish-fd nil t))
                  buffer (apply fd (list dv key (or re "")))
-                 key (concat key "🔍" (or re ""))))
+                 re (if (stringp re) re (mapconcat #'concat re ","))
+                 key (concat key "🔍" re)))
           (new? (let (dired-buffers) ; disable reuse from `dired'
                   (setq buffer (apply fn (list dir-or-list flags))))))
     (when (setq new? (null (alist-get key (dv-roots dv) nil nil #'equal)))
