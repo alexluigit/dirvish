@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.2.7
+;; Version: 2.3.0
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -14,7 +14,7 @@
 
 ;;; Code:
 
-(require 'dirvish)
+(require 'dirvish-fd)
 
 ;; Credit: copied from `orderless.el'
 (defcustom dirvish-narrow-match-faces
@@ -105,7 +105,7 @@
                          always (isearch-no-upper-case-p re t)))
       (dirvish-prop :narrow-info (list async rel igc)))
     (dirvish--run-with-delay mc :narrow
-      (lambda (action)
+      (lambda (_action)
         (with-current-buffer (cdr (dv-index (dirvish-curr)))
           (when (dirvish-prop :fd-info) (dirvish-fd--start-proc))
           (save-excursion
@@ -123,7 +123,7 @@
         (when (dv-curr-layout (dirvish-curr)) (force-mode-line-update t))))))
 
 (dirvish-define-attribute narrow-match
-  "NARROW MATCH."
+  "Highlight matched part of narrowed files."
   (cl-loop with (_ regexps case-fold-search) = (dirvish-prop :narrow-info)
            with n = (length dirvish-narrow-match-faces) with ovs = nil
            for regexp in regexps and i from 0
