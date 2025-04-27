@@ -1474,7 +1474,9 @@ With optional NOSELECT just find files but do not select them."
   "Return buffer for DIR-OR-LIST with FLAGS, FN is `dired-noselect'."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
-         (dv (or (dirvish-curr) (dirvish--get-session) (dirvish--new)))
+         (dvc (dirvish-curr))
+         (dv (if (and dvc (not (eq (dv-type dvc) 'peek))) dvc
+               (or (dirvish--get-session) (dirvish--new))))
          (bname buffer-file-name) (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (mc dirvish-large-directory-threshold)
