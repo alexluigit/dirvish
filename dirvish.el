@@ -1499,12 +1499,6 @@ With optional NOSELECT just find files but do not select them."
     (setcdr (assoc (car hist) dired-buffers) buffer)
     (with-current-buffer buffer
       (dirvish--setup-dired)
-      (cond (new? nil)
-            ((and (not remote) (not (equal flags dired-actual-switches)))
-             (dired-sort-other flags))
-            ((eq dired-auto-revert-buffer t) (revert-buffer))
-            ((functionp dired-auto-revert-buffer)
-             (when (funcall dired-auto-revert-buffer dir) (revert-buffer))))
       (funcall (dv-root-conf dv) buffer)
       (dirvish-prop :dv (dv-id dv))
       (dirvish-prop :gui (display-graphic-p))
