@@ -1416,6 +1416,7 @@ Dirvish sets `revert-buffer-function' to this function."
         (unless (eq pane 'preview) (set-window-dedicated-p win t))
         (set-window-buffer win buf)))
     (dirvish--create-parent-windows dv)
+    (dirvish--run-with-delay 'reset) ; preview initialization
     (dirvish--maybe-toggle-cursor)
     (dirvish--maybe-toggle-details)))
 
