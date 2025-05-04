@@ -416,8 +416,9 @@ current layout defined in `dirvish-layout-recipes'."
    "" "Actions & Essential commands"
    ("u" "User interface setup"   dirvish-setup-menu)
    ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)
-   ("/" "Perform fd search"      dirvish-fd)
-   ("@" "Find all dirs by fd"    dirvish-fd-jump)
+   ("/" "Run fd search here"     dirvish-fd)
+   ("#" "Search everything in ~" (lambda () (interactive)
+                                   (dirvish-fd "~" "") (dirvish-narrow)))
    ("R" "Rsync marked files"     dirvish-rsync)
    ("n" "Live narrowing"         dirvish-narrow)
    "Transient commands"
