@@ -412,7 +412,8 @@ current layout defined in `dirvish-layout-recipes'."
   [:description
    (lambda () (dirvish--format-menu-heading
           "Dirvish main menu"
-          "NOTICE: these commands require relevant Dirvish extensions"))
+          "NOTICE: these commands require relevant Dirvish extensions")
+     (declare-function dirvish-narrow "dirvish-narrow"))
    "" "Actions & Essential commands"
    ("u" "User interface setup"   dirvish-setup-menu)
    ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)

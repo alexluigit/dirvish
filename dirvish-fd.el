@@ -21,7 +21,7 @@
   :type 'string :group 'dirvish)
 
 (defun dirvish-fd--find-fd-program (&optional remote)
-  "Find fd programm on a local or `REMOTE' host ."
+  "Find fd programm on a local or REMOTE host ."
   (let ((fd (executable-find "fd" remote))
         (fdfind (executable-find "fdfind" remote)))
     (cond (fd fd)

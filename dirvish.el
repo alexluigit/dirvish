@@ -466,7 +466,7 @@ Set process's SENTINEL and PUTS accordingly."
 ;;;; Session Struct
 
 (cl-defstruct (dirvish (:conc-name dv-))
-  "Define dirvish session (`DV' for short) struct."
+  "Define dirvish session (DV for short) struct."
   (id (make-temp-name "")             :documentation "is the unique key of DV stored in `dirvish--sessions'.")
   (timestamp (dirvish--timestamp)     :documentation "is the last access timestamp of DV.")
   (type 'default                      :documentation "is the type of DV.")
