@@ -341,9 +341,10 @@ It sets the value for every variable matching INCLUDE-REGEXP."
 (defun dirvish-yank--apply (method dest)
   "Apply yank METHOD to DEST."
   (setq dest (expand-file-name (or dest (dired-current-directory))))
-  (let ((srcs (or (and (functionp dirvish-yank-sources)
+  (let ((srcs (or (and (not (member dirvish-yank-sources '(all session buffer)))
+		       (functionp dirvish-yank-sources)
                        (funcall dirvish-yank-sources))
-                  (dirvish-yank--get-srcs dirvish-yank-sources)
+		  (dirvish-yank--get-srcs dirvish-yank-sources)
                   (user-error "DIRVISH[yank]: no marked files"))))
     (dirvish-yank-default-handler method srcs dest)))
 
