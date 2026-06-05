@@ -1497,27 +1497,29 @@ With optional NOSELECT just find files but do not select them."
                  key (concat key "🔍" re)))
           (new? (let (dired-buffers) ; disable reuse from `dired'
                   (setq buffer (apply fn (list dir-or-list flags))))))
-    (when (setq new? (null (alist-get key (dv-roots dv) nil nil #'equal)))
-      (push (cons key buffer) (dv-roots dv)))
-    (unless (member (car hist) (mapcar #'car dired-buffers))
-      (setq dired-buffers (seq-take (push hist dired-buffers) 20000)))
-    (setcdr (assoc (car hist) dired-buffers) buffer)
-    (with-current-buffer buffer
-      (dirvish--setup-dired)
-      (funcall (dv-root-conf dv) buffer)
-      (dirvish-prop :dv (dv-id dv))
-      (dirvish-prop :gui (display-graphic-p))
-      (dirvish-prop :remote remote)
-      (dirvish-prop :root key)
-      (unless remote (dirvish-prop :preview-dps dps))
-      (dirvish-prop :attrs (dv-attributes dv))
-      (cl-loop for (k v) on dirvish--scopes by 'cddr
-               do (dirvish-prop k (and (functionp v) (funcall v))))
-      (when new? (dirvish--dir-data-async (car hist) buffer))
-      (when bname (dired-goto-file bname))
-      (setf (dv-index dv) (cons key buffer))
-      (run-hook-with-args 'dirvish-find-entry-hook (car hist) 'dired)
-      buffer)))
+    (when buffer
+      ;; Don't continue if dired-noselect returns no buffer.
+      (when (setq new? (null (alist-get key (dv-roots dv) nil nil #'equal)))
+        (push (cons key buffer) (dv-roots dv)))
+      (unless (member (car hist) (mapcar #'car dired-buffers))
+        (setq dired-buffers (seq-take (push hist dired-buffers) 20000)))
+      (setcdr (assoc (car hist) dired-buffers) buffer)
+      (with-current-buffer buffer
+        (dirvish--setup-dired)
+        (funcall (dv-root-conf dv) buffer)
+        (dirvish-prop :dv (dv-id dv))
+        (dirvish-prop :gui (display-graphic-p))
+        (dirvish-prop :remote remote)
+        (dirvish-prop :root key)
+        (unless remote (dirvish-prop :preview-dps dps))
+        (dirvish-prop :attrs (dv-attributes dv))
+        (cl-loop for (k v) on dirvish--scopes by 'cddr
+                 do (dirvish-prop k (and (functionp v) (funcall v))))
+        (when new? (dirvish--dir-data-async (car hist) buffer))
+        (when bname (dired-goto-file bname))
+        (setf (dv-index dv) (cons key buffer))
+        (run-hook-with-args 'dirvish-find-entry-hook (car hist) 'dired)
+        buffer))))
 
 ;;;; Commands
 
