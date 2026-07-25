@@ -401,7 +401,12 @@ See `dirvish-subtree-file-viewer' for details"
   "Insert subtree at point or remove it if it was not present."
   (interactive)
   (if (dirvish-subtree--expanded-p)
-      (progn (dired-next-line 1) (dirvish-subtree-remove))
+      (let ((original-line (line-number-at-pos)))  ; Save current line
+        (dired-next-line 1)
+        (dirvish-subtree-remove)
+        ;; Fix: Return to original line and position cursor properly
+        (goto-line original-line)
+        (dired-move-to-filename))
     (condition-case err (dirvish-subtree--insert)
       (file-error (dirvish-subtree--view-file))
       (error (message "%s" (cdr err))))))
