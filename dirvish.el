@@ -1484,7 +1484,17 @@ With optional NOSELECT just find files but do not select them."
          (flags (or flags (dv-ls-switches dv)))
          (mc dirvish-large-directory-threshold)
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
-         (new? (null buffer)) (dps (dv-preview-dispatchers dv))
+         ;; embark-export-dired uses a hack to force dired to create a new
+         ;; buffer documented here:
+         ;; https://github.com/oantolin/embark/issues/675
+         ;; make dirvish aware of it so it also creates new buffer. Without this
+         ;; code when opening a directory in dirvish and then using e.g
+         ;; consult-fd combined with embark-export in that folder it fails
+         ;; because it tries to reuse the existing buffer
+         (new? (or
+                (null buffer)
+                (eq (symbol-function 'dired-find-buffer-nocreate) #'ignore)))
+         (dps (dv-preview-dispatchers dv))
          (hist (cons key nil)) tramp fd)
     (setf (dv-timestamp dv) (dirvish--timestamp))
     (cond ((and new? remote)
