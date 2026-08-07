@@ -179,6 +179,8 @@ To tweak the appearance of the icons, you have these options:
 + ~dirvish-all-the-icons-palette~: Coloring style used for =all-the-icons=.
 + ~dirvish-vscode-icon-size~: Image size of icons from =vscode-icon=.
 
+Activate the icons by placing them in =dirvish-attributes= (e.g. =(setq dirvish-attributes '(all-the-icons))=.)
+
 * Toggle Dirvish in side window (dirvish-side.el)
 
 This extension provides the ~dirvish-side~ command, which toggles a Dirvish
