@@ -73,9 +73,10 @@ FN is the original `dired-noselect' closure."
              (f-dirp (string-prefix-p "d" priv))
              (f-type (or f-truename f-dirp)))
         (puthash (secure-hash 'md5 (expand-file-name f-name entry))
-                 `(:builtin ,(list f-type lnum user group nil
-                                   f-mtime nil size priv nil inode)
-                            :type ,(cons (if f-dirp 'dir 'file) f-truename))
+                 (dirvish--ht
+                  :builtin (list f-type lnum user group nil
+                                 f-mtime nil size priv nil inode)
+                  :type (cons (if f-dirp 'dir 'file) f-truename))
                  dirvish--dir-data)))))
 
 (defun dirvish-tramp-dir-data-proc-s (proc _exit)

@@ -34,9 +34,9 @@
   "Separator string for `collapse' attribute."
   :group 'dirvish :type 'string)
 
-(defun dirvish-collapse--cache (f-name)
-  "Cache collapse state for file F-NAME."
-  (dirvish-attribute-cache f-name :collapse
+(defun dirvish-collapse--cache-list (f-name)
+  "Cache collapse list for file F-NAME."
+  (dirvish-attribute-cache f-name :collapse-list
     (let ((path f-name) should-collapse files dirp)
       (while (and (setq dirp (file-directory-p path))
                   (setq files (ignore-errors (directory-files path)))
@@ -53,11 +53,26 @@
        (should-collapse
         (let* ((path (substring path (1+ (length f-name))))
                (segs (split-string path "/"))
-               (head (format "%s%s%s" dirvish-collapse-separator
-                             (mapconcat #'concat (butlast segs)
+               (head (butlast segs))
+               (tail (cons (car (last segs)) dirp)))
+          (cons head tail)))
+       (t (cons nil nil))))))
+
+(defun dirvish-collapse--cache (f-name)
+  "Cache collapse state for file F-NAME."
+  (dirvish-attribute-cache f-name :collapse
+    (let* ((list (dirvish-collapse--cache-list f-name))
+           (head-list (car list)))
+      (if (or (eq head-list 'empty)
+              (eq head-list nil))
+          list
+        (let* ((head (format "%s%s%s" dirvish-collapse-separator
+                             (mapconcat #'concat head-list
                                         dirvish-collapse-separator)
                              dirvish-collapse-separator))
-               (tail (car (last segs)))
+               (tail-list (cdr list))
+               (tail (car tail-list))
+               (dirp (cdr tail-list))
                (tail-face (if dirp 'dirvish-collapse-dir-face
                             'dirvish-collapse-file-face)))
           (and (equal head (format "%s%s" dirvish-collapse-separator
@@ -66,8 +81,7 @@
           (add-face-text-property
            0 (length head) 'dirvish-collapse-dir-face nil head)
           (add-face-text-property 0 (length tail) tail-face nil tail)
-          (cons head tail)))
-       (t (cons nil nil))))))
+          (cons head tail))))))
 
 (dirvish-define-attribute collapse
   "Collapse unique nested paths."

@@ -120,7 +120,10 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
                           (format "git log -1 --pretty=%%s %s"
                                   (shell-quote-argument file))))))
            (puthash (secure-hash 'md5 file)
-                    `(:vc-state ,state :git-msg ,msg) hs)))
+                    (let ((h (make-hash-table :test 'equal)))
+                      (puthash :vc-state state h)
+                      (puthash :git-msg msg h) h)
+                    hs)))
        (cons info hs)))
    (lambda (p _)
      (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
@@ -131,8 +134,8 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
            (maphash
             (lambda (k v)
               (let ((orig (gethash k dirvish--dir-data)))
-                (setf (plist-get orig :vc-state) (plist-get v :vc-state))
-                (setf (plist-get orig :git-msg) (plist-get v :git-msg))
+                (puthash :vc-state (gethash :vc-state v) orig)
+                (puthash :git-msg (gethash :git-msg v) orig)
                 (puthash k orig dirvish--dir-data)))
             data)
            (dirvish-prop :vc-info info)

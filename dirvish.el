@@ -338,7 +338,7 @@ opening and customized handling of specific file types."
 (defvar dirvish--sessions (make-hash-table :test #'equal))
 (defvar dirvish--available-attrs '())
 (defvar dirvish--available-preview-dispatchers '())
-(defvar-local dirvish--props '())
+(defvar-local dirvish--props nil)
 (defvar-local dirvish--dir-data nil)
 
 ;;;; Helpers
@@ -347,11 +347,10 @@ opening and customized handling of specific file types."
   "Retrieve PROP from `dirvish--props'.
 Set the PROP with BODY if given."
   (declare (indent defun))
-  `(let* ((pair (assq ,prop dirvish--props)) (val (cdr pair)))
-     ,(if body `(prog1 (setq val ,@body)
-                  (if pair (setcdr (assq ,prop dirvish--props) val)
-                    (push (cons ,prop val) dirvish--props)))
-        `val)))
+  `(progn
+     (unless dirvish--props (setq dirvish--props (dirvish--ht)))
+     ,(if body `(puthash ,prop (progn ,@body) dirvish--props)
+        `(gethash ,prop dirvish--props))))
 
 (defun dirvish--run-with-delay (action &optional record fun debounce throttle)
   "Run function FUN accroding to ACTION with delay.
@@ -391,9 +390,16 @@ RECORD defaults to `:default' record in `dirvish--timers'."
   "Return Dirvish session attached to current buffer, if there is any."
   (gethash (dirvish-prop :dv) dirvish--sessions))
 
-(defun dirvish--ht ()
-  "Return a new hash-table with `equal' as its test function."
-  (make-hash-table :test #'equal))
+(defmacro dirvish--ht (&rest kvs)
+  "Return a new hash-table with `equal' as its test function.
+KVS is list of key value pair that will be inserted to the hash table.
+
+\(fn [KEY VAL]...)"
+  (declare (indent defun))
+  `(let ((h (make-hash-table :test 'equal)))
+     ,@(cl-loop for (k v) on kvs by #'cddr
+                collect `(puthash ,k ,v h))
+     h))
 
 (defun dirvish--timestamp ()
   "Return current timestamp string with \"%D|%T\" format."
@@ -458,7 +464,7 @@ Set process's SENTINEL and PUTS accordingly."
          (print-length nil) (print-level nil)
          (cmd (if (stringp (car form)) form
                 (list dirvish-emacs-bin
-                      "-Q" "-batch" "--eval" (prin1-to-string form))))
+                      "-Q" "--batch" "--eval" (prin1-to-string form))))
          (proc (make-process :name "dirvish" :connection-type nil :buffer buf
                              :command cmd :sentinel sentinel :noquery t)))
     (while-let ((k (pop puts)) (v (pop puts))) (process-put proc k v))))
@@ -866,10 +872,12 @@ When the attribute does not exist, set it with BODY."
   (declare (indent defun))
   `(let* ((md5 (secure-hash 'md5 ,file))
           (hash (gethash md5 dirvish--dir-data))
-          (cached (plist-get hash ,attribute))
-          (attr (or cached ,@body)))
+          (cached (when hash (gethash ,attribute hash)))
+          (attr (or cached (progn ,@body))))
      (unless cached
-       (puthash md5 (append hash (list ,attribute attr)) dirvish--dir-data))
+       (setq hash (or hash (dirvish--ht)))
+       (puthash ,attribute attr hash)
+       (puthash md5 hash dirvish--dir-data))
      attr))
 
 (defun dirvish--attrs-expand (attrs)
@@ -1237,7 +1245,7 @@ LEVEL is the depth of current window."
 INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
   (dirvish--make-proc
    `(prin1
-     (let ((hs (make-hash-table)) (bk ',(dirvish-prop :vc-backend)))
+     (let ((hs (make-hash-table :test 'equal)) (bk ',(dirvish-prop :vc-backend)))
        (if ,(and (not (dirvish-prop :sudo)) (dirvish-prop :remote)) (setq bk 0)
          (dolist (f (ignore-errors ; `dir' can be problematic due to its encoding
                       (directory-files ,(file-local-name dir) t nil t 20000)))
@@ -1245,7 +1253,11 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
              (cond ((eq t tp) (setq tp '(dir . nil)))
                    (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
                    (t (setq tp '(file . nil))))
-             (puthash (secure-hash 'md5 f) `(:builtin ,attrs :type ,tp) hs)))
+             (puthash (secure-hash 'md5 f)
+                      (let ((h (make-hash-table :test 'equal)))
+                        (puthash :builtin attrs h)
+                        (puthash :type tp h) h)
+                      hs)))
          (setq bk (or bk (vc-responsible-backend ,(file-local-name dir) t))))
        (cons bk hs)))
    (lambda (p _)

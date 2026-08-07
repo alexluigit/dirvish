@@ -53,6 +53,12 @@ The value is a cons of \\='(HEIGHT . V-ADJUST) that used as values of
 `nerd-icons'."
   :type '(cons float float) :group 'dirvish)
 
+(defcustom dirvish-subtree-skip-intermediate-folders t
+  "Skip intermediate folders when `collapse' attribute is enabled.
+Add `collapse' to `dirvish-attributes' and/or `dirvish-side-attributes' for
+this option to apply."
+  :type 'boolean :group 'dirvish)
+
 (defvar dirvish-subtree--state-icons nil)
 (defcustom dirvish-subtree-state-style 'chevron
   "Icon/string used for directory expanded state.
@@ -119,6 +125,24 @@ window as its sole argument."
 
 (defvar-local dirvish-subtree--overlays nil "Subtree overlays in this buffer.")
 
+(defun dirvish-subtree--skip-dir (dir)
+  "Skip intermediary directories from parent DIR."
+  (when (and dirvish-subtree-skip-intermediate-folders
+             (assoc 'collapse (dirvish-prop :attrs)))
+    (require 'dirvish-collapse)
+    (let* ((collapse-cache (dirvish-collapse--cache-list dir))
+           (collapse-dirs (car collapse-cache)))
+      (unless (or (eq collapse-dirs 'empty)
+                  (eq collapse-dirs nil))
+        (let* ((collapse-tail-list (cdr collapse-cache))
+               (collapse-tail (car collapse-tail-list))
+               (collapse-dirp (cdr collapse-tail-list)))
+          (when collapse-dirp
+            (setq collapse-dirs (append collapse-dirs (list collapse-tail))))
+          (when (length> collapse-dirs 0)
+            (setq dir (concat dir "/" (mapconcat #'identity collapse-dirs "/"))))))))
+  dir)
+
 (cl-loop
  for (sym ad how) in '((dired-current-directory dirvish-curr-dir-a :around)
                        (dired-subdir-index dirvish-subdir-index-a :around)
@@ -132,7 +156,7 @@ window as its sole argument."
   "Advice for FN `dired-current-directory'.
 LOCALP is the arg for `dired-current-directory', which see."
   (if-let* ((parent (dirvish-subtree--parent))
-            (dir (concat (overlay-get parent 'dired-subtree-name) "/")))
+            (dir (concat (dirvish-subtree--skip-dir (overlay-get parent 'dired-subtree-name)) "/")))
       (if localp (dired-make-relative dir default-directory) dir)
     (funcall fn localp)))
 
@@ -199,6 +223,7 @@ creation even the entry is in nested subtree nodes."
 
 (defun dirvish-subtree--readin (dir)
   "Readin DIR as a subtree node."
+  (setq dir (dirvish-subtree--skip-dir dir))
   (let ((flags (or dirvish-subtree-listing-switches dired-actual-switches))
         (omit-p (bound-and-true-p dired-omit-mode))
         str)
@@ -220,7 +245,7 @@ creation even the entry is in nested subtree nodes."
                      (substring s (next-single-property-change
                                    0 'dired-filename s))))
                   (split-string str "\n"))
-                             "\n")
+                 "\n")
               str)))))))
 
 (defun dirvish-subtree--insert ()
@@ -318,14 +343,16 @@ See `dirvish-subtree-file-viewer' for details"
                                                (dired-current-directory))))))
   (let* ((file (dired-get-filename nil t))
          (dir (dired-current-directory))
-         (f-dir (and file (file-directory-p file) (file-name-as-directory file))))
+         (f-dir (and file
+                     (file-directory-p file)
+                     (file-name-as-directory (dirvish-subtree--skip-dir file)))))
     (cond ((equal file target) target)
           ;; distinguish directories with same prefix, e.g .git/ and .github/
           ((and file (string-prefix-p (or f-dir file) target))
            (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
            (let ((depth (1+ (dirvish-subtree--depth)))
                  (next (car (split-string
-                             (substring target (1+ (length file))) "/"))))
+                             (substring target (length f-dir)) "/"))))
              (when (dirvish-subtree--move-to-file next depth)
                (dirvish-subtree-expand-to target))))
           ((string-prefix-p dir target)
