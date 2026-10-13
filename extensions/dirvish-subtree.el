@@ -261,11 +261,12 @@ When CLEAR, remove all subtrees in the buffer."
    with clear = (or clear (bound-and-true-p dirvish-emerge--group-overlays))
    initially (setq dirvish-subtree--overlays nil)
    for filename in filenames
-   do (if clear (when (dired-goto-file filename)
-                  (dired-next-line 1) (dirvish-subtree-remove))
-        (when (and (dirvish-subtree-expand-to filename)
-                   (not (dirvish-subtree--expanded-p)))
-          (dirvish-subtree--insert)))
+   do (save-excursion
+        (if clear (when (dired-goto-file filename)
+                    (dired-next-line 1) (dirvish-subtree-remove))
+          (when (and (dirvish-subtree-expand-to filename)
+                     (not (dirvish-subtree--expanded-p)))
+            (dirvish-subtree--insert))))
    finally (and index (if clear (dired-goto-file index)
                         (dirvish-subtree-expand-to index)))))
 
@@ -311,37 +312,44 @@ See `dirvish-subtree-file-viewer' for details"
     stop))
 
 (defun dirvish-subtree-expand-to (target)
-  "Go to line describing TARGET and expand its parent directories."
+  "Go to line describing TARGET and expand its parent directories.
+Return TARGET on success, or nil and preserve point if TARGET is absent."
   (interactive
    (list (directory-file-name (expand-file-name
                                (read-file-name "Expand to file: "
                                                (dired-current-directory))))))
-  (let* ((file (dired-get-filename nil t))
+  (let* ((origin (point-marker))
+         (file (dired-get-filename nil t))
          (dir (dired-current-directory))
-         (f-dir (and file (file-directory-p file) (file-name-as-directory file))))
-    (cond ((equal file target) target)
-          ;; distinguish directories with same prefix, e.g .git/ and .github/
-          ((and file (string-prefix-p (or f-dir file) target))
-           (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
-           (let ((depth (1+ (dirvish-subtree--depth)))
-                 (next (car (split-string
-                             (substring target (1+ (length file))) "/"))))
-             (when (dirvish-subtree--move-to-file next depth)
-               (dirvish-subtree-expand-to target))))
-          ((string-prefix-p dir target)
-           (let ((depth (dirvish-subtree--depth))
-                 (next (car (split-string (substring target (length dir)) "/"))))
-             (goto-char (dired-subdir-min))
-             (goto-char (next-single-property-change (point) 'dired-filename))
-             (forward-line -1)
-             ;; TARGET is either not exist or being hidden (#135)
-             (when (dirvish-subtree--move-to-file next depth)
-               (dirvish-subtree-expand-to target))))
-          ((cl-loop for (d . _) in dired-subdir-alist
-                    if (string-prefix-p d target)
-                    return (dired-goto-subdir d))
-           (dirvish-subtree-expand-to target))
-          (t (user-error "[ %s ] does not belong to any subdir" target)))))
+         (f-dir (and file (file-directory-p file) (file-name-as-directory file)))
+         found)
+    (unwind-protect
+        (setq found
+              (cond ((equal file target) target)
+                    ;; distinguish directories with same prefix, e.g .git/ and .github/
+                    ((and file (string-prefix-p (or f-dir file) target))
+                     (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
+                     (let ((depth (1+ (dirvish-subtree--depth)))
+                           (next (car (split-string
+                                       (substring target (1+ (length file))) "/"))))
+                       (when (dirvish-subtree--move-to-file next depth)
+                         (dirvish-subtree-expand-to target))))
+                    ((string-prefix-p dir target)
+                     (let ((depth (dirvish-subtree--depth))
+                           (next (car (split-string (substring target (length dir)) "/"))))
+                       (goto-char (dired-subdir-min))
+                       (goto-char (next-single-property-change (point) 'dired-filename))
+                       (forward-line -1)
+                       ;; TARGET is either not exist or being hidden (#135)
+                       (when (dirvish-subtree--move-to-file next depth)
+                         (dirvish-subtree-expand-to target))))
+                    ((cl-loop for (d . _) in dired-subdir-alist
+                              if (string-prefix-p d target)
+                              return (dired-goto-subdir d))
+                     (dirvish-subtree-expand-to target))
+                    (t (user-error "[ %s ] does not belong to any subdir" target))))
+      (unless found (goto-char origin))
+      (set-marker origin nil))))
 
 ;;;###autoload
 (defun dirvish-subtree-up ()
